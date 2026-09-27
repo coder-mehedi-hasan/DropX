@@ -17,15 +17,7 @@ CREATE TABLE IF NOT EXISTS roles (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_roles_name (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS permissions (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `key` VARCHAR(150) NOT NULL,
-    description VARCHAR(255) NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_permissions_key (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Organization
@@ -48,7 +40,7 @@ CREATE TABLE IF NOT EXISTS branches (
     UNIQUE KEY uq_branches_code (code),
     KEY idx_branches_status (status),
     KEY idx_branches_district (district)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS hubs (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -72,7 +64,7 @@ CREATE TABLE IF NOT EXISTS hubs (
     CONSTRAINT fk_hubs_branch
         FOREIGN KEY (branch_id) REFERENCES branches(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -92,7 +84,7 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT fk_users_branch
         FOREIGN KEY (branch_id) REFERENCES branches(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS user_roles (
     user_id BIGINT UNSIGNED NOT NULL,
@@ -104,19 +96,16 @@ CREATE TABLE IF NOT EXISTS user_roles (
     CONSTRAINT fk_user_roles_role
         FOREIGN KEY (role_id) REFERENCES roles(id)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS role_permissions (
     role_id BIGINT UNSIGNED NOT NULL,
-    permission_id BIGINT UNSIGNED NOT NULL,
-    PRIMARY KEY (role_id, permission_id),
+    permission_key VARCHAR(150) NOT NULL,
+    PRIMARY KEY (role_id, permission_key),
     CONSTRAINT fk_role_permissions_role
         FOREIGN KEY (role_id) REFERENCES roles(id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_role_permissions_permission
-        FOREIGN KEY (permission_id) REFERENCES permissions(id)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Customers
@@ -134,7 +123,7 @@ CREATE TABLE IF NOT EXISTS customers (
     KEY idx_customers_phone (phone),
     KEY idx_customers_email (email),
     KEY idx_customers_type (type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS customer_addresses (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -155,7 +144,7 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
     CONSTRAINT fk_customer_addresses_customer
         FOREIGN KEY (customer_id) REFERENCES customers(id)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Zones & Pricing
@@ -171,7 +160,7 @@ CREATE TABLE IF NOT EXISTS zones (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_zones_code (code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS pricing_rules (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -198,7 +187,7 @@ CREATE TABLE IF NOT EXISTS pricing_rules (
     CONSTRAINT fk_pricing_rules_destination_zone
         FOREIGN KEY (destination_zone_id) REFERENCES zones(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Vehicles & Routes
@@ -215,7 +204,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     PRIMARY KEY (id),
     UNIQUE KEY uq_vehicles_registration_number (registration_number),
     KEY idx_vehicles_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS routes (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -239,7 +228,7 @@ CREATE TABLE IF NOT EXISTS routes (
     CONSTRAINT fk_routes_destination_hub
         FOREIGN KEY (destination_hub_id) REFERENCES hubs(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS route_stops (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -257,7 +246,7 @@ CREATE TABLE IF NOT EXISTS route_stops (
     CONSTRAINT fk_route_stops_hub
         FOREIGN KEY (hub_id) REFERENCES hubs(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Riders
@@ -283,7 +272,7 @@ CREATE TABLE IF NOT EXISTS riders (
     CONSTRAINT fk_riders_hub
         FOREIGN KEY (hub_id) REFERENCES hubs(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS rider_locations (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -296,7 +285,7 @@ CREATE TABLE IF NOT EXISTS rider_locations (
     CONSTRAINT fk_rider_locations_rider
         FOREIGN KEY (rider_id) REFERENCES riders(id)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Parcels
@@ -355,7 +344,7 @@ CREATE TABLE IF NOT EXISTS parcels (
     CONSTRAINT fk_parcels_current_hub
         FOREIGN KEY (current_hub_id) REFERENCES hubs(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS parcel_items (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -371,7 +360,7 @@ CREATE TABLE IF NOT EXISTS parcel_items (
     CONSTRAINT fk_parcel_items_parcel
         FOREIGN KEY (parcel_id) REFERENCES parcels(id)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Pickups
@@ -404,7 +393,7 @@ CREATE TABLE IF NOT EXISTS pickups (
     CONSTRAINT fk_pickups_rider
         FOREIGN KEY (assigned_rider_id) REFERENCES riders(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Transfers
@@ -447,7 +436,7 @@ CREATE TABLE IF NOT EXISTS transfers (
     CONSTRAINT fk_transfers_driver
         FOREIGN KEY (driver_id) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS transfer_parcels (
     transfer_id BIGINT UNSIGNED NOT NULL,
@@ -462,7 +451,7 @@ CREATE TABLE IF NOT EXISTS transfer_parcels (
     CONSTRAINT fk_transfer_parcels_parcel
         FOREIGN KEY (parcel_id) REFERENCES parcels(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Deliveries
@@ -498,7 +487,7 @@ CREATE TABLE IF NOT EXISTS deliveries (
     CONSTRAINT fk_deliveries_rider
         FOREIGN KEY (rider_id) REFERENCES riders(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS delivery_proofs (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -513,7 +502,7 @@ CREATE TABLE IF NOT EXISTS delivery_proofs (
     CONSTRAINT fk_delivery_proofs_delivery
         FOREIGN KEY (delivery_id) REFERENCES deliveries(id)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Parcel Events / Tracking
@@ -559,7 +548,7 @@ CREATE TABLE IF NOT EXISTS parcel_events (
     CONSTRAINT fk_parcel_events_rider
         FOREIGN KEY (rider_id) REFERENCES riders(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Payments & Settlements
@@ -581,7 +570,7 @@ CREATE TABLE IF NOT EXISTS payments (
     CONSTRAINT fk_payments_parcel
         FOREIGN KEY (parcel_id) REFERENCES parcels(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS settlements (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -602,7 +591,7 @@ CREATE TABLE IF NOT EXISTS settlements (
     CONSTRAINT fk_settlements_customer
         FOREIGN KEY (customer_id) REFERENCES customers(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Notifications & Support
@@ -634,7 +623,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     CONSTRAINT fk_notifications_parcel
         FOREIGN KEY (parcel_id) REFERENCES parcels(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS support_tickets (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -661,7 +650,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     CONSTRAINT fk_support_tickets_assigned_to
         FOREIGN KEY (assigned_to) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- ============================================================
 -- Audit
@@ -684,6 +673,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     CONSTRAINT fk_audit_logs_user
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 SET FOREIGN_KEY_CHECKS = 1;
