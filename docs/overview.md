@@ -4,57 +4,76 @@ DropX is a **single-tenant** parcel delivery and logistics management platform f
 
 ---
 
-## Portals & Login
+## Apps
 
-| Portal | Who | How they log in |
-|--------|-----|-----------------|
-| **Admin / Ops console** | Staff users (admin, hub operators, dispatchers, support) | Email + password via `users` |
-| **Rider app** | Delivery / pickup riders | Email + password via `users` (each rider is linked 1:1 to a user) |
-| **Customer portal** | Senders and receivers | **OTP** sent to **phone or email** — no password |
+```text
+apps/
+  web/       # Customer portal
+  riders/    # Rider app
+  console/   # Admin / ops console
+  api/       # Backend API
+```
 
-### Customer OTP login
+| App | Audience | Login |
+|-----|----------|-------|
+| `apps/web` | Customers (senders / receivers) | **OTP** via phone or email |
+| `apps/riders` | Pickup / delivery riders | Email + password (`users`) |
+| `apps/console` | Admins, branch staff, hub operators, dispatchers, support, finance | Email + password (`users`) + RBAC |
+| `apps/api` | All clients | Validates sessions/tokens; enforces permissions and data scope |
+
+Branches and hubs are **not** separate apps. Their staff use `apps/console` with role- and branch/hub-scoped access. See [`rbac.md`](./rbac.md).
+
+---
+
+## Login flows
+
+### Customer OTP (`apps/web`)
 
 1. Customer enters phone or email.
-2. System sends a one-time code (SMS or email).
-3. Customer verifies the OTP and gets a session for the customer portal.
-4. Identity is matched to a `customers` row by phone or email.
+2. API sends a one-time code (SMS or email).
+3. Customer verifies OTP and receives a customer session.
+4. Identity maps to a `customers` row by phone or email.
 
-OTP codes are short-lived and not stored as long-term credentials. Permission keys for staff stay in application code; only role → key assignments are stored (`role_permissions`).
+No password. Customers are outside staff RBAC; they only see their own parcels, addresses, and tickets.
 
-### Rider login
+### Staff (`apps/console`)
 
-Riders are employees: create a `users` account, assign a rider role, then create a `riders` row with that `user_id`. They use the same password login as staff, with access limited to rider features.
+Email + `password_hash` on `users`, plus roles → `role_permissions`. Permission keys are static in code.
+
+### Rider (`apps/riders`)
+
+Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role (`rider.*` keys only).
 
 ---
 
 ## Organization
 
-- **Branches** — regional offices of the company.
-- **Hubs** — origin, sorting, transit, or destination nodes under a branch.
-- **Users** — staff and riders, scoped optionally to a branch, with roles and permission keys.
-- **Riders** — operational profile tied to a user and home hub; live location history is stored separately.
+- **Branches** — regional offices; managed in console by admin (or limited branch managers).
+- **Hubs** — origin / sorting / transit / destination nodes under a branch; day-to-day ops in console.
+- **Users** — staff and riders; optional `branch_id`; roles and permission keys.
+- **Riders** — operational profile + home hub; location history in `rider_locations`.
 
 ---
 
 ## Customers
 
-- Individuals or businesses, identified primarily by **phone** (email optional).
-- Multiple saved addresses.
-- Can track parcels, manage addresses, open support tickets, and receive notifications after OTP login.
+- Individual or business; phone required, email optional.
+- Multiple addresses.
+- After OTP login: track parcels, manage addresses, open tickets, receive notifications.
 
 ---
 
 ## Zones & Pricing
 
-- **Zones** define geographic pricing areas.
-- **Pricing rules** set fees by origin/destination zone, weight band, COD surcharge, and express fee.
+- **Zones** — geographic pricing areas.
+- **Pricing rules** — origin/destination zone, weight band, base/per-kg, COD fees, express fee.
 
 ---
 
 ## Vehicles & Routes
 
-- **Vehicles** (bike, van, truck, etc.) used on transfers.
-- **Routes** connect hubs, with ordered **route stops** for multi-hub paths.
+- **Vehicles** — bike, van, truck, etc., used on transfers.
+- **Routes** — hub-to-hub paths with ordered **route stops**.
 
 ---
 
@@ -65,34 +84,38 @@ CREATED → PICKED_UP → IN_TRANSIT / AT_HUB → OUT_FOR_DELIVERY → DELIVERED
                                                                     ↘ FAILED / CANCELLED / RETURNED
 ```
 
-1. **Create** — sender/receiver customers, origin & destination hubs, weight, COD or prepaid.
-2. **Pickup** — request assigned to a rider; status tracked through pickup.
-3. **Transfer** — parcel loaded onto a hub-to-hub transfer (vehicle, route, driver).
-4. **Delivery** — last-mile assignment from destination hub to a rider; proof of delivery (signature, photo, OTP, identity).
-5. **Events** — every meaningful status change is recorded in `parcel_events` for tracking history.
+1. **Create** — sender/receiver, hubs, weight, prepaid or COD.
+2. **Pickup** — assign rider; track pickup status.
+3. **Transfer** — load onto hub-to-hub transfer (vehicle, route, driver).
+4. **Delivery** — last-mile from destination hub; proof (signature, photo, OTP, identity).
+5. **Events** — `parcel_events` for full tracking history.
 
-Parcels remain the hub of the model: items, pickups, transfers, deliveries, payments, notifications, and tickets all hang off them.
+Parcels are the center of the model: items, pickups, transfers, deliveries, payments, notifications, and tickets link to them.
 
 ---
 
 ## Payments & Settlements
 
 - **Payments** — delivery fee, COD, refunds (cash, bKash, Nagad, card, bank, online).
-- **Settlements** — periodic payouts to customers (especially business COD), with net amount and status.
+- **Settlements** — period payouts to customers (especially business COD).
 
 ---
 
 ## Notifications & Support
 
-- SMS, email, or push notifications to users or customers about parcel events.
-- Support tickets linked to a customer and optionally a parcel, assignable to staff.
+- SMS / email / push about parcel events.
+- Support tickets for a customer (optional parcel), assignable to staff in console.
 
 ---
 
-## Security & audit
+## Security
 
-- **RBAC** — `roles` → `user_roles` → users; `role_permissions` stores static `permission_key` strings defined in the app.
-- **Audit logs** — who did what, on which entity, with optional before/after JSON.
+- Staff RBAC: `roles` → `user_roles` → users; `role_permissions` stores static `permission_key` values.
+- Customer access: OTP session + own-data filters only.
+- Rider access: own assigned jobs + location/proof APIs.
+- Audit: `audit_logs` for staff actions.
+
+Full matrix: [`rbac.md`](./rbac.md).
 
 ---
 
@@ -101,3 +124,4 @@ Parcels remain the hub of the model: items, pickups, transfers, deliveries, paym
 - Database: MySQL 8.0+
 - Schema: [`migrate.sql`](../migrate.sql)
 - ER diagram: [`er-diagram.md`](./er-diagram.md)
+- Agent guide: [`AGENTS.md`](../AGENTS.md)
