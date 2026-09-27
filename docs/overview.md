@@ -23,50 +23,58 @@ apps/
 
 Branches and hubs are **not** separate apps. Their staff use `apps/console` with role- and branch/hub-scoped access. See [`rbac.md`](./rbac.md).
 
+Public **tracking** (by tracking number only) is available without login. **Booking / creating parcels as a customer** requires OTP login — no guest booking.
+
 ---
 
 ## Login flows
 
 ### Customer OTP (`apps/web`)
 
-1. Customer enters phone or email.
-2. API sends a one-time code (SMS or email).
-3. Customer verifies OTP and receives a customer session.
-4. Identity maps to a `customers` row by phone or email.
+1. User enters phone or email and **accepts consent**.
+2. API creates a **TEMP** `customers` row (if new) and stores the OTP in **Redis/cache** (not MySQL).
+3. User verifies OTP → customer becomes **ACTIVE**; session issued for the portal.
+4. Phone and email are **unique** on `customers`.
 
-No password. Customers are outside staff RBAC; they only see their own parcels, addresses, and tickets.
+OTP codes are short-lived and never persisted in the database.
 
 ### Staff (`apps/console`)
 
 Email + `password_hash` on `users`, plus roles → `role_permissions`. Permission keys are static in code.
 
+Hub-scoped staff are linked via **`user_hubs`** (many hubs per user). Branch scope still uses `users.branch_id`.
+
 ### Rider (`apps/riders`)
 
-Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role (`rider.*` keys only).
+Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role. A user **may** also hold console roles (e.g. rider + hub operator) — allowed.
 
 ---
 
 ## Organization
 
-- **Branches** — regional offices; managed in console by admin (or limited branch managers).
-- **Hubs** — origin / sorting / transit / destination nodes under a branch; day-to-day ops in console.
-- **Users** — staff and riders; optional `branch_id`; roles and permission keys.
-- **Riders** — operational profile + home hub; location history in `rider_locations`.
+- **Branches** — regional offices; managed in console.
+- **Hubs** — origin / sorting / transit / destination nodes under a branch.
+- **Users** — staff and riders; optional `branch_id`; roles; optional hub assignments via `user_hubs`.
+- **Riders** — operational profile + home hub; `compensation_type` (salaried / contractual / commission / mixed); location history in `rider_locations`.
+- **Transfer drivers** — separate staff (`transfers.driver_id` → `users`), not riders.
 
 ---
 
 ## Customers
 
-- Individual or business; phone required, email optional.
+- Individual or business; **unique phone**; **unique email** (email optional).
+- Status: `TEMP` (consented, awaiting OTP) → `ACTIVE` (verified).
 - Multiple addresses.
-- After OTP login: track parcels, manage addresses, open tickets, receive notifications.
+- After OTP: create/book parcels, track own parcels, manage addresses, open tickets.
+- Anyone (logged in or not) can **publicly track** by tracking number.
 
 ---
 
 ## Zones & Pricing
 
 - **Zones** — geographic pricing areas.
-- **Pricing rules** — origin/destination zone, weight band, base/per-kg, COD fees, express fee.
+- **Pricing rules** — origin/destination zone, weight band, fees.
+- On each parcel, **`destination_zone_id`** is required; fee calculation uses the destination zone (with weight and COD rules).
 
 ---
 
@@ -84,18 +92,20 @@ CREATED → PICKED_UP → IN_TRANSIT / AT_HUB → OUT_FOR_DELIVERY → DELIVERED
                                                                     ↘ FAILED / CANCELLED / RETURNED
 ```
 
-1. **Create** — sender/receiver, hubs, weight, prepaid or COD.
+1. **Create** — by **customer** (`apps/web`) or **staff** (`apps/console`); sender/receiver, hubs, destination zone, weight, prepaid or COD.
 2. **Pickup** — assign rider; track pickup status.
-3. **Transfer** — load onto hub-to-hub transfer (vehicle, route, driver).
-4. **Delivery** — last-mile from destination hub; proof (signature, photo, OTP, identity).
+3. **Transfer** — load onto hub-to-hub transfer (vehicle, route, **staff driver**).
+4. **Delivery** — last-mile from destination hub; proof (signature, photo, OTP, identity). **Retries allowed** — new `deliveries` row with next `attempt_no` after FAILED/CANCELLED.
 5. **Events** — `parcel_events` for full tracking history.
 
 Parcels are the center of the model: items, pickups, transfers, deliveries, payments, notifications, and tickets link to them.
 
 ---
 
-## Payments & Settlements
+## Payments, COD & Settlements
 
+- **Simple COD flow:** customer pays the **rider** on delivery → funds are remitted to the **company** → company **disburses** to the merchant/sender via settlements.
+- Rider pay to the company is separate: salaried, contractual, commission, or mixed (`riders.compensation_type`) — not the same as customer COD.
 - **Payments** — delivery fee, COD, refunds (cash, bKash, Nagad, card, bank, online).
 - **Settlements** — period payouts to customers (especially business COD).
 
@@ -111,8 +121,11 @@ Parcels are the center of the model: items, pickups, transfers, deliveries, paym
 ## Security
 
 - Staff RBAC: `roles` → `user_roles` → users; `role_permissions` stores static `permission_key` values.
-- Customer access: OTP session + own-data filters only.
+- Hub scope: `user_hubs`.
+- Customer access: OTP session + own-data filters; TEMP customers cannot use portal until ACTIVE.
 - Rider access: own assigned jobs + location/proof APIs.
+- Public tracking: tracking number only (no PII beyond what tracking intentionally exposes).
+- OTP: Redis/cache only.
 - Audit: `audit_logs` for staff actions.
 
 Full matrix: [`rbac.md`](./rbac.md).
@@ -125,3 +138,4 @@ Full matrix: [`rbac.md`](./rbac.md).
 - Schema: [`migrate.sql`](../migrate.sql)
 - ER diagram: [`er-diagram.md`](./er-diagram.md)
 - Agent guide: [`AGENTS.md`](../AGENTS.md)
+- OTP / short-lived auth codes: Redis (or equivalent cache), not MySQL

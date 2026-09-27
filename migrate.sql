@@ -107,6 +107,19 @@ CREATE TABLE IF NOT EXISTS role_permissions (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS user_hubs (
+    user_id BIGINT UNSIGNED NOT NULL,
+    hub_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (user_id, hub_id),
+    KEY idx_user_hubs_hub_id (hub_id),
+    CONSTRAINT fk_user_hubs_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_user_hubs_hub
+        FOREIGN KEY (hub_id) REFERENCES hubs(id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 -- ============================================================
 -- Customers
 -- ============================================================
@@ -117,12 +130,17 @@ CREATE TABLE IF NOT EXISTS customers (
     phone VARCHAR(30) NOT NULL,
     email VARCHAR(255) NULL,
     type ENUM('INDIVIDUAL','BUSINESS') NOT NULL DEFAULT 'INDIVIDUAL',
+    -- TEMP: created on OTP request after consent; ACTIVE: after OTP verified
+    status ENUM('TEMP','ACTIVE') NOT NULL DEFAULT 'TEMP',
+    consent_accepted_at DATETIME NULL,
+    activated_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    KEY idx_customers_phone (phone),
-    KEY idx_customers_email (email),
-    KEY idx_customers_type (type)
+    UNIQUE KEY uq_customers_phone (phone),
+    UNIQUE KEY uq_customers_email (email),
+    KEY idx_customers_type (type),
+    KEY idx_customers_status (status)
 );
 
 CREATE TABLE IF NOT EXISTS customer_addresses (
@@ -258,6 +276,9 @@ CREATE TABLE IF NOT EXISTS riders (
     hub_id BIGINT UNSIGNED NOT NULL,
     employee_code VARCHAR(50) NOT NULL,
     license_number VARCHAR(100) NULL,
+    -- How the company pays the rider (ops/payroll; COD cash still goes to company)
+    compensation_type ENUM('SALARIED','CONTRACTUAL','COMMISSION','MIXED')
+        NOT NULL DEFAULT 'SALARIED',
     status ENUM('AVAILABLE','BUSY','OFFLINE','SUSPENDED') NOT NULL DEFAULT 'OFFLINE',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -299,6 +320,8 @@ CREATE TABLE IF NOT EXISTS parcels (
     origin_hub_id BIGINT UNSIGNED NOT NULL,
     destination_hub_id BIGINT UNSIGNED NOT NULL,
     current_hub_id BIGINT UNSIGNED NULL,
+    -- Pricing uses destination zone (matched against pricing_rules)
+    destination_zone_id BIGINT UNSIGNED NOT NULL,
     weight DECIMAL(10,2) NOT NULL,
     length DECIMAL(10,2) NULL,
     width DECIMAL(10,2) NULL,
@@ -327,6 +350,7 @@ CREATE TABLE IF NOT EXISTS parcels (
     KEY idx_parcels_origin_hub (origin_hub_id),
     KEY idx_parcels_destination_hub (destination_hub_id),
     KEY idx_parcels_current_hub (current_hub_id),
+    KEY idx_parcels_destination_zone (destination_zone_id),
     KEY idx_parcels_status (status),
     KEY idx_parcels_created_at (created_at),
     CONSTRAINT fk_parcels_sender
@@ -343,7 +367,10 @@ CREATE TABLE IF NOT EXISTS parcels (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_parcels_current_hub
         FOREIGN KEY (current_hub_id) REFERENCES hubs(id)
-        ON UPDATE CASCADE ON DELETE SET NULL
+        ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_parcels_destination_zone
+        FOREIGN KEY (destination_zone_id) REFERENCES zones(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS parcel_items (
@@ -462,6 +489,8 @@ CREATE TABLE IF NOT EXISTS deliveries (
     parcel_id BIGINT UNSIGNED NOT NULL,
     hub_id BIGINT UNSIGNED NOT NULL,
     rider_id BIGINT UNSIGNED NOT NULL,
+    -- Multiple rows per parcel allowed (retry after FAILED/CANCELLED)
+    attempt_no INT UNSIGNED NOT NULL DEFAULT 1,
     delivery_address VARCHAR(500) NOT NULL,
     assigned_at DATETIME NULL,
     out_for_delivery_at DATETIME NULL,
@@ -474,7 +503,8 @@ CREATE TABLE IF NOT EXISTS deliveries (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_deliveries_parcel_id (parcel_id),
+    UNIQUE KEY uq_deliveries_parcel_attempt (parcel_id, attempt_no),
+    KEY idx_deliveries_parcel_id (parcel_id),
     KEY idx_deliveries_hub_id (hub_id),
     KEY idx_deliveries_rider_id (rider_id),
     KEY idx_deliveries_status (status),
