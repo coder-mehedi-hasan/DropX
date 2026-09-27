@@ -21,11 +21,17 @@ Branches and hubs do **not** get their own apps. Branch/hub staff use `apps/cons
 
 | Actor | Identity table | Portal |
 |-------|----------------|--------|
-| Customer | `customers` | `apps/web` |
+| Customer | `customers` (`TEMP` → `ACTIVE` after OTP) | `apps/web` |
 | Rider | `users` + `riders` | `apps/riders` |
-| Staff | `users` + `user_roles` | `apps/console` |
+| Staff | `users` + `user_roles` (+ optional `user_hubs`) | `apps/console` |
 
-Customers are **not** in RBAC. After OTP login they may only access their own data (parcels where they are sender/receiver, their addresses, their tickets).
+Customers are **not** in RBAC. After OTP (ACTIVE only) they may access their own data and create parcels. Public tracking by tracking number does not require login.
+
+A user may hold **both** `RIDER` and console roles — allowed; API still enforces app-route boundaries per token/client.
+
+Hub operators (and similar) are scoped via **`user_hubs`**, not only `users.branch_id`.
+
+Transfer **drivers** are staff users (`transfers.driver_id`), not riders.
 
 ---
 
@@ -133,7 +139,7 @@ Scoped to `users.branch_id`.
 
 ### `HUB_OPERATOR`
 
-Scoped to assigned hub(s). Typically `users.branch_id` plus hub filter in API.
+Scoped via **`user_hubs`** (and usually `users.branch_id`).
 
 - `hubs.view`
 - `parcels.view`, `parcels.update`
@@ -184,12 +190,16 @@ Used only by `apps/riders`.
 ## Enforcement rules (`apps/api`)
 
 1. **Console & rider** — load `user` → roles → `permission_key` set; reject if required key missing.
-2. **Customer** — OTP session identifies `customer_id`; never check `role_permissions`. Filter all queries to that customer.
-3. **Branch scope** — if user has `branch_id` and is not `ADMIN`, restrict hubs/users/parcels/riders to that branch.
-4. **Hub scope** — `HUB_OPERATOR` (and similar) may only act on parcels/jobs tied to their hub.
-5. **Rider scope** — rider may only see/update jobs where `assigned_rider_id` / `rider_id` is themselves.
-6. **App boundary** — console tokens must not call rider-only routes; rider tokens must not call console admin routes; customer tokens only hit customer routes.
-7. **Permission keys** — never invent DB rows for a permissions catalog; add new keys in code, then attach them to roles in `role_permissions`.
+2. **Customer** — OTP session identifies `customer_id`; never check `role_permissions`. Require `customers.status = ACTIVE`. Filter queries to that customer. Allow `parcels.create` for own bookings.
+3. **Public tracking** — tracking-number lookup is public (no auth). Do not expose unrelated customer PII beyond tracking payload.
+4. **No guest booking** — creating parcels as a customer requires ACTIVE OTP session.
+5. **Branch scope** — if user has `branch_id` and is not `ADMIN`, restrict hubs/users/parcels/riders to that branch.
+6. **Hub scope** — restrict ops to hubs in `user_hubs` when the role requires hub scoping (e.g. `HUB_OPERATOR`).
+7. **Rider scope** — rider may only see/update jobs where `assigned_rider_id` / `rider_id` is themselves.
+8. **App boundary** — prefer separate tokens/audiences per app; if a user has multiple roles, still only expose routes for the app they logged into.
+9. **Delivery retry** — allow multiple `deliveries` per parcel (`attempt_no`); only one active attempt at a time (enforce in API).
+10. **Permission keys** — never invent a permissions catalog table; add keys in code, attach via `role_permissions`.
+11. **OTP** — store codes only in Redis/cache; never in MySQL.
 
 ---
 

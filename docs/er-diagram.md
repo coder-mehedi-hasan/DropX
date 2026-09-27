@@ -10,6 +10,8 @@ erDiagram
     roles ||--o{ user_roles : grants
     users ||--o{ user_roles : has
     roles ||--o{ role_permissions : grants
+    users ||--o{ user_hubs : assigned
+    hubs ||--o{ user_hubs : staff
 
     customers ||--o{ customer_addresses : has
     customers ||--o{ parcels : sends
@@ -20,6 +22,7 @@ erDiagram
 
     zones ||--o{ pricing_rules : "origin"
     zones ||--o{ pricing_rules : "destination"
+    zones ||--o{ parcels : "destination zone"
 
     hubs ||--o{ routes : "origin"
     hubs ||--o{ routes : "destination"
@@ -90,10 +93,15 @@ erDiagram
         bigint role_id PK_FK
         varchar permission_key PK
     }
+    user_hubs {
+        bigint user_id PK_FK
+        bigint hub_id PK_FK
+    }
     customers {
         bigint id PK
-        varchar phone
-        enum type
+        varchar phone UK
+        varchar email UK
+        enum status
     }
     customer_addresses {
         bigint id PK
@@ -128,6 +136,7 @@ erDiagram
         bigint id PK
         bigint user_id FK_UK
         bigint hub_id FK
+        enum compensation_type
     }
     rider_locations {
         bigint id PK
@@ -141,6 +150,7 @@ erDiagram
         bigint origin_hub_id FK
         bigint destination_hub_id FK
         bigint current_hub_id FK
+        bigint destination_zone_id FK
         enum status
     }
     parcel_items {
@@ -168,7 +178,8 @@ erDiagram
     }
     deliveries {
         bigint id PK
-        bigint parcel_id FK_UK
+        bigint parcel_id FK
+        int attempt_no
         bigint hub_id FK
         bigint rider_id FK
         enum status
