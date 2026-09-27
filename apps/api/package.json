@@ -1,0 +1,28 @@
+{
+  "name": "@dropx/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DropX backend API \u2014 Hono, modular by domain feature.",
+  "scripts": {
+    "dev": "TZ=UTC bun --env-file=../../.env --watch src/index.ts",
+    "start": "TZ=UTC bun --env-file=../../.env src/index.ts",
+    "build": "bun --env-file=../../.env build src/index.ts --target=bun --outdir dist",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf node_modules .turbo dist",
+    "seed": "TZ=UTC bun --env-file=../../.env run ./scripts/seed.ts",
+    "smoke": "TZ=UTC DATABASE_URL=mysql://smoke:smoke@127.0.0.1:3306/dropx_smoke bun run ./scripts/smoke.ts",
+    "migrate": "bun run --cwd ../../packages/db migrate"
+  },
+  "dependencies": {
+    "@dropx/db": "workspace:*",
+    "@hono/zod-validator": "^0.9.1",
+    "hono": "^4.13.9",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2"
+  }
+}

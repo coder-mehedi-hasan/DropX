@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env — .env is intentionally tracked in this repo; keep local extras ignored
+.env.local
+.env.*.local
+!.env.example
+
+# logs
+logs/
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# caches
+.cache/
+.vite/
+.turbo/
+.eslintcache
+coverage/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# mprocs
+.mprocs/

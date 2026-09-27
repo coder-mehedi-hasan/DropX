@@ -1,0 +1,36 @@
+{
+  "name": "dropx",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.13",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "mprocs",
+    "dev:api": "bun run --cwd apps/api dev",
+    "dev:console": "bun run --cwd apps/console dev",
+    "dev:rider": "bun run --cwd apps/riders dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "build": "bun run --filter \"./apps/*\" --filter \"./packages/*\" build",
+    "typecheck": "bun run --filter \"./apps/*\" --filter \"./packages/*\" typecheck",
+    "lint": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
+    "lint:fix": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
+    "db:migrate": "bun run --cwd packages/db migrate",
+    "db:reset": "bun run --cwd packages/db reset",
+    "db:seed": "bun run --cwd apps/api seed",
+    "clean": "bun run --filter \"./apps/*\" --filter \"./packages/*\" clean"
+  },
+  "devDependencies": {
+    "mprocs": "^0.9.6",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "typescript": "^7.0.2"
+  }
+}
