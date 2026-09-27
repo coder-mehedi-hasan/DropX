@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "api-modules": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/backend/api-modules/SKILL.md",
+      "computedHash": "af3d15db6067770d60a4ddf1e6f0deee0a1b1b6e0a67b328976de5f6ba961d2f"
+    },
+    "api-patterns": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/backend/api-patterns/SKILL.md",
+      "computedHash": "581ec5b877d91fd1664b9b2b09791b4fffccf6429a8de40cd47ad8759304bfd3"
+    },
+    "api-review": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/backend/api-review/SKILL.md",
+      "computedHash": "13bf30f9b74a0a5f0cc47ad1fde9d1acb91f106c840a7a7275093aa6579ece8d"
+    },
+    "react-forms": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-forms/SKILL.md",
+      "computedHash": "1d43da73bb8aca9b06a874ba8740afb4fb0a6b2d96271ce04a424d19b4917896"
+    },
+    "react-lists": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-lists/SKILL.md",
+      "computedHash": "f15fbb37fd9e9057c43d7fd05fc64ba979bcf6fd6a74462da9115f3bf6e82ea3"
+    },
+    "react-overlays": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-overlays/SKILL.md",
+      "computedHash": "3234be96e6133fc4d913681de388ccb1b52b2f3062c2787f7cd4363368771086"
+    },
+    "react-patterns": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-patterns/SKILL.md",
+      "computedHash": "794e9dff51a4b9e12024cec6ec16eed6780be65a916954e3b89df278c777f9d0"
+    },
+    "react-review": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-review/SKILL.md",
+      "computedHash": "d6805ed83ee66c6e1a22ef2e3dc253d43a3ae834940fddd95e9b774b61e9a156"
+    },
+    "react-shadcn": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-shadcn/SKILL.md",
+      "computedHash": "c072a40a2906ede32ddf8400a227e6868fd3bfb66e575a1044055b1299494150"
+    },
+    "react-ux": {
+      "source": "graphland-dev/standard-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend/react-ux/SKILL.md",
+      "computedHash": "a9ce9e1a19fe26436108d6271c4e430b47b7721419bd7578e9c6705ecf791e3a"
+    }
+  }
+}
