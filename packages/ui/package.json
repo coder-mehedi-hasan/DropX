@@ -6,6 +6,7 @@
   "description": "DropX shared UI — shadcn-style primitives on Radix, plus the design tokens every app uses.",
   "exports": {
     ".": "./src/index.ts",
+    "./forms": "./src/forms/index.ts",
     "./styles.css": "./src/styles.css",
     "./lib/cn": "./src/lib/cn.ts"
   },
