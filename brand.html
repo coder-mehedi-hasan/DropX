@@ -43,9 +43,11 @@
                 <a href="#overview" class="hover:text-[#FF5500] transition-colors">Overview</a>
                 <a href="#colors" class="hover:text-[#FF5500] transition-colors">Colors</a>
                 <a href="#typography" class="hover:text-[#FF5500] transition-colors">Typography</a>
+                <a href="#modes" class="hover:text-[#FF5500] transition-colors">Modes</a>
                 <a href="#logo" class="hover:text-[#FF5500] transition-colors">Logo</a>
                 <a href="#voice" class="hover:text-[#FF5500] transition-colors">Voice</a>
                 <a href="#ui" class="hover:text-[#FF5500] transition-colors">UI System</a>
+                <a href="#components" class="hover:text-[#FF5500] transition-colors">Components</a>
                 <a href="#fleet" class="hover:text-[#FF5500] transition-colors">Fleet & Packaging</a>
             </div>
             <div>
@@ -274,6 +276,27 @@
             </div>
         </section>
 
+        <!-- 3b. Theme modes -->
+        <section id="modes" class="scroll-mt-28">
+            <div class="border-l-4 border-[#FF5500] pl-4 mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-white">03b. Light & Dark Mode</h2>
+                <p class="text-gray-400 text-sm mt-1">One DropX identity, two carefully balanced environments.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7">
+                    <div class="flex items-center gap-3 mb-5"><span class="w-9 h-9 rounded-lg bg-[#0D0F12] border border-gray-700 flex items-center justify-center">☾</span><h3 class="text-xl font-bold text-white">Dark mode</h3></div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-5">The primary DropX environment for operations, tracking, and rider workflows. Use Obsidian as the canvas and Carbon for raised surfaces.</p>
+                    <div class="grid grid-cols-2 gap-3 text-xs"><div class="p-3 rounded-lg bg-[#0D0F12] border border-gray-800"><span class="text-gray-500 block">Canvas</span><code class="text-white">#0D0F12</code></div><div class="p-3 rounded-lg bg-[#232731] border border-gray-700"><span class="text-gray-400 block">Surface</span><code class="text-white">#1A1D24</code></div></div>
+                </div>
+                <div class="bg-white text-gray-900 border border-gray-200 rounded-2xl p-7">
+                    <div class="flex items-center gap-3 mb-5"><span class="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">☀</span><h3 class="text-xl font-bold">Light mode</h3></div>
+                    <p class="text-gray-600 text-sm leading-relaxed mb-5">Use for customer-facing pages, printable documents, and bright environments. Keep orange for action and progress—not for large backgrounds.</p>
+                    <div class="grid grid-cols-2 gap-3 text-xs"><div class="p-3 rounded-lg bg-gray-50 border border-gray-200"><span class="text-gray-500 block">Canvas</span><code class="text-gray-900">#F7F8FA</code></div><div class="p-3 rounded-lg bg-white border border-gray-300"><span class="text-gray-500 block">Surface</span><code class="text-gray-900">#FFFFFF</code></div></div>
+                </div>
+            </div>
+            <div class="mt-6 p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-sm text-orange-100"><strong class="text-white">Mode rule:</strong> do not simply invert colors. Preserve semantic meaning, contrast, elevation, and focus visibility when switching themes.</div>
+        </section>
+
         <!-- 4. Logo Guidelines -->
         <section id="logo" class="scroll-mt-28">
             <div class="border-l-4 border-[#FF5500] pl-4 mb-8">
@@ -375,6 +398,36 @@
                         <div class="text-2xl font-bold text-white mt-1">98.4%</div>
                         <span class="text-xs text-[#00C853] mt-2 inline-flex items-center font-medium">✓ Excellent standing</span>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5b. Product components -->
+        <section id="components" class="scroll-mt-28">
+            <div class="border-l-4 border-[#FF5500] pl-4 mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-white">05b. Product Components</h2>
+                <p class="text-gray-400 text-sm mt-1">Patterns for forms, inputs, tables, and the moments where work gets done.</p>
+            </div>
+            <div class="space-y-6">
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6"><div><p class="text-xs font-semibold uppercase eyebrow text-[#FF5500]">Forms & inputs</p><h3 class="text-xl font-bold text-white mt-2">Make completion feel effortless.</h3></div><p class="text-gray-500 text-xs">Labels are always visible. Helper text is optional.</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="block"><span class="text-sm font-medium text-gray-200">Tracking number</span><input value="DX-10482" readonly class="mt-2 w-full rounded-xl border border-gray-700 bg-[#0D0F12] px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:border-[#FF5500] focus:ring-2 focus:ring-orange-500/20"></label>
+                        <label class="block"><span class="text-sm font-medium text-gray-200">Recipient phone</span><input placeholder="01XXXXXXXXX" class="mt-2 w-full rounded-xl border border-gray-700 bg-[#0D0F12] px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:border-[#FF5500] focus:ring-2 focus:ring-orange-500/20"></label>
+                        <label class="block"><span class="text-sm font-medium text-gray-200">Delivery zone</span><select class="mt-2 w-full rounded-xl border border-gray-700 bg-[#0D0F12] px-4 py-3 text-sm text-white focus:border-[#FF5500] focus:ring-2 focus:ring-orange-500/20"><option>Dhaka North</option><option>Dhaka South</option></select></label>
+                    </div>
+                    <div class="mt-5 flex flex-wrap gap-4 text-xs"><span class="text-gray-400"><b class="text-white">Focus:</b> orange border + subtle ring</span><span class="text-red-300"><b> Error:</b> red border + message below</span><span class="text-gray-500"><b>Disabled:</b> reduce contrast, never remove context</span></div>
+                </div>
+
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7 overflow-hidden">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6"><div><p class="text-xs font-semibold uppercase eyebrow text-[#FF5500]">Tables</p><h3 class="text-xl font-bold text-white mt-2">Optimize for scanning.</h3></div><p class="text-gray-500 text-xs">Right-align numbers. Keep status labels short.</p></div>
+                    <div class="overflow-x-auto rounded-xl border border-gray-800"><table class="w-full min-w-[620px] text-left text-sm"><thead class="bg-[#0D0F12] text-xs uppercase tracking-wider text-gray-500"><tr><th class="px-4 py-3 font-semibold">Parcel</th><th class="px-4 py-3 font-semibold">Destination</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 text-right font-semibold">COD amount</th></tr></thead><tbody class="divide-y divide-gray-800"><tr class="hover:bg-white/[.03]"><td class="px-4 py-4 font-medium text-white">DX-10482</td><td class="px-4 py-4 text-gray-400">Gulshan 2</td><td class="px-4 py-4"><span class="rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-300">Delivered</span></td><td class="px-4 py-4 text-right font-mono text-gray-200">৳ 1,280</td></tr><tr class="hover:bg-white/[.03]"><td class="px-4 py-4 font-medium text-white">DX-10483</td><td class="px-4 py-4 text-gray-400">Mirpur 10</td><td class="px-4 py-4"><span class="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">In transit</span></td><td class="px-4 py-4 text-right font-mono text-gray-200">৳ 860</td></tr></tbody></table></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6"><h3 class="font-bold text-white">Buttons</h3><p class="text-gray-400 text-sm leading-relaxed mt-2">One primary action per region. Use sentence case and verbs: “Create parcel”, “Assign rider”.</p></div>
+                    <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6"><h3 class="font-bold text-white">Status</h3><p class="text-gray-400 text-sm leading-relaxed mt-2">Green means complete, amber means attention or in progress, red means blocked or failed. Always include text.</p></div>
+                    <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6"><h3 class="font-bold text-white">Responsive</h3><p class="text-gray-400 text-sm leading-relaxed mt-2">Stack forms on small screens. Let tables scroll horizontally; never shrink critical data until unreadable.</p></div>
                 </div>
             </div>
         </section>
