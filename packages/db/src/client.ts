@@ -19,6 +19,15 @@ export function getDatabase(): Database {
   return instance
 }
 
+/**
+ * Test seam — install a handle (an in-memory double, say) so services can be
+ * exercised without MySQL. Feature code resolves the handle through
+ * `getDatabase()` rather than receiving it, so this is the only injection point.
+ */
+export function setDatabase(db: Database): void {
+  instance = db
+}
+
 /** Explicitly chosen settings — used by migration scripts. */
 export function createDatabaseWith(config: DatabaseSettings = resolveDatabaseConfig()): Database {
   return createDatabase(config)

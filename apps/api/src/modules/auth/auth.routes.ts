@@ -1,5 +1,4 @@
 import { ERROR_CODES, DomainError, validateJson } from "../../core"
-import { getCache } from "../../shared/cache"
 import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
@@ -21,11 +20,7 @@ router.post(
   ),
   validateJson(staffLoginSchema),
   async (c) => {
-    const result = await authService.loginWithPassword(
-      { db: c.get("db"), cache: getCache() },
-      c.req.valid("json"),
-      "console",
-    )
+    const result = await authService.loginWithPassword(c.req.valid("json"), "console")
     return c.json(result)
   },
 )
@@ -38,11 +33,7 @@ router.post(
   ),
   validateJson(staffLoginSchema),
   async (c) => {
-    const result = await authService.loginWithPassword(
-      { db: c.get("db"), cache: getCache() },
-      c.req.valid("json"),
-      "riders",
-    )
+    const result = await authService.loginWithPassword(c.req.valid("json"), "riders")
     return c.json(result)
   },
 )
@@ -66,11 +57,7 @@ router.post(
       })
     }
 
-    const tokens = await authService.refreshSession(
-      { db: c.get("db"), cache: getCache() },
-      c.req.valid("json").refreshToken,
-      audience,
-    )
+    const tokens = await authService.refreshSession(c.req.valid("json").refreshToken, audience)
     return c.json(tokens)
   },
 )
@@ -83,10 +70,7 @@ router.post(
   ),
   validateJson(otpRequestSchema),
   async (c) => {
-    const result = await authService.requestOtp(
-      { db: c.get("db"), cache: getCache() },
-      c.req.valid("json"),
-    )
+    const result = await authService.requestOtp(c.req.valid("json"))
     // 202: the code is on its way; nothing else about the account is revealed.
     return c.json(result, 202)
   },
@@ -100,10 +84,7 @@ router.post(
   ),
   validateJson(otpVerifySchema),
   async (c) => {
-    const result = await authService.verifyOtp(
-      { db: c.get("db"), cache: getCache() },
-      c.req.valid("json"),
-    )
+    const result = await authService.verifyOtp(c.req.valid("json"))
     return c.json(result)
   },
 )

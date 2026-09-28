@@ -1,3 +1,5 @@
+import { getDatabase } from "@dropx/db"
+
 import { ERROR_CODES, DomainError } from "../../core/errors"
 import type { AuthContext, Audience } from "./auth-context"
 import { loadCustomerActor, loadRiderActor, loadStaffActor } from "./actor-loader"
@@ -16,7 +18,6 @@ import { createMiddleware } from "hono/factory"
  */
 export const attachAuth = createMiddleware<AppEnv>(async (c, next) => {
   const header = c.req.header("Authorization")
-  const db = c.get("db")
 
   if (!header?.startsWith("Bearer ")) {
     c.set("auth", { audience: "console", actor: { kind: "public" }, sessionId: "" })
@@ -30,8 +31,9 @@ export const attachAuth = createMiddleware<AppEnv>(async (c, next) => {
   let actor: AuthContext["actor"]
 
   if (audience === "web") {
-    actor = await loadCustomerActor(db, payload.sub)
+    actor = await loadCustomerActor(getDatabase(), payload.sub)
   } else {
+    const db = getDatabase()
     const staff = await loadStaffActor(db, payload.sub)
     if (staff) {
       actor = staff

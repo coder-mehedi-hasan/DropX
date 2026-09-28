@@ -1,14 +1,13 @@
-import { getDatabase } from "@dropx/db"
-
 import { getConfig } from "../../config"
 import { createLogger, newCorrelationId } from "../../core/logger"
 import type { AppEnv } from "../../types/env"
 import { createMiddleware } from "hono/factory"
 
 /**
- * Per-request context: correlation id, logger, database handle, start time.
+ * Per-request context: correlation id, logger, start time.
  *
- * Must be registered before `attachAuth` — the actor loader needs `db`.
+ * No database handle here on purpose — the pool is process-wide, so putting it
+ * on the context would only spread an identity copy of `getDatabase()`.
  */
 export const requestContext = createMiddleware<AppEnv>(async (c, next) => {
   const requestId = c.req.header("X-Request-Id") ?? newCorrelationId()
@@ -19,7 +18,6 @@ export const requestContext = createMiddleware<AppEnv>(async (c, next) => {
   // Logger first: everything below can throw, and both the `finally` block and
   // `onError` depend on it being present.
   c.set("logger", createLogger(getConfig().logLevel, { requestId }))
-  c.set("db", getDatabase())
 
   c.header("X-Request-Id", requestId)
 

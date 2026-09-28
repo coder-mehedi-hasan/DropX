@@ -1,8 +1,8 @@
 import {
   buildPage,
   canTransitionParcel,
+  getDatabase,
   normalizeListParams,
-  type Database,
   type Id,
   type Page,
 } from "@dropx/db"
@@ -38,15 +38,11 @@ const PARCEL_STATUS_FOR_OUTCOME = {
   RETURNED: "RETURNED",
 } as const
 
-export async function listJobs(
-  db: Database,
-  riderId: Id,
-  query: ListJobsQuery,
-): Promise<Page<Job>> {
+export async function listJobs(riderId: Id, query: ListJobsQuery): Promise<Page<Job>> {
   const params = normalizeListParams({ page: query.page, limit: query.limit })
 
   const { nodes, totalCount } = await listJobsForRider(
-    db,
+    getDatabase(),
     riderId,
     params,
     query.status,
@@ -56,7 +52,8 @@ export async function listJobs(
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getJob(db: Database, riderId: Id, parcelId: Id): Promise<JobDetail> {
+export async function getJob(riderId: Id, parcelId: Id): Promise<JobDetail> {
+  const db = getDatabase()
   const job = await findJobForRider(db, riderId, parcelId)
   if (!job) throw notFound("That job is not assigned to you")
 
@@ -71,14 +68,11 @@ export type ReportOutcomeCommand = {
   input: UpdateJobStatusInput
 }
 
-export async function reportOutcome(
-  db: Database,
-  command: ReportOutcomeCommand,
-): Promise<JobDetail> {
+export async function reportOutcome(command: ReportOutcomeCommand): Promise<JobDetail> {
   const { riderId, parcelId, input } = command
   const nextStatus = PARCEL_STATUS_FOR_OUTCOME[input.status]
 
-  const parcelIdAfter = await db.transaction(async (tx) => {
+  const parcelIdAfter = await getDatabase().transaction(async (tx) => {
     const attempt = await findOpenAttemptForUpdate(tx, riderId, parcelId)
     if (!attempt) {
       throw new DomainError(
@@ -114,5 +108,5 @@ export async function reportOutcome(
     return parcelId
   })
 
-  return getJob(db, riderId, parcelIdAfter)
+  return getJob(riderId, parcelIdAfter)
 }

@@ -1,11 +1,11 @@
-import { randomInt, randomUUID } from "node:crypto"
+import { createHash, randomInt, randomUUID } from "node:crypto"
 
-import { TABLES, toId, type Database, type Id } from "@dropx/db"
+import { TABLES, getDatabase, toId, type Id } from "@dropx/db"
 
 import { ERROR_CODES, DomainError, fromDatabaseError, verifyPassword } from "../../core"
 import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
-import type { Cache } from "../../shared/cache"
+import { getCache } from "../../shared/cache"
 import { emit } from "../../shared/events/bus"
 import type { OtpRequestInput, OtpVerifyInput, StaffLoginInput } from "./auth.dto"
 import { authRepository } from "./auth.repository"
@@ -15,6 +15,10 @@ import { authRepository } from "./auth.repository"
  *
  * All of these are **public** operations — they run before an actor exists — so
  * the transport stays thin and every failure mode gets a deliberate message.
+ *
+ * The database handle and the cache are resolved here rather than passed in, so
+ * a caller only supplies business input. Repositories still take the handle
+ * explicitly, which is what lets a transaction thread through them.
  */
 
 const OTP_TTL_SECONDS = 5 * 60
@@ -22,11 +26,6 @@ const OTP_MAX_ATTEMPTS = 5
 const OTP_RESEND_COOLDOWN_SECONDS = 30
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-export type AuthDeps = {
-  db: Database
-  cache: Cache
-}
 
 export type LoginResult = TokenPair & {
   account: {
@@ -69,6 +68,20 @@ function normalisePhone(identifier: string): string {
   return identifier.replace(/[\s-]/g, "")
 }
 
+/**
+ * Stands in for the phone of an email-only signup, because `customers.phone` is
+ * NOT NULL and unique.
+ *
+ * Deterministic, so two concurrent OTP requests for the same address collide on
+ * `uq_customers_phone` and the loser re-reads the winner instead of creating a
+ * second customer. Hashed rather than concatenated because the raw identifier is
+ * unbounded — a 28-character address overflowed `VARCHAR(30)` and failed the
+ * insert. The prefix cannot collide with a real number: those normalise to digits.
+ */
+function pendingPhone(identifier: string): string {
+  return `pending:${createHash("sha256").update(identifier).digest("hex").slice(0, 16)}`
+}
+
 function splitIdentifier(identifier: string): { phone: string | null; email: string | null } {
   return isEmail(identifier)
     ? { phone: null, email: identifier.toLowerCase() }
@@ -76,11 +89,11 @@ function splitIdentifier(identifier: string): { phone: string | null; email: str
 }
 
 export async function loginWithPassword(
-  deps: AuthDeps,
   input: StaffLoginInput,
   audience: Extract<Audience, "console" | "riders">,
 ): Promise<LoginResult> {
-  const user = await authRepository.findUserByEmail(deps.db, input.email)
+  const db = getDatabase()
+  const user = await authRepository.findUserByEmail(db, input.email)
 
   // Verify even when the user is missing so the response time does not reveal
   // which emails exist.
@@ -102,7 +115,7 @@ export async function loginWithPassword(
   }
 
   if (audience === "riders") {
-    const rider = await authRepository.findRiderByUserId(deps.db, toId(user.id))
+    const rider = await authRepository.findRiderByUserId(db, toId(user.id))
     if (!rider) {
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This account is not a rider")
     }
@@ -111,7 +124,7 @@ export async function loginWithPassword(
   const sessionId = randomUUID()
   const tokens = await issueTokenPair({ subject: user.id, audience, sessionId })
 
-  await authRepository.touchLastLogin(deps.db, toId(user.id))
+  await authRepository.touchLastLogin(db, toId(user.id))
 
   return {
     ...tokens,
@@ -125,21 +138,18 @@ export async function loginWithPassword(
   }
 }
 
-export async function refreshSession(
-  deps: AuthDeps,
-  refreshToken: string,
-  audience: Audience,
-): Promise<TokenPair> {
+export async function refreshSession(refreshToken: string, audience: Audience): Promise<TokenPair> {
+  const db = getDatabase()
   const payload = await verifyToken(refreshToken, "refresh", audience)
 
   // The subject must still be an active account before a new access token is minted.
   if (audience === "web") {
-    const customer = await authRepository.findCustomerById(deps.db, toId(payload.sub))
+    const customer = await authRepository.findCustomerById(db, toId(payload.sub))
     if (!customer) {
       throw new DomainError(ERROR_CODES.TOKEN_INVALID, "This account no longer exists")
     }
   } else {
-    const user = await deps.db.queryOne<{ id: string; status: string }>(
+    const user = await db.queryOne<{ id: string; status: string }>(
       `SELECT id, status FROM ${TABLES.users} WHERE id = ? LIMIT 1`,
       [payload.sub],
     )
@@ -160,15 +170,14 @@ export type OtpRequestResult = {
   isNewCustomer: boolean
 }
 
-export async function requestOtp(
-  deps: AuthDeps,
-  input: OtpRequestInput,
-): Promise<OtpRequestResult> {
+export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResult> {
+  const db = getDatabase()
+  const cache = getCache()
   const identifier = isEmail(input.identifier)
     ? input.identifier.toLowerCase()
     : normalisePhone(input.identifier)
 
-  const cooldown = await deps.cache.ttl(otpResendKey(identifier))
+  const cooldown = await cache.ttl(otpResendKey(identifier))
   if (cooldown !== null && cooldown > 0) {
     throw new DomainError(
       ERROR_CODES.RATE_LIMITED,
@@ -176,33 +185,36 @@ export async function requestOtp(
     )
   }
 
-  let customer = await authRepository.findCustomerByIdentifier(deps.db, identifier)
+  let customer = await authRepository.findCustomerByIdentifier(db, identifier)
   const isNewCustomer = customer === null
 
   if (!customer) {
     // Placeholder name — the customer supplies it after verifying.
     const { phone, email } = splitIdentifier(identifier)
     try {
-      customer = await authRepository.createTempCustomer(deps.db, {
+      customer = await authRepository.createTempCustomer(db, {
         name: "New customer",
-        phone: phone ?? `pending:${identifier}`,
+        phone: phone ?? pendingPhone(identifier),
         email,
       })
     } catch (error) {
       // Lost a race with a concurrent request: re-read and continue.
       const domainError = fromDatabaseError(error, "This phone number or email")
-      const existing = await authRepository.findCustomerByIdentifier(deps.db, identifier)
+      const existing = await authRepository.findCustomerByIdentifier(db, identifier)
       if (!existing) throw domainError
       customer = existing
     }
   }
 
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0")
-  await deps.cache.set(otpKey(identifier), code, OTP_TTL_SECONDS)
-  await deps.cache.set(otpAttemptsKey(identifier), "0", OTP_TTL_SECONDS)
-  await deps.cache.set(otpResendKey(identifier), "1", OTP_RESEND_COOLDOWN_SECONDS)
+  await cache.set(otpKey(identifier), code, OTP_TTL_SECONDS)
+  await cache.set(otpAttemptsKey(identifier), "0", OTP_TTL_SECONDS)
+  await cache.set(otpResendKey(identifier), "1", OTP_RESEND_COOLDOWN_SECONDS)
 
-  const channel: "SMS" | "EMAIL" = customer.email && !isEmail(identifier) ? "EMAIL" : "SMS"
+  // An email identifier can only go by email, and a customer who has an address
+  // on file gets that rather than an SMS — the placeholder phone is not a
+  // deliverable destination for anyone.
+  const channel: "SMS" | "EMAIL" = customer.email ? "EMAIL" : "SMS"
   const destination = channel === "EMAIL" ? customer.email! : customer.phone
 
   // A real deployment hands `code` to the SMS/email provider here. The code
@@ -217,26 +229,25 @@ export async function requestOtp(
   }
 }
 
-export async function verifyOtp(
-  deps: AuthDeps,
-  input: OtpVerifyInput,
-): Promise<CustomerSessionResult> {
+export async function verifyOtp(input: OtpVerifyInput): Promise<CustomerSessionResult> {
+  const db = getDatabase()
+  const cache = getCache()
   const identifier = isEmail(input.identifier)
     ? input.identifier.toLowerCase()
     : normalisePhone(input.identifier)
 
   const key = otpKey(identifier)
-  const stored = await deps.cache.get(key)
+  const stored = await cache.get(key)
 
   if (!stored) {
     throw new DomainError(ERROR_CODES.OTP_EXPIRED, "That code has expired. Request a new one.")
   }
 
-  const attempts = Number((await deps.cache.get(otpAttemptsKey(identifier))) ?? "0") + 1
-  await deps.cache.set(otpAttemptsKey(identifier), String(attempts), OTP_TTL_SECONDS)
+  const attempts = Number((await cache.get(otpAttemptsKey(identifier))) ?? "0") + 1
+  await cache.set(otpAttemptsKey(identifier), String(attempts), OTP_TTL_SECONDS)
 
   if (attempts > OTP_MAX_ATTEMPTS) {
-    await deps.cache.delete(key)
+    await cache.delete(key)
     throw new DomainError(ERROR_CODES.RATE_LIMITED, "Too many attempts. Request a new code.")
   }
 
@@ -244,19 +255,17 @@ export async function verifyOtp(
     throw new DomainError(ERROR_CODES.OTP_INVALID, "That code is not correct")
   }
 
-  await deps.cache.delete(key)
-  await deps.cache.delete(otpAttemptsKey(identifier))
+  await cache.delete(key)
+  await cache.delete(otpAttemptsKey(identifier))
 
-  const customer = await authRepository.findCustomerByIdentifier(deps.db, identifier)
+  const customer = await authRepository.findCustomerByIdentifier(db, identifier)
   if (!customer) {
     throw new DomainError(ERROR_CODES.OTP_INVALID, "That code is not correct")
   }
 
   const customerId = toId(customer.id)
   const activated =
-    customer.status === "ACTIVE"
-      ? customer
-      : await authRepository.activateCustomer(deps.db, customerId)
+    customer.status === "ACTIVE" ? customer : await authRepository.activateCustomer(db, customerId)
 
   if (activated.status !== "ACTIVE") {
     throw new DomainError(ERROR_CODES.CUSTOMER_NOT_ACTIVE, "Your account is not active yet")
@@ -283,12 +292,8 @@ export async function verifyOtp(
   }
 }
 
-export async function updateCustomerName(
-  deps: AuthDeps,
-  customerId: Id,
-  name: string,
-): Promise<{ name: string }> {
-  await authRepository.upsertCustomerName(deps.db, customerId, name)
+export async function updateCustomerName(customerId: Id, name: string): Promise<{ name: string }> {
+  await authRepository.upsertCustomerName(getDatabase(), customerId, name)
   return { name }
 }
 
