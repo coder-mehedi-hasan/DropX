@@ -14,7 +14,8 @@
     "bootstrap-admin": "TZ=UTC bun --env-file=../../.env run ./scripts/bootstrap-admin.ts",
     "smoke": "TZ=UTC API_LOG_LEVEL=silent DATABASE_URL=mysql://smoke:smoke@127.0.0.1:3306/dropx_smoke bun run ./scripts/smoke.ts",
     "check:read-paths": "TZ=UTC API_LOG_LEVEL=silent bun --env-file=../../.env run ./scripts/check-read-paths.ts",
-    "migrate": "bun run --cwd ../../packages/db migrate"
+    "migrate": "bun run --cwd ../../packages/db migrate",
+    "worker": "TZ=UTC bun --env-file=../../.env run ./worker.ts"
   },
   "dependencies": {
     "@dropx/db": "workspace:*",
@@ -24,6 +25,7 @@
     "hono": "^4.13.9",
     "mjml": "^5.4.1",
     "nodemailer": "^10.0.12",
+    "redis": "^6.2.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

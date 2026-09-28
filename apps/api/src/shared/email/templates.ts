@@ -6,8 +6,9 @@ import mjml2html from "mjml"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const templatesDir = join(__dirname, "templates")
+const brandDir = join(templatesDir, "brand")
 
-type TemplateName = "otp-code"
+export type TemplateName = "otp-code"
 
 type TemplateContext = {
   code: string
@@ -15,13 +16,22 @@ type TemplateContext = {
 
 const cache = new Map<string, string>()
 
-async function loadTemplate(name: TemplateName): Promise<string> {
-  const cached = cache.get(name)
+async function loadFile(path: string): Promise<string> {
+  const cached = cache.get(path)
   if (cached) return cached
-
-  const source = await readFile(join(templatesDir, `${name}.mjml`), "utf8")
-  cache.set(name, source)
+  const source = await readFile(path, "utf8")
+  cache.set(path, source)
   return source
+}
+
+async function loadTemplate(name: TemplateName): Promise<string> {
+  return loadFile(join(templatesDir, `${name}.mjml`))
+}
+
+/** Reads an SVG from disk and returns it as an inline data URI. */
+async function svgDataUri(path: string): Promise<string> {
+  const source = await loadFile(path)
+  return `data:image/svg+xml;utf8,${encodeURIComponent(source)}`
 }
 
 export type RenderedEmail = {
@@ -29,12 +39,15 @@ export type RenderedEmail = {
   text: string
 }
 
-export async function renderEmail(
-  template: TemplateName,
-  context: TemplateContext,
-): Promise<RenderedEmail> {
-  const source = await loadTemplate(template)
-  const html = source.replace(/\{\{code\}\}/g, context.code)
+export async function renderEmail(template: TemplateName, context: TemplateContext): Promise<RenderedEmail> {
+  const [source, brandMark] = await Promise.all([
+    loadTemplate(template),
+    svgDataUri(join(brandDir, "dropx-mark.svg")),
+  ])
+
+  const html = source
+    .replace(/\{\{code\}\}/g, context.code)
+    .replace(/\{\{brandMark\}\}/g, brandMark)
   const { html: rendered } = await mjml2html(html)
   return {
     html: rendered,

@@ -1,4 +1,5 @@
 import "./memory"
+import "./redis"
 
 import { getConfig } from "../../config"
 import { createCache, type Cache } from "./port"

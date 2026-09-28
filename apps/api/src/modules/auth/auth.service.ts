@@ -5,8 +5,7 @@ import { TABLES, getDatabase, toId, type Id } from "@dropx/db"
 import { ERROR_CODES, DomainError, fromDatabaseError, verifyPassword } from "../../core"
 import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
-import { getEmail } from "../../shared/email"
-import { otpEmail } from "../../shared/email/templates"
+import { pushEmailJob } from "../../shared/email/queue"
 import { getCache } from "../../shared/cache"
 import { emit } from "../../shared/events/bus"
 import type { OtpRequestInput, OtpVerifyInput, StaffLoginInput } from "./auth.dto"
@@ -311,8 +310,8 @@ export async function updateCustomerName(customerId: Id, name: string): Promise<
  * for now the code is only written to the cache.
  *
  * Email is rendered through MJML so the markup stays responsive across
- * clients without hand-writing HTML. The transport is Nodemailer with SMTP
- * configured via `MAIL_*` env vars; when no host is set the mail is dropped.
+ * clients without hand-writing HTML. The job is pushed to a Redis queue and
+ * drained by a background worker; the request handler never waits on SMTP.
  *
  * Fire-and-forget: the code is already in the cache by the time this runs, so
  * a provider outage must not roll back an OTP that the customer can still
@@ -329,15 +328,13 @@ async function sendOtpCode(
   }
 
   try {
-    const { html, text } = await otpEmail(code)
-    const email = getEmail()
-    await email.send({
+    await pushEmailJob({
       to: destination,
+      template: "otp-code",
+      context: { code },
       subject: "Your DropX verification code",
-      html,
-      text,
     })
   } catch (error) {
-    console.error(`[otp/email] failed to deliver to ${destination}`, error)
+    console.error(`[otp/email] failed to queue job for ${destination}`, error)
   }
 }
