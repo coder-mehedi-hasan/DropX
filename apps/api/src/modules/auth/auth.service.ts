@@ -228,7 +228,7 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
 
   // A real deployment hands `code` to the SMS/email provider here. The code
   // itself is only ever written to the cache, never to MySQL.
-  await sendOtpCode(channel, destination, code)
+  sendOtpCode(channel, destination, code)
 
   return {
     channel,
@@ -313,6 +313,10 @@ export async function updateCustomerName(customerId: Id, name: string): Promise<
  * Email is rendered through MJML so the markup stays responsive across
  * clients without hand-writing HTML. The transport is Nodemailer with SMTP
  * configured via `MAIL_*` env vars; when no host is set the mail is dropped.
+ *
+ * Fire-and-forget: the code is already in the cache by the time this runs, so
+ * a provider outage must not roll back an OTP that the customer can still
+ * verify. Failures are logged and swallowed, matching the events bus.
  */
 async function sendOtpCode(
   channel: "SMS" | "EMAIL",
@@ -324,12 +328,16 @@ async function sendOtpCode(
     return
   }
 
-  const { html, text } = await otpEmail(code)
-  const email = getEmail()
-  await email.send({
-    to: destination,
-    subject: "Your DropX verification code",
-    html,
-    text,
-  })
+  try {
+    const { html, text } = await otpEmail(code)
+    const email = getEmail()
+    await email.send({
+      to: destination,
+      subject: "Your DropX verification code",
+      html,
+      text,
+    })
+  } catch (error) {
+    console.error(`[otp/email] failed to deliver to ${destination}`, error)
+  }
 }

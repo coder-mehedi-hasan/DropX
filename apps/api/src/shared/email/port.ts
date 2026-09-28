@@ -46,10 +46,14 @@ class SmtpEmail implements Email {
   private async getTransporter() {
     if (this.transporter) return this.transporter
     const nodemailer = await import("nodemailer")
+
     this.transporter = nodemailer.createTransport({
       host: this.config.host,
-      port: this.config.port,
-      secure: this.config.secure,
+      port: this.config.port ?? (this.config.secure ? 465 : 587),
+      secure: this.config.secure ?? false,
+      // Explicit SNI — some networks (Aiven, cloud egress) need the hostname
+      // passed explicitly or the cert validation fails with "no DNS name".
+      tls: { servername: this.config.host },
       auth: {
         user: this.config.user,
         pass: this.config.password,
