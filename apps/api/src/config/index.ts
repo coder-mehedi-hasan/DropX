@@ -1,1 +1,1 @@
-export { getConfig, configFrom, type AppConfig } from "./env";
+export { getConfig, configFrom, type AppConfig } from "./env"

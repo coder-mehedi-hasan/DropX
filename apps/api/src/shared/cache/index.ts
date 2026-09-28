@@ -1,9 +1,9 @@
-import "./memory";
+import "./memory"
 
-import { getConfig } from "../../config";
-import { createCache, type Cache } from "./port";
+import { getConfig } from "../../config"
+import { createCache, type Cache } from "./port"
 
-let instance: Cache | undefined;
+let instance: Cache | undefined
 
 /**
  * Process-wide cache handle.
@@ -12,15 +12,15 @@ let instance: Cache | undefined;
  * registered Redis driver before running more than one API process.
  */
 export function getCache(): Cache {
-  if (instance) return instance;
-  const driver = process.env.CACHE_DRIVER ?? "memory";
-  instance = createCache(driver, getConfig().redis.url);
-  return instance;
+  if (instance) return instance
+  const driver = process.env.CACHE_DRIVER ?? "memory"
+  instance = createCache(driver, getConfig().redis.url)
+  return instance
 }
 
 /** Test seam. */
 export function setCache(cache: Cache): void {
-  instance = cache;
+  instance = cache
 }
 
-export { createCache, registerCacheDriver, type Cache } from "./port";
+export { createCache, registerCacheDriver, type Cache } from "./port"

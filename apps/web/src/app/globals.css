@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "@dropx/ui/styles.css";
+
+/**
+ * The shared package lives outside this app's source tree, so Tailwind's
+ * automatic source detection (which skips `node_modules`, where the workspace
+ * link resolves) would purge every class `@dropx/ui` renders. Pointing `@source`
+ * at the package keeps the primitives styled without duplicating a content
+ * array the CSS-first setup does not have.
+ */
+@source "../../../../packages/ui/src";

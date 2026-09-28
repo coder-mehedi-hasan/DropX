@@ -1,12 +1,12 @@
-import { DatabaseError, type DatabaseErrorCode } from "../../port/errors";
+import { DatabaseError, type DatabaseErrorCode } from "../../port/errors"
 
 type MysqlError = {
-  code?: string;
-  errno?: number;
-  sqlState?: string;
-  sqlMessage?: string;
-  message?: string;
-};
+  code?: string
+  errno?: number
+  sqlState?: string
+  sqlMessage?: string
+  message?: string
+}
 
 const ERROR_CODES: Readonly<Record<string, DatabaseErrorCode>> = {
   ER_DUP_ENTRY: "UNIQUE_VIOLATION",
@@ -26,7 +26,7 @@ const ERROR_CODES: Readonly<Record<string, DatabaseErrorCode>> = {
   ECONNRESET: "CONNECTION_FAILED",
   ETIMEDOUT: "TIMEOUT",
   ER_CON_COUNT_ERROR: "CONNECTION_FAILED",
-};
+}
 
 const MYSQL_ERRNOS: Readonly<Record<number, DatabaseErrorCode>> = {
   1062: "UNIQUE_VIOLATION",
@@ -36,14 +36,14 @@ const MYSQL_ERRNOS: Readonly<Record<number, DatabaseErrorCode>> = {
   1205: "TRANSACTION_ABORTED",
   1040: "CONNECTION_FAILED",
   1203: "CONNECTION_FAILED",
-};
+}
 
-const CONNECTION_CODES = new Set(["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ENOTFOUND"]);
+const CONNECTION_CODES = new Set(["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ENOTFOUND"])
 
 export function isConnectionError(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
-  const { code } = error as MysqlError;
-  return typeof code === "string" && CONNECTION_CODES.has(code);
+  if (typeof error !== "object" || error === null) return false
+  const { code } = error as MysqlError
+  return typeof code === "string" && CONNECTION_CODES.has(code)
 }
 
 /**
@@ -54,14 +54,14 @@ export function isConnectionError(error: unknown): boolean {
  * `message` internals to a client.
  */
 export function toDatabaseError(error: unknown, sql?: string): DatabaseError {
-  if (error instanceof DatabaseError) return error;
+  if (error instanceof DatabaseError) return error
 
-  const driver = (typeof error === "object" && error !== null ? error : {}) as MysqlError;
-  const byCode = driver.code ? ERROR_CODES[driver.code] : undefined;
-  const byErrno = driver.errno ? MYSQL_ERRNOS[driver.errno] : undefined;
-  const code: DatabaseErrorCode = byCode ?? byErrno ?? "QUERY_FAILED";
+  const driver = (typeof error === "object" && error !== null ? error : {}) as MysqlError
+  const byCode = driver.code ? ERROR_CODES[driver.code] : undefined
+  const byErrno = driver.errno ? MYSQL_ERRNOS[driver.errno] : undefined
+  const code: DatabaseErrorCode = byCode ?? byErrno ?? "QUERY_FAILED"
 
-  const detail = driver.sqlMessage ?? driver.message ?? "Database query failed";
+  const detail = driver.sqlMessage ?? driver.message ?? "Database query failed"
 
-  return new DatabaseError(code, detail, { cause: error, sql });
+  return new DatabaseError(code, detail, { cause: error, sql })
 }

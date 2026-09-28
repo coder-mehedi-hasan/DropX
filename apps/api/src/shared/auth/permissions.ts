@@ -64,23 +64,23 @@ export const PERMISSIONS = {
   RIDER_JOBS_UPDATE: "rider.jobs.update",
   RIDER_LOCATION_UPDATE: "rider.location.update",
   RIDER_PROOF_SUBMIT: "rider.proof.submit",
-} as const;
+} as const
 
-export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
 
-export const ALL_PERMISSION_KEYS: PermissionKey[] = Object.values(PERMISSIONS);
+export const ALL_PERMISSION_KEYS: PermissionKey[] = Object.values(PERMISSIONS)
 
 /** Groups used by the seeder to build default role grants. */
 export const CONSOLE_PERMISSION_KEYS = ALL_PERMISSION_KEYS.filter(
   (key) => !key.startsWith("rider."),
-);
+)
 
 export const RIDER_PERMISSION_KEYS: PermissionKey[] = [
   PERMISSIONS.RIDER_JOBS_VIEW,
   PERMISSIONS.RIDER_JOBS_UPDATE,
   PERMISSIONS.RIDER_LOCATION_UPDATE,
   PERMISSIONS.RIDER_PROOF_SUBMIT,
-];
+]
 
 /**
  * Default grants per role, matching `docs/rbac.md`.
@@ -165,8 +165,8 @@ export const DEFAULT_ROLE_GRANTS: Readonly<Record<string, PermissionKey[]>> = {
   ],
 
   RIDER: RIDER_PERMISSION_KEYS,
-};
+}
 
 export function hasPermission(granted: ReadonlySet<string>, required: string): boolean {
-  return granted.has(required);
+  return granted.has(required)
 }

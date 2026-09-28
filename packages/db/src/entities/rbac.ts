@@ -1,5 +1,5 @@
-import type { Id } from "../port/database";
-import type { EntityBase, Nullable, Timestamped } from "./base";
+import type { Id } from "../port/database"
+import type { EntityBase, Nullable, Timestamped } from "./base"
 
 /**
  * RBAC.
@@ -9,10 +9,11 @@ import type { EntityBase, Nullable, Timestamped } from "./base";
  * role was granted; there is deliberately no `permissions` catalog table.
  */
 
-export type Role = EntityBase & Timestamped & {
-  name: RoleName | (string & {});
-  description: Nullable<string>;
-};
+export type Role = EntityBase &
+  Timestamped & {
+    name: RoleName | (string & {})
+    description: Nullable<string>
+  }
 
 /** Seeded role names. Stored as plain strings so extra roles can be added. */
 export const ROLE_NAMES = [
@@ -23,42 +24,43 @@ export const ROLE_NAMES = [
   "SUPPORT",
   "FINANCE",
   "RIDER",
-] as const;
+] as const
 
-export type KnownRoleName = (typeof ROLE_NAMES)[number];
-export type RoleName = KnownRoleName;
+export type KnownRoleName = (typeof ROLE_NAMES)[number]
+export type RoleName = KnownRoleName
 
-export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED"
 
 /** Staff and riders both authenticate against this table. */
-export type User = EntityBase & Timestamped & {
-  branchId: Nullable<Id>;
-  name: string;
-  email: string;
-  phone: Nullable<string>;
-  passwordHash: string;
-  status: UserStatus;
-};
+export type User = EntityBase &
+  Timestamped & {
+    branchId: Nullable<Id>
+    name: string
+    email: string
+    phone: Nullable<string>
+    passwordHash: string
+    status: UserStatus
+  }
 
 export type UserRole = {
-  userId: Id;
-  roleId: Id;
-};
+  userId: Id
+  roleId: Id
+}
 
 export type RolePermission = {
-  roleId: Id;
-  permissionKey: string;
-};
+  roleId: Id
+  permissionKey: string
+}
 
 /** Hub scoping for staff who are not branch-wide (e.g. `HUB_OPERATOR`). */
 export type UserHub = {
-  userId: Id;
-  hubId: Id;
-};
+  userId: Id
+  hubId: Id
+}
 
 export type UserWithRoles = User & {
-  roles: Role[];
-  permissions: string[];
+  roles: Role[]
+  permissions: string[]
   /** Populated from `user_hubs` for hub-scoped staff. */
-  hubIds: Id[];
-};
+  hubIds: Id[]
+}

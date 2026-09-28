@@ -1,4 +1,4 @@
-import type { Id } from "../port/database";
+import type { Id } from "../port/database"
 
 /**
  * Shared domain models.
@@ -10,20 +10,20 @@ import type { Id } from "../port/database";
  */
 
 export type EntityBase = {
-  id: Id;
-};
+  id: Id
+}
 
 export type CreatedAt = {
-  createdAt: Date;
-};
+  createdAt: Date
+}
 
 export type UpdatedAt = {
-  updatedAt: Date;
-};
+  updatedAt: Date
+}
 
-export type Timestamped = CreatedAt & UpdatedAt;
+export type Timestamped = CreatedAt & UpdatedAt
 
-export type Nullable<T> = T | null;
+export type Nullable<T> = T | null
 
 /** Discriminator written to `audit_logs.entity_type`. */
 export const ENTITY_NAMES = [
@@ -50,6 +50,6 @@ export const ENTITY_NAMES = [
   "settlement",
   "notification",
   "support_ticket",
-] as const;
+] as const
 
-export type EntityName = (typeof ENTITY_NAMES)[number];
+export type EntityName = (typeof ENTITY_NAMES)[number]

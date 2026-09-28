@@ -47,12 +47,14 @@ export const ERROR_CODES = {
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
   DATABASE_ERROR: "DATABASE_ERROR",
   NOT_IMPLEMENTED: "NOT_IMPLEMENTED",
-} as const;
+} as const
 
-export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES]
 
 /** Default HTTP status per code, so handlers never repeat the mapping. */
-export const ERROR_STATUS: Readonly<Record<ErrorCode, 400 | 401 | 403 | 404 | 409 | 415 | 422 | 429 | 500 | 501 | 503>> = {
+export const ERROR_STATUS: Readonly<
+  Record<ErrorCode, 400 | 401 | 403 | 404 | 409 | 415 | 422 | 429 | 500 | 501 | 503>
+> = {
   VALIDATION_FAILED: 422,
   MALFORMED_REQUEST: 400,
   UNSUPPORTED_MEDIA_TYPE: 415,
@@ -87,4 +89,4 @@ export const ERROR_STATUS: Readonly<Record<ErrorCode, 400 | 401 | 403 | 404 | 40
   SERVICE_UNAVAILABLE: 503,
   DATABASE_ERROR: 500,
   NOT_IMPLEMENTED: 501,
-};
+}

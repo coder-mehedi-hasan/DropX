@@ -1,4 +1,4 @@
-import type { Id } from "@dropx/db";
+import type { Id } from "@dropx/db"
 
 /**
  * In-process domain events.
@@ -11,36 +11,36 @@ import type { Id } from "@dropx/db";
  */
 
 export type DomainEventMap = {
-  "parcel.created": { parcelId: Id; trackingNumber: string; customerId: Id };
+  "parcel.created": { parcelId: Id; trackingNumber: string; customerId: Id }
   "parcel.status_changed": {
-    parcelId: Id;
-    trackingNumber: string;
-    from: string;
-    to: string;
-  };
-  "parcel.picked_up": { parcelId: Id; trackingNumber: string; riderId: Id };
-  "parcel.delivered": { parcelId: Id; trackingNumber: string; deliveryId: Id };
-  "parcel.failed": { parcelId: Id; trackingNumber: string; reason: string };
-  "pickup.assigned": { pickupId: Id; riderId: Id };
-  "delivery.assigned": { deliveryId: Id; riderId: Id; attemptNo: number };
-  "customer.activated": { customerId: Id };
-};
+    parcelId: Id
+    trackingNumber: string
+    from: string
+    to: string
+  }
+  "parcel.picked_up": { parcelId: Id; trackingNumber: string; riderId: Id }
+  "parcel.delivered": { parcelId: Id; trackingNumber: string; deliveryId: Id }
+  "parcel.failed": { parcelId: Id; trackingNumber: string; reason: string }
+  "pickup.assigned": { pickupId: Id; riderId: Id }
+  "delivery.assigned": { deliveryId: Id; riderId: Id; attemptNo: number }
+  "customer.activated": { customerId: Id }
+}
 
-export type DomainEventName = keyof DomainEventMap;
+export type DomainEventName = keyof DomainEventMap
 
 export type DomainEventHandler<K extends DomainEventName> = (
   payload: DomainEventMap[K],
-) => void | Promise<void>;
+) => void | Promise<void>
 
-const handlers = new Map<DomainEventName, Set<DomainEventHandler<never>>>();
+const handlers = new Map<DomainEventName, Set<DomainEventHandler<never>>>()
 
 export function on<K extends DomainEventName>(event: K, handler: DomainEventHandler<K>): void {
-  let bucket = handlers.get(event);
+  let bucket = handlers.get(event)
   if (!bucket) {
-    bucket = new Set();
-    handlers.set(event, bucket);
+    bucket = new Set()
+    handlers.set(event, bucket)
   }
-  bucket.add(handler as DomainEventHandler<never>);
+  bucket.add(handler as DomainEventHandler<never>)
 }
 
 /**
@@ -48,24 +48,24 @@ export function on<K extends DomainEventName>(event: K, handler: DomainEventHand
  * caller has already committed its write.
  */
 export function emit<K extends DomainEventName>(event: K, payload: DomainEventMap[K]): void {
-  const bucket = handlers.get(event);
-  if (!bucket) return;
+  const bucket = handlers.get(event)
+  if (!bucket) return
 
   for (const handler of bucket) {
     try {
-      const result = (handler as DomainEventHandler<K>)(payload);
+      const result = (handler as DomainEventHandler<K>)(payload)
       if (result instanceof Promise) {
         result.catch((error: unknown) => {
-          console.error(`[events] handler for "${event}" failed`, error);
-        });
+          console.error(`[events] handler for "${event}" failed`, error)
+        })
       }
     } catch (error) {
-      console.error(`[events] handler for "${event}" threw`, error);
+      console.error(`[events] handler for "${event}" threw`, error)
     }
   }
 }
 
 /** Test seam. */
 export function clearEventHandlers(): void {
-  handlers.clear();
+  handlers.clear()
 }

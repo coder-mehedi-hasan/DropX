@@ -1,5 +1,12 @@
-import { buildPage, normalizeListParams, type Executor, type ListParams, type Page, type QueryBuilder } from "@dropx/db";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
+import {
+  buildPage,
+  normalizeListParams,
+  type Executor,
+  type ListParams,
+  type Page,
+  type QueryBuilder,
+} from "@dropx/db"
+import type { ContentfulStatusCode } from "hono/utils/http-status"
 
 /**
  * One list contract for the whole API.
@@ -9,15 +16,15 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
  */
 
 export type ListQueryInput = {
-  page?: string | undefined;
-  limit?: string | undefined;
-  sortBy?: string | undefined;
-  sort?: string | undefined;
-  search?: string | undefined;
-};
+  page?: string | undefined
+  limit?: string | undefined
+  sortBy?: string | undefined
+  sort?: string | undefined
+  search?: string | undefined
+}
 
 export function parseListQuery(input: ListQueryInput): ListParams {
-  return normalizeListParams(input);
+  return normalizeListParams(input)
 }
 
 /**
@@ -32,17 +39,17 @@ export async function runPaginated<T>(
   builder: QueryBuilder,
   params: ListParams,
 ): Promise<Page<T>> {
-  const countQuery = builder.buildCount();
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build();
+  const countQuery = builder.buildCount()
+  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
 
   const [count, rows] = await Promise.all([
     db.count(countQuery.sql, countQuery.params),
     db.query<T>(pageQuery.sql, pageQuery.params),
-  ]);
+  ])
 
-  return buildPage(rows.rows, count, params);
+  return buildPage(rows.rows, count, params)
 }
 
 export function okPage<T>(page: Page<T>, status: ContentfulStatusCode = 200): Response {
-  return Response.json(page, { status });
+  return Response.json(page, { status })
 }

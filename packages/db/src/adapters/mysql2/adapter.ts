@@ -4,7 +4,7 @@ import mysql, {
   type PoolOptions,
   type ResultSetHeader,
   type RowDataPacket,
-} from "mysql2/promise";
+} from "mysql2/promise"
 
 import type {
   Database,
@@ -15,10 +15,10 @@ import type {
   SqlParams,
   Transaction,
   TransactionOptions,
-} from "../../port/database";
-import { DatabaseError } from "../../port/errors";
-import { toDatabaseError } from "./errors";
-import { parseMySqlUrl, type MySqlConnectionConfig } from "./parse-url";
+} from "../../port/database"
+import { DatabaseError } from "../../port/errors"
+import { toDatabaseError } from "./errors"
+import { parseMySqlUrl, type MySqlConnectionConfig } from "./parse-url"
 
 /**
  * mysql2 implementation of the `Database` port.
@@ -27,21 +27,21 @@ import { parseMySqlUrl, type MySqlConnectionConfig } from "./parse-url";
  * Placeholders are already `?` for this driver — `toNativeSql` is the seam a
  * Postgres adapter would use to rewrite them to `$1..$n`.
  */
-const DIALECT: Dialect = "mysql";
+const DIALECT: Dialect = "mysql"
 
 /** Raw driver result: a row set for SELECT, a header for writes. */
-type RawResult = ResultSetHeader | RowDataPacket[];
+type RawResult = ResultSetHeader | RowDataPacket[]
 
-type QueryRunner = (sql: string, values: unknown[]) => Promise<RawResult>;
+type QueryRunner = (sql: string, values: unknown[]) => Promise<RawResult>
 
 function toNativeSql(sql: string): string {
-  return sql;
+  return sql
 }
 
 function normalizeParams(params: SqlParams | undefined): unknown[] {
-  if (!params) return [];
+  if (!params) return []
   // `undefined` is not bindable; repositories omit such columns instead.
-  return params.map((value) => (value === undefined ? null : value));
+  return params.map((value) => (value === undefined ? null : value))
 }
 
 function buildPoolOptions(
@@ -68,23 +68,23 @@ function buildPoolOptions(
     timezone: "Z",
     multipleStatements: false,
     namedPlaceholders: false,
-  };
+  }
 }
 
 function normalizeInsertId(value: number | bigint | string | null | undefined): Id | null {
-  if (value === null || value === undefined || value === 0) return null;
-  return String(value);
+  if (value === null || value === undefined || value === 0) return null
+  return String(value)
 }
 
 function toQueryResult<T>(result: RawResult): QueryResult<T> {
   if (Array.isArray(result)) {
-    return { rows: result as T[], affectedRows: result.length, insertId: null };
+    return { rows: result as T[], affectedRows: result.length, insertId: null }
   }
   return {
     rows: [],
     affectedRows: result.affectedRows ?? 0,
     insertId: normalizeInsertId(result.insertId),
-  };
+  }
 }
 
 /** Shared query implementation over a pool or a checked-out connection. */
@@ -97,58 +97,61 @@ function createExecutor(run: QueryRunner, dialect: Dialect) {
       params?: SqlParams,
     ): Promise<QueryResult<T>> {
       try {
-        const result = await run(toNativeSql(sql), normalizeParams(params));
-        return toQueryResult<T>(result);
+        const result = await run(toNativeSql(sql), normalizeParams(params))
+        return toQueryResult<T>(result)
       } catch (error) {
-        throw toDatabaseError(error, sql);
+        throw toDatabaseError(error, sql)
       }
     },
 
-    async queryOne<T = Record<string, unknown>>(sql: string, params?: SqlParams): Promise<T | null> {
-      const { rows } = await this.query<T>(sql, params);
-      return rows[0] ?? null;
+    async queryOne<T = Record<string, unknown>>(
+      sql: string,
+      params?: SqlParams,
+    ): Promise<T | null> {
+      const { rows } = await this.query<T>(sql, params)
+      return rows[0] ?? null
     },
 
     async execute(sql: string, params?: SqlParams): Promise<QueryResult<never>> {
-      return this.query<never>(sql, params);
+      return this.query<never>(sql, params)
     },
 
     async count(sql: string, params?: SqlParams): Promise<number> {
-      const row = await this.queryOne<Record<string, unknown>>(sql, params);
-      if (!row) return 0;
-      const first = Object.values(row)[0];
-      const parsed = typeof first === "number" ? first : Number(first);
-      return Number.isFinite(parsed) ? parsed : 0;
+      const row = await this.queryOne<Record<string, unknown>>(sql, params)
+      if (!row) return 0
+      const first = Object.values(row)[0]
+      const parsed = typeof first === "number" ? first : Number(first)
+      return Number.isFinite(parsed) ? parsed : 0
     },
-  };
+  }
 }
 
 function poolRunner(pool: Pool): QueryRunner {
   return async (sql, values) => {
-    const [result] = await pool.query(sql, values);
-    return result as RawResult;
-  };
+    const [result] = await pool.query(sql, values)
+    return result as RawResult
+  }
 }
 
 function connectionRunner(connection: PoolConnection): QueryRunner {
   return async (sql, values) => {
-    const [result] = await connection.query(sql, values);
-    return result as RawResult;
-  };
+    const [result] = await connection.query(sql, values)
+    return result as RawResult
+  }
 }
 
 function createTransaction(connection: PoolConnection): Transaction {
-  return { ...createExecutor(connectionRunner(connection), DIALECT), dialect: DIALECT };
+  return { ...createExecutor(connectionRunner(connection), DIALECT), dialect: DIALECT }
 }
 
 export type MySqlDatabase = Database & {
   /** Escape hatch for driver-specific work. Feature code should use the port. */
-  readonly pool: Pool;
-};
+  readonly pool: Pool
+}
 
 export function createMySqlDatabase(config: DatabaseConfig): MySqlDatabase {
-  const parsed = parseMySqlUrl(config.url);
-  const pool = mysql.createPool(buildPoolOptions(parsed, config.pool));
+  const parsed = parseMySqlUrl(config.url)
+  const pool = mysql.createPool(buildPoolOptions(parsed, config.pool))
 
   return {
     ...createExecutor(poolRunner(pool), DIALECT),
@@ -159,47 +162,47 @@ export function createMySqlDatabase(config: DatabaseConfig): MySqlDatabase {
       fn: (tx: Transaction) => Promise<T>,
       options: TransactionOptions = {},
     ): Promise<T> {
-      let connection: PoolConnection;
+      let connection: PoolConnection
       try {
-        connection = await pool.getConnection();
+        connection = await pool.getConnection()
       } catch (error) {
-        throw toDatabaseError(error);
+        throw toDatabaseError(error)
       }
 
       try {
         if (options.isolation) {
-          await connection.query(`SET TRANSACTION ISOLATION LEVEL ${options.isolation}`);
+          await connection.query(`SET TRANSACTION ISOLATION LEVEL ${options.isolation}`)
         }
         if (options.readOnly) {
-          await connection.query("SET TRANSACTION READ ONLY");
+          await connection.query("SET TRANSACTION READ ONLY")
         }
 
-        await connection.beginTransaction();
-        const value = await fn(createTransaction(connection));
-        await connection.commit();
-        return value;
+        await connection.beginTransaction()
+        const value = await fn(createTransaction(connection))
+        await connection.commit()
+        return value
       } catch (error) {
         try {
-          await connection.rollback();
+          await connection.rollback()
         } catch {
           // The connection is already unusable; the original error is the useful one.
         }
-        throw error instanceof DatabaseError ? error : toDatabaseError(error);
+        throw error instanceof DatabaseError ? error : toDatabaseError(error)
       } finally {
-        connection.release();
+        connection.release()
       }
     },
 
     async ping(): Promise<void> {
       try {
-        await pool.query("SELECT 1");
+        await pool.query("SELECT 1")
       } catch (error) {
-        throw toDatabaseError(error);
+        throw toDatabaseError(error)
       }
     },
 
     async close(): Promise<void> {
-      await pool.end();
+      await pool.end()
     },
-  };
+  }
 }

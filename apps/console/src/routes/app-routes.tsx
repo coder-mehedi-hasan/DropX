@@ -1,0 +1,105 @@
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router"
+
+import { AppShell } from "@/components/layout/app-shell"
+import { RequirePermission } from "@/lib/auth"
+
+import { rootRoute } from "./root"
+import { loginSearchSchema, parcelsSearchSchema, trackingSearchSchema } from "./search-params"
+
+/**
+ * Feature screens are split out of the entry chunk on purpose: signing in should
+ * not cost the login page the parcel booking dialog and its field array, and the
+ * parcel list should not cost the dashboard the tracking timeline.
+ */
+const LoginPage = lazyRouteComponent(() => import("@/features/auth/login-page"), "LoginPage")
+const DashboardPage = lazyRouteComponent(
+  () => import("@/features/dashboard/dashboard-page"),
+  "DashboardPage",
+)
+const ParcelsListPage = lazyRouteComponent(
+  () => import("@/features/parcels/parcels-list-page"),
+  "ParcelsListPage",
+)
+const ParcelDetailPage = lazyRouteComponent(
+  () => import("@/features/parcels/parcel-detail-page"),
+  "ParcelDetailPage",
+)
+const TrackingPage = lazyRouteComponent(
+  () => import("@/features/tracking/tracking-page"),
+  "TrackingPage",
+)
+
+export const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  validateSearch: loginSearchSchema,
+  component: LoginPage,
+})
+
+/**
+ * Pathless layout for every signed-in screen. `RequireAuth` lives inside
+ * `AppShell`, so a route added here is authenticated by construction.
+ */
+export const appRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "app",
+  component: AppShell,
+})
+
+export const dashboardRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/",
+  component: DashboardPage,
+})
+
+export const parcelsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/parcels",
+  validateSearch: parcelsSearchSchema,
+  component: ParcelsListPageRoute,
+})
+
+export const parcelDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/parcels/$parcelId",
+  component: ParcelDetailRoute,
+})
+
+export const trackingRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/tracking",
+  validateSearch: trackingSearchSchema,
+  component: TrackingRoute,
+})
+
+/**
+ * These wrappers exist so the permission key that guards a screen sits directly
+ * above that screen's route, instead of being buried inside a page component
+ * that some future route could reach another way.
+ */
+function ParcelsListPageRoute() {
+  const search = parcelsRoute.useSearch()
+  return (
+    <RequirePermission permission="parcels.view">
+      <ParcelsListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function ParcelDetailRoute() {
+  const { parcelId } = parcelDetailRoute.useParams()
+  return (
+    <RequirePermission permission="parcels.view">
+      <ParcelDetailPage parcelId={parcelId} />
+    </RequirePermission>
+  )
+}
+
+function TrackingRoute() {
+  const search = trackingRoute.useSearch()
+  return (
+    <RequirePermission permission="parcels.view">
+      <TrackingPage tracking={search.tracking} />
+    </RequirePermission>
+  )
+}

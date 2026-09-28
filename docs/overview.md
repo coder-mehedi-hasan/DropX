@@ -12,14 +12,20 @@ apps/
   riders/    # Rider app
   console/   # Admin / ops console
   api/       # Backend API
+packages/
+  db/        # Database port + MySQL adapter
+  ui/        # Shared design tokens and components
 ```
 
-| App | Audience | Login |
-|-----|----------|-------|
-| `apps/web` | Customers (senders / receivers) | **OTP** via phone or email |
-| `apps/riders` | Pickup / delivery riders | Email + password (`users`) |
-| `apps/console` | Admins, branch staff, hub operators, dispatchers, support, finance | Email + password (`users`) + RBAC |
-| `apps/api` | All clients | Validates sessions/tokens; enforces permissions and data scope |
+| App            | Audience                                                           | Login                                                          |
+| -------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `apps/web`     | Customers (senders / receivers)                                    | **OTP** via phone or email                                     |
+| `apps/riders`  | Pickup / delivery riders                                           | Email + password (`users`)                                     |
+| `apps/console` | Admins, branch staff, hub operators, dispatchers, support, finance | Email + password (`users`) + RBAC                              |
+| `apps/api`     | All clients                                                        | Validates sessions/tokens; enforces permissions and data scope |
+
+`bun run dev` starts all four apps together via `mprocs`. The three frontends share
+tokens and components from `packages/ui`; all data access goes through `packages/db`.
 
 Branches and hubs are **not** separate apps. Their staff use `apps/console` with role- and branch/hub-scoped access. See [`rbac.md`](./rbac.md).
 
@@ -47,6 +53,13 @@ Hub-scoped staff are linked via **`user_hubs`** (many hubs per user). Branch sco
 ### Rider (`apps/riders`)
 
 Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role. A user **may** also hold console roles (e.g. rider + hub operator) — allowed.
+
+A rider reaches its own surface at `/api/v1/jobs`, gated on `rider.jobs.view` /
+`rider.jobs.update` and the `riders` audience. A rider reports one of four
+outcomes — `OUT_FOR_DELIVERY`, `DELIVERED`, `FAILED`, `RETURNED` — and the API
+moves the open `deliveries` attempt and the customer-visible `parcels.status` in
+the same transaction. `FAILED` and `RETURNED` require a reason. Riders never
+receive the console `parcels.*` keys, so a rider token cannot reach `/api/v1/parcels`.
 
 ---
 
@@ -139,3 +152,6 @@ Full matrix: [`rbac.md`](./rbac.md).
 - ER diagram: [`er-diagram.md`](./er-diagram.md)
 - Agent guide: [`AGENTS.md`](../AGENTS.md)
 - OTP / short-lived auth codes: Redis (or equivalent cache), not MySQL
+- API base: `/api/v1` (health also served unversioned at `/health`)
+- Lists return `{ nodes, meta }`; errors return `{ error: { code, message, details? } }`
+- The database is reached only through the `packages/db` port, never the driver directly

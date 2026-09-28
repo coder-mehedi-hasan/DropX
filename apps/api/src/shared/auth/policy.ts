@@ -1,10 +1,10 @@
-import type { Context, MiddlewareHandler, Next } from "hono";
-import { createMiddleware } from "hono/factory";
+import type { Context, MiddlewareHandler, Next } from "hono"
+import { createMiddleware } from "hono/factory"
 
-import { ERROR_CODES, DomainError } from "../../core/errors";
-import type { AppEnv } from "../../types/env";
-import type { Audience } from "./auth-context";
-import { assertActiveCustomer, assertAudience, assertPermissions } from "./middleware";
+import { ERROR_CODES, DomainError } from "../../core/errors"
+import type { AppEnv } from "../../types/env"
+import type { Audience } from "./auth-context"
+import { assertActiveCustomer, assertAudience, assertPermissions } from "./middleware"
 
 /**
  * Policy catalog.
@@ -24,32 +24,32 @@ import { assertActiveCustomer, assertAudience, assertPermissions } from "./middl
 
 export type OperationPolicy = {
   /** Stable operation name, e.g. `parcel.list`. */
-  id: string;
-  public?: boolean;
+  id: string
+  public?: boolean
   /** Which app may call it. Omit to allow any authenticated app. */
-  audience?: Audience[];
+  audience?: Audience[]
   /** All-of semantics: the actor needs every key. Use `anyOf` for alternatives. */
-  permissions?: string[];
-  anyOf?: string[];
+  permissions?: string[]
+  anyOf?: string[]
   /** Customers must be ACTIVE (OTP verified). */
-  requiresActiveCustomer?: boolean;
-};
+  requiresActiveCustomer?: boolean
+}
 
 export type CatalogEntry = OperationPolicy & {
-  method: string;
-  path: string;
-};
+  method: string
+  path: string
+}
 
-const catalog = new Map<string, CatalogEntry>();
+const catalog = new Map<string, CatalogEntry>()
 
 function register(entry: CatalogEntry): void {
-  const existing = catalog.get(entry.id);
+  const existing = catalog.get(entry.id)
   if (existing) {
     throw new Error(
       `Duplicate operation id "${entry.id}" (${existing.method} ${existing.path} vs ${entry.method} ${entry.path})`,
-    );
+    )
   }
-  catalog.set(entry.id, entry);
+  catalog.set(entry.id, entry)
 }
 
 /** Builds the enforcing middleware and records the operation in the catalog. */
@@ -57,56 +57,56 @@ export function defineOperation(
   policy: OperationPolicy,
   route: { method: string; path: string },
 ): MiddlewareHandler<AppEnv> {
-  register({ ...policy, ...route });
+  register({ ...policy, ...route })
 
   return createMiddleware<AppEnv>(async (c: Context<AppEnv>, next: Next) => {
-    c.set("operationId", policy.id);
+    c.set("operationId", policy.id)
 
     if (!policy.public) {
-      const { actor } = c.get("auth");
+      const { actor } = c.get("auth")
       if (actor.kind === "public") {
-        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue");
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
       }
     }
 
-    if (policy.audience) assertAudience(c, policy.audience);
-    if (policy.permissions) assertPermissions(c, policy.permissions);
+    if (policy.audience) assertAudience(c, policy.audience)
+    if (policy.permissions) assertPermissions(c, policy.permissions)
 
     if (policy.anyOf) {
-      const { actor } = c.get("auth");
+      const { actor } = c.get("auth")
       const granted =
-        actor.kind === "staff" || actor.kind === "rider" ? actor.permissions : new Set<string>();
+        actor.kind === "staff" || actor.kind === "rider" ? actor.permissions : new Set<string>()
       if (!policy.anyOf.some((key) => granted.has(key))) {
         throw new DomainError(
           ERROR_CODES.MISSING_PERMISSION,
           "You do not have permission to perform this action",
-        );
+        )
       }
     }
 
-    if (policy.requiresActiveCustomer) assertActiveCustomer(c);
+    if (policy.requiresActiveCustomer) assertActiveCustomer(c)
 
-    await next();
-  });
+    await next()
+  })
 }
 
 export function getPolicyCatalog(): ReadonlyMap<string, CatalogEntry> {
-  return catalog;
+  return catalog
 }
 
 export function findPolicy(id: string): CatalogEntry | undefined {
-  return catalog.get(id);
+  return catalog.get(id)
 }
 
 /** Startup self-check: the catalog must not be empty and ids must be namespaced. */
 export function assertPolicyCatalog(): void {
   if (catalog.size === 0) {
-    throw new Error("Policy catalog is empty — no operations registered");
+    throw new Error("Policy catalog is empty — no operations registered")
   }
 
   for (const id of catalog.keys()) {
     if (!/^[a-z][a-zA-Z]*\.[a-zA-Z]+$/.test(id)) {
-      throw new Error(`Operation id "${id}" must look like "{domain}.{action}"`);
+      throw new Error(`Operation id "${id}" must look like "{domain}.{action}"`)
     }
   }
 }

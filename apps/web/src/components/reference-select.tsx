@@ -1,0 +1,79 @@
+"use client"
+
+import {
+  EmptyState,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@dropx/ui"
+import { PlugZapIcon } from "lucide-react"
+import * as React from "react"
+
+import {
+  REFERENCE_ENDPOINTS,
+  type ReferenceOption,
+  type ReferenceSource,
+} from "@/lib/reference-data"
+
+/**
+ * A picker over a reference list the API does not expose yet.
+ *
+ * When the list is empty the trigger is disabled and the endpoint that should
+ * back it is named on screen, because a booking form that silently submits an
+ * empty id is worse than one that says it cannot be completed yet.
+ */
+export function ReferenceSelect({
+  value,
+  onValueChange,
+  options,
+  source,
+  placeholder,
+  emptyTitle = "Not configured yet",
+  className,
+}: {
+  value: string
+  onValueChange: (value: string) => void
+  options: ReferenceOption[]
+  source: ReferenceSource
+  placeholder: string
+  emptyTitle?: string
+  className?: string
+}) {
+  const isEmpty = options.length === 0
+
+  return (
+    <div className={cn("grid gap-2", className)}>
+      <Select value={isEmpty ? undefined : value} onValueChange={onValueChange} disabled={isEmpty}>
+        <SelectTrigger className="w-full" aria-label={placeholder}>
+          <SelectValue placeholder={isEmpty ? "Not available yet" : placeholder} />
+        </SelectTrigger>
+        {!isEmpty ? (
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                <span className="grid gap-0.5">
+                  <span>{option.label}</span>
+                  {option.description ? (
+                    <span className="text-muted-foreground text-xs">{option.description}</span>
+                  ) : null}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        ) : null}
+      </Select>
+
+      {isEmpty ? (
+        <EmptyState
+          icon={PlugZapIcon}
+          title={emptyTitle}
+          description={`This list is empty. Back it with ${REFERENCE_ENDPOINTS[source]}.`}
+          className="px-4 py-6"
+        />
+      ) : null}
+    </div>
+  )
+}
