@@ -11,6 +11,7 @@
  */
 import { createApp } from "../src/app"
 import { getPolicyCatalog } from "../src/shared/auth/policy"
+import { findCoverageMismatches } from "../src/openapi/coverage"
 import { moduleManifest } from "../src/modules"
 
 let failures = 0
@@ -109,6 +110,29 @@ async function main(): Promise<void> {
     riderOps !== undefined && riderOps.audience?.includes("riders") === true,
     JSON.stringify(riderOps),
   )
+
+  console.log("· OpenAPI coverage")
+  const mismatches = findCoverageMismatches()
+  check(
+    "every enforced operation is documented, and matches",
+    mismatches.length === 0,
+    mismatches.join(" | "),
+  )
+
+  const specResponse = await app.request("/openapi.json")
+  check("openapi.json is served", specResponse.status === 200, `got ${specResponse.status}`)
+  const spec = (await specResponse.json()) as {
+    openapi?: string
+    paths?: Record<string, Record<string, { operationId?: string }>>
+  }
+  check("document declares OpenAPI 3.1", spec.openapi?.startsWith("3.1") === true, spec.openapi)
+  check("document has paths", Object.keys(spec.paths ?? {}).length > 0)
+
+  // Swagger UI is served at /docs; assert it is not a 404 and references the spec.
+  const docs = await app.request("/docs")
+  check("swagger UI is served at /docs", docs.status === 200, `got ${docs.status}`)
+  const docsHtml = await docs.text()
+  check("swagger UI loads the spec", docsHtml.includes("/openapi.json"))
 
   console.log(`\n${failures === 0 ? "✓" : "✗"} ${catalog.size} operations, ${failures} failure(s)`)
 }
