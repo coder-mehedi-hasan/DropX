@@ -6,12 +6,8 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Checkbox,
+  DropXLogo,
   Form,
   FormControl,
   FormDescription,
@@ -26,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@dropx/ui"
-import { KeyRoundIcon, MailCheckIcon, MessageSquareIcon, TriangleAlertIcon } from "lucide-react"
+import { ArrowLeftIcon, MessageSquareIcon, TriangleAlertIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
 import { useForm } from "react-hook-form"
@@ -153,78 +149,105 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
   }
 
   return (
-    <Card className="w-full gap-0 py-0 shadow-sm">
-      <CardHeader className="border-b">
-        <CardTitle className="text-lg">Sign in to DropX</CardTitle>
-        <CardDescription>
-          We send a six-digit code to your phone or email. There is no password to remember.
-        </CardDescription>
-      </CardHeader>
+    <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(34rem,0.95fr)]">
+      <section
+        className="relative hidden min-h-screen overflow-hidden bg-cover bg-center lg:block"
+        style={{
+          backgroundImage:
+            "url(https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1400&q=85)",
+        }}
+        aria-label="A DropX team planning parcel deliveries"
+      >
+        <div className="absolute inset-0 bg-slate-950/25" />
+        <div className="relative flex h-full flex-col justify-between p-10 text-white xl:p-14">
+          <DropXLogo size="lg" className="text-white" />
+          <div className="max-w-sm">
+            <p className="mb-3 text-sm font-semibold tracking-[0.18em] text-white/75 uppercase">
+              Parcel delivery, simplified
+            </p>
+            <h1 className="text-4xl leading-tight font-semibold tracking-tight xl:text-5xl">
+              Send it anywhere. Follow it everywhere.
+            </h1>
+          </div>
+        </div>
+      </section>
 
-      <CardContent className="pt-6">
-        <Tabs value={challenge ? "code" : "identifier"} className="gap-4">
-          <TabsList className="w-full">
-            <TabsTrigger value="identifier" className="text-xs">
-              1 · Your number
-            </TabsTrigger>
-            <TabsTrigger value="code" className="text-xs" disabled={!challenge}>
-              2 · Your code
-            </TabsTrigger>
-          </TabsList>
+      <section className="flex min-h-screen items-center justify-center bg-white px-6 py-10 sm:px-12 lg:px-16">
+        <div className="w-full max-w-lg">
+          <div className="mb-16 lg:hidden">
+            <DropXLogo size="lg" />
+          </div>
+          <div className="mb-12 hidden lg:block">
+            <DropXLogo size="lg" />
+          </div>
+          <Tabs value={challenge ? "code" : "identifier"} className="gap-4">
+            <TabsList className="sr-only">
+              <TabsTrigger value="identifier" className="text-xs">
+                1 · Your number
+              </TabsTrigger>
+              <TabsTrigger value="code" className="text-xs" disabled={!challenge}>
+                2 · Your code
+              </TabsTrigger>
+            </TabsList>
 
-          {formError ? (
-            <Alert variant="destructive">
-              <TriangleAlertIcon aria-hidden />
-              <AlertTitle>We could not continue</AlertTitle>
-              <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-          ) : null}
+            {formError ? (
+              <Alert variant="destructive">
+                <TriangleAlertIcon aria-hidden />
+                <AlertTitle>We could not continue</AlertTitle>
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          <IdentifierStep
-            // Remounts on a new challenge so the field clears for a different
-            // identifier; consent stays ticked because it was already given.
-            key={challenge ? challenge.destination : "blank"}
-            onSubmit={(values) => void startChallenge(values, false)}
-            busy={sending}
-            initialConsent={challenge !== null}
-          />
-
-          {challenge ? (
-            <CodeStep
-              identifier={identifier}
-              challenge={challenge}
-              secondsLeft={secondsLeft}
-              verifying={verifying}
-              onResend={() => void startChallenge({ identifier, consent: true }, true)}
-              onBack={() => {
-                setChallenge(null)
-                setSecondsLeft(0)
-                setFormError(null)
-              }}
-              onVerify={async (code) => {
-                setVerifying(true)
-                setFormError(null)
-
-                try {
-                  const session = await authApi.verifyOtp(identifier, code)
-                  signIn(session)
-                  toast.success(`Welcome back, ${session.customer.name || "friend"}`)
-                  router.replace(destination)
-                } catch (error) {
-                  setFormError(
-                    isApiError(error)
-                      ? error.message
-                      : "We could not verify that code. Please try again.",
-                  )
-                } finally {
-                  setVerifying(false)
-                }
-              }}
+            <IdentifierStep
+              // Remounts on a new challenge so the field clears for a different
+              // identifier; consent stays ticked because it was already given.
+              key={challenge ? challenge.destination : "blank"}
+              onSubmit={(values) => void startChallenge(values, false)}
+              busy={sending}
+              initialConsent={challenge !== null}
             />
-          ) : null}
-        </Tabs>
-      </CardContent>
-    </Card>
+
+            {challenge ? (
+              <CodeStep
+                challenge={challenge}
+                secondsLeft={secondsLeft}
+                verifying={verifying}
+                onResend={() => void startChallenge({ identifier, consent: true }, true)}
+                onBack={() => {
+                  setChallenge(null)
+                  setSecondsLeft(0)
+                  setFormError(null)
+                }}
+                onVerify={async (code) => {
+                  setVerifying(true)
+                  setFormError(null)
+
+                  try {
+                    const session = await authApi.verifyOtp(identifier, code)
+                    signIn(session)
+                    toast.success(`Welcome back, ${session.customer.name || "friend"}`)
+                    router.replace(destination)
+                  } catch (error) {
+                    setFormError(
+                      isApiError(error)
+                        ? error.message
+                        : "We could not verify that code. Please try again.",
+                    )
+                  } finally {
+                    setVerifying(false)
+                  }
+                }}
+              />
+            ) : null}
+          </Tabs>
+          <p className="text-muted-foreground mt-16 text-center text-sm">
+            <a href="/track" className="hover:text-foreground underline underline-offset-4">
+              Track a parcel without signing in
+            </a>
+          </p>
+        </div>
+      </section>
+    </div>
   )
 }
 
@@ -244,7 +267,13 @@ function IdentifierStep({
   })
 
   return (
-    <TabsContent value="identifier">
+    <TabsContent value="identifier" className="gap-0">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-semibold tracking-tight">Sign in to DropX</h1>
+        <p className="text-muted-foreground mt-3 text-base">
+          We&apos;ll send a one-time code to your phone or email.
+        </p>
+      </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" noValidate>
           <FormField
@@ -252,7 +281,7 @@ function IdentifierStep({
             name="identifier"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone number or email</FormLabel>
+                <FormLabel className="text-sm font-medium">Phone number or email</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -260,6 +289,7 @@ function IdentifierStep({
                     inputMode="email"
                     autoComplete="email"
                     placeholder="01712345678 or you@example.com"
+                    className="h-12 rounded-lg"
                   />
                 </FormControl>
                 <FormDescription>
@@ -292,7 +322,7 @@ function IdentifierStep({
             )}
           />
 
-          <LoadingButton type="submit" loading={busy} className="w-full">
+          <LoadingButton type="submit" loading={busy} className="h-12 w-full rounded-lg">
             <MessageSquareIcon aria-hidden />
             {busy ? "Sending…" : "Send my code"}
           </LoadingButton>
@@ -303,7 +333,6 @@ function IdentifierStep({
 }
 
 function CodeStep({
-  identifier,
   challenge,
   secondsLeft,
   verifying,
@@ -311,7 +340,6 @@ function CodeStep({
   onResend,
   onBack,
 }: {
-  identifier: string
   challenge: OtpRequestResult
   secondsLeft: number
   verifying: boolean
@@ -324,31 +352,22 @@ function CodeStep({
     defaultValues: { code: "" },
     mode: "onSubmit",
   })
+  const inputRefs = React.useRef<Array<HTMLInputElement | null>>([])
 
   const canResend = secondsLeft <= 0
 
+  React.useEffect(() => {
+    inputRefs.current[0]?.focus()
+  }, [])
+
   return (
-    <TabsContent value="code" className="gap-4">
-      <Alert variant={challenge.isNewCustomer ? "default" : "success"}>
-        {challenge.channel === "EMAIL" ? (
-          <MailCheckIcon aria-hidden />
-        ) : (
-          <KeyRoundIcon aria-hidden />
-        )}
-        <AlertTitle>
-          {challenge.channel === "EMAIL" ? "Check your email" : "Check your messages"}
-        </AlertTitle>
-        <AlertDescription>
-          <p>
-            A six-digit code is on its way to{" "}
-            <span className="font-medium">{challenge.destination}</span>.{" "}
-            {challenge.isNewCustomer
-              ? "This is your first sign-in — verifying the code will create your account."
-              : "Sign in with the code we just sent."}
-          </p>
-          <p className="text-xs">The code expires in {formatCountdown(secondsLeft)}.</p>
-        </AlertDescription>
-      </Alert>
+    <TabsContent value="code" className="gap-0">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-semibold tracking-tight">Enter OTP</h1>
+        <p className="text-muted-foreground mt-3 text-base">
+          We have sent a code to <span className="font-medium">{challenge.destination}</span>
+        </p>
+      </div>
 
       <Form {...form}>
         <form
@@ -361,51 +380,83 @@ function CodeStep({
             name="code"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Six-digit code</FormLabel>
+                <FormLabel className="sr-only">Six-digit code</FormLabel>
                 <FormControl>
-                  <Input
-                    {...field}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    placeholder="000000"
-                    className="text-foreground text-center font-mono text-lg font-bold tracking-[0.5em]"
-                    onChange={(event) =>
-                      field.onChange(event.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                  />
+                  <div
+                    className="flex justify-center gap-2.5 sm:gap-3"
+                    role="group"
+                    aria-label="Six-digit verification code"
+                  >
+                    {Array.from({ length: 6 }, (_, index) => (
+                      <Input
+                        key={index}
+                        ref={(element) => {
+                          inputRefs.current[index] = element
+                        }}
+                        value={field.value[index] ?? ""}
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete={index === 0 ? "one-time-code" : "off"}
+                        maxLength={1}
+                        aria-label={`Digit ${index + 1} of 6`}
+                        className="size-12 rounded-lg border-slate-300 p-0 text-center font-mono text-xl font-semibold sm:size-14"
+                        onChange={(event) => {
+                          const digit = event.target.value.replace(/\D/g, "").slice(-1)
+                          const nextCode = field.value.split("")
+                          nextCode[index] = digit
+                          field.onChange(nextCode.join("").slice(0, 6))
+                          if (digit && index < 5) inputRefs.current[index + 1]?.focus()
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Backspace" && !field.value[index] && index > 0) {
+                            inputRefs.current[index - 1]?.focus()
+                          }
+                        }}
+                        onPaste={(event) => {
+                          event.preventDefault()
+                          const pasted = event.clipboardData
+                            .getData("text")
+                            .replace(/\D/g, "")
+                            .slice(0, 6)
+                          if (!pasted) return
+                          field.onChange(pasted)
+                          inputRefs.current[Math.min(pasted.length, 6) - 1]?.focus()
+                        }}
+                      />
+                    ))}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <LoadingButton type="submit" loading={verifying} className="w-full">
+          <LoadingButton type="submit" loading={verifying} className="h-12 w-full rounded-lg">
             {verifying ? "Verifying…" : "Verify and sign in"}
           </LoadingButton>
         </form>
       </Form>
 
-      <div className="flex items-center justify-between text-sm">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          Use a different number
-        </Button>
-        <Button variant="outline" size="sm" onClick={onResend} disabled={!canResend || verifying}>
-          {canResend ? "Resend code" : `Resend in ${secondsLeft}s`}
+      <div className="mt-7 flex flex-col items-center gap-4 text-sm">
+        <p className="text-muted-foreground">
+          Didn&apos;t receive code?{" "}
+          <button
+            type="button"
+            className="text-primary font-medium hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={onResend}
+            disabled={!canResend || verifying}
+          >
+            {canResend ? "Resend OTP" : `Resend in ${secondsLeft}s`}
+          </button>
+        </p>
+        <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground">
+          <ArrowLeftIcon aria-hidden /> Use a different number
         </Button>
       </div>
 
-      <p className="text-muted-foreground text-xs">
-        Requested for <span className="font-medium">{identifier}</span>. A code can be tried five
-        times before it is invalidated.
+      <p className="text-muted-foreground mt-8 text-center text-xs">
+        A code can be tried five times before it is invalidated.
       </p>
     </TabsContent>
   )
-}
-
-function formatCountdown(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}m ${String(seconds).padStart(2, "0")}s`
 }
