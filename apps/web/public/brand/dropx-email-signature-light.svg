@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 112" role="img" aria-labelledby="title">
+  <title id="title">DropX email signature lockup</title>
+  <rect x="0" y="8" width="96" height="96" rx="24" fill="#FF5500"/>
+  <path fill="#fff" d="M24 31h21c15 0 25.5 9.75 25.5 25.5S60 82 45 82H24V31Zm18 36c7.5 0 12-3.75 12-10.5S49.5 46 42 46h-3.75v21H42Z"/>
+  <path fill="#FF5500" d="M58.5 48h13.5v6h-13.5z"/><path fill="#FF5500" d="m67.5 42.75 11.25 8.25-11.25 8.25v-6h-9v-4.5h9v-6Z"/>
+  <text x="124" y="60" fill="#0D0F12" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="-2">Drop<tspan fill="#FF5500">X</tspan></text>
+  <text x="127" y="86" fill="#667085" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="2.5">SMART LOGISTICS</text>
+</svg>

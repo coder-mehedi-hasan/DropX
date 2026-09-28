@@ -165,6 +165,12 @@ export default function BrandGuidelinesPage() {
               <div className="flex min-h-40 items-center justify-center rounded-2xl border border-gray-200 bg-white p-8"><img src="/brand/dropx-lockup-light.svg" alt="DropX large light lockup" className="h-auto w-full max-w-md" /></div>
               <div className="flex min-h-40 items-center justify-center rounded-2xl border border-white/10 bg-[#1A1D24] p-8"><img src="/brand/dropx-lockup-dark.svg" alt="DropX large dark lockup" className="h-auto w-full max-w-md" /></div>
             </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <LogoAssetCard src="/brand/dropx-mark.svg" alt="DropX symbol" label="Symbol only" note="Favicon · avatar · app icon" />
+              <LogoAssetCard src="/brand/dropx-wordmark-only-light.svg" alt="DropX wordmark only" label="Wordmark only" note="Context already established" />
+              <LogoAssetCard src="/brand/dropx-stack-light.svg" alt="DropX stacked lockup" label="Stacked lockup" note="Poster · cover · campaign" />
+              <LogoAssetCard src="/brand/dropx-email-signature-light.svg" alt="DropX email signature" label="Signature lockup" note="Email · partner document" wide />
+            </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <RuleCard title="Clear space" body="Keep a minimum clear space around the lockup equal to the height of the orange D-mark on all sides." />
               <RuleCard title="Protect the identity" body="Use approved colors, preserve proportions, and never stretch, rotate, or add effects to the mark." />
@@ -271,6 +277,10 @@ function TypeRow({ label, sample, detail, className, last = false }: { label: st
 
 function LogoLockup({ light }: { light: boolean }) {
   return <div className={`flex min-h-56 flex-col items-center justify-center rounded-2xl border p-8 text-center ${light ? "border-gray-200 bg-white" : "border-white/10 bg-[#1A1D24]"}`}><img src={light ? "/brand/dropx-wordmark-light.svg" : "/brand/dropx-wordmark-dark.svg"} alt={`DropX wordmark for ${light ? "light" : "dark"} backgrounds`} className="h-auto w-full max-w-xs" /><p className={`mt-4 text-xs font-semibold uppercase tracking-widest ${light ? "text-gray-500" : "text-gray-400"}`}>{light ? "Light background wordmark" : "Dark background wordmark"}</p></div>
+}
+
+function LogoAssetCard({ src, alt, label, note, wide = false }: { src: string; alt: string; label: string; note: string; wide?: boolean }) {
+  return <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div className={`flex h-32 items-center justify-center rounded-xl bg-gray-50 p-4 ${wide ? "sm:col-span-2" : ""}`}><img src={src} alt={alt} className="max-h-full w-full object-contain" /></div><p className="mt-4 text-sm font-semibold text-gray-900">{label}</p><p className="mt-1 text-xs text-gray-500">{note}</p></div>
 }
 
 function RuleCard({ title, body, icon }: { title: string; body: string; icon?: React.ReactNode }) {

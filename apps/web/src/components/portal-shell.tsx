@@ -1,7 +1,7 @@
 "use client"
 
 import { Alert, AlertDescription, AlertTitle, Button, Skeleton, cn } from "@dropx/ui"
-import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon, TruckIcon } from "lucide-react"
+import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
@@ -68,9 +68,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
       <header className="bg-background sticky top-0 z-40 border-b">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
-              <TruckIcon className="size-4" aria-hidden />
-            </span>
+            <img src="/brand/dropx-mark.svg" alt="" className="size-8 rounded-md" />
             DropX
           </Link>
 
