@@ -56,10 +56,10 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
 
   return (
     <div className="grid gap-6">
-      <Card>
+      <Card className="border-primary/30 gap-0 py-0 shadow-sm">
         <CardContent>
           <form onSubmit={onSubmit} className="grid gap-3" noValidate>
-            <label htmlFor="tracking-number" className="text-sm font-medium">
+            <label htmlFor="tracking-number" className="text-sm font-semibold">
               Tracking number
             </label>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -70,7 +70,7 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
                 placeholder="DPX260101123456"
                 autoComplete="off"
                 spellCheck={false}
-                className="font-mono uppercase"
+                className="font-mono font-semibold tracking-wide uppercase"
                 aria-describedby="tracking-number-hint"
               />
               <Button type="submit" disabled={tracking.isPending || input.trim() === ""}>
@@ -101,7 +101,9 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="grid gap-1">
                 <p className="text-muted-foreground text-xs">Tracking number</p>
-                <p className="font-mono text-lg font-semibold">{result.trackingNumber}</p>
+                <p className="text-primary font-mono text-xl font-extrabold tracking-tight">
+                  {result.trackingNumber}
+                </p>
               </div>
               <StatusBadge status={result.status} />
             </div>
@@ -135,7 +137,10 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
             <Separator />
 
             <div>
-              <h2 className="mb-4 text-sm font-semibold">Tracking history</h2>
+              <p className="text-primary mb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+                Every handover
+              </p>
+              <h2 className="mb-4 text-base font-bold">Tracking history</h2>
               <EventTimeline events={result.events} />
             </div>
           </CardContent>
@@ -170,7 +175,7 @@ function Fact({
 }) {
   return (
     <div className="grid gap-1">
-      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{label}</dt>
       <dd className={bare ? undefined : "text-sm font-medium"}>{value}</dd>
     </div>
   )

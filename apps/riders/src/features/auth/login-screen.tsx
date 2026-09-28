@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Navigate, useRouter } from "@tanstack/react-router"
-import { PackageCheck } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -13,6 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  DropXLockup,
   Form,
   FormControl,
   FormField,
@@ -71,21 +71,16 @@ export function LoginScreen() {
   return (
     <main className="bg-background text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-8 flex flex-col items-center gap-3 text-center">
-        <span className="bg-primary text-primary-foreground flex size-14 items-center justify-center rounded-2xl">
-          <PackageCheck className="size-7" aria-hidden />
-        </span>
-        <div>
-          <h1 className="text-2xl font-semibold">DropX Rider</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Sign in to see today's jobs.</p>
-        </div>
+        <DropXLockup />
+        <p className="text-muted-foreground text-sm">Sign in to see today's jobs.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sign in</CardTitle>
+      <Card className="gap-0 py-0">
+        <CardHeader className="border-b">
+          <CardTitle className="text-lg">Rider sign in</CardTitle>
           <CardDescription>Use the email and password from dispatch.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {serverError ? (
             <Alert variant="destructive" className="mb-4">
               <AlertTitle>Sign in failed</AlertTitle>

@@ -26,7 +26,7 @@ export type ScreenHeaderAction = {
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-background text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col border-x">
+    <div className="bg-muted/30 text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col border-x">
       {children}
       <BottomNav />
     </div>
@@ -59,7 +59,7 @@ export function AppHeader({
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-lg leading-tight font-semibold">{title}</h1>
+        <h1 className="truncate text-lg leading-tight font-bold tracking-tight">{title}</h1>
         {subtitle ? <p className="text-muted-foreground truncate text-sm">{subtitle}</p> : null}
       </div>
 

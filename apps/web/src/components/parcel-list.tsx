@@ -79,7 +79,7 @@ export function ParcelList() {
         cell: (parcel) => (
           <Link
             href={`/parcels/${parcel.id}`}
-            className="font-mono text-sm font-medium hover:underline"
+            className="text-accent-ink hover:text-accent-ink-hover font-mono text-sm font-semibold hover:underline"
           >
             {parcel.trackingNumber}
           </Link>

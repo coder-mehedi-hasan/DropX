@@ -15,7 +15,14 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 function readInitialTheme(): Theme {
   const stored = window.localStorage.getItem(STORAGE_KEY)
   if (stored === "light" || stored === "dark") return stored
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  /*
+   * Dark unless the OS explicitly asks for light. The brand makes dark the
+   * primary environment for operations, tracking and dispatch, so an operator on
+   * a default OS still lands on the Obsidian canvas. This mirrors the inline
+   * script in `index.html` exactly — the two must agree or the app repaints once
+   * on mount.
+   */
+  return !window.matchMedia("(prefers-color-scheme: light)").matches ? "dark" : "light"
 }
 
 /**

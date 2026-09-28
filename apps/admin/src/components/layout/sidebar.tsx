@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { LayoutDashboard, PackageSearch, Truck } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { cn } from "@dropx/ui"
+import { DropXLogo, cn } from "@dropx/ui"
 
 import { useAuth } from "@/lib/auth"
 import { DEFAULT_PARCELS_SEARCH } from "@/lib/parcels"
@@ -52,16 +52,15 @@ export function Sidebar() {
   )
 
   return (
-    <aside className="bg-card hidden w-60 shrink-0 flex-col gap-1 border-r px-3 py-4 md:flex">
-      <div className="flex items-center gap-2 px-2 pb-4">
-        <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-md text-xs font-bold">
-          DX
-        </span>
-        <div className="leading-tight">
-          <p className="text-sm font-semibold">DropX</p>
-          <p className="text-muted-foreground text-xs">Ops portal</p>
-        </div>
+    <aside className="bg-card hidden w-64 shrink-0 flex-col gap-1 border-r px-3 py-4 md:flex">
+      <div className="px-2 pb-5">
+        <DropXLogo size="sm" />
+        <p className="text-muted-foreground mt-1 pl-9 text-xs">Operations portal</p>
       </div>
+
+      <p className="text-muted-foreground px-2 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+        Workspace
+      </p>
 
       <nav className="flex flex-col gap-1" aria-label="Main">
         {visible.map((item) => {
@@ -74,22 +73,31 @@ export function Sidebar() {
               key={item.to}
               to={item.to}
               search={item.search}
+              /*
+               * The active destination is marked three ways, not one: a Volt
+               * rail, a Volt-tinted ground, and bold ink. The brand requires a
+               * status colour never to be the only signal, and a sidebar item is
+               * a status a dispatcher reads at a glance.
+               */
               className={cn(
-                "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150 ease-brand",
                 active
-                  ? "bg-secondary text-secondary-foreground"
+                  ? "bg-primary/12 text-foreground font-semibold before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
               aria-current={active ? "page" : undefined}
             >
-              <item.icon className="size-4" />
+              <item.icon
+                className={cn("size-4 shrink-0", active && "text-primary")}
+                aria-hidden
+              />
               {item.label}
             </Link>
           )
         })}
       </nav>
 
-      <p className="text-muted-foreground mt-auto px-2 text-xs">
+      <p className="text-muted-foreground mt-auto px-2 text-xs leading-relaxed">
         Staff only. Actions are audited against your account.
       </p>
     </aside>

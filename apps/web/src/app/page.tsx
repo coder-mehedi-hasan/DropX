@@ -60,14 +60,24 @@ export default function LandingPage() {
       <SiteHeader />
 
       <main className="flex-1">
-        <section className="border-b">
-          <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
+        {/*
+          The brand's hero move: a soft Volt wash over the light canvas, with the
+          accent words of the headline carrying the colour themselves rather than a
+          slab of orange behind the text.
+        */}
+        <section className="relative isolate overflow-hidden border-b">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_62%)] opacity-[0.14]"
+          />
+          <div className="mx-auto grid w-full max-w-page gap-10 px-4 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
             <div className="grid gap-6">
-              <Badge variant="secondary" className="w-fit">
+              <Badge className="border-primary/25 bg-primary/10 text-accent-ink w-fit hover:bg-primary/10">
                 Parcel delivery across Bangladesh
               </Badge>
-              <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-                Send a parcel and watch every hub it passes through.
+              <h1 className="text-4xl font-extrabold tracking-tight text-balance sm:text-5xl">
+                Send a parcel and watch every{" "}
+                <span className="text-primary">hub it passes through</span>.
               </h1>
               <p className="text-muted-foreground max-w-prose text-lg">
                 Book a collection, get a delivery fee before you commit, and follow the parcel from
@@ -81,7 +91,7 @@ export default function LandingPage() {
                   <Link href="/track">Track with a number</Link>
                 </Button>
               </div>
-              <dl className="grid gap-4 pt-4 sm:grid-cols-3">
+              <dl className="grid gap-4 border-t pt-6 sm:grid-cols-3">
                 <Stat label="Booking" value="One-time code" />
                 <Stat label="Proof" value="Signature, photo or OTP" />
                 <Stat label="Payment" value="Prepaid or cash on delivery" />
@@ -89,7 +99,7 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-4">
-              <div className="grid gap-3">
+              <div className="bg-card grid gap-3 rounded-feature border p-6 shadow-sm">
                 <h2 className="text-sm font-semibold">Already have a tracking number?</h2>
                 <TrackLookup />
               </div>
@@ -98,20 +108,28 @@ export default function LandingPage() {
         </section>
 
         <section id="how-it-works" className="border-b">
-          <div className="mx-auto w-full max-w-6xl px-4 py-16">
-            <h2 className="text-2xl font-semibold tracking-tight">How it works</h2>
+          <div className="mx-auto w-full max-w-page px-4 py-16">
+            <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+              How it works
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight">Four stages, one parcel history</h2>
             <p className="text-muted-foreground mt-2 max-w-prose">
               Every parcel runs the same four stages, and each one writes to its tracking history.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {STEPS.map((step) => (
-                <Card key={step.title}>
+              {STEPS.map((step, index) => (
+                <Card key={step.title} className="gap-4 py-5 transition-colors hover:border-primary/40">
                   <CardHeader>
-                    <span className="bg-muted text-muted-foreground mb-2 flex size-9 items-center justify-center rounded-md">
+                    <span className="bg-primary/10 text-primary mb-2 flex size-9 items-center justify-center rounded-lg">
                       <step.icon className="size-4" aria-hidden />
                     </span>
-                    <CardTitle>{step.title}</CardTitle>
+                    <CardTitle className="flex items-baseline gap-2">
+                      <span className="text-primary text-xs font-bold tabular-nums">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {step.title}
+                    </CardTitle>
                     <CardDescription>{step.body}</CardDescription>
                   </CardHeader>
                 </Card>
@@ -121,10 +139,15 @@ export default function LandingPage() {
         </section>
 
         <section id="pricing">
-          <div className="mx-auto w-full max-w-6xl px-4 py-16">
+          <div className="mx-auto w-full max-w-page px-4 py-16">
             <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
               <div className="grid content-start gap-4">
-                <h2 className="text-2xl font-semibold tracking-tight">Pricing and tracking</h2>
+                <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+                  Pricing
+                </p>
+                <h2 className="mt-2 text-3xl font-bold tracking-tight">
+                  A fee you can see before you commit
+                </h2>
                 <p className="text-muted-foreground max-w-prose">
                   The delivery fee is worked out from the destination zone, the weight band, and —
                   for cash on delivery — the amount being collected. You see the quote before you

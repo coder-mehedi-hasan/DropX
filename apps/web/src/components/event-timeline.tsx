@@ -36,7 +36,17 @@ export function EventTimeline({
           className="relative flex gap-4 pb-6 last:pb-0"
         >
           <div className="flex flex-col items-center">
-            <span className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full">
+            /*
+             * The newest event carries the Volt mark, so "where is this parcel
+             * right now" is answered by the eye before the label is read.
+             */
+            <span
+              className={
+                index === 0
+                  ? "bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full"
+                  : "bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full"
+              }
+            >
               <Box className="size-4" aria-hidden />
             </span>
             {index < ordered.length - 1 ? (

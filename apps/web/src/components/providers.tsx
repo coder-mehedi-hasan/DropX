@@ -41,7 +41,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         {children}
-        <Toaster position="top-center" richColors closeButton />
+        <Toaster position="top-center" closeButton />
       </AuthProvider>
     </QueryClientProvider>
   )

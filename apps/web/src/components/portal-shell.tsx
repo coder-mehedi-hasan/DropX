@@ -1,6 +1,6 @@
 "use client"
 
-import { Alert, AlertDescription, AlertTitle, Button, Skeleton, cn } from "@dropx/ui"
+import { Alert, AlertDescription, AlertTitle, Button, DropXLogo, Skeleton, cn } from "@dropx/ui"
 import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -64,15 +64,14 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="bg-muted/30 flex min-h-screen flex-col">
-      <header className="bg-background sticky top-0 z-40 border-b">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <img src="/brand/dropx-mark.svg" alt="" className="size-8 rounded-md" />
-            DropX
+    <div className="flex min-h-screen flex-col">
+      <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-page items-center gap-4 px-4">
+          <Link href="/dashboard" className="text-foreground hover:text-foreground shrink-0">
+            <DropXLogo size="sm" />
           </Link>
 
-          <nav className="hidden items-center gap-1 text-sm sm:flex">
+          <nav className="hidden items-center gap-1 text-sm font-medium sm:flex">
             {NAV.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
               return (
@@ -81,12 +80,13 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "rounded-md px-3 py-2 font-medium transition-colors",
+                    "flex items-center gap-2 rounded-lg px-3 py-2 transition-colors",
                     active
-                      ? "bg-secondary text-secondary-foreground"
+                      ? "bg-primary/10 text-accent-ink"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
+                  <item.icon className="size-4" aria-hidden />
                   {item.label}
                 </Link>
               )
@@ -104,23 +104,33 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 text-sm sm:hidden">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5 whitespace-nowrap"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 text-sm font-medium sm:hidden">
+          {NAV.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-1.5 whitespace-nowrap transition-colors",
+                  active
+                    ? "bg-primary/10 text-accent-ink"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <item.icon className="size-4" aria-hidden />
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-page flex-1 px-4 py-8">{children}</main>
 
-      <footer className="border-t">
-        <div className="text-muted-foreground mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6 text-sm">
+      <footer className="bg-card border-t">
+        <div className="text-muted-foreground mx-auto flex w-full max-w-page items-center justify-between px-4 py-6 text-sm">
           <p>DropX customer portal</p>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/">Back to site</Link>
@@ -133,7 +143,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
 function PortalSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8" aria-busy="true" aria-live="polite">
+    <div className="mx-auto w-full max-w-page px-4 py-8" aria-busy="true" aria-live="polite">
       <Skeleton className="mb-6 h-8 w-56" />
       <div className="grid gap-3">
         {Array.from({ length: 6 }, (_, index) => (

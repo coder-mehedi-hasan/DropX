@@ -4,8 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <!-- Deep Obsidian, the brand's primary environment for the road. -->
+    <meta name="theme-color" content="#0D0F12" />
+    <link rel="icon" type="image/svg+xml" href="/brand/dropx-favicon.svg" />
     <title>DropX Rider</title>
+    <!-- Inter, the brand's working voice. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    />
     <script>
       ;(function () {
         var dark = !window.matchMedia("(prefers-color-scheme: light)").matches
@@ -16,6 +25,7 @@
           void error
         }
         document.documentElement.classList.toggle("dark", dark)
+        document.documentElement.style.colorScheme = dark ? "dark" : "light"
       })()
     </script>
   </head>

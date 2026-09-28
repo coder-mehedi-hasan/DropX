@@ -35,13 +35,13 @@ export function EmptyState({
       {Icon ? (
         <div
           data-slot="empty-state-icon"
-          className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full [&_svg]:size-5"
+          className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-xl [&_svg]:size-5"
         >
           <Icon />
         </div>
       ) : null}
       <div className="grid gap-1">
-        <p data-slot="empty-state-title" className="text-sm font-medium">
+        <p data-slot="empty-state-title" className="text-base font-semibold">
           {title}
         </p>
         {description ? (

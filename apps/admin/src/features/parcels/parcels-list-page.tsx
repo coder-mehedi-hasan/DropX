@@ -124,6 +124,7 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        eyebrow="Operations"
         title="Parcels"
         description="Every parcel in the scope your roles allow — company-wide, your branch, or your hubs."
         actions={
@@ -394,7 +395,7 @@ function ParcelRow({ parcel }: { parcel: Parcel }) {
         <Link
           to="/parcels/$parcelId"
           params={{ parcelId: parcel.id }}
-          className="font-mono text-xs font-medium underline-offset-4 hover:underline"
+          className="text-accent-ink hover:text-accent-ink-hover font-mono text-xs font-semibold underline-offset-4 hover:underline"
         >
           {parcel.trackingNumber}
         </Link>
@@ -418,7 +419,7 @@ function ParcelRow({ parcel }: { parcel: Parcel }) {
         )}
       </TableCell>
       <TableCell className="text-right">{formatNumber(parcel.weight)} kg</TableCell>
-      <TableCell className="text-right font-medium">{formatMoney(parcel.deliveryFee)}</TableCell>
+      <TableCell className="text-right font-semibold">{formatMoney(parcel.deliveryFee)}</TableCell>
       <TableCell className="text-muted-foreground text-right">
         {parcel.codAmount > 0 ? formatMoney(parcel.codAmount) : "—"}
       </TableCell>

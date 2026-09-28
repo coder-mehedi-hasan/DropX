@@ -7,6 +7,7 @@ import { z } from "zod"
 import {
   Button,
   Card,
+  DropXLockup,
   CardContent,
   CardDescription,
   CardHeader,
@@ -64,18 +65,14 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md text-sm font-bold">
-              DX
-            </span>
-            <CardTitle>DropX admin</CardTitle>
-          </div>
-          <CardDescription>Staff sign in with your work email and password.</CardDescription>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-10">
+      <DropXLockup />
+      <Card className="w-full max-w-sm gap-0 py-0 shadow-sm">
+        <CardHeader className="border-b">
+          <CardTitle className="text-lg">Staff sign in</CardTitle>
+          <CardDescription>Use your work email and password.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
               <ServerError
@@ -131,6 +128,7 @@ export function LoginPage() {
           </Form>
         </CardContent>
       </Card>
+      <p className="text-muted-foreground text-xs">Staff only. Access is logged against your account.</p>
     </div>
   )
 }

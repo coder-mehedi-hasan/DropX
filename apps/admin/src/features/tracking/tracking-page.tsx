@@ -74,6 +74,7 @@ export function TrackingPage({ tracking }: { tracking?: string | undefined }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        eyebrow="Operations"
         title="Tracking"
         description="Public tracking lookup. Works for any tracking number in the network, including ones booked by another branch."
       />
@@ -148,7 +149,9 @@ function TrackingResult({ tracking }: { tracking: ParcelTracking }) {
       <Card className="gap-4 py-4 lg:col-span-2">
         <CardHeader className="px-4">
           <div className="flex flex-wrap items-center gap-2">
-            <CardTitle className="font-mono text-base">{tracking.trackingNumber}</CardTitle>
+            <CardTitle className="text-primary font-mono text-lg font-extrabold tracking-tight">
+              {tracking.trackingNumber}
+            </CardTitle>
             <StatusBadge status={tracking.status} />
           </div>
           <CardDescription>
