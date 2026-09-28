@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import {
-  Button,
   Card,
   DropXLockup,
   CardContent,
@@ -19,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  LoadingButton,
 } from "@dropx/ui"
 import { toast } from "sonner"
 
@@ -120,10 +120,10 @@ export function LoginPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <LoadingButton type="submit" className="w-full" loading={submitting}>
                 <LogIn />
-                {submitting ? "Signing in…" : "Sign in"}
-              </Button>
+                Sign in
+              </LoadingButton>
             </form>
           </Form>
         </CardContent>

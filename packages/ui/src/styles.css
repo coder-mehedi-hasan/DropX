@@ -50,12 +50,11 @@
   --popover-foreground: oklch(0.1676 0.0071 258.37);
   --primary: oklch(0.6759 0.2175 38.8); /* #FF5500 — Volt Orange */
   /*
-   * Obsidian ink on the Volt fill, not white. The brand table lists white on
-   * Volt Orange as "Large/UI only" at 3.21:1, and a 14px button label is not
-   * large text — so the palette's own 4.5:1 rule is only satisfiable the other
-   * way round. Obsidian on Volt measures 5.99:1 and passes at any size.
+   * White on Volt Orange. The brand Action matrix and contrast table approve
+   * this for primary button labels (Large/UI). Obsidian ink is reserved for
+   * body text on light surfaces — not for the filled Volt control.
    */
-  --primary-foreground: oklch(0.1676 0.0071 258.37);
+  --primary-foreground: oklch(1 0 0); /* #FFFFFF */
   --secondary: oklch(0.9548 0.0058 264.53);
   --secondary-foreground: oklch(0.1676 0.0071 258.37);
   --muted: oklch(0.9548 0.0058 264.53);
@@ -101,7 +100,7 @@
   --popover: oklch(0.2308 0.0143 266.95);
   --popover-foreground: oklch(1 0 0);
   --primary: oklch(0.6759 0.2175 38.8); /* Volt Orange — 5.99:1 on Obsidian */
-  --primary-foreground: oklch(0.1676 0.0071 258.37); /* Obsidian ink on the fill */
+  --primary-foreground: oklch(1 0 0); /* White on the fill — matches light mode */
   --secondary: oklch(0.2731 0.0195 267.96); /* #232731 — raised on Carbon */
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.2731 0.0195 267.96);
@@ -237,23 +236,23 @@
 
 @layer components {
   /*
-   * The brand's link treatment, for the bare `<a>` elements in footers and prose
+   * The brand's link treatment, for bare `<a>` elements in footers and prose
    * that never pass through a primitive. Volt Deep rather than Volt Orange,
    * because a link is small text and only the deep value clears 4.5:1 on a light
-   * surface. A bare element selector on purpose: any utility class on the link
-   * — the muted nav links, the white header links — still wins over this.
+   * surface.
    *
-   * Focus stays with the primitives: every one of them sets its own
-   * `focus-visible` ring against `--ring`, and a global rule here would lose to
-   * the `focus-visible:outline-none` each of them declares.
+   * Skip `[data-slot=button]`: Button `asChild` renders a Link/`<a>` that must
+   * keep the variant's own text colour (white on Volt, ink on outline) — a bare
+   * `a { color }` rule was painting every primary CTA in accent-ink and washing
+   * outline buttons orange.
    */
-  a {
+  a:not([data-slot="button"]) {
     color: var(--accent-ink);
     text-decoration-color: color-mix(in oklab, var(--accent-ink) 35%, transparent);
     text-underline-offset: 3px;
   }
 
-  a:hover {
+  a:not([data-slot="button"]):hover {
     color: var(--accent-ink-hover);
     text-decoration-color: currentColor;
   }

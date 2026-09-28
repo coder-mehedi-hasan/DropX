@@ -1,8 +1,8 @@
-import { StatusBadge, cn } from "@dropx/ui"
+import { EventBadge, cn } from "@dropx/ui"
 import { Box } from "lucide-react"
 import type * as React from "react"
 
-import { eventTypeLabel, formatDateTime } from "@/lib/format"
+import { formatDateTime } from "@/lib/format"
 import type { ParcelEventSummary } from "@/lib/types"
 
 /**
@@ -36,8 +36,10 @@ export function EventTimeline({
           className="relative flex gap-4 pb-6 last:pb-0"
         >
           <div className="flex flex-col items-center">
-            /* * The newest event carries the Volt mark, so "where is this parcel * right now" is
-            answered by the eye before the label is read. */
+            {/*
+              The newest event carries the Volt mark, so "where is this parcel
+              right now" is answered by the eye before the label is read.
+            */}
             <span
               className={
                 index === 0
@@ -53,10 +55,7 @@ export function EventTimeline({
           </div>
 
           <div className="flex min-w-0 flex-col gap-1 pt-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">{eventTypeLabel(event.eventType)}</span>
-              <StatusBadge status={event.eventType} />
-            </div>
+            <EventBadge eventType={event.eventType} />
             <p className="text-muted-foreground text-xs">
               {formatDateTime(event.createdAt)}
               {event.location ? ` · ${event.location}` : null}

@@ -46,6 +46,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
+  LoadingButton,
   parcelStatusLabel,
 } from "@dropx/ui"
 import { useForm } from "react-hook-form"
@@ -478,9 +479,9 @@ function StatusChangeDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Saving…" : "Change status"}
-              </Button>
+              <LoadingButton type="submit" loading={mutation.isPending}>
+                Change status
+              </LoadingButton>
             </DialogFooter>
           </form>
         </Form>
@@ -592,9 +593,9 @@ function CancelParcelDialog({
               >
                 Keep parcel
               </Button>
-              <Button type="submit" variant="destructive" disabled={mutation.isPending}>
-                {mutation.isPending ? "Cancelling…" : "Cancel parcel"}
-              </Button>
+              <LoadingButton type="submit" variant="destructive" loading={mutation.isPending}>
+                Cancel parcel
+              </LoadingButton>
             </DialogFooter>
           </form>
         </Form>

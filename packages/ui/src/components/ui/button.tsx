@@ -7,34 +7,43 @@ import { cn } from "../../lib/cn"
 /**
  * Button.
  *
- * Renders `asChild` when given, so a router `<Link>` keeps button styling
- * without a wrapper element — which matters for accessibility, since a
- * `<button>` around a link is invalid and unreachable by keyboard.
+ * Matches the brand Action matrix: one primary (Volt Orange + white label),
+ * outline secondary (ink on white), link tertiary (Volt Deep). `asChild` keeps
+ * router `<Link>` styling without a nested button.
  *
- * `default` is the brand's single primary action: Volt Orange with Obsidian ink
- * on it. `link` is deliberately a different colour from `default` — Volt Deep
- * rather than Volt Orange — because a link is small text and Volt Orange does not
- * clear 4.5:1 on a light surface.
+ * Every variant sets an explicit text colour so a Button-as-link cannot inherit
+ * the global prose `a` accent-ink treatment.
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-[color,background-color,border-color,box-shadow] duration-150 ease-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  [
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold",
+    "transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-brand",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  ].join(" "),
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:bg-primary/40 disabled:text-primary-foreground/80 disabled:opacity-100",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground disabled:opacity-50",
         outline:
-          "border border-input bg-background hover:border-primary/40 hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-accent-ink hover:text-accent-ink-hover underline-offset-4 hover:underline",
-        success: "bg-success text-success-foreground hover:bg-success/90",
-        warning: "bg-warning text-warning-foreground hover:bg-warning/90",
+          "border border-input bg-background text-foreground hover:border-primary/40 hover:bg-accent hover:text-foreground disabled:opacity-50",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:text-secondary-foreground disabled:opacity-50",
+        ghost:
+          "text-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50",
+        link: "text-accent-ink hover:text-accent-ink-hover underline-offset-4 hover:underline disabled:opacity-50",
+        success:
+          "bg-success text-success-foreground hover:bg-success/90 hover:text-success-foreground disabled:opacity-50",
+        warning:
+          "bg-warning text-warning-foreground hover:bg-warning/90 hover:text-warning-foreground disabled:opacity-50",
       },
       size: {
         default: "h-10 px-4 py-2 text-sm",
         sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-12 rounded-lg px-6",
+        lg: "h-12 rounded-lg px-6 text-base",
         icon: "size-10",
       },
     },

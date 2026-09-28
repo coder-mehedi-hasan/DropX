@@ -5,9 +5,9 @@ import { Separator } from "@dropx/ui"
 /**
  * PageHeader.
  *
- * `eyebrow` is the brand's section label — a small Volt-orange line above the
- * title, the same device the marketing site and the rider app use, so a
- * dispatcher moving between the three DropX surfaces reads them as one product.
+ * `eyebrow` is the brand's section label — Volt Deep (`text-accent-ink`) for
+ * small type, matching the marketing site and rider app so a dispatcher moving
+ * between the three DropX surfaces reads them as one product.
  */
 export function PageHeader({
   title,
@@ -24,7 +24,7 @@ export function PageHeader({
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="space-y-1">
         {eyebrow ? (
-          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+          <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
             {eyebrow}
           </p>
         ) : null}
@@ -56,7 +56,7 @@ export function PanelTitle({
 }) {
   return (
     <h2 className="flex items-center gap-2 text-sm font-semibold">
-      <Icon className="text-primary size-4" aria-hidden />
+      <Icon className="text-accent-ink size-4" aria-hidden />
       {children}
       <Separator className="ml-1 flex-1" />
     </h2>

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CheckCircle2, ChevronLeft, Loader2, Undo2, XCircle } from "lucide-react"
+import { CheckCircle2, ChevronLeft, Undo2, XCircle } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -200,7 +200,7 @@ export function DeliveryActionSheet({
         {step === "choose" ? (
           <div className="grid gap-3 px-4 pt-2 pb-4">
             <Button
-              variant="success"
+              variant="default"
               size="lg"
               className="tap-target h-14 text-base"
               onClick={() => {
@@ -279,13 +279,13 @@ export function DeliveryActionSheet({
               <div className="grid gap-2">
                 <LoadingButton
                   type="submit"
-                  variant="success"
+                  variant="default"
                   size="lg"
                   className="tap-target h-14 text-base"
                   loading={mutation.isPending}
                 >
-                  {mutation.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
-                  {mutation.isPending ? "Saving…" : "Confirm delivered"}
+                  <CheckCircle2 />
+                  Confirm delivered
                 </LoadingButton>
                 <Button
                   type="button"
@@ -395,18 +395,8 @@ export function DeliveryActionSheet({
                   className="tap-target h-14 text-base"
                   loading={mutation.isPending}
                 >
-                  {mutation.isPending ? (
-                    <Loader2 className="animate-spin" />
-                  ) : reasonOutcome === "RETURNED" ? (
-                    <Undo2 />
-                  ) : (
-                    <XCircle />
-                  )}
-                  {mutation.isPending
-                    ? "Saving…"
-                    : reasonOutcome === "RETURNED"
-                      ? "Confirm return"
-                      : "Confirm failed"}
+                  {reasonOutcome === "RETURNED" ? <Undo2 /> : <XCircle />}
+                  {reasonOutcome === "RETURNED" ? "Confirm return" : "Confirm failed"}
                 </LoadingButton>
                 <Button
                   type="button"

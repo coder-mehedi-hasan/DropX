@@ -90,7 +90,7 @@ const AccordionTrigger = React.forwardRef<
       <AccordionPrimitive.Trigger
         ref={ref}
         className={cn(
-          "group flex flex-1 items-center justify-between text-left font-medium text-neutral-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/15 dark:text-neutral-200 dark:focus-visible:ring-white/25",
+          "group flex flex-1 items-center justify-between text-left font-medium text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           triggerStyles[variant],
           className,
         )}
@@ -100,7 +100,7 @@ const AccordionTrigger = React.forwardRef<
         {indicator === "chevron" && (
           <ChevronDown
             aria-hidden="true"
-            className="size-4 shrink-0 text-neutral-400 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180 dark:text-neutral-500"
+            className="size-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-out group-data-[state=open]:rotate-180"
             strokeWidth={2}
           />
         )}
@@ -119,7 +119,7 @@ const AccordionContent = React.forwardRef<
   return (
     <AccordionPrimitive.Content
       ref={ref}
-      className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm leading-relaxed text-neutral-500 dark:text-neutral-400"
+      className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm leading-relaxed text-muted-foreground"
       {...props}
     >
       <div className={cn(contentStyles[variant], className)}>{children}</div>
@@ -174,7 +174,7 @@ const StreamShell = ({
   children?: React.ReactNode
 }) => (
   <>
-    <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-[0.08em] text-neutral-400 uppercase dark:text-neutral-500">
+    <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
       {icon}
       <span>{label}</span>
       {streaming && (
@@ -254,7 +254,7 @@ const StreamedAnswer = ({
           text.slice(0, revealed)
         )}
         {!done && !thinking && (
-          <span className="ml-0.5 inline-block h-[0.95em] w-[3px] translate-y-[1px] animate-pulse rounded-full bg-neutral-900 align-middle [animation-duration:1s] dark:bg-neutral-100" />
+          <span className="ml-0.5 inline-block h-[0.95em] w-[3px] translate-y-[1px] animate-pulse rounded-full bg-foreground align-middle [animation-duration:1s]" />
         )}
       </p>
     </StreamShell>
@@ -298,7 +298,7 @@ const AccordionStreamingContent = React.forwardRef<
     return (
       <AccordionPrimitive.Content
         ref={assignRef}
-        className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm leading-relaxed text-neutral-500 dark:text-neutral-400"
+        className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm leading-relaxed text-muted-foreground"
         {...props}
       >
         <div className={cn(contentStyles[variant], className)}>

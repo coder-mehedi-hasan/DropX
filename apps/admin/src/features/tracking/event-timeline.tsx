@@ -1,28 +1,8 @@
 import { MapPin, PackageCheck } from "lucide-react"
-import { Badge, EmptyState } from "@dropx/ui"
+import { EmptyState, EventBadge } from "@dropx/ui"
 
 import { formatDateTime } from "@/lib/format"
 import type { ParcelEventSummary } from "@/lib/types"
-
-/** `ARRIVED_HUB` etc. read better as words than as the raw enum in a timeline. */
-const EVENT_LABELS: Record<string, string> = {
-  CREATED: "Parcel booked",
-  PICKED_UP: "Picked up",
-  ARRIVED_HUB: "Arrived at hub",
-  DEPARTED_HUB: "Departed hub",
-  LOADED: "Loaded on transfer",
-  UNLOADED: "Unloaded from transfer",
-  ASSIGNED_RIDER: "Rider assigned",
-  OUT_FOR_DELIVERY: "Out for delivery",
-  DELIVERED: "Delivered",
-  FAILED: "Delivery attempt failed",
-  RETURNED: "Returned to sender",
-  CANCELLED: "Cancelled",
-}
-
-function eventLabel(eventType: string): string {
-  return EVENT_LABELS[eventType] ?? eventType.replaceAll("_", " ").toLowerCase()
-}
 
 /**
  * The tracking history.
@@ -54,13 +34,15 @@ export function EventTimeline({
       {ordered.map((event, index) => (
         <li key={`${event.eventType}-${event.createdAt}-${index}`} className="relative">
           <span
-            className="bg-background ring-border absolute top-1.5 -left-6 size-[9px] rounded-full ring-2"
+            className={
+              index === 0
+                ? "bg-primary ring-background absolute top-1.5 -left-6 size-[9px] rounded-full ring-2"
+                : "bg-background ring-border absolute top-1.5 -left-6 size-[9px] rounded-full ring-2"
+            }
             aria-hidden
           />
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={index === 0 ? "default" : "secondary"}>
-              {eventLabel(event.eventType)}
-            </Badge>
+            <EventBadge eventType={event.eventType} />
             <time
               className="text-muted-foreground text-xs"
               dateTime={new Date(event.createdAt).toISOString()}
