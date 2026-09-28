@@ -18,10 +18,7 @@ const csv = (value: string) =>
  * `MAIL_SECURE=false` in `.env` actually means `false`.
  */
 const bool = (def: boolean) =>
-  z.preprocess(
-    (val: unknown) => (val === undefined ? def : val === "true"),
-    z.boolean(),
-  )
+  z.preprocess((val: unknown) => (val === undefined ? def : val === "true"), z.boolean())
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -91,6 +88,16 @@ function load(env: Record<string, string | undefined>): AppConfig {
 
   if (value.NODE_ENV === "production" && value.APP_SECRET.startsWith("dev-only")) {
     throw new Error("APP_SECRET must be set to a real secret in production")
+  }
+
+  if (value.NODE_ENV === "production") {
+    if (!env.REDIS_URL) throw new Error("REDIS_URL must be set in production")
+    if (!value.MAIL_HOST || !value.MAIL_USER || !value.MAIL_PASSWORD) {
+      throw new Error("MAIL_HOST, MAIL_USER and MAIL_PASSWORD must be set in production")
+    }
+    if (value.MAIL_FROM.endsWith(".local")) {
+      throw new Error("MAIL_FROM must use a real sender domain in production")
+    }
   }
 
   return {

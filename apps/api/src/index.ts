@@ -2,6 +2,7 @@ import { closeDatabase, getDatabase } from "@dropx/db"
 
 import { createApp } from "./app"
 import { getConfig } from "./config"
+import { runEmailWorker } from "./shared/email/worker"
 
 /**
  * Process entry point.
@@ -26,6 +27,7 @@ const app = createApp()
 type Runtime = {
   server?: ReturnType<typeof Bun.serve>
   listenersBound?: boolean
+  emailWorkerStarted?: boolean
 }
 
 const globalScope = globalThis as typeof globalThis & { __dropxApi?: Runtime }
@@ -52,6 +54,15 @@ const server = Bun.serve({
 runtime.server = server
 
 console.info(`[api] listening on http://localhost:${server.port} (${config.env})`)
+
+if (!runtime.emailWorkerStarted) {
+  runtime.emailWorkerStarted = true
+  void runEmailWorker().catch((error) => {
+    runtime.emailWorkerStarted = false
+    console.error("[api] email worker stopped unexpectedly", error)
+    process.exit(1)
+  })
+}
 
 if (!runtime.listenersBound) {
   runtime.listenersBound = true

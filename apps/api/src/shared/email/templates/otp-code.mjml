@@ -7,28 +7,48 @@
       <mj-column background-color="#FFFFFF" />
     </mj-attributes>
     <mj-style>
-      .pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
     </mj-style>
   </mj-head>
   <mj-body>
-    <mj-section padding="32px 16px" background-color="#0D0F12">
+    <mj-section padding="24px 16px" background-color="#FFFFFF">
       <mj-column>
-        <mj-image src="{{brandMark}}" alt="DropX" width="40" height="40" padding="0" />
-        <mj-text font-size="20px" font-weight="700" color="#FF5500" letter-spacing="-0.02em" padding-top="12px">Drop<span style="color:#FF5500">X</span></mj-text>
+        <mj-image
+          src="{{brandSignatureCid}}"
+          alt="DropX Smart Logistics"
+          width="220px"
+          padding="0"
+          align="left"
+        />
       </mj-column>
     </mj-section>
 
     <mj-section padding="40px 16px" background-color="#FFFFFF">
       <mj-column>
-        <mj-text font-size="28px" font-weight="700" color="#0D0F12" letter-spacing="-0.02em" padding-bottom="8px">
+        <mj-text
+          font-size="28px"
+          font-weight="700"
+          color="#0D0F12"
+          letter-spacing="-0.02em"
+          padding-bottom="8px"
+        >
           Verify your account
         </mj-text>
         <mj-text font-size="16px" color="#475467" padding-bottom="28px">
           Use the code below to complete your sign-in. It expires in 5 minutes.
         </mj-text>
 
-        <mj-text font-size="36px" font-weight="700" color="#FF5500" class="pre" padding-bottom="28px" align="center">
-          {{code}}
+        <mj-text
+          font-size="36px"
+          font-weight="700"
+          color="#FF5500"
+          class="pre"
+          padding-bottom="28px"
+          align="center"
+        >
+          {{ code }}
         </mj-text>
 
         <mj-text font-size="14px" color="#475467" padding-bottom="8px">

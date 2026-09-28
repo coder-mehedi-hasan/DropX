@@ -2,9 +2,9 @@
  * Email worker.
  *
  * Pops jobs off the Redis queue and delivers them. Runs as a long-lived
- * process alongside the API. A failed send is retried up to a cap; jobs past
- * the cap are logged and dropped so a dead provider cannot grow the queue
- * without bound.
+ * background loop inside the API process. A failed send is retried up to a
+ * cap; jobs past the cap are logged and dropped so a dead provider cannot
+ * grow the queue without bound.
  */
 import { getConfig } from "../../config"
 import { createEmail, type EmailMessage } from "./port"
@@ -37,31 +37,36 @@ async function deliver(job: EmailJob): Promise<void> {
     subject: job.subject,
     html: rendered.html,
     text: rendered.text,
+    attachments: rendered.attachments,
   }
   await getEmail().send(message)
 }
 
 export async function runEmailWorker(): Promise<never> {
   const queue = createQueue(process.env.REDIS_URL ?? "redis://localhost:6379")
+  const recovered = await queue.recover()
   console.info("[worker] email queue started")
+  if (recovered > 0) console.info(`[worker] recovered ${recovered} email job(s)`)
 
   for (;;) {
-    const job = await queue.pop(POP_TIMEOUT_MS)
-    if (!job) continue
+    const item = await queue.pop(POP_TIMEOUT_MS)
+    if (!item) continue
 
     try {
-      await deliver(job)
+      await deliver(item.job)
+      await queue.ack(item.raw)
     } catch (error) {
-      if (job.attempts + 1 >= MAX_ATTEMPTS) {
+      if (item.job.attempts + 1 >= MAX_ATTEMPTS) {
+        await queue.ack(item.raw)
         console.error("[worker] email permanently failed", {
-          to: job.to,
-          attempts: job.attempts,
+          to: item.job.to,
+          attempts: item.job.attempts,
           error,
         })
         continue
       }
-      console.warn(`[worker] email failed (attempt ${job.attempts + 1}), retrying`, error)
-      await queue.retry(job)
+      console.warn(`[worker] email failed (attempt ${item.job.attempts + 1}), retrying`, error)
+      await queue.retry(item.raw, item.job)
     }
   }
 }

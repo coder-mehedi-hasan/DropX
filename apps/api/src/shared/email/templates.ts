@@ -6,7 +6,7 @@ import mjml2html from "mjml"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const templatesDir = join(__dirname, "templates")
-const brandDir = join(templatesDir, "brand")
+const brandAsset = join(__dirname, "../../../../web/public/brand/dropx-email-signature-light.svg")
 
 export type TemplateName = "otp-code"
 
@@ -28,30 +28,38 @@ async function loadTemplate(name: TemplateName): Promise<string> {
   return loadFile(join(templatesDir, `${name}.mjml`))
 }
 
-/** Reads an SVG from disk and returns it as an inline data URI. */
-async function svgDataUri(path: string): Promise<string> {
-  const source = await loadFile(path)
-  return `data:image/svg+xml;utf8,${encodeURIComponent(source)}`
-}
-
 export type RenderedEmail = {
   html: string
   text: string
+  attachments: Array<{
+    filename: string
+    content: string
+    cid: string
+    contentType: string
+  }>
 }
 
-export async function renderEmail(template: TemplateName, context: TemplateContext): Promise<RenderedEmail> {
-  const [source, brandMark] = await Promise.all([
-    loadTemplate(template),
-    svgDataUri(join(brandDir, "dropx-mark.svg")),
-  ])
+export async function renderEmail(
+  template: TemplateName,
+  context: TemplateContext,
+): Promise<RenderedEmail> {
+  const [source, brandSignature] = await Promise.all([loadTemplate(template), loadFile(brandAsset)])
 
   const html = source
     .replace(/\{\{code\}\}/g, context.code)
-    .replace(/\{\{brandMark\}\}/g, brandMark)
+    .replace(/\{\{brandSignatureCid\}\}/g, "cid:dropx-email-signature-light")
   const { html: rendered } = await mjml2html(html)
   return {
     html: rendered,
     text: `DropX — Your verification code\n\nUse the code below to complete your sign-in. It expires in 5 minutes.\n\n${context.code}\n\nIf you did not request this code, you can ignore this email.`,
+    attachments: [
+      {
+        filename: "dropx-email-signature-light.svg",
+        content: brandSignature,
+        cid: "dropx-email-signature-light",
+        contentType: "image/svg+xml",
+      },
+    ],
   }
 }
 

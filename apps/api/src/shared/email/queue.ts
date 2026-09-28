@@ -7,7 +7,8 @@
  *     an OTP request,
  *   - a failed send is retried by the worker rather than killing the caller.
  *
- * The queue is a plain list (LPUSH / BRPOP) — no external broker needed.
+ * The queue uses Redis lists with a processing list (BRPOPLPUSH / LREM), so a
+ * worker crash leaves jobs recoverable instead of losing them after a pop.
  */
 import { createClient, type RedisClientType } from "redis"
 
@@ -23,14 +24,16 @@ export type EmailJob = {
 }
 
 const QUEUE_KEY = "queue:email"
+const PROCESSING_KEY = "queue:email:processing"
 
-let client: RedisClientType | undefined
-
-async function ensureClient(url: string): Promise<RedisClientType> {
-  if (client) return client
-  client = createClient({ url })
+function createQueueClient(url: string): RedisClientType {
+  const client = createClient({ url })
   client.on("error", (error) => console.error("[queue] redis error", error))
-  await client.connect()
+  return client
+}
+
+async function connect(client: RedisClientType): Promise<RedisClientType> {
+  if (!client.isOpen) await client.connect()
   return client
 }
 
@@ -45,36 +48,58 @@ export async function pushEmailJob(job: {
   context: { code: string }
   subject: string
 }): Promise<void> {
+  const c = createQueueClient(getQueueUrl())
   try {
-    const c = await ensureClient(getQueueUrl())
+    await connect(c)
     await c.lPush(QUEUE_KEY, JSON.stringify({ ...job, attempts: 0 }))
   } catch (error) {
     console.error("[queue] failed to enqueue email job", error)
+  } finally {
+    if (c.isOpen) await c.quit().catch(() => undefined)
   }
 }
 
 export function createQueue(redisUrl: string): {
   push(job: Omit<EmailJob, "attempts">): Promise<void>
-  pop(timeoutMs: number): Promise<EmailJob | null>
-  retry(job: EmailJob): Promise<void>
+  pop(timeoutMs: number): Promise<{ job: EmailJob; raw: string } | null>
+  ack(raw: string): Promise<void>
+  retry(raw: string, job: EmailJob): Promise<void>
+  recover(): Promise<number>
 } {
+  const client = createQueueClient(redisUrl)
+
   return {
     async push(job) {
-      const c = await ensureClient(redisUrl)
+      const c = await connect(client)
       await c.lPush(QUEUE_KEY, JSON.stringify({ ...job, attempts: 0 }))
     },
 
     async pop(timeoutMs) {
-      const c = await ensureClient(redisUrl)
-      const result = await c.brPop(QUEUE_KEY, Math.ceil(timeoutMs / 1000))
-      if (!result) return null
-      return JSON.parse(result.element) as EmailJob
+      const c = await connect(client)
+      const raw = await c.brPopLPush(QUEUE_KEY, PROCESSING_KEY, Math.ceil(timeoutMs / 1000))
+      if (!raw) return null
+      return { job: JSON.parse(raw) as EmailJob, raw }
     },
 
-    async retry(job) {
-      const c = await ensureClient(redisUrl)
+    async ack(raw) {
+      const c = await connect(client)
+      await c.lRem(PROCESSING_KEY, 1, raw)
+    },
+
+    async retry(raw, job) {
+      const c = await connect(client)
+      await c.lRem(PROCESSING_KEY, 1, raw)
       const next: EmailJob = { ...job, attempts: job.attempts + 1 }
       await c.lPush(QUEUE_KEY, JSON.stringify(next))
+    },
+
+    async recover() {
+      const c = await connect(client)
+      const stale = await c.lRange(PROCESSING_KEY, 0, -1)
+      if (stale.length === 0) return 0
+      await c.lPush(QUEUE_KEY, stale)
+      await c.del(PROCESSING_KEY)
+      return stale.length
     },
   }
 }
