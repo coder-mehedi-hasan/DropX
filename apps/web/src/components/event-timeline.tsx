@@ -36,10 +36,8 @@ export function EventTimeline({
           className="relative flex gap-4 pb-6 last:pb-0"
         >
           <div className="flex flex-col items-center">
-            /*
-             * The newest event carries the Volt mark, so "where is this parcel
-             * right now" is answered by the eye before the label is read.
-             */
+            /* * The newest event carries the Volt mark, so "where is this parcel * right now" is
+            answered by the eye before the label is read. */
             <span
               className={
                 index === 0

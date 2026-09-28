@@ -17,7 +17,8 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: "bg-card text-card-foreground [&>svg]:text-primary",
-        destructive: "border-destructive/30 bg-destructive/8 text-foreground [&>svg]:text-destructive",
+        destructive:
+          "border-destructive/30 bg-destructive/8 text-foreground [&>svg]:text-destructive",
         warning: "border-warning/30 bg-warning/8 text-foreground [&>svg]:text-warning",
         success: "border-success/30 bg-success/8 text-foreground [&>svg]:text-success",
       },
@@ -58,7 +59,8 @@ export function AlertDescription({ className, ...props }: React.ComponentProps<"
       className={cn(
         "text-muted-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed",
         className,
-      )}      {...props}
+      )}
+      {...props}
     />
   )
 }

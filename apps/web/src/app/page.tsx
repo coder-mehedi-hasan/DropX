@@ -70,9 +70,9 @@ export default function LandingPage() {
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_62%)] opacity-[0.14]"
           />
-          <div className="mx-auto grid w-full max-w-page gap-10 px-4 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
+          <div className="max-w-page mx-auto grid w-full gap-10 px-4 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
             <div className="grid gap-6">
-              <Badge className="border-primary/25 bg-primary/10 text-accent-ink w-fit hover:bg-primary/10">
+              <Badge className="border-primary/25 bg-primary/10 text-accent-ink hover:bg-primary/10 w-fit">
                 Parcel delivery across Bangladesh
               </Badge>
               <h1 className="text-4xl font-extrabold tracking-tight text-balance sm:text-5xl">
@@ -99,7 +99,7 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-4">
-              <div className="bg-card grid gap-3 rounded-feature border p-6 shadow-sm">
+              <div className="bg-card rounded-feature grid gap-3 border p-6 shadow-sm">
                 <h2 className="text-sm font-semibold">Already have a tracking number?</h2>
                 <TrackLookup />
               </div>
@@ -108,18 +108,23 @@ export default function LandingPage() {
         </section>
 
         <section id="how-it-works" className="border-b">
-          <div className="mx-auto w-full max-w-page px-4 py-16">
+          <div className="max-w-page mx-auto w-full px-4 py-16">
             <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
               How it works
             </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight">Four stages, one parcel history</h2>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight">
+              Four stages, one parcel history
+            </h2>
             <p className="text-muted-foreground mt-2 max-w-prose">
               Every parcel runs the same four stages, and each one writes to its tracking history.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               {STEPS.map((step, index) => (
-                <Card key={step.title} className="gap-4 py-5 transition-colors hover:border-primary/40">
+                <Card
+                  key={step.title}
+                  className="hover:border-primary/40 gap-4 py-5 transition-colors"
+                >
                   <CardHeader>
                     <span className="bg-primary/10 text-primary mb-2 flex size-9 items-center justify-center rounded-lg">
                       <step.icon className="size-4" aria-hidden />
@@ -139,7 +144,7 @@ export default function LandingPage() {
         </section>
 
         <section id="pricing">
-          <div className="mx-auto w-full max-w-page px-4 py-16">
+          <div className="max-w-page mx-auto w-full px-4 py-16">
             <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
               <div className="grid content-start gap-4">
                 <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
