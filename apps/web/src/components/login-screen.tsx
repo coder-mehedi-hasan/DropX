@@ -6,15 +6,11 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
-  Checkbox,
   DropXLogo,
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
+  FormCheckbox,
+  FormInput,
+  FormOtpInput,
   LoadingButton,
   Tabs,
   TabsContent,
@@ -272,47 +268,19 @@ function IdentifierStep({
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
-          <FormField
-            control={form.control}
+          <FormInput<IdentifierValues>
             name="identifier"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium">Phone number or email</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="text"
-                    inputMode="email"
-                    autoComplete="email"
-                    placeholder="01712345678 or you@example.com"
-                    className="h-12 rounded-lg"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Phone number or email"
+            type="text"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="01712345678 or you@example.com"
+            className="h-12 rounded-lg"
           />
 
-          <FormField
-            control={form.control}
+          <FormCheckbox<IdentifierValues>
             name="consent"
-            render={({ field }) => (
-              <FormItem>
-                <div className="flex items-start gap-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                    />
-                  </FormControl>
-                  <FormLabel className="items-start text-sm leading-5 font-normal">
-                    I agree to DropX using my contact details to deliver and update me about
-                    parcels.
-                  </FormLabel>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="I agree to DropX using my contact details to deliver and update me about parcels."
           />
 
           <LoadingButton type="submit" loading={busy} className="h-12 w-full rounded-lg">
@@ -345,13 +313,7 @@ function CodeStep({
     defaultValues: { code: "" },
     mode: "onSubmit",
   })
-  const inputRefs = React.useRef<Array<HTMLInputElement | null>>([])
-
   const canResend = secondsLeft <= 0
-
-  React.useEffect(() => {
-    inputRefs.current[0]?.focus()
-  }, [])
 
   return (
     <TabsContent value="code" className="gap-0">
@@ -368,61 +330,7 @@ function CodeStep({
           className="grid gap-7"
           noValidate
         >
-          <FormField
-            control={form.control}
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="sr-only">Six-digit code</FormLabel>
-                <FormControl>
-                  <div
-                    className="flex justify-center gap-3 sm:gap-3.5"
-                    role="group"
-                    aria-label="Six-digit verification code"
-                  >
-                    {Array.from({ length: 6 }, (_, index) => (
-                      <Input
-                        key={index}
-                        ref={(element) => {
-                          inputRefs.current[index] = element
-                        }}
-                        value={field.value[index] ?? ""}
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete={index === 0 ? "one-time-code" : "off"}
-                        maxLength={1}
-                        aria-label={`Digit ${index + 1} of 6`}
-                        className="size-12 rounded-lg border-slate-300 p-0 text-center font-mono text-xl font-semibold sm:size-13"
-                        onChange={(event) => {
-                          const digit = event.target.value.replace(/\D/g, "").slice(-1)
-                          const nextCode = field.value.split("")
-                          nextCode[index] = digit
-                          field.onChange(nextCode.join("").slice(0, 6))
-                          if (digit && index < 5) inputRefs.current[index + 1]?.focus()
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Backspace" && !field.value[index] && index > 0) {
-                            inputRefs.current[index - 1]?.focus()
-                          }
-                        }}
-                        onPaste={(event) => {
-                          event.preventDefault()
-                          const pasted = event.clipboardData
-                            .getData("text")
-                            .replace(/\D/g, "")
-                            .slice(0, 6)
-                          if (!pasted) return
-                          field.onChange(pasted)
-                          inputRefs.current[Math.min(pasted.length, 6) - 1]?.focus()
-                        }}
-                      />
-                    ))}
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormOtpInput<CodeValues> name="code" className="flex justify-center gap-3 sm:gap-3.5" />
 
           <LoadingButton type="submit" loading={verifying} className="h-12 w-full rounded-lg">
             {verifying ? "Verifying…" : "Verify and sign in"}
