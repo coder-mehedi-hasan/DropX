@@ -4,22 +4,7 @@ import { LogIn } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import {
-  Card,
-  DropXLockup,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
-  LoadingButton,
-} from "@dropx/ui"
+import { Card, DropXLogo, Form, FormInput, FormPasswordInput, LoadingButton } from "@dropx/ui"
 import { toast } from "sonner"
 
 import { ServerError } from "@/components/server-error"
@@ -65,70 +50,49 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-10">
-      <DropXLockup />
-      <Card className="w-full max-w-sm gap-0 py-0 shadow-sm">
-        <CardHeader className="border-b">
-          <CardTitle className="text-lg">Staff sign in</CardTitle>
-          <CardDescription>Use your work email and password.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
+    <main className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <DropXLogo size="lg" />
+          <h1 className="mt-8 text-2xl font-semibold tracking-tight">Staff sign in</h1>
+          <p className="text-muted-foreground mt-2 text-sm">Use your work email and password.</p>
+        </div>
+        <Card className="rounded-feature border-border/80 p-6 shadow-lg sm:p-8">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="grid gap-6">
               <ServerError
                 error={serverError}
                 title="Unable to sign in"
                 onDismiss={() => setServerError(null)}
               />
 
-              <FormField
-                control={form.control}
+              <FormInput<LoginValues>
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        autoComplete="username"
-                        placeholder="you@dropx.com"
-                        disabled={submitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Email"
+                type="email"
+                autoComplete="username"
+                placeholder="you@dropx.com"
+                disabled={submitting}
               />
 
-              <FormField
-                control={form.control}
+              <FormPasswordInput<LoginValues>
                 name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        autoComplete="current-password"
-                        disabled={submitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Password"
+                autoComplete="current-password"
+                disabled={submitting}
               />
 
-              <LoadingButton type="submit" className="w-full" loading={submitting}>
+              <LoadingButton type="submit" size="lg" className="mt-2 w-full" loading={submitting}>
                 <LogIn />
                 Sign in
               </LoadingButton>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-      <p className="text-muted-foreground text-xs">Staff only. Access is logged against your account.</p>
-    </div>
+        </Card>
+        <p className="text-muted-foreground mt-6 text-center text-xs">
+          Staff only. Access is logged against your account.
+        </p>
+      </div>
+    </main>
   )
 }

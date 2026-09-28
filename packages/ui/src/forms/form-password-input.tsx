@@ -5,6 +5,7 @@ import type { FieldPath, FieldValues } from "react-hook-form"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
 
 import { Input } from "../components/ui/input"
+import { cn } from "../lib/cn"
 import { BoundFormField, FormControl } from "./form-field"
 import { FieldShell, type SharedFieldProps } from "./form-field"
 
@@ -36,7 +37,7 @@ export function FormPasswordInput<TFieldValues extends FieldValues>({
                 {...inputProps}
                 {...field}
                 type={visible ? "text" : "password"}
-                className="pr-11"
+                className={cn("pr-11", inputProps.className)}
               />
             </FormControl>
             <button
