@@ -149,7 +149,7 @@ function TrackingResult({ tracking }: { tracking: ParcelTracking }) {
       <Card className="gap-4 py-4 lg:col-span-2">
         <CardHeader className="px-4">
           <div className="flex flex-wrap items-center gap-2">
-            <CardTitle className="text-primary font-mono text-lg font-extrabold tracking-tight">
+            <CardTitle className="text-foreground font-mono text-lg font-extrabold tracking-tight">
               {tracking.trackingNumber}
             </CardTitle>
             <StatusBadge status={tracking.status} />

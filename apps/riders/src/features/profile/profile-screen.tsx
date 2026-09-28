@@ -85,7 +85,7 @@ export function ProfileScreen() {
                     <p className="text-sm font-medium">{PERMISSION_LABELS[key]}</p>
                     <p className="text-muted-foreground font-mono text-xs">{key}</p>
                   </div>
-                  <Badge variant={can(key) ? "success" : "outline"}>
+                  <Badge variant={can(key) ? "secondary" : "outline"}>
                     {can(key) ? "Granted" : "Not granted"}
                   </Badge>
                 </li>

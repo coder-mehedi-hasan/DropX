@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
   Separator,
+  StatusBadge,
 } from "@dropx/ui"
 import {
   BanknoteIcon,
@@ -46,12 +47,12 @@ const STEPS = [
 ] as const
 
 const STATUSES = [
-  "Created",
-  "Picked up",
-  "In transit",
-  "At hub",
-  "Out for delivery",
-  "Delivered",
+  "CREATED",
+  "PICKED_UP",
+  "IN_TRANSIT",
+  "AT_HUB",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
 ] as const
 
 export default function LandingPage() {
@@ -109,7 +110,7 @@ export default function LandingPage() {
 
         <section id="how-it-works" className="border-b">
           <div className="max-w-page mx-auto w-full px-4 py-16">
-            <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+            <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
               How it works
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight">
@@ -130,7 +131,7 @@ export default function LandingPage() {
                       <step.icon className="size-4" aria-hidden />
                     </span>
                     <CardTitle className="flex items-baseline gap-2">
-                      <span className="text-primary text-xs font-bold tabular-nums">
+                      <span className="text-accent-ink text-xs font-bold tabular-nums">
                         {String(index + 1).padStart(2, "0")}
                       </span>
                       {step.title}
@@ -147,7 +148,7 @@ export default function LandingPage() {
           <div className="max-w-page mx-auto w-full px-4 py-16">
             <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
               <div className="grid content-start gap-4">
-                <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+                <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
                   Pricing
                 </p>
                 <h2 className="mt-2 text-3xl font-bold tracking-tight">
@@ -189,7 +190,7 @@ export default function LandingPage() {
                         <span className="text-muted-foreground w-5 text-xs tabular-nums">
                           {String(index + 1).padStart(2, "0")}
                         </span>
-                        <span className="text-sm font-medium">{status}</span>
+                        <StatusBadge status={status} />
                         {index < STATUSES.length - 1 ? (
                           <Separator orientation="vertical" className="ml-auto h-4" />
                         ) : null}

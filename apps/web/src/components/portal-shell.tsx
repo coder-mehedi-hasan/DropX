@@ -1,6 +1,15 @@
 "use client"
 
-import { Alert, AlertDescription, AlertTitle, Button, DropXLogo, Skeleton, cn } from "@dropx/ui"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  DropXLogo,
+  LoadingButton,
+  Skeleton,
+  cn,
+} from "@dropx/ui"
 import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -97,10 +106,10 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <span className="text-muted-foreground hidden text-sm sm:inline">
               {customer?.name || customer?.phone || "Signed in"}
             </span>
-            <Button variant="outline" size="sm" onClick={onSignOut} disabled={signingOut}>
+            <LoadingButton variant="outline" size="sm" onClick={onSignOut} loading={signingOut}>
               <LogOutIcon aria-hidden />
               Sign out
-            </Button>
+            </LoadingButton>
           </div>
         </div>
 

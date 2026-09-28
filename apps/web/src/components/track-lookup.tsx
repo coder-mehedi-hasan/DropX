@@ -4,10 +4,10 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Button,
   Card,
   CardContent,
   Input,
+  LoadingButton,
   Separator,
   Skeleton,
   StatusBadge,
@@ -73,10 +73,10 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
                 className="font-mono font-semibold tracking-wide uppercase"
                 aria-describedby="tracking-number-hint"
               />
-              <Button type="submit" disabled={tracking.isPending || input.trim() === ""}>
+              <LoadingButton type="submit" loading={tracking.isPending} disabled={input.trim() === ""}>
                 <SearchIcon aria-hidden />
                 Track
-              </Button>
+              </LoadingButton>
             </div>
             <p id="tracking-number-hint" className="text-muted-foreground text-xs">
               Printed on your booking confirmation. No account needed.
@@ -101,7 +101,7 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="grid gap-1">
                 <p className="text-muted-foreground text-xs">Tracking number</p>
-                <p className="text-primary font-mono text-xl font-extrabold tracking-tight">
+                <p className="text-foreground font-mono text-xl font-extrabold tracking-tight">
                   {result.trackingNumber}
                 </p>
               </div>
@@ -137,7 +137,7 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
             <Separator />
 
             <div>
-              <p className="text-primary mb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+              <p className="text-accent-ink mb-1 text-xs font-semibold tracking-[0.16em] uppercase">
                 Every handover
               </p>
               <h2 className="mb-4 text-base font-bold">Tracking history</h2>

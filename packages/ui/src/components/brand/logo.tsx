@@ -5,18 +5,15 @@ import { cn } from "../../lib/cn"
 /**
  * The DropX mark and wordmark.
  *
- * Inlined rather than loaded from `apps/web/public/brand/*.svg` because three
- * apps share one lockup and two of them have no static-asset directory at all —
- * an `<img>` would mean copying the same SVG into three public folders and
- * letting them drift. These paths are the production geometry from
- * `dropx-mark.svg` and `dropx-favicon.svg`; treat those files as the source of
- * truth and change both together.
+ * Inlined from the approved production geometry in `apps/web/public/brand/`
+ * (`dropx-mark.svg`, `dropx-wordmark-light.svg`) so admin and riders — which do
+ * not ship the full brand asset tree — cannot drift from the matrix. This is the
+ * approved horizontal wordmark lockup rendered as one component, not a new
+ * combination of mark + wordmark invented in app code.
  *
- * The wordmark is drawn as text rather than outlined paths so it inherits the
- * app's Inter stack and `currentColor`, which is what lets one component serve
- * the light surfaces of the customer portal and the Obsidian surfaces of the
- * operations tools. The brand book only requires outlining for print and vendor
- * handoff, not for screen.
+ * The wordmark text inherits `currentColor` so one component serves the light
+ * customer canvas and the Obsidian operations surfaces. Print/vendor handoff
+ * still uses the outlined SVG assets.
  */
 
 const MARK_VIEWBOX = "0 0 128 128"
@@ -52,11 +49,10 @@ const WORDMARK_SIZES = {
 } as const
 
 /**
- * Mark plus wordmark — the default lockup for a header.
+ * Approved horizontal wordmark for headers and navigation.
  *
- * The trailing `X` is Volt Orange, matching the shipped wordmark SVGs, and the
- * rest of the wordmark is `currentColor` so it reads as ink on a light canvas
- * and as white on Obsidian without a second component.
+ * Matches `dropx-wordmark-light.svg`: mark + Drop + Volt X. The trailing X uses
+ * `text-primary` (fill) because it is large display type on the lockup.
  */
 export function DropXLogo({
   className,
@@ -86,11 +82,10 @@ export function DropXLogo({
 }
 
 /**
- * The stacked mark with the "Smart logistics" descriptor.
+ * Stacked sign-in lockup with the "Smart logistics" descriptor.
  *
- * Only for a sign-in screen or another centred hero where there is room for the
- * descriptor to stay legible — the brand book keeps the descriptor optional and
- * drops it everywhere else.
+ * Only for centred hero space where the descriptor stays legible — matching the
+ * brand book rule that the descriptor is optional and dropped elsewhere.
  */
 export function DropXLockup({ className, ...props }: React.ComponentProps<"div">) {
   return (

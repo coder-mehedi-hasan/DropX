@@ -370,7 +370,7 @@ function CodeStep({
                     autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="000000"
-                    className="text-primary text-center font-mono text-lg font-bold tracking-[0.5em]"
+                    className="text-foreground text-center font-mono text-lg font-bold tracking-[0.5em]"
                     onChange={(event) =>
                       field.onChange(event.target.value.replace(/\D/g, "").slice(0, 6))
                     }

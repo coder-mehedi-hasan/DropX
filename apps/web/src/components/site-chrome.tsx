@@ -37,7 +37,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" asChild>
+          <Button variant="link" asChild>
             <Link href="/login">Sign in</Link>
           </Button>
           <Separator orientation="vertical" className="hidden h-6 sm:block" />

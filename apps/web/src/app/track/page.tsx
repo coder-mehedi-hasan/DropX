@@ -29,7 +29,7 @@ export default async function TrackPage({
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12">
         <div className="mb-8 grid gap-2">
-          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+          <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
             Public tracking
           </p>
           <h1 className="text-3xl font-bold tracking-tight">Track a parcel</h1>

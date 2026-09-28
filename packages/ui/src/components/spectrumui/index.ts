@@ -17,9 +17,6 @@ export type {
   DataTableProps,
 } from "./data-table"
 
-export { LoadingButton } from "./loading-button-dependencies"
-export type { LoadingButtonProps } from "./loading-button-dependencies"
-
 export { default as MultipleSelector, useDebounce } from "./multiple-selector-dependencies"
 export type { Option, MultipleSelectorRef } from "./multiple-selector-dependencies"
 

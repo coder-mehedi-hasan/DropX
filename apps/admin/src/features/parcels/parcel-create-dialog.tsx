@@ -32,6 +32,7 @@ import {
   SelectValue,
   Separator,
   Textarea,
+  LoadingButton,
 } from "@dropx/ui"
 import { toast } from "sonner"
 
@@ -730,9 +731,9 @@ export function ParcelCreateDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Booking…" : "Book parcel"}
-              </Button>
+              <LoadingButton type="submit" loading={mutation.isPending}>
+                Book parcel
+              </LoadingButton>
             </DialogFooter>
           </form>
         </Form>
