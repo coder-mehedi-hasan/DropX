@@ -10,3 +10,10 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 *.tsbuildinfo
+
+# Next regenerates this on every build; formatting it is undone immediately.
+next-env.d.ts
+
+# Pre-existing agent skill docs are not ours to reformat.
+.agents
+agent/skills

@@ -1,6 +1,6 @@
-import type { DatabaseConfig, DatabaseFactory } from "../port/database";
-import { DatabaseError } from "../port/errors";
-import { createMySqlDatabase } from "./mysql2/adapter";
+import type { DatabaseConfig, DatabaseFactory } from "../port/database"
+import { DatabaseError } from "../port/errors"
+import { createMySqlDatabase } from "./mysql2/adapter"
 
 /**
  * Driver registry.
@@ -10,23 +10,23 @@ import { createMySqlDatabase } from "./mysql2/adapter";
  */
 const DRIVERS: Record<string, DatabaseFactory> = {
   mysql: createMySqlDatabase,
-};
+}
 
 export function registerDriver(name: string, factory: DatabaseFactory): void {
-  DRIVERS[name] = factory;
+  DRIVERS[name] = factory
 }
 
 export function supportedDrivers(): string[] {
-  return Object.keys(DRIVERS);
+  return Object.keys(DRIVERS)
 }
 
 export function createDatabase(config: DatabaseConfig) {
-  const factory = DRIVERS[config.driver];
+  const factory = DRIVERS[config.driver]
   if (!factory) {
     throw new DatabaseError(
       "UNSUPPORTED_DRIVER",
       `Unsupported database driver "${config.driver}". Available: ${supportedDrivers().join(", ")}`,
-    );
+    )
   }
-  return factory(config);
+  return factory(config)
 }

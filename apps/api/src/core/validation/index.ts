@@ -1,8 +1,8 @@
-import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
+import { zValidator } from "@hono/zod-validator"
+import { z } from "zod"
 
-import { ERROR_CODES, DomainError, type ErrorDetail } from "../errors";
-import { zodErrorDetails } from "./zod-mappers";
+import { ERROR_CODES, DomainError, type ErrorDetail } from "../errors"
+import { zodErrorDetails } from "./zod-mappers"
 
 /**
  * Boundary validation.
@@ -13,9 +13,9 @@ import { zodErrorDetails } from "./zod-mappers";
  * used because it does not match the API error contract.
  */
 
-type Infer<T extends z.ZodType> = z.infer<T>;
+type Infer<T extends z.ZodType> = z.infer<T>
 
-type Target = "json" | "query" | "param" | "header";
+type Target = "json" | "query" | "param" | "header"
 
 /**
  * The single failure hook.
@@ -27,40 +27,40 @@ type Target = "json" | "query" | "param" | "header";
  */
 function failOn(_target: Target) {
   return ((result: { success: boolean; error?: z.ZodError }) => {
-    if (result.success) return;
+    if (result.success) return
     throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "Some fields need attention", {
       details: zodErrorDetails(result.error ?? new z.ZodError([])),
-    });
-  }) as never;
+    })
+  }) as never
 }
 
 export function validateJson<T extends z.ZodType>(schema: T) {
-  return zValidator("json", schema, failOn("json"));
+  return zValidator("json", schema, failOn("json"))
 }
 
 export function validateQuery<T extends z.ZodType>(schema: T) {
-  return zValidator("query", schema, failOn("query"));
+  return zValidator("query", schema, failOn("query"))
 }
 
 export function validateParam<T extends z.ZodType>(schema: T) {
-  return zValidator("param", schema, failOn("param"));
+  return zValidator("param", schema, failOn("param"))
 }
 
 export function validateHeader<T extends z.ZodType>(schema: T) {
-  return zValidator("header", schema, failOn("header"));
+  return zValidator("header", schema, failOn("header"))
 }
 
 /** Parses outside a route — for values a service needs to trust. */
 export function parseOrThrow<T extends z.ZodType>(schema: T, value: unknown): Infer<T> {
-  const result = schema.safeParse(value);
+  const result = schema.safeParse(value)
   if (!result.success) {
     throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "Some fields need attention", {
       details: zodErrorDetails(result.error),
-    });
+    })
   }
-  return result.data;
+  return result.data
 }
 
-export type { Infer };
-export { zodErrorDetails, zodFailure, isZodError, summariseDetails } from "./zod-mappers";
-export type { ErrorDetail };
+export type { Infer }
+export { zodErrorDetails, zodFailure, isZodError, summariseDetails } from "./zod-mappers"
+export type { ErrorDetail }

@@ -1,35 +1,32 @@
 # Parallel development processes.
 #
-#   bun run dev          # everything
-#   bunx mprocs api      # one process by name
+#   bun run dev            # everything
+#   bunx mprocs api        # start one process by name
 #
-# `.env` at the repo root is the single source of runtime configuration. The API
-# and the seed script read it from there regardless of which directory they run
-# in, so no per-process `env_file` entries are needed here.
+# `procs` is a map of name -> process. Each entry needs exactly one of `shell`
+# or `cmd`. `<CONFIG_DIR>` expands to the directory holding this file, so the
+# paths stay correct no matter which directory mprocs was launched from.
+#
+# `.env` at the repo root is the single source of runtime configuration; each
+# script loads it itself via `--env-file=../../.env`, so nothing here is needed.
 
 procs:
-  - name: api
-    cwd: apps/api
-    cmd: bun run dev
-    # Surfaces tracebacks and crashes instead of scrolling past them.
+  api:
+    cwd: <CONFIG_DIR>/apps/api
+    shell: bun run dev
     autorestart: true
-    max_restarts: 5
-    ready_pattern: listening on http
 
-  - name: console
-    cwd: apps/console
-    cmd: bun run dev
+  console:
+    cwd: <CONFIG_DIR>/apps/console
+    shell: bun run dev
     autorestart: true
-    ready_pattern: Local
 
-  - name: riders
-    cwd: apps/riders
-    cmd: bun run dev
+  riders:
+    cwd: <CONFIG_DIR>/apps/riders
+    shell: bun run dev
     autorestart: true
-    ready_pattern: Local
 
-  - name: web
-    cwd: apps/web
-    cmd: bun run dev
+  web:
+    cwd: <CONFIG_DIR>/apps/web
+    shell: bun run dev
     autorestart: true
-    ready_pattern: Local

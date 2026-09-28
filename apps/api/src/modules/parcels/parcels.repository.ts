@@ -16,9 +16,9 @@ import {
   type ParcelType,
   type PaymentType,
   type SqlPrimitive,
-} from "@dropx/db";
+} from "@dropx/db"
 
-import type { Scope } from "../../shared/auth/auth-context";
+import type { Scope } from "../../shared/auth/auth-context"
 
 /**
  * Persistence for `parcels`, always scoped.
@@ -34,38 +34,38 @@ const SELECT_COLUMNS = `
   p.origin_hub_id, p.destination_hub_id, p.current_hub_id, p.destination_zone_id,
   p.weight, p.length, p.width, p.height, p.parcel_type, p.payment_type,
   p.cod_amount, p.delivery_fee, p.status, p.created_at, p.updated_at
-`;
+`
 
 /**
  * One hub column stands in for "where this parcel is now": its current hub, or
  * its destination hub while it is still inbound. Scoping on a single derived
  * column keeps the branch/hub rules in one place instead of per-query variants.
  */
-const SCOPE_JOIN_ON = "scope_hub.id = COALESCE(p.current_hub_id, p.destination_hub_id)";
+const SCOPE_JOIN_ON = "scope_hub.id = COALESCE(p.current_hub_id, p.destination_hub_id)"
 
 export type ListParcelsFilter = {
-  status?: ParcelStatus | undefined;
-  hubId?: Id | undefined;
-  paymentType?: PaymentType | undefined;
-  search?: string | undefined;
-  searchFields?: readonly string[];
-};
+  status?: ParcelStatus | undefined
+  hubId?: Id | undefined
+  paymentType?: PaymentType | undefined
+  search?: string | undefined
+  searchFields?: readonly string[]
+}
 
 export function applyScope(builder: QueryBuilder, scope: Scope): QueryBuilder {
-  if (scope.isCompanyWide) return builder;
-  if (scope.branchId) builder.where("scope_hub.branch_id = ?", scope.branchId);
-  if (scope.hubIds.length > 0) builder.whereIn("scope_hub.id", scope.hubIds);
-  return builder;
+  if (scope.isCompanyWide) return builder
+  if (scope.branchId) builder.where("scope_hub.branch_id = ?", scope.branchId)
+  if (scope.hubIds.length > 0) builder.whereIn("scope_hub.id", scope.hubIds)
+  return builder
 }
 
 export function applyFilters(builder: QueryBuilder, filter: ListParcelsFilter): QueryBuilder {
-  if (filter.status) builder.where("p.status = ?", filter.status);
-  if (filter.hubId) builder.where("p.current_hub_id = ?", filter.hubId);
-  if (filter.paymentType) builder.where("p.payment_type = ?", filter.paymentType);
+  if (filter.status) builder.where("p.status = ?", filter.status)
+  if (filter.hubId) builder.where("p.current_hub_id = ?", filter.hubId)
+  if (filter.paymentType) builder.where("p.payment_type = ?", filter.paymentType)
   if (filter.search && filter.searchFields) {
-    builder.whereSearch(filter.search, filter.searchFields);
+    builder.whereSearch(filter.search, filter.searchFields)
   }
-  return builder;
+  return builder
 }
 
 function baseQuery(): QueryBuilder {
@@ -73,7 +73,7 @@ function baseQuery(): QueryBuilder {
     .select(SELECT_COLUMNS)
     .from(TABLES.parcels, "p")
     .leftJoin(TABLES.customers, "r.id = p.receiver_customer_id", "r")
-    .leftJoin(TABLES.hubs, SCOPE_JOIN_ON, "scope_hub");
+    .leftJoin(TABLES.hubs, SCOPE_JOIN_ON, "scope_hub")
 }
 
 export async function listParcels(
@@ -83,20 +83,24 @@ export async function listParcels(
   filter: ListParcelsFilter,
   sortColumns: readonly string[],
 ): Promise<{ nodes: Parcel[]; totalCount: number }> {
-  const builder = applyScope(applyFilters(baseQuery(), filter), scope).orderByListParams(params, sortColumns, [
-    { column: "p.created_at", direction: "desc" },
-    { column: "p.id", direction: "desc" },
-  ]);
+  const builder = applyScope(applyFilters(baseQuery(), filter), scope).orderByListParams(
+    params,
+    sortColumns,
+    [
+      { column: "p.created_at", direction: "desc" },
+      { column: "p.id", direction: "desc" },
+    ],
+  )
 
-  const countQuery = builder.buildCount();
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build();
+  const countQuery = builder.buildCount()
+  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
 
   const [totalCount, rows] = await Promise.all([
     db.count(countQuery.sql, countQuery.params),
     db.query<ParcelRow>(pageQuery.sql, pageQuery.params),
-  ]);
+  ])
 
-  return { nodes: rows.rows.map(decodeParcel), totalCount };
+  return { nodes: rows.rows.map(decodeParcel), totalCount }
 }
 
 export async function findParcelById(
@@ -104,13 +108,10 @@ export async function findParcelById(
   scope: Scope,
   parcelId: Id,
 ): Promise<Parcel | null> {
-  const builder = applyScope(
-    baseQuery().where("p.id = ?", parcelId),
-    scope,
-  );
+  const builder = applyScope(baseQuery().where("p.id = ?", parcelId), scope)
 
-  const row = await db.queryOne<ParcelRow>(...queryParts(builder));
-  return row ? decodeParcel(row) : null;
+  const row = await db.queryOne<ParcelRow>(...queryParts(builder))
+  return row ? decodeParcel(row) : null
 }
 
 /** Unscoped by design — used for public tracking and system-level jobs. */
@@ -121,8 +122,8 @@ export async function findParcelByTrackingNumber(
   const row = await db.queryOne<ParcelRow>(
     `SELECT ${SELECT_COLUMNS} FROM ${TABLES.parcels} p WHERE p.tracking_number = ? LIMIT 1`,
     [trackingNumber],
-  );
-  return row ? decodeParcel(row) : null;
+  )
+  return row ? decodeParcel(row) : null
 }
 
 /**
@@ -141,8 +142,8 @@ export async function findParcelForCustomer(
         AND (p.sender_customer_id = ? OR p.receiver_customer_id = ?)
       LIMIT 1`,
     [parcelId, customerId, customerId],
-  );
-  return row ? decodeParcel(row) : null;
+  )
+  return row ? decodeParcel(row) : null
 }
 
 export async function listParcelsForCustomer(
@@ -156,44 +157,44 @@ export async function listParcelsForCustomer(
     .select(SELECT_COLUMNS)
     .from(TABLES.parcels, "p")
     .leftJoin(TABLES.hubs, SCOPE_JOIN_ON, "scope_hub")
-    .where("(p.sender_customer_id = ? OR p.receiver_customer_id = ?)", customerId, customerId);
+    .where("(p.sender_customer_id = ? OR p.receiver_customer_id = ?)", customerId, customerId)
 
-  applyFilters(builder, filter);
+  applyFilters(builder, filter)
 
   builder.orderByListParams(params, sortColumns, [
     { column: "p.created_at", direction: "desc" },
     { column: "p.id", direction: "desc" },
-  ]);
+  ])
 
-  const countQuery = builder.buildCount();
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build();
+  const countQuery = builder.buildCount()
+  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
 
   const [totalCount, rows] = await Promise.all([
     db.count(countQuery.sql, countQuery.params),
     db.query<ParcelRow>(pageQuery.sql, pageQuery.params),
-  ]);
+  ])
 
-  return { nodes: rows.rows.map(decodeParcel), totalCount };
+  return { nodes: rows.rows.map(decodeParcel), totalCount }
 }
 
 type CreateParcelRecord = {
-  trackingNumber: string;
-  senderCustomerId: Id;
-  receiverCustomerId: Id;
-  originHubId: Id;
-  destinationHubId: Id;
-  currentHubId: Id | null;
-  destinationZoneId: Id;
-  weight: number;
-  length?: number | undefined;
-  width?: number | undefined;
-  height?: number | undefined;
-  parcelType: ParcelType;
-  paymentType: PaymentType;
-  codAmount: number;
-  deliveryFee: number;
-  status: ParcelStatus;
-};
+  trackingNumber: string
+  senderCustomerId: Id
+  receiverCustomerId: Id
+  originHubId: Id
+  destinationHubId: Id
+  currentHubId: Id | null
+  destinationZoneId: Id
+  weight: number
+  length?: number | undefined
+  width?: number | undefined
+  height?: number | undefined
+  parcelType: ParcelType
+  paymentType: PaymentType
+  codAmount: number
+  deliveryFee: number
+  status: ParcelStatus
+}
 
 export async function insertParcel(db: Executor, record: CreateParcelRecord): Promise<Id> {
   const { sql, params } = new InsertBuilder(TABLES.parcels, {
@@ -213,11 +214,11 @@ export async function insertParcel(db: Executor, record: CreateParcelRecord): Pr
     cod_amount: record.codAmount,
     delivery_fee: record.deliveryFee,
     status: record.status,
-  }).build();
+  }).build()
 
-  const result = await db.execute(sql, params);
-  if (!result.insertId) throw new Error("Parcel insert returned no id");
-  return result.insertId;
+  const result = await db.execute(sql, params)
+  if (!result.insertId) throw new Error("Parcel insert returned no id")
+  return result.insertId
 }
 
 export async function insertParcelItems(
@@ -233,9 +234,9 @@ export async function insertParcelItems(
       quantity: item.quantity,
       unit_price: item.unitPrice,
       total_price: Math.round(item.unitPrice * item.quantity * 100) / 100,
-    }).build();
+    }).build()
 
-    await db.execute(sql, params);
+    await db.execute(sql, params)
   }
 }
 
@@ -249,16 +250,16 @@ export async function updateParcelStatus(
   parcelId: Id,
   patch: { status: ParcelStatus; currentHubId?: Id | null | undefined },
 ): Promise<number> {
-  const assignments: string[] = ["status = ?"];
-  const params: (string | number | null)[] = [patch.status];
+  const assignments: string[] = ["status = ?"]
+  const params: (string | number | null)[] = [patch.status]
 
   if (patch.currentHubId !== undefined) {
-    assignments.push("current_hub_id = ?");
-    params.push(patch.currentHubId);
+    assignments.push("current_hub_id = ?")
+    params.push(patch.currentHubId)
   }
 
-  let sql = `UPDATE ${TABLES.parcels} SET ${assignments.join(", ")} WHERE id = ?`;
-  params.push(parcelId);
+  let sql = `UPDATE ${TABLES.parcels} SET ${assignments.join(", ")} WHERE id = ?`
+  params.push(parcelId)
 
   if (!scope.isCompanyWide) {
     sql += ` AND (
@@ -267,24 +268,24 @@ export async function updateParcelStatus(
         ${scope.branchId ? "AND branch_id = ?" : ""}
         ${scope.hubIds.length > 0 ? `AND id IN (${scope.hubIds.map(() => "?").join(", ")})` : ""}
       )
-    )`;
-    if (scope.branchId) params.push(scope.branchId);
-    params.push(...scope.hubIds);
+    )`
+    if (scope.branchId) params.push(scope.branchId)
+    params.push(...scope.hubIds)
   }
 
-  const result = await db.execute(sql, params);
-  return result.affectedRows;
+  const result = await db.execute(sql, params)
+  return result.affectedRows
 }
 
 export async function insertParcelEvent(
   db: Executor,
   input: {
-    parcelId: Id;
-    eventType: string;
-    hubId?: Id | null | undefined;
-    userId?: Id | null | undefined;
-    riderId?: Id | null | undefined;
-    description?: string | null | undefined;
+    parcelId: Id
+    eventType: string
+    hubId?: Id | null | undefined
+    userId?: Id | null | undefined
+    riderId?: Id | null | undefined
+    description?: string | null | undefined
   },
 ): Promise<void> {
   const { sql, params } = new InsertBuilder(TABLES.parcelEvents, {
@@ -294,9 +295,9 @@ export async function insertParcelEvent(
     user_id: input.userId ?? null,
     rider_id: input.riderId ?? null,
     description: input.description ?? null,
-  }).build();
+  }).build()
 
-  await db.execute(sql, params);
+  await db.execute(sql, params)
 }
 
 export async function listParcelItems(db: Executor, parcelId: Id): Promise<ParcelItem[]> {
@@ -306,46 +307,46 @@ export async function listParcelItems(db: Executor, parcelId: Id): Promise<Parce
       WHERE parcel_id = ?
       ORDER BY id`,
     [parcelId],
-  );
-  return rows.rows.map(decodeItem);
+  )
+  return rows.rows.map(decodeItem)
 }
 
 type ParcelRow = {
-  id: string;
-  tracking_number: string;
-  sender_customer_id: string;
-  receiver_customer_id: string;
-  origin_hub_id: string;
-  destination_hub_id: string;
-  current_hub_id: string | null;
-  destination_zone_id: string;
-  weight: string;
-  length: string | null;
-  width: string | null;
-  height: string | null;
-  parcel_type: ParcelType;
-  payment_type: PaymentType;
-  cod_amount: string;
-  delivery_fee: string;
-  status: ParcelStatus;
-  created_at: string;
-  updated_at: string;
-};
+  id: string
+  tracking_number: string
+  sender_customer_id: string
+  receiver_customer_id: string
+  origin_hub_id: string
+  destination_hub_id: string
+  current_hub_id: string | null
+  destination_zone_id: string
+  weight: string
+  length: string | null
+  width: string | null
+  height: string | null
+  parcel_type: ParcelType
+  payment_type: PaymentType
+  cod_amount: string
+  delivery_fee: string
+  status: ParcelStatus
+  created_at: string
+  updated_at: string
+}
 
-type ParcelItemRow = {
-  id: string;
-  parcel_id: string;
-  name: string;
-  description: string | null;
-  quantity: string;
-  unit_price: string;
-  total_price: string;
-  created_at: string;
-};
+export type ParcelItemRow = {
+  id: string
+  parcel_id: string
+  name: string
+  description: string | null
+  quantity: string
+  unit_price: string
+  total_price: string
+  created_at: string
+}
 
 function queryParts(builder: QueryBuilder): [string, SqlPrimitive[]] {
-  const { sql, params } = builder.build();
-  return [sql, params];
+  const { sql, params } = builder.build()
+  return [sql, params]
 }
 
 export function decodeParcel(row: ParcelRow): Parcel {
@@ -369,10 +370,10 @@ export function decodeParcel(row: ParcelRow): Parcel {
     status: row.status,
     createdAt: new Date(`${row.created_at.replace(" ", "T")}Z`),
     updatedAt: new Date(`${row.updated_at.replace(" ", "T")}Z`),
-  };
+  }
 }
 
-function decodeItem(row: ParcelItemRow): ParcelItem {
+export function decodeItem(row: ParcelItemRow): ParcelItem {
   return {
     id: toId(row.id),
     parcelId: toId(row.parcel_id, "parcelId"),
@@ -382,7 +383,7 @@ function decodeItem(row: ParcelItemRow): ParcelItem {
     unitPrice: toDecimal(row.unit_price),
     totalPrice: toDecimal(row.total_price),
     createdAt: new Date(`${row.created_at.replace(" ", "T")}Z`),
-  };
+  }
 }
 
-export { PARCEL_STATUSES };
+export { PARCEL_STATUSES }

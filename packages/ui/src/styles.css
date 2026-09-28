@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/**
+ * DropX design tokens.
+ *
+ * shadcn's token layout (raw values in `:root`, mapped into Tailwind's theme in
+ * `@theme inline`) so every app gets the same palette without each one
+ * redefining it. Components reference semantic names — `bg-primary`,
+ * `text-muted-foreground` — never raw colours, which is what makes the console's
+ * dense tables and the rider app's high-contrast buttons stay consistent.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.596 0.145 163.225);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.769 0.155 70.08);
+  --warning-foreground: oklch(0.145 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  /* Parcel status colours — shared by the console tables and the rider app. */
+  --status-created: oklch(0.708 0 0);
+  --status-in-transit: oklch(0.623 0.188 259.815);
+  --status-out-for-delivery: oklch(0.769 0.155 70.08);
+  --status-delivered: oklch(0.596 0.145 163.225);
+  --status-failed: oklch(0.577 0.245 27.325);
+  --status-returned: oklch(0.553 0.041 257.417);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.696 0.17 162.48);
+  --success-foreground: oklch(0.145 0 0);
+  --warning: oklch(0.828 0.189 84.429);
+  --warning-foreground: oklch(0.145 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.556 0 0);
+
+  --status-created: oklch(0.708 0 0);
+  --status-in-transit: oklch(0.685 0.169 237.323);
+  --status-out-for-delivery: oklch(0.828 0.189 84.429);
+  --status-delivered: oklch(0.696 0.17 162.48);
+  --status-failed: oklch(0.704 0.191 22.216);
+  --status-returned: oklch(0.704 0.14 259.695);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-status-created: var(--status-created);
+  --color-status-in-transit: var(--status-in-transit);
+  --color-status-out-for-delivery: var(--status-out-for-delivery);
+  --color-status-delivered: var(--status-delivered);
+  --color-status-failed: var(--status-failed);
+  --color-status-returned: var(--status-returned);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}

@@ -1,9 +1,9 @@
-import { ERROR_CODES, DomainError, validateJson, validateParam, validateQuery } from "../../core";
-import { PERMISSIONS } from "../../shared/auth/permissions";
-import { actorId, isCustomer, scopeFromAuth } from "../../shared/auth/auth-context";
-import { defineOperation } from "../../shared/auth/policy";
-import type { AppEnv } from "../../types/env";
-import { Hono } from "hono";
+import { ERROR_CODES, DomainError, validateJson, validateParam, validateQuery } from "../../core"
+import { PERMISSIONS } from "../../shared/auth/permissions"
+import { actorId, isCustomer, scopeFromAuth } from "../../shared/auth/auth-context"
+import { defineOperation } from "../../shared/auth/policy"
+import type { AppEnv } from "../../types/env"
+import { Hono } from "hono"
 
 import {
   PARCEL_SEARCH_COLUMNS,
@@ -14,8 +14,8 @@ import {
   listParcelsQuerySchema,
   parcelIdParamSchema,
   updateParcelStatusSchema,
-} from "./parcels.dto";
-import * as parcels from "./parcels.service";
+} from "./parcels.dto"
+import * as parcels from "./parcels.service"
 
 /**
  * Transport only. Every handler validates, delegates, and shapes the response —
@@ -25,9 +25,9 @@ import * as parcels from "./parcels.service";
  * reach a staff operation, and the audience/permission policy enforces that
  * rather than trusting a hidden UI button.
  */
-const router = new Hono<AppEnv>();
+const router = new Hono<AppEnv>()
 
-const idParam = validateParam(parcelIdParamSchema);
+const idParam = validateParam(parcelIdParamSchema)
 
 // --- staff -----------------------------------------------------------------
 
@@ -45,10 +45,10 @@ router.get(
       c.req.valid("query"),
       PARCEL_SORT_COLUMNS,
       PARCEL_SEARCH_COLUMNS,
-    );
-    return c.json(page);
+    )
+    return c.json(page)
   },
-);
+)
 
 router.get(
   "/:id",
@@ -58,12 +58,16 @@ router.get(
   ),
   idParam,
   async (c) => {
-    const db = c.get("db");
-    const parcel = await parcels.getParcelForStaff(db, scopeFromAuth(c.get("auth")), c.req.param("id"));
-    const items = await parcels.getParcelItems(db, parcel.id);
-    return c.json({ ...parcel, items });
+    const db = c.get("db")
+    const parcel = await parcels.getParcelForStaff(
+      db,
+      scopeFromAuth(c.get("auth")),
+      c.req.param("id"),
+    )
+    const items = await parcels.getParcelItems(db, parcel.id)
+    return c.json({ ...parcel, items })
   },
-);
+)
 
 router.post(
   "/",
@@ -73,13 +77,13 @@ router.post(
   ),
   validateJson(createParcelSchema),
   async (c) => {
-    const input = c.req.valid("json");
-    const auth = c.get("auth");
+    const input = c.req.valid("json")
+    const auth = c.get("auth")
 
     if (!input.senderCustomerId) {
       throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "senderCustomerId is required", {
         details: [{ field: "senderCustomerId", message: "Pick the customer sending the parcel" }],
-      });
+      })
     }
 
     const parcel = await parcels.createParcel(c.get("db"), {
@@ -87,11 +91,11 @@ router.post(
       originZoneId: input.originZoneId,
       input,
       actorId: actorId(auth),
-    });
+    })
 
-    return c.json(parcel, 201);
+    return c.json(parcel, 201)
   },
-);
+)
 
 router.patch(
   "/:id/status",
@@ -102,7 +106,7 @@ router.patch(
   idParam,
   validateJson(updateParcelStatusSchema),
   async (c) => {
-    const input = c.req.valid("json");
+    const input = c.req.valid("json")
 
     const parcel = await parcels.updateParcelStatus(c.get("db"), {
       parcelId: c.req.param("id"),
@@ -111,11 +115,11 @@ router.patch(
       hubId: input.hubId,
       scope: scopeFromAuth(c.get("auth")),
       actorId: actorId(c.get("auth")),
-    });
+    })
 
-    return c.json(parcel);
+    return c.json(parcel)
   },
-);
+)
 
 router.post(
   "/:id/cancel",
@@ -132,11 +136,11 @@ router.post(
       reason: c.req.valid("json").reason,
       scope: scopeFromAuth(c.get("auth")),
       actorId: actorId(c.get("auth")),
-    });
+    })
 
-    return c.json(parcel);
+    return c.json(parcel)
   },
-);
+)
 
 // --- customer portal -------------------------------------------------------
 
@@ -148,9 +152,9 @@ router.get(
   ),
   validateQuery(listParcelsQuerySchema),
   async (c) => {
-    const auth = c.get("auth");
+    const auth = c.get("auth")
     if (!isCustomer(auth)) {
-      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue");
+      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
     }
 
     const page = await parcels.listParcelsForCustomerPortal(
@@ -159,11 +163,11 @@ router.get(
       c.req.valid("query"),
       PARCEL_SORT_COLUMNS,
       ["p.tracking_number"],
-    );
+    )
 
-    return c.json(page);
+    return c.json(page)
   },
-);
+)
 
 router.get(
   "/mine/:id",
@@ -173,17 +177,17 @@ router.get(
   ),
   idParam,
   async (c) => {
-    const auth = c.get("auth");
+    const auth = c.get("auth")
     if (!isCustomer(auth)) {
-      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue");
+      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
     }
 
-    const db = c.get("db");
-    const parcel = await parcels.getParcelForCustomer(db, auth.actor.customerId, c.req.param("id"));
-    const items = await parcels.getParcelItems(db, parcel.id);
-    return c.json({ ...parcel, items });
+    const db = c.get("db")
+    const parcel = await parcels.getParcelForCustomer(db, auth.actor.customerId, c.req.param("id"))
+    const items = await parcels.getParcelItems(db, parcel.id)
+    return c.json({ ...parcel, items })
   },
-);
+)
 
 router.post(
   "/mine",
@@ -193,12 +197,12 @@ router.post(
   ),
   validateJson(createOwnParcelSchema),
   async (c) => {
-    const auth = c.get("auth");
+    const auth = c.get("auth")
     if (!isCustomer(auth)) {
-      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue");
+      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
     }
 
-    const input = c.req.valid("json");
+    const input = c.req.valid("json")
 
     // The sender is the session, never the request body — `createOwnParcelSchema`
     // does not even accept the field.
@@ -207,10 +211,10 @@ router.post(
       originZoneId: input.originZoneId,
       input: { ...input, senderCustomerId: auth.actor.customerId },
       actorId: null,
-    });
+    })
 
-    return c.json(parcel, 201);
+    return c.json(parcel, 201)
   },
-);
+)
 
-export default router;
+export default router

@@ -1,11 +1,12 @@
-import type { Hono } from "hono";
+import type { Hono } from "hono"
 
-import type { AppEnv } from "../types/env";
-import auth from "./auth/auth.routes";
-import health from "./health/health.routes";
-import parcels from "./parcels/parcels.routes";
-import pricing from "./pricing/pricing.routes";
-import tracking from "./tracking/tracking.routes";
+import type { AppEnv } from "../types/env"
+import auth from "./auth/auth.routes"
+import health from "./health/health.routes"
+import jobs from "./jobs/jobs.routes"
+import parcels from "./parcels/parcels.routes"
+import pricing from "./pricing/pricing.routes"
+import tracking from "./tracking/tracking.routes"
 
 /**
  * The domain aggregator.
@@ -16,34 +17,35 @@ import tracking from "./tracking/tracking.routes";
  * and the route smoke test will surface, rather than failing silently open.
  */
 export type FeatureModule = {
-  name: string;
-  basePath: string;
-  router: Hono<AppEnv>;
-};
+  name: string
+  basePath: string
+  router: Hono<AppEnv>
+}
 
 const modules: readonly FeatureModule[] = [
   { name: "health", basePath: "/health", router: health },
   { name: "auth", basePath: "/auth", router: auth },
   { name: "tracking", basePath: "/tracking", router: tracking },
   { name: "parcels", basePath: "/parcels", router: parcels },
+  { name: "jobs", basePath: "/jobs", router: jobs },
   { name: "pricing", basePath: "/pricing", router: pricing },
-];
+]
 
-export const MODULES: readonly FeatureModule[] = modules;
+export const MODULES: readonly FeatureModule[] = modules
 
 /** Every business route is versioned; probes are not. */
-export const API_BASE_PATH = "/api/v1";
+export const API_BASE_PATH = "/api/v1"
 
 export function registerModules(app: Hono<AppEnv>): void {
   for (const module of modules) {
-    app.route(`${API_BASE_PATH}${module.basePath}`, module.router);
+    app.route(`${API_BASE_PATH}${module.basePath}`, module.router)
 
     // A future /v2 rollout must not break the load balancer's health probe,
     // so health is also served unversioned.
-    if (module.name === "health") app.route(module.basePath, module.router);
+    if (module.name === "health") app.route(module.basePath, module.router)
   }
 }
 
 export function moduleManifest(): { name: string; basePath: string }[] {
-  return modules.map(({ name, basePath }) => ({ name, basePath }));
+  return modules.map(({ name, basePath }) => ({ name, basePath }))
 }

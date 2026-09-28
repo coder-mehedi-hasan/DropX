@@ -9,17 +9,17 @@
  * idempotent "make the database match the file" runner rather than a versioned
  * migration system. Introduce a versioned runner when shipping to production.
  */
-import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 
-import { createDatabaseWith } from "../src/client";
-import { resolveDatabaseConfig } from "../src/config";
-import { TABLES } from "../src/entities/tables";
-import { DatabaseError } from "../src/port/errors";
+import { createDatabaseWith } from "../src/client"
+import { resolveDatabaseConfig } from "../src/config"
+import { TABLES } from "../src/entities/tables"
+import { DatabaseError } from "../src/port/errors"
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const SCHEMA_PATH = resolve(SCRIPT_DIR, "../../../migrate.sql");
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
+const SCHEMA_PATH = resolve(SCRIPT_DIR, "../../../migrate.sql")
 
 /**
  * Splits a SQL script into statements.
@@ -29,138 +29,138 @@ const SCHEMA_PATH = resolve(SCRIPT_DIR, "../../../migrate.sql");
  * string literals would otherwise be cut in half.
  */
 export function splitStatements(sql: string): string[] {
-  const statements: string[] = [];
-  let current = "";
-  let quote: '"' | "'" | "`" | null = null;
-  let inLineComment = false;
-  let inBlockComment = false;
+  const statements: string[] = []
+  let current = ""
+  let quote: '"' | "'" | "`" | null = null
+  let inLineComment = false
+  let inBlockComment = false
 
   for (let i = 0; i < sql.length; i += 1) {
-    const char = sql[i]!;
-    const next = sql[i + 1];
+    const char = sql[i]!
+    const next = sql[i + 1]
 
     if (inLineComment) {
       if (char === "\n") {
-        inLineComment = false;
-        current += char;
+        inLineComment = false
+        current += char
       }
-      continue;
+      continue
     }
 
     if (inBlockComment) {
       if (char === "*" && next === "/") {
-        inBlockComment = false;
-        i += 1;
+        inBlockComment = false
+        i += 1
       }
-      continue;
+      continue
     }
 
     if (quote) {
-      current += char;
+      current += char
       if (char === "\\" && next) {
-        current += next;
-        i += 1;
-        continue;
+        current += next
+        i += 1
+        continue
       }
       if (char === quote) {
         // Doubled quote is an escaped quote, not a terminator.
         if (next === quote) {
-          current += next;
-          i += 1;
-          continue;
+          current += next
+          i += 1
+          continue
         }
-        quote = null;
+        quote = null
       }
-      continue;
+      continue
     }
 
     if (char === "-" && next === "-") {
-      inLineComment = true;
-      i += 1;
-      continue;
+      inLineComment = true
+      i += 1
+      continue
     }
     if (char === "#") {
-      inLineComment = true;
-      continue;
+      inLineComment = true
+      continue
     }
     if (char === "/" && next === "*") {
-      inBlockComment = true;
-      i += 1;
-      continue;
+      inBlockComment = true
+      i += 1
+      continue
     }
     if (char === "'" || char === '"' || char === "`") {
-      quote = char;
-      current += char;
-      continue;
+      quote = char
+      current += char
+      continue
     }
     if (char === ";") {
-      const statement = current.trim();
-      if (statement) statements.push(statement);
-      current = "";
-      continue;
+      const statement = current.trim()
+      if (statement) statements.push(statement)
+      current = ""
+      continue
     }
 
-    current += char;
+    current += char
   }
 
-  const tail = current.trim();
-  if (tail) statements.push(tail);
-  return statements;
+  const tail = current.trim()
+  if (tail) statements.push(tail)
+  return statements
 }
 
 async function dropAllTables(db: ReturnType<typeof createDatabaseWith>): Promise<void> {
-  console.log("· dropping existing tables");
+  console.log("· dropping existing tables")
   const rows = await db.query<{ TABLE_NAME: string }>(
     "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()",
-  );
+  )
 
   for (const { TABLE_NAME: table } of rows.rows) {
-    await db.execute(`DROP TABLE IF EXISTS \`${table}\``);
+    await db.execute(`DROP TABLE IF EXISTS \`${table}\``)
   }
-  console.log(`  dropped ${rows.rows.length} table(s)`);
+  console.log(`  dropped ${rows.rows.length} table(s)`)
 }
 
 async function main(): Promise<void> {
-  const reset = process.argv.includes("--reset");
-  const db = createDatabaseWith(resolveDatabaseConfig());
+  const reset = process.argv.includes("--reset")
+  const db = createDatabaseWith(resolveDatabaseConfig())
 
   try {
-    await db.ping();
-    console.log(`· connected (driver: ${db.dialect})`);
+    await db.ping()
+    console.log(`· connected (driver: ${db.dialect})`)
 
     if (reset) {
-      await dropAllTables(db);
+      await dropAllTables(db)
     }
 
-    const sql = await readFile(SCHEMA_PATH, "utf8");
-    const statements = splitStatements(sql);
+    const sql = await readFile(SCHEMA_PATH, "utf8")
+    const statements = splitStatements(sql)
 
-    console.log(`· applying ${statements.length} statement(s) from migrate.sql`);
+    console.log(`· applying ${statements.length} statement(s) from migrate.sql`)
     for (const statement of statements) {
       try {
-        await db.execute(statement);
+        await db.execute(statement)
       } catch (error) {
-        const preview = statement.replace(/\s+/g, " ").slice(0, 90);
+        const preview = statement.replace(/\s+/g, " ").slice(0, 90)
         if (error instanceof DatabaseError) {
-          console.error(`\n✗ ${error.code}: ${error.message}\n  statement: ${preview}…`);
+          console.error(`\n✗ ${error.code}: ${error.message}\n  statement: ${preview}…`)
         } else {
-          console.error(`\n✗ migration failed\n  statement: ${preview}…`);
+          console.error(`\n✗ migration failed\n  statement: ${preview}…`)
         }
-        throw error;
+        throw error
       }
     }
 
-    const expected = Object.values(TABLES).length;
+    const expected = Object.values(TABLES).length
     const actual = await db.count(
       "SELECT COUNT(*) AS total FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()",
-    );
-    console.log(`✓ schema applied — ${actual} table(s) present (${expected} expected)`);
+    )
+    console.log(`✓ schema applied — ${actual} table(s) present (${expected} expected)`)
   } finally {
-    await db.close();
+    await db.close()
   }
 }
 
 main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+  console.error(error)
+  process.exitCode = 1
+})

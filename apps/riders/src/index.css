@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@import "@dropx/ui/styles.css";
+
+/*
+ * The shared package's components live outside this app's source tree, so
+ * Tailwind's automatic source detection cannot see the utility classes they
+ * reference (button heights, badge paddings, status colour shades). Without this
+ * the rider build would ship a visually broken `@dropx/ui`.
+ */
+@source "../../../packages/ui/src";
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply min-h-dvh antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /*
+   * Riders tap this app with a gloved thumb, and iOS otherwise paints a
+   * translucent flash over every control on tap.
+   */
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Money, weights and tracking numbers are compared at a glance, so they need
+   * lining figures that do not change width between rows.
+   */
+  [data-slot="table"],
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@utility tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

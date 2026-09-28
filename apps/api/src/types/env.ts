@@ -1,7 +1,7 @@
-import type { Database } from "@dropx/db";
+import type { Database } from "@dropx/db"
 
-import type { Logger } from "../core/logger";
-import type { AuthContext } from "../shared/auth/auth-context";
+import type { Logger } from "../core/logger"
+import type { AuthContext } from "../shared/auth/auth-context"
 
 /**
  * The per-request context Hono carries.
@@ -10,17 +10,17 @@ import type { AuthContext } from "../shared/auth/auth-context";
  * so handlers never re-parse headers or build a database handle themselves.
  */
 export type AppVariables = {
-  db: Database;
-  logger: Logger;
+  db: Database
+  logger: Logger
   /** Correlation id — echoed as `X-Request-Id` and attached to every log line. */
-  requestId: string;
-  auth: AuthContext;
+  requestId: string
+  auth: AuthContext
   /** `process.hrtime` at request entry, for the duration log. */
-  startedAt: number;
+  startedAt: number
   /** Operation id from the policy catalog, for audit logging. */
-  operationId: string;
-};
+  operationId: string
+}
 
 export type AppEnv = {
-  Variables: AppVariables;
-};
+  Variables: AppVariables
+}

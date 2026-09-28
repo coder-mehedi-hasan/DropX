@@ -1,16 +1,16 @@
-import { closeDatabase } from "@dropx/db";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { prettyJSON } from "hono/pretty-json";
-import { secureHeaders } from "hono/secure-headers";
+import { closeDatabase } from "@dropx/db"
+import { Hono } from "hono"
+import { cors } from "hono/cors"
+import { prettyJSON } from "hono/pretty-json"
+import { secureHeaders } from "hono/secure-headers"
 
-import { getConfig } from "./config";
-import { notFound, onError } from "./shared/errors/handler";
-import { requestContext } from "./shared/http/context";
-import { attachAuth } from "./shared/auth/middleware";
-import { assertPolicyCatalog, getPolicyCatalog } from "./shared/auth/policy";
-import { MODULES, moduleManifest, registerModules } from "./modules";
-import type { AppEnv } from "./types/env";
+import { getConfig } from "./config"
+import { notFound, onError } from "./shared/errors/handler"
+import { requestContext } from "./shared/http/context"
+import { attachAuth } from "./shared/auth/middleware"
+import { assertPolicyCatalog, getPolicyCatalog } from "./shared/auth/policy"
+import { MODULES, moduleManifest, registerModules } from "./modules"
+import type { AppEnv } from "./types/env"
 
 /**
  * Application wiring.
@@ -23,16 +23,16 @@ import type { AppEnv } from "./types/env";
  *   modules         — each route declares its own policy
  */
 export function createApp(): Hono<AppEnv> {
-  const config = getConfig();
+  const config = getConfig()
 
-  const app = new Hono<AppEnv>();
+  const app = new Hono<AppEnv>()
 
-  app.onError(onError);
-  app.notFound(notFound);
+  app.onError(onError)
+  app.notFound(notFound)
 
-  app.use("*", requestContext);
+  app.use("*", requestContext)
   // HSTS is only meaningful over TLS, so it is enabled for production only.
-  app.use("*", secureHeaders(config.isProduction ? { strictTransportSecurity: true } : {}));
+  app.use("*", secureHeaders(config.isProduction ? { strictTransportSecurity: true } : {}))
   app.use(
     "*",
     cors({
@@ -43,9 +43,9 @@ export function createApp(): Hono<AppEnv> {
       credentials: false,
       maxAge: 600,
     }),
-  );
-  app.use("*", prettyJSON({ space: config.isProduction ? 0 : 2 }));
-  app.use("*", attachAuth);
+  )
+  app.use("*", prettyJSON({ space: config.isProduction ? 0 : 2 }))
+  app.use("*", attachAuth)
 
   app.get("/", (c) =>
     c.json({
@@ -54,18 +54,18 @@ export function createApp(): Hono<AppEnv> {
       modules: moduleManifest(),
       docs: "See docs/overview.md and docs/rbac.md",
     }),
-  );
+  )
 
-  registerModules(app);
+  registerModules(app)
 
   // Fail fast at boot if a feature forgot to declare its operations.
-  assertPolicyCatalog();
+  assertPolicyCatalog()
 
   if (!config.isProduction) {
-    console.info(`[api] operations registered: ${getPolicyCatalog().size}`);
+    console.info(`[api] operations registered: ${getPolicyCatalog().size}`)
   }
 
-  return app;
+  return app
 }
 
-export { MODULES, closeDatabase };
+export { MODULES, closeDatabase }

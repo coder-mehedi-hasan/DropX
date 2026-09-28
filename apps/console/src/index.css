@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@import "@dropx/ui/styles.css";
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply min-h-screen antialiased;
+  }
+
+  /*
+   * Tabular figures in tables: money and weight columns only read as a column if
+   * the digits keep the same width down the page.
+   */
+  [data-slot="table"] {
+    font-variant-numeric: tabular-nums;
+  }
+}

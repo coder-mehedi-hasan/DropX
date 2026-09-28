@@ -34,6 +34,6 @@ export const TABLES = {
   notifications: "notifications",
   supportTickets: "support_tickets",
   auditLogs: "audit_logs",
-} as const;
+} as const
 
-export type TableName = (typeof TABLES)[keyof typeof TABLES];
+export type TableName = (typeof TABLES)[keyof typeof TABLES]

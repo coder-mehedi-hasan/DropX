@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod"
 
 /**
  * Validated process configuration.
@@ -10,17 +10,22 @@ const csv = (value: string) =>
   value
     .split(",")
     .map((entry) => entry.trim())
-    .filter(Boolean);
+    .filter(Boolean)
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-  API_BASE_URL: z.string().url().default("http://localhost:4000"),
-  API_CORS_ORIGINS: z.string().default("http://localhost:5173,http://localhost:5174,http://localhost:3000"),
+  API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  API_BASE_URL: z.string().url().default("http://localhost:3001"),
+  API_CORS_ORIGINS: z
+    .string()
+    .default("http://localhost:3000,http://localhost:3002,http://localhost:3003"),
   API_LOG_LEVEL: z.enum(["debug", "info", "warn", "error", "silent"]).default("info"),
   API_TRUST_PROXY: z.coerce.boolean().default(false),
 
-  APP_SECRET: z.string().min(32, "APP_SECRET must be at least 32 characters").default("dev-only-insecure-secret-change-me-now-please"),
+  APP_SECRET: z
+    .string()
+    .min(32, "APP_SECRET must be at least 32 characters")
+    .default("dev-only-insecure-secret-change-me-now-please"),
   ACCESS_TOKEN_TTL: z.coerce.number().int().positive().default(900),
   REFRESH_TOKEN_TTL: z.coerce.number().int().positive().default(1_209_600),
   /** One audience per app, so a console token cannot call rider endpoints. */
@@ -29,40 +34,40 @@ const schema = z.object({
   REDIS_URL: z.string().default("redis://localhost:6379"),
 
   MAIL_FROM: z.string().default("no-reply@dropx.local"),
-});
+})
 
 export type AppConfig = {
-  env: "development" | "test" | "production";
-  isProduction: boolean;
-  port: number;
-  baseUrl: string;
-  corsOrigins: string[];
-  logLevel: "debug" | "info" | "warn" | "error" | "silent";
-  trustProxy: boolean;
+  env: "development" | "test" | "production"
+  isProduction: boolean
+  port: number
+  baseUrl: string
+  corsOrigins: string[]
+  logLevel: "debug" | "info" | "warn" | "error" | "silent"
+  trustProxy: boolean
   auth: {
-    secret: string;
-    accessTokenTtl: number;
-    refreshTokenTtl: number;
-    audiences: string[];
-  };
-  redis: { url: string };
-  mail: { from: string };
-};
+    secret: string
+    accessTokenTtl: number
+    refreshTokenTtl: number
+    audiences: string[]
+  }
+  redis: { url: string }
+  mail: { from: string }
+}
 
 function load(env: Record<string, string | undefined>): AppConfig {
-  const parsed = schema.safeParse(env);
+  const parsed = schema.safeParse(env)
 
   if (!parsed.success) {
     const details = parsed.error.issues
       .map((issue) => `  ${issue.path.join(".") || "(root)"}: ${issue.message}`)
-      .join("\n");
-    throw new Error(`Invalid environment configuration:\n${details}`);
+      .join("\n")
+    throw new Error(`Invalid environment configuration:\n${details}`)
   }
 
-  const value = parsed.data;
+  const value = parsed.data
 
   if (value.NODE_ENV === "production" && value.APP_SECRET.startsWith("dev-only")) {
-    throw new Error("APP_SECRET must be set to a real secret in production");
+    throw new Error("APP_SECRET must be set to a real secret in production")
   }
 
   return {
@@ -81,17 +86,17 @@ function load(env: Record<string, string | undefined>): AppConfig {
     },
     redis: { url: value.REDIS_URL },
     mail: { from: value.MAIL_FROM },
-  };
+  }
 }
 
-let cached: AppConfig | undefined;
+let cached: AppConfig | undefined
 
 export function getConfig(): AppConfig {
-  cached ??= load(process.env);
-  return cached;
+  cached ??= load(process.env)
+  return cached
 }
 
 /** Test seam — lets a test build a config without mutating `process.env`. */
 export function configFrom(env: Record<string, string | undefined>): AppConfig {
-  return load(env);
+  return load(env)
 }
