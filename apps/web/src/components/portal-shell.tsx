@@ -66,7 +66,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-page items-center gap-4 px-4">
+        <div className="max-w-page mx-auto flex h-16 w-full items-center gap-4 px-4">
           <Link href="/dashboard" className="text-foreground hover:text-foreground shrink-0">
             <DropXLogo size="sm" />
           </Link>
@@ -127,10 +127,10 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-page flex-1 px-4 py-8">{children}</main>
+      <main className="max-w-page mx-auto w-full flex-1 px-4 py-8">{children}</main>
 
       <footer className="bg-card border-t">
-        <div className="text-muted-foreground mx-auto flex w-full max-w-page items-center justify-between px-4 py-6 text-sm">
+        <div className="text-muted-foreground max-w-page mx-auto flex w-full items-center justify-between px-4 py-6 text-sm">
           <p>DropX customer portal</p>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/">Back to site</Link>
@@ -143,7 +143,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
 function PortalSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-page px-4 py-8" aria-busy="true" aria-live="polite">
+    <div className="max-w-page mx-auto w-full px-4 py-8" aria-busy="true" aria-live="polite">
       <Skeleton className="mb-6 h-8 w-56" />
       <div className="grid gap-3">
         {Array.from({ length: 6 }, (_, index) => (

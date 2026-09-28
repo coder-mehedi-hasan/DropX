@@ -19,7 +19,7 @@ const NAV = [
 export function SiteHeader() {
   return (
     <header className="bg-background/90 sticky top-0 z-40 w-full border-b backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-page items-center gap-6 px-4">
+      <div className="max-w-page mx-auto flex h-16 w-full items-center gap-6 px-4">
         <Link href="/" className="text-foreground hover:text-foreground shrink-0">
           <DropXLogo size="md" />
         </Link>
@@ -53,7 +53,7 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="bg-card border-t">
-      <div className="text-muted-foreground mx-auto flex w-full max-w-page flex-col gap-6 px-4 py-10 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-muted-foreground max-w-page mx-auto flex w-full flex-col gap-6 px-4 py-10 text-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="grid gap-2">
           <DropXLogo size="sm" className="text-foreground" />
           <p>Parcel delivery and logistics, hub to hub to doorstep.</p>
