@@ -10,6 +10,12 @@ export type EmailMessage = {
   subject: string
   html: string
   text: string
+  attachments?: Array<{
+    filename: string
+    content: string
+    cid: string
+    contentType: string
+  }>
 }
 
 export type Email = {
@@ -27,8 +33,8 @@ export type EmailConfig = {
 
 const noop: Email = {
   async send() {
-    // No transport configured — dev/test default. Mail is silently dropped so
-    // a missing provider key never crashes a request.
+    // Development/test default. Production config rejects missing transport
+    // settings before this adapter can be created.
   },
 }
 
@@ -70,6 +76,7 @@ class SmtpEmail implements Email {
       subject: message.subject,
       html: message.html,
       text: message.text,
+      attachments: message.attachments,
     })
   }
 }

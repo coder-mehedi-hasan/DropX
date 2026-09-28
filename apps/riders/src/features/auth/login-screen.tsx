@@ -16,7 +16,6 @@ import {
 } from "@dropx/ui"
 
 import { describeApiError } from "../../components/feedback"
-import { getApiUrl } from "../../lib/api-client"
 import { useAuth } from "../../lib/auth"
 
 /**
