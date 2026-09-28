@@ -16,6 +16,11 @@
 - `dropx-stack-light.svg` — centered stacked lockup for posters, presentations, and cover art on light backgrounds.
 - `dropx-stack-dark.svg` — centered stacked lockup for posters, presentations, and cover art on dark backgrounds.
 - `dropx-email-signature-light.svg` — compact horizontal lockup for email signatures and partner documents.
+- `dropx-social-cover-light.svg` / `dropx-social-cover-dark.svg` — 16:9 social headers and campaign covers.
+- `dropx-social-story-light.svg` — 9:16 story/reel canvas with safe space for platform UI.
+- `dropx-campaign-bangladesh-light.svg` — local merchant, storefront, flyer, and Bangladesh campaign lockup.
+- `dropx-partner-badge-light.svg` — co-marketing and partner placement badge; keep partner logos outside this asset.
+- `dropx-sticker-delivered.svg` — parcel sticker, counter sticker, and delivery packaging callout.
 
 Keep the original aspect ratio and preserve clear space equal to the height of the orange mark. Do not recolor, stretch, rotate, or add effects to the assets. Wordmark SVGs use the Inter font family; for print or vendor handoff, convert the wordmark text to outlines in the source design file before export.
 
@@ -26,7 +31,12 @@ Keep the original aspect ratio and preserve clear space equal to the height of t
 | App header or website navigation | `dropx-wordmark-light.svg` or `dropx-wordmark-dark.svg` |
 | Small screen, avatar, favicon, or app icon | `dropx-mark.svg` or `dropx-favicon.svg` |
 | Social profile or app store tile | `dropx-social-avatar.svg` |
+| Social cover, Facebook/LinkedIn header, campaign header | `dropx-social-cover-*.svg` |
+| Instagram/Facebook story or vertical campaign | `dropx-social-story-light.svg` |
 | Campaign hero, poster, or presentation cover | `dropx-lockup-*.svg` or `dropx-stack-*.svg` |
+| Bangladesh/local merchant campaign | `dropx-campaign-bangladesh-light.svg` |
+| Partner or merchant co-marketing | `dropx-partner-badge-light.svg` |
+| Parcel, counter, or delivery sticker | `dropx-sticker-delivered.svg` |
 | Email signature or partner document | `dropx-email-signature-light.svg` |
 | One-color print or engraving | `dropx-mark-mono-*.svg` or `dropx-wordmark-mono-*.svg` |
 | The symbol is already visible nearby | `dropx-wordmark-only-*.svg` |

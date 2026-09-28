@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" role="img" aria-labelledby="title">
+  <title id="title">DropX social story for light campaigns</title>
+  <rect width="1080" height="1920" fill="#F7F8FA"/>
+  <circle cx="850" cy="300" r="420" fill="#FF5500" opacity=".08"/>
+  <rect x="350" y="700" width="380" height="380" rx="96" fill="#FF5500"/>
+  <path fill="#fff" d="M443 789h82c58 0 99 38 99 99s-41 99-99 99h-82V789Zm71 142c29 0 48-15 48-43s-19-43-48-43h-15v86h15Z"/>
+  <path fill="#FF5500" d="M578 865h52v23h-52z"/><path fill="#FF5500" d="m613 844 46 31-46 31v-23h-35v-16h35v-23Z"/>
+  <text x="540" y="1260" text-anchor="middle" fill="#0D0F12" font-family="Inter, Arial, sans-serif" font-size="110" font-weight="800" letter-spacing="-5">Drop<tspan fill="#FF5500">X</tspan></text>
+  <text x="540" y="1330" text-anchor="middle" fill="#667085" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="600" letter-spacing="6">SMART LOGISTICS</text>
+  <text x="540" y="1530" text-anchor="middle" fill="#0D0F12" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="700">Move what matters.</text>
+</svg>
