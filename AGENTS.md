@@ -55,7 +55,7 @@ mprocs.yaml  # `bun run dev` runs api + console + riders + web together
 | `bun run db:migrate`                      | Apply `migrate.sql` (idempotent)                                        |
 | `bun run db:reset`                        | Drop every table, then reapply                                          |
 | `bun run db:seed`                         | Seed roles + their default permission grants                            |
-| `bun run --cwd apps/api smoke`            | Boot the app and assert the policy catalog                              |
+| `bun run --cwd apps/api smoke`            | Boot the app; assert the policy catalog **and** OpenAPI coverage        |
 | `bun run --cwd apps/api check:read-paths` | Run every read query against the real schema (needs `db:migrate` first) |
 
 `.env` at the repo root is the single source of runtime configuration; the API and the scripts read it from there whatever directory they run in.
@@ -68,6 +68,33 @@ mprocs.yaml  # `bun run dev` runs api + console + riders + web together
 - Lists return `{ nodes, meta }`. Errors return `{ error: { code, message, details? } }`; `DomainError.code` survives to the client, and driver messages never do.
 - **Every route declares its operation** through `defineOperation` in `apps/api/src/shared/auth/policy.ts`, which registers it in the catalog _and_ enforces it. A route that is missing from the catalog fails the `smoke` check rather than failing open.
 - Modules are registered in one place: `apps/api/src/modules/index.ts`.
+
+### Adding an operation — the contract comes with the route
+
+An operation is three things, and they are checked against each other at boot. Skipping any one fails `smoke`:
+
+1. **Route + policy** — `defineOperation(...)` in the module's `*.routes.ts`.
+2. **DTOs** — request schemas _and_ response schemas in the module's `*.dto.ts`. Both live there because the published contract and the runtime validation must be the same object; a hand-written response body is a second source of truth that drifts.
+3. **OpenAPI entry** — an operation in the module's `openapi/paths/<domain>.openapi.ts`, describing only what the schema cannot: `operationId`, tag, summary, and status codes. **Do not restate fields** — request/response bodies and parameters are pulled from the Zod DTOs via `jsonSchemaOf()`.
+
+```text
+apps/api/src/openapi/
+  schema.ts        # Zod -> OpenAPI 3.1 conversion; pageSchema(); propertySchemaOf()
+  components.ts    # only cross-cutting shapes: ErrorResponse, PageMeta, bearerAuth
+  paths/*.openapi.ts   # one fragment per domain, registered in document.ts
+  document.ts      # assembles info/servers/tags/components + merges the fragments
+  coverage.ts      # the catalog <-> spec guarantee (see below)
+  router.ts        # serves /openapi.json and /docs
+```
+
+Two details that are easy to get wrong:
+
+- `jsonSchemaOf(schema, io)` takes an **io mode**. Requests use `"input"` (a field with `.default()` is optional); responses use `"output"` (the server always sends it, so it is required). The two are genuinely different documents.
+- `document.ts` must import the new fragment, or it is silently absent — and `assertOpenApiCoverage()` will fail the boot with the operation id and the expected path.
+
+**The drift guard.** `coverage.ts` compares the policy catalog against the spec and throws at boot unless: every enforced operation is documented, every documented operation is enforced, `operationId` and method match, and the documented path matches the mounted path. This is the same fail-closed philosophy as `assertPolicyCatalog` — a route must not be able to ship enforced one way and documented another. Verified to fail on injected drift in both directions.
+
+The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **`/docs`**. It contains shapes only, no secrets, so it needs no token; gate both at the edge if a deployment wants them private.
 
 ## Architecture rules
 

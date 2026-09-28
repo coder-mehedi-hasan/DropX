@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "DropX backend API \u2014 Hono, modular by domain feature.",
+  "description": "DropX backend API — Hono, modular by domain feature.",
   "scripts": {
     "dev": "TZ=UTC bun --env-file=../../.env --watch src/index.ts",
     "start": "TZ=UTC bun --env-file=../../.env src/index.ts",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@dropx/db": "workspace:*",
+    "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",
     "hono": "^4.13.9",
     "zod": "^4.6.5"

@@ -155,3 +155,9 @@ Full matrix: [`rbac.md`](./rbac.md).
 - API base: `/api/v1` (health also served unversioned at `/health`)
 - Lists return `{ nodes, meta }`; errors return `{ error: { code, message, details? } }`
 - The database is reached only through the `packages/db` port, never the driver directly
+- **OpenAPI 3.1** at `/openapi.json`, **Swagger UI** at `/docs` (public, unversioned)
+  - Schemas are derived from the Zod DTOs, so the documented contract and the runtime
+    validation are the same object rather than two descriptions that can drift
+  - `apps/api/src/openapi/coverage.ts` fails the boot unless every policy-catalog
+    operation is documented and every documented operation is enforced
+  - Verify with `bun run --cwd apps/api smoke`, which asserts both directions

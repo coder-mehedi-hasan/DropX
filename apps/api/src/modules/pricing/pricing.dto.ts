@@ -20,3 +20,15 @@ export const quoteSchema = z.object({
 })
 
 export type QuoteInputDto = z.infer<typeof quoteSchema>
+
+// --- Response bodies -------------------------------------------------------
+
+export const quoteResponseSchema = z.object({
+  pricingRuleId: z.string(),
+  basePrice: z.number(),
+  weightCharge: z.number(),
+  codFee: z.number(),
+  expressFee: z.number(),
+  total: z.number(),
+  currency: z.literal("BDT"),
+})

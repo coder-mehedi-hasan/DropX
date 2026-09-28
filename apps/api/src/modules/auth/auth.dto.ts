@@ -66,3 +66,74 @@ export const otpVerifySchema = z.object({
 })
 
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>
+
+// --- Response bodies -------------------------------------------------------
+
+/** Issued tokens plus the signed-in account, returned by the password logins. */
+export const loginResponseSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  expiresIn: z.number(),
+  account: z.object({
+    id: z.string(),
+    kind: z.enum(["staff", "rider"]),
+    name: z.string().nullable(),
+    email: z.string().nullable(),
+    roles: z.array(z.string()),
+  }),
+})
+
+/** Tokens only — the `refresh` exchange returns no account. */
+export const tokenPairResponseSchema = loginResponseSchema.pick({
+  accessToken: true,
+  refreshToken: true,
+  expiresIn: true,
+})
+
+/** OTP exchange: tokens plus the now-ACTIVE customer. */
+export const otpVerifyResponseSchema = tokenPairResponseSchema.extend({
+  customer: z.object({
+    id: z.string(),
+    name: z.string().nullable(),
+    phone: z.string().nullable(),
+    email: z.string().nullable(),
+    status: z.literal("ACTIVE"),
+  }),
+})
+
+/** 202 from `POST /auth/otp/request` — confirms delivery, reveals nothing else. */
+export const otpRequestResponseSchema = z.object({
+  channel: z.enum(["SMS", "EMAIL"]),
+  destination: z.string(),
+  expiresInSeconds: z.number(),
+  isNewCustomer: z.boolean(),
+})
+
+/** `GET /auth/me` — a discriminated union over the actor kinds. */
+export const meResponseSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("staff"),
+    audience: z.string(),
+    id: z.string(),
+    email: z.string(),
+    roles: z.array(z.string()),
+    permissions: z.array(z.string()),
+    branchId: z.string().nullable(),
+    hubIds: z.array(z.string()),
+  }),
+  z.object({
+    kind: z.literal("rider"),
+    audience: z.string(),
+    id: z.string(),
+    riderId: z.string(),
+    hubId: z.string().nullable(),
+    email: z.string(),
+    permissions: z.array(z.string()),
+  }),
+  z.object({
+    kind: z.literal("customer"),
+    audience: z.string(),
+    id: z.string(),
+    status: z.string(),
+  }),
+])

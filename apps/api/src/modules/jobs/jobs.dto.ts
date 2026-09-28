@@ -47,3 +47,43 @@ export const updateJobStatusSchema = z
   })
 
 export type UpdateJobStatusInput = z.infer<typeof updateJobStatusSchema>
+
+// --- Response bodies -------------------------------------------------------
+
+export const jobResponseSchema = z.object({
+  delivery: z.object({
+    id: z.string(),
+    attemptNo: z.number(),
+    status: z.enum(DELIVERY_STATUSES),
+    address: z.string(),
+    failureReason: z.string().nullable(),
+    recipientName: z.string().nullable(),
+    recipientPhone: z.string().nullable(),
+    outForDeliveryAt: z.iso.datetime().nullable(),
+    deliveredAt: z.iso.datetime().nullable(),
+  }),
+  parcel: z.object({
+    id: z.string(),
+    trackingNumber: z.string(),
+    status: z.string(),
+    weight: z.number(),
+    codAmount: z.number(),
+    paymentType: z.string(),
+    createdAt: z.iso.datetime(),
+  }),
+})
+
+export const jobItemResponseSchema = z.object({
+  id: z.string(),
+  parcelId: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+  totalPrice: z.number(),
+  createdAt: z.iso.datetime(),
+})
+
+export const jobDetailResponseSchema = jobResponseSchema.extend({
+  items: z.array(jobItemResponseSchema),
+})

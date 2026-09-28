@@ -9,6 +9,8 @@ import { notFound, onError } from "./shared/errors/handler"
 import { requestContext } from "./shared/http/context"
 import { attachAuth } from "./shared/auth/middleware"
 import { assertPolicyCatalog, getPolicyCatalog } from "./shared/auth/policy"
+import { assertOpenApiCoverage } from "./openapi/coverage"
+import { openApiRouter } from "./openapi"
 import { MODULES, moduleManifest, registerModules } from "./modules"
 import type { AppEnv } from "./types/env"
 
@@ -47,22 +49,35 @@ export function createApp(): Hono<AppEnv> {
   app.use("*", prettyJSON({ space: config.isProduction ? 0 : 2 }))
   app.use("*", attachAuth)
 
+  // The OpenAPI spec + Swagger UI are self-describing (shapes only, no secrets),
+  // so they are public and unversioned: /openapi.json and /docs. Mounted after
+  // attachAuth but they do not require an actor; gate them at the edge if needed.
+  app.route("/", openApiRouter)
+
   app.get("/", (c) =>
     c.json({
       service: "dropx-api",
       version: "0.0.0",
       modules: moduleManifest(),
-      docs: "See docs/overview.md and docs/rbac.md",
+      docs: {
+        api: "/api/v1",
+        openapi: "/openapi.json",
+        swagger: "/docs",
+        product: "docs/overview.md and docs/rbac.md",
+      },
     }),
   )
 
   registerModules(app)
 
-  // Fail fast at boot if a feature forgot to declare its operations.
+  // Fail fast at boot if a feature forgot to declare its operations, or if the
+  // published spec no longer matches what the policy catalog enforces.
   assertPolicyCatalog()
+  assertOpenApiCoverage()
 
   if (!config.isProduction) {
     console.info(`[api] operations registered: ${getPolicyCatalog().size}`)
+    console.info("[api] openapi: /openapi.json  docs: /docs")
   }
 
   return app

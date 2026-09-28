@@ -95,3 +95,42 @@ export const PARCEL_SORT_COLUMNS = [
 
 /** Columns searched by the list `search` param. */
 export const PARCEL_SEARCH_COLUMNS = ["p.tracking_number", "r.name", "r.phone"] as const
+
+// --- Response bodies -------------------------------------------------------
+
+export const parcelResponseSchema = z.object({
+  id: z.string(),
+  trackingNumber: z.string(),
+  senderCustomerId: z.string(),
+  receiverCustomerId: z.string(),
+  originHubId: z.string(),
+  destinationHubId: z.string(),
+  currentHubId: z.string().nullable(),
+  destinationZoneId: z.string(),
+  weight: z.number(),
+  length: z.number().nullable(),
+  width: z.number().nullable(),
+  height: z.number().nullable(),
+  parcelType: z.enum(PARCEL_TYPES),
+  paymentType: z.enum(PAYMENT_TYPES),
+  codAmount: z.number(),
+  deliveryFee: z.number(),
+  status: z.enum(PARCEL_STATUSES),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+})
+
+export const parcelItemResponseSchema = z.object({
+  id: z.string(),
+  parcelId: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+  totalPrice: z.number(),
+  createdAt: z.iso.datetime(),
+})
+
+export const parcelWithItemsResponseSchema = parcelResponseSchema.extend({
+  items: z.array(parcelItemResponseSchema),
+})
