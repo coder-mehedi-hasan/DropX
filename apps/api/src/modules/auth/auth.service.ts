@@ -5,6 +5,8 @@ import { TABLES, getDatabase, toId, type Id } from "@dropx/db"
 import { ERROR_CODES, DomainError, fromDatabaseError, verifyPassword } from "../../core"
 import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
+import { getEmail } from "../../shared/email"
+import { otpEmail } from "../../shared/email/templates"
 import { getCache } from "../../shared/cache"
 import { emit } from "../../shared/events/bus"
 import type { OtpRequestInput, OtpVerifyInput, StaffLoginInput } from "./auth.dto"
@@ -226,7 +228,7 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
 
   // A real deployment hands `code` to the SMS/email provider here. The code
   // itself is only ever written to the cache, never to MySQL.
-  sendOtpCode(destination, code)
+  await sendOtpCode(channel, destination, code)
 
   return {
     channel,
@@ -307,8 +309,27 @@ export async function updateCustomerName(customerId: Id, name: string): Promise<
 /**
  * Delivery seam. Wire to bKash/SMS gateway/email in the notification module;
  * for now the code is only written to the cache.
+ *
+ * Email is rendered through MJML so the markup stays responsive across
+ * clients without hand-writing HTML. The transport is Nodemailer with SMTP
+ * configured via `MAIL_*` env vars; when no host is set the mail is dropped.
  */
-function sendOtpCode(destination: string, code: string): void {
-  if (process.env.NODE_ENV === "production") return
-  console.info(`[otp] ${destination} <- ${code}`)
+async function sendOtpCode(
+  channel: "SMS" | "EMAIL",
+  destination: string,
+  code: string,
+): Promise<void> {
+  if (channel === "SMS") {
+    console.info(`[otp/sms] ${destination} <- ${code}`)
+    return
+  }
+
+  const { html, text } = await otpEmail(code)
+  const email = getEmail()
+  await email.send({
+    to: destination,
+    subject: "Your DropX verification code",
+    html,
+    text,
+  })
 }

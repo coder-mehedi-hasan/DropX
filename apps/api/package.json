@@ -20,7 +20,10 @@
     "@dropx/db": "workspace:*",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",
+    "@types/nodemailer": "^8.0.2",
     "hono": "^4.13.9",
+    "mjml": "^5.4.1",
+    "nodemailer": "^10.0.12",
     "zod": "^4.6.5"
   },
   "devDependencies": {
