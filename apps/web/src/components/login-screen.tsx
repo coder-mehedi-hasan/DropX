@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  LoadingButton,
   Tabs,
   TabsContent,
   TabsList,
@@ -291,10 +292,10 @@ function IdentifierStep({
             )}
           />
 
-          <Button type="submit" disabled={busy} className="w-full">
+          <LoadingButton type="submit" loading={busy} className="w-full">
             <MessageSquareIcon aria-hidden />
             {busy ? "Sending…" : "Send my code"}
-          </Button>
+          </LoadingButton>
         </form>
       </Form>
     </TabsContent>
@@ -380,9 +381,9 @@ function CodeStep({
             )}
           />
 
-          <Button type="submit" disabled={verifying} className="w-full">
+          <LoadingButton type="submit" loading={verifying} className="w-full">
             {verifying ? "Verifying…" : "Verify and sign in"}
-          </Button>
+          </LoadingButton>
         </form>
       </Form>
 

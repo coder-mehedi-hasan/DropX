@@ -15,6 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  LoadingButton,
   Select,
   SelectContent,
   SelectItem,
@@ -276,16 +277,16 @@ export function DeliveryActionSheet({
               ) : null}
 
               <div className="grid gap-2">
-                <Button
+                <LoadingButton
                   type="submit"
                   variant="success"
                   size="lg"
                   className="tap-target h-14 text-base"
-                  disabled={mutation.isPending}
+                  loading={mutation.isPending}
                 >
                   {mutation.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
                   {mutation.isPending ? "Saving…" : "Confirm delivered"}
-                </Button>
+                </LoadingButton>
                 <Button
                   type="button"
                   variant="ghost"
@@ -387,12 +388,12 @@ export function DeliveryActionSheet({
               ) : null}
 
               <div className="grid gap-2">
-                <Button
+                <LoadingButton
                   type="submit"
                   variant={reasonOutcome === "RETURNED" ? "secondary" : "destructive"}
                   size="lg"
                   className="tap-target h-14 text-base"
-                  disabled={mutation.isPending}
+                  loading={mutation.isPending}
                 >
                   {mutation.isPending ? (
                     <Loader2 className="animate-spin" />
@@ -406,7 +407,7 @@ export function DeliveryActionSheet({
                     : reasonOutcome === "RETURNED"
                       ? "Confirm return"
                       : "Confirm failed"}
-                </Button>
+                </LoadingButton>
                 <Button
                   type="button"
                   variant="ghost"
