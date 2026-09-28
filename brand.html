@@ -12,12 +12,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        :focus-visible { outline: 3px solid #FF8A4C; outline-offset: 3px; }
+        .eyebrow { letter-spacing: .16em; }
+        .guideline-card { transition: transform .2s ease, border-color .2s ease, background-color .2s ease; }
+        .guideline-card:hover { transform: translateY(-3px); }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto !important; }
+            *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+        }
     </style>
 </head>
 <body class="bg-[#0D0F12] text-gray-100 antialiased selection:bg-[#FF5500] selection:text-white">
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-[#FF5500] text-white px-5 py-3 rounded-xl shadow-2xl font-medium text-sm flex items-center space-x-2 border border-orange-400">
+    <div id="toast" role="status" aria-live="polite" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-[#FF5500] text-white px-5 py-3 rounded-xl shadow-2xl font-medium text-sm flex items-center space-x-2 border border-orange-400">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
         <span id="toast-text">Copied to clipboard!</span>
     </div>
@@ -36,12 +44,13 @@
                 <a href="#colors" class="hover:text-[#FF5500] transition-colors">Colors</a>
                 <a href="#typography" class="hover:text-[#FF5500] transition-colors">Typography</a>
                 <a href="#logo" class="hover:text-[#FF5500] transition-colors">Logo</a>
+                <a href="#voice" class="hover:text-[#FF5500] transition-colors">Voice</a>
                 <a href="#ui" class="hover:text-[#FF5500] transition-colors">UI System</a>
                 <a href="#fleet" class="hover:text-[#FF5500] transition-colors">Fleet & Packaging</a>
             </div>
             <div>
                 <a href="#colors" class="bg-[#FF5500] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-orange-600/30">
-                    Get Brand Assets
+                    Download assets
                 </a>
             </div>
         </div>
@@ -54,14 +63,19 @@
             <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-[#FF5500] text-xs font-semibold uppercase tracking-widest mb-6">
                 <span>Official Brand Guidelines</span>
                 <span>•</span>
-                <span>v1.0</span>
+                <span>v1.1</span>
             </div>
             <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6">
                 Building the Future of <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5500] to-amber-500">Smart Logistics</span>
             </h1>
             <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                Comprehensive identity standards for DropX. Designed for speed, trust, and exceptional e-commerce experiences across merchants, riders, and customers.
+                A practical identity system for every DropX touchpoint—from the first booking to the final handover. Use it to make the brand feel fast, clear, and dependable.
             </p>
+            <div class="flex flex-wrap justify-center gap-2 text-xs font-medium text-gray-400 mb-10">
+                <span class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">Fast by default</span>
+                <span class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">Clear under pressure</span>
+                <span class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">Human at every handoff</span>
+            </div>
             <div class="flex flex-wrap justify-center gap-4">
                 <a href="#colors" class="bg-[#FF5500] hover:bg-orange-600 text-white font-semibold px-6 py-3.5 rounded-xl transition-all shadow-xl shadow-orange-600/20 flex items-center space-x-2">
                     <span>Explore Color Palette</span>
@@ -110,7 +124,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Color Card -->
-                <div onclick="copyToClipboard('#FF5500')" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
+                <div onclick="copyToClipboard('#FF5500')" onkeydown="if(event.key === 'Enter' || event.key === ' ') copyToClipboard('#FF5500')" tabindex="0" role="button" aria-label="Copy Volt Orange hex value" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
                     <div class="h-32 rounded-xl bg-[#FF5500] mb-4 flex items-end justify-end p-3 shadow-inner">
                         <span class="bg-black/30 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</span>
                     </div>
@@ -124,7 +138,7 @@
                 </div>
 
                 <!-- Color Card -->
-                <div onclick="copyToClipboard('#0D0F12')" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
+                <div onclick="copyToClipboard('#0D0F12')" onkeydown="if(event.key === 'Enter' || event.key === ' ') copyToClipboard('#0D0F12')" tabindex="0" role="button" aria-label="Copy Deep Obsidian hex value" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
                     <div class="h-32 rounded-xl bg-[#0D0F12] border border-gray-800 mb-4 flex items-end justify-end p-3">
                         <span class="bg-white/10 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</span>
                     </div>
@@ -138,7 +152,7 @@
                 </div>
 
                 <!-- Color Card -->
-                <div onclick="copyToClipboard('#1A1D24')" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
+                <div onclick="copyToClipboard('#1A1D24')" onkeydown="if(event.key === 'Enter' || event.key === ' ') copyToClipboard('#1A1D24')" tabindex="0" role="button" aria-label="Copy Carbon Gray hex value" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
                     <div class="h-32 rounded-xl bg-[#1A1D24] border border-gray-700 mb-4 flex items-end justify-end p-3">
                         <span class="bg-white/10 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</span>
                     </div>
@@ -152,7 +166,7 @@
                 </div>
 
                 <!-- Color Card -->
-                <div onclick="copyToClipboard('#00C853')" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
+                <div onclick="copyToClipboard('#00C853')" onkeydown="if(event.key === 'Enter' || event.key === ' ') copyToClipboard('#00C853')" tabindex="0" role="button" aria-label="Copy Terminal Green hex value" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
                     <div class="h-32 rounded-xl bg-[#00C853] mb-4 flex items-end justify-end p-3">
                         <span class="bg-black/30 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</span>
                     </div>
@@ -166,7 +180,7 @@
                 </div>
 
                 <!-- Color Card -->
-                <div onclick="copyToClipboard('#F59E0B')" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
+                <div onclick="copyToClipboard('#F59E0B')" onkeydown="if(event.key === 'Enter' || event.key === ' ') copyToClipboard('#F59E0B')" tabindex="0" role="button" aria-label="Copy Alert Amber hex value" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
                     <div class="h-32 rounded-xl bg-[#F59E0B] mb-4 flex items-end justify-end p-3">
                         <span class="bg-black/30 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</span>
                     </div>
@@ -180,7 +194,7 @@
                 </div>
 
                 <!-- Color Card -->
-                <div onclick="copyToClipboard('#FFFFFF')" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
+                <div onclick="copyToClipboard('#FFFFFF')" onkeydown="if(event.key === 'Enter' || event.key === ' ') copyToClipboard('#FFFFFF')" tabindex="0" role="button" aria-label="Copy Pure White hex value" class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-6 cursor-pointer group hover:border-[#FF5500] transition-all">
                     <div class="h-32 rounded-xl bg-white mb-4 flex items-end justify-end p-3">
                         <span class="bg-black/80 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</span>
                     </div>
@@ -191,6 +205,39 @@
                         </div>
                         <span class="font-mono text-xs bg-gray-900 text-white px-2.5 py-1 rounded-lg border border-gray-800">#FFFFFF</span>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2b. Color usage -->
+        <section id="accessibility" class="scroll-mt-28">
+            <div class="border-l-4 border-[#FF5500] pl-4 mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-white">Color in Practice</h2>
+                <p class="text-gray-400 text-sm mt-1">Color should make the next action obvious—not make people decode the interface.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-[#1A1D24] border border-gray-800 rounded-2xl p-7">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <p class="text-xs font-semibold uppercase eyebrow text-[#FF5500]">Recommended ratio</p>
+                            <h3 class="text-xl font-bold text-white mt-2">60 / 30 / 10</h3>
+                        </div>
+                        <div class="flex gap-1.5" aria-label="Color ratio visualization">
+                            <span class="w-16 h-8 rounded-l-lg bg-[#0D0F12] border border-gray-700"></span>
+                            <span class="w-8 h-8 bg-[#1A1D24] border-y border-gray-700"></span>
+                            <span class="w-3 h-8 rounded-r-lg bg-[#FF5500]"></span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                        <div><span class="text-white font-semibold">60% Obsidian</span><p class="text-gray-400 mt-1">Canvas, navigation, large surfaces.</p></div>
+                        <div><span class="text-white font-semibold">30% Carbon</span><p class="text-gray-400 mt-1">Cards, fields, secondary layers.</p></div>
+                        <div><span class="text-white font-semibold">10% Volt</span><p class="text-gray-400 mt-1">Actions, highlights, progress.</p></div>
+                    </div>
+                </div>
+                <div class="bg-[#FF5500] text-white rounded-2xl p-7">
+                    <p class="text-xs font-semibold uppercase eyebrow text-orange-100">Accessibility rule</p>
+                    <h3 class="text-xl font-bold mt-2">Never use color alone.</h3>
+                    <p class="text-sm text-orange-50 leading-relaxed mt-3">Pair status colors with a label, icon, or shape. Keep body text at 4.5:1 contrast and large text at 3:1 or better.</p>
                 </div>
             </div>
         </section>
@@ -248,6 +295,46 @@
                         <span class="text-3xl font-extrabold text-gray-900">Drop<span class="text-[#FF5500]">X</span></span>
                     </div>
                     <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold">Secondary Logo Lockup (Light Background)</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7">
+                    <p class="text-xs font-semibold uppercase eyebrow text-[#FF5500]">Clear space</p>
+                    <h3 class="text-xl font-bold text-white mt-2">Give the mark room to work.</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mt-3">Keep a minimum clear space around the lockup equal to the height of the orange D-mark on all sides. Do not place copy, borders, or imagery inside this zone.</p>
+                    <div class="mt-5 p-5 border border-dashed border-[#FF5500]/50 rounded-xl text-center text-sm text-gray-300">← minimum D-mark height →</div>
+                </div>
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7">
+                    <p class="text-xs font-semibold uppercase eyebrow text-[#FF5500]">Protect the identity</p>
+                    <h3 class="text-xl font-bold text-white mt-2">Keep it recognizable.</h3>
+                    <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
+                        <div class="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-300">✓ Use approved colors</div>
+                        <div class="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-300">✓ Preserve proportions</div>
+                        <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300">× No stretching</div>
+                        <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300">× No effects or shadows</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4b. Brand voice -->
+        <section id="voice" class="scroll-mt-28">
+            <div class="border-l-4 border-[#FF5500] pl-4 mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-white">04b. Brand Voice</h2>
+                <p class="text-gray-400 text-sm mt-1">Every message should sound capable, direct, and human.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7 guideline-card">
+                    <span class="text-2xl">→</span><h3 class="text-lg font-bold text-white mt-5">Direct</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mt-2">Lead with what happened and what to do next. Prefer “Pickup confirmed” over “Your pickup request has been successfully processed.”</p>
+                </div>
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7 guideline-card">
+                    <span class="text-2xl">◌</span><h3 class="text-lg font-bold text-white mt-5">Reassuring</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mt-2">Be calm when plans change. Explain the next step, give a useful time frame, and avoid blame or vague promises.</p>
+                </div>
+                <div class="bg-[#1A1D24] border border-gray-800 rounded-2xl p-7 guideline-card">
+                    <span class="text-2xl">✦</span><h3 class="text-lg font-bold text-white mt-5">Energetic</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mt-2">Use momentum, not hype. Keep exclamation marks rare and let fast, useful experiences prove the promise.</p>
                 </div>
             </div>
         </section>
@@ -333,14 +420,27 @@
     <!-- Clipboard Script -->
     <script>
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
+            const showToast = () => {
                 const toast = document.getElementById('toast');
                 document.getElementById('toast-text').innerText = `Copied ${text} to clipboard!`;
                 toast.classList.remove('translate-y-20', 'opacity-0');
                 setTimeout(() => {
                     toast.classList.add('translate-y-20', 'opacity-0');
                 }, 2500);
-            });
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(showToast);
+                return;
+            }
+            const helper = document.createElement('textarea');
+            helper.value = text;
+            helper.style.position = 'fixed';
+            helper.style.opacity = '0';
+            document.body.appendChild(helper);
+            helper.select();
+            document.execCommand('copy');
+            helper.remove();
+            showToast();
         }
     </script>
 </body>
