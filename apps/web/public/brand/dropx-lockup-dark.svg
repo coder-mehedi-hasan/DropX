@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-labelledby="title desc">
+  <title id="title">DropX large dark lockup</title>
+  <desc id="desc">Large DropX logo with the smart logistics descriptor for dark backgrounds.</desc>
+  <rect x="0" y="0" width="176" height="176" rx="44" fill="#FF5500"/>
+  <path fill="#fff" d="M43 41h39c28 0 47 18 47 47s-19 47-47 47H43V41Zm34 68c14 0 23-7 23-21s-9-21-23-21h-7v42h7Z"/>
+  <path fill="#FF5500" d="M108 77h25v11h-25z"/><path fill="#FF5500" d="m125 67 22 15-22 15V86h-17V78h17V67Z"/>
+  <text x="215" y="124" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="100" font-weight="800" letter-spacing="-5">Drop<tspan fill="#FF5500">X</tspan></text>
+  <text x="220" y="172" fill="#A7AFBD" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" letter-spacing="4">SMART LOGISTICS</text>
+</svg>

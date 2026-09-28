@@ -55,6 +55,9 @@ export function SiteFooter() {
           <Link href="/track" className="hover:text-foreground">
             Track a parcel
           </Link>
+          <Link href="/brand-guidelines" className="hover:text-foreground">
+            Brand guidelines
+          </Link>
           <Link href="/login" className="hover:text-foreground">
             Sign in
           </Link>
