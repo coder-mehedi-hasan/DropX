@@ -16,7 +16,7 @@
     <mj-section padding="24px 16px" background-color="#FFFFFF">
       <mj-column>
         <mj-image
-          src="{{brandSignatureCid}}"
+          src="{{brandSignatureSrc}}"
           alt="DropX Smart Logistics"
           width="220px"
           padding="0"
