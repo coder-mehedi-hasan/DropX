@@ -7,6 +7,7 @@ import {
   type QueryBuilder,
 } from "@dropx/db"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
+import { response } from "./responses"
 
 /**
  * One list contract for the whole API.
@@ -51,5 +52,5 @@ export async function runPaginated<T>(
 }
 
 export function okPage<T>(page: Page<T>, status: ContentfulStatusCode = 200): Response {
-  return Response.json(page, { status })
+  return Response.json(response.success(page, status), { status })
 }

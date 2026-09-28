@@ -66,7 +66,7 @@ export function buildOpenApiDocument() {
       title: "DropX API",
       version: "1.0.0",
       description:
-        "Single-tenant parcel delivery & logistics API. All business routes are under `/api/v1`; health probes are additionally served unversioned. Errors are always `{ error: { code, message, details? } }` where `code` is stable and safe to branch on, and lists are always `{ nodes, meta }`.",
+        "Single-tenant parcel delivery & logistics API. All business routes are under `/api/v1`; health probes are additionally served unversioned. Responses use `{ error, data, status, success, code }`; error codes are stable and safe to branch on, and lists are always `{ nodes, meta }` inside `data`.",
     },
     servers: [{ url: `${serverUrl()}/api/v1`, description: "Business API (v1)" }],
     tags,

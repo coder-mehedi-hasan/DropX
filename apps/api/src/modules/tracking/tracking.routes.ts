@@ -1,5 +1,6 @@
 import { getConfig } from "../../config"
 import { validateParam } from "../../core"
+import { response } from "../../core/http"
 import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
@@ -34,7 +35,7 @@ router.get(
   validateParam(z.object({ trackingNumber: trackingNumberSchema })),
   async (c) => {
     const result = await trackParcel(c.req.param("trackingNumber").toUpperCase(), callerKey(c))
-    return c.json(result)
+    return c.json(response.success(result))
   },
 )
 

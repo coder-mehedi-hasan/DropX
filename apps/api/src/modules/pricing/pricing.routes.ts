@@ -1,4 +1,5 @@
 import { validateQuery } from "../../core"
+import { response } from "../../core/http"
 import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
@@ -29,7 +30,7 @@ router.get(
       codAmount: input.codAmount,
       express: input.express,
     })
-    return c.json(quote)
+    return c.json(response.success(quote))
   },
 )
 

@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   console.log("· fail-closed behaviour")
 
   const unauthenticated = await app.request("/api/v1/parcels")
-  const body = (await unauthenticated.json()) as { error?: { code?: string } }
+  const body = (await unauthenticated.json()) as { error?: string; code?: string; success?: boolean }
   check(
     "protected route rejects an anonymous caller",
     unauthenticated.status === 401,
@@ -77,7 +77,9 @@ async function main(): Promise<void> {
   )
   check(
     "error body matches the contract",
-    body.error?.code === "UNAUTHENTICATED",
+    body.error === "Please sign in to continue" &&
+      body.code === "UNAUTHENTICATED" &&
+      body.success === false,
     JSON.stringify(body),
   )
 
