@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">DropX monochrome white mark</title>
+  <rect width="128" height="128" rx="32" fill="#fff"/>
+  <path fill="#0D0F12" d="M31 30h28c20 0 34 13 34 34s-14 34-34 34H31V30Zm24 49c10 0 16-5 16-15s-6-15-16-15h-5v30h5Z"/>
+  <path fill="#fff" d="M77 56h18v8H77z"/><path fill="#fff" d="m89 49 15 11-15 11v-8H77v-6h12v-8Z"/>
+</svg>

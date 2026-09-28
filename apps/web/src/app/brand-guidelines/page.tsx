@@ -4,14 +4,26 @@ import {
   Accessibility,
   ArrowDown,
   ArrowUpRight,
+  Camera,
+  Check,
   Clipboard,
+  FileText,
+  Globe2,
+  Grid3X3,
   Info,
+  MonitorSmartphone,
   MessageCircle,
   Moon,
+  Move,
+  Palette,
+  Package,
+  Printer,
   ShieldCheck,
   Sparkles,
   Sun,
   Table2,
+  Timer,
+  X,
   Zap,
 } from "lucide-react"
 import { useState } from "react"
@@ -26,6 +38,14 @@ const COLORS = [
   { name: "Terminal Green", hex: "#00C853", use: "Success and completed delivery", className: "bg-[#00C853]" },
   { name: "Alert Amber", hex: "#F59E0B", use: "Pending and in-transit attention", className: "bg-[#F59E0B]" },
   { name: "Pure White", hex: "#FFFFFF", use: "Light surfaces and headlines", className: "bg-white" },
+] as const
+
+const COLOR_SPECS = [
+  ["Volt Orange", "#FF5500", "255 85 0", "0 67 100 0", "Accent / action"],
+  ["Deep Obsidian", "#0D0F12", "13 15 18", "28 17 0 93", "Dark canvas"],
+  ["Carbon Gray", "#1A1D24", "26 29 36", "28 19 0 86", "Dark surface"],
+  ["Terminal Green", "#00C853", "0 200 83", "100 0 58 22", "Success"],
+  ["Alert Amber", "#F59E0B", "245 158 11", "0 36 96 4", "Attention"],
 ] as const
 
 export default function BrandGuidelinesPage() {
@@ -55,6 +75,13 @@ export default function BrandGuidelinesPage() {
             ["logo", "Logo"],
             ["voice", "Voice"],
             ["components", "Components"],
+            ["layout", "Layout"],
+            ["icons", "Icons"],
+            ["imagery", "Imagery"],
+            ["motion", "Motion"],
+            ["content", "Content"],
+            ["production", "Production"],
+            ["governance", "Governance"],
           ].map(([href, label]) => (
             <a key={href} href={`#${href}`} className="whitespace-nowrap transition-colors hover:text-[#FF5500]">
               {label}
@@ -88,7 +115,7 @@ export default function BrandGuidelinesPage() {
 
         <div className="mx-auto max-w-6xl space-y-24 px-4 py-20">
           <Section id="overview" number="01" title="Core philosophy" description="The principles behind every DropX decision." />
-          <div className="-mt-16 grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3">
             <Principle icon={<Zap />} title="Lightning speed" body="Remove friction from pickup to doorstep. Every screen should make the next action obvious." />
             <Principle icon={<ShieldCheck />} title="Absolute trust" body="Use clear status, transparent pricing, and visible proof at every handover." />
             <Principle icon={<Sparkles />} title="Merchant simplicity" body="Make the complex logistics network feel calm, predictable, and easy to operate." />
@@ -107,6 +134,7 @@ export default function BrandGuidelinesPage() {
               ))}
             </div>
             <div className="mt-5 rounded-2xl border border-orange-200 bg-orange-50 p-5 text-sm text-orange-900"><strong className="text-gray-900">Accessibility rule:</strong> never use color alone. Pair status colors with a label, icon, or shape; target 4.5:1 contrast for body text.</div>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"><div className="border-b border-gray-200 px-6 py-4"><h3 className="font-semibold text-gray-900">Production color specifications</h3><p className="mt-1 text-xs text-gray-500">CMYK values are starting points for print proofing; always approve against a physical proof.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500"><tr><th className="px-6 py-3">Color</th><th className="px-6 py-3">HEX</th><th className="px-6 py-3">RGB</th><th className="px-6 py-3">CMYK</th><th className="px-6 py-3">Role</th></tr></thead><tbody className="divide-y divide-gray-100">{COLOR_SPECS.map(([name, hex, rgb, cmyk, role]) => <tr key={name}><td className="px-6 py-3 font-medium text-gray-900">{name}</td><td className="px-6 py-3 font-mono text-xs text-[#D94300]">{hex}</td><td className="px-6 py-3 font-mono text-xs text-gray-600">{rgb}</td><td className="px-6 py-3 font-mono text-xs text-gray-600">{cmyk}</td><td className="px-6 py-3 text-gray-600">{role}</td></tr>)}</tbody></table></div></div>
           </section>
 
           <section id="modes" className="scroll-mt-32">
@@ -141,6 +169,11 @@ export default function BrandGuidelinesPage() {
               <RuleCard title="Clear space" body="Keep a minimum clear space around the lockup equal to the height of the orange D-mark on all sides." />
               <RuleCard title="Protect the identity" body="Use approved colors, preserve proportions, and never stretch, rotate, or add effects to the mark." />
             </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <RuleCard title="Minimum digital size" body="Use the mark at 24px minimum. Use the horizontal wordmark at 120px wide minimum." />
+              <RuleCard title="Minimum print size" body="Use the mark at 8mm minimum. Use the full lockup at 25mm wide minimum." />
+              <RuleCard title="Monochrome" body="Use mono-black on light stock and mono-white on dark stock only when color reproduction is unavailable." />
+            </div>
           </section>
 
           <section id="voice" className="scroll-mt-32">
@@ -161,6 +194,55 @@ export default function BrandGuidelinesPage() {
 
               <div className="grid gap-4 md:grid-cols-3"><RuleCard title="Buttons" body="One primary action per region. Use sentence case and verbs: Create parcel, Assign rider." icon={<ArrowUpRight />} /><RuleCard title="Status" body="Green means complete, amber means attention, red means blocked. Always include text." icon={<Info />} /><RuleCard title="Responsive" body="Stack forms on small screens. Let tables scroll horizontally; never shrink critical data until unreadable." icon={<Accessibility />} /></div>
             </div>
+          </section>
+
+          <section id="layout" className="scroll-mt-32">
+            <Section number="08" title="Layout & visual language" description="A calm, generous system that keeps logistics information easy to scan." />
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+              <Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Grid3X3 className="size-5 text-[#FF5500]" /> Grid and spacing</CardTitle><CardDescription className="text-gray-600">Use a 4px base unit and a 12-column desktop grid. Let space create hierarchy before adding borders.</CardDescription></CardHeader><CardContent><div className="grid gap-3 text-sm"><TokenLine label="Base unit" value="4px" /><TokenLine label="Spacing scale" value="4 · 8 · 12 · 16 · 24 · 32 · 48 · 64" /><TokenLine label="Content width" value="1200px max · 640px reading measure" /><TokenLine label="Breakpoints" value="640 / 768 / 1024 / 1280px" /><TokenLine label="Card radius" value="12px default · 16px feature" /></div></CardContent></Card>
+              <Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Move className="size-5 text-[#FF5500]" /> Elevation</CardTitle><CardDescription className="text-gray-600">Reserve depth for hierarchy and interaction.</CardDescription></CardHeader><CardContent className="grid gap-3"><div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-sm font-medium">Level 1 · card</p><p className="mt-1 text-xs text-gray-500">Quiet separation from the canvas</p></div><div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg"><p className="text-sm font-medium">Level 2 · popover</p><p className="mt-1 text-xs text-gray-500">Temporary focus or decision</p></div></CardContent></Card>
+            </div>
+          </section>
+
+          <section id="icons" className="scroll-mt-32">
+            <Section number="09" title="Iconography" description="Icons should clarify an action or status, never decorate an empty space." />
+            <div className="grid gap-4 md:grid-cols-3">
+              <RuleCard icon={<Palette />} title="Style" body="Use Lucide-style outline icons with a 1.75px stroke, rounded joins, and a 24px viewbox." />
+              <RuleCard icon={<Accessibility />} title="Meaning" body="Pair an icon with text for critical status. Never communicate success, failure, or warning by icon color alone." />
+              <RuleCard icon={<MonitorSmartphone />} title="Sizing" body="16px in dense UI, 20px in buttons, 24px in feature cards. Align to the text baseline." />
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-6 rounded-2xl border border-gray-200 bg-white p-6 text-gray-900 shadow-sm"><span className="flex items-center gap-2 text-sm"><Check className="size-4 text-green-600" /> Approved: consistent stroke</span><span className="flex items-center gap-2 text-sm text-gray-500"><X className="size-4" /> Avoid: mixed filled and outline families</span></div>
+          </section>
+
+          <section id="imagery" className="scroll-mt-32">
+            <Section number="10" title="Imagery & illustration" description="Show real movement, real people, and the confidence that comes from visibility." />
+            <div className="grid gap-4 md:grid-cols-3">
+              <ImagePrinciple icon={<Camera />} title="Human and in motion" body="Prefer documentary-style images of riders, merchants, parcels, and handoffs. Capture purposeful movement, not staged smiles." />
+              <ImagePrinciple icon={<Package />} title="Product first" body="Parcels should look handled, labeled, and real. Keep backgrounds simple enough for UI overlays and copy." />
+              <ImagePrinciple icon={<Sparkles />} title="Warm, not glossy" body="Use natural light, deep neutrals, and one orange accent. Avoid generic warehouse stock imagery and heavy filters." />
+            </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2"><div className="rounded-2xl bg-[#0D0F12] p-8 text-white"><p className="text-xs font-semibold uppercase tracking-[.16em] text-[#FF8A4C]">Do</p><p className="mt-3 text-lg font-semibold">A rider hands a clearly labeled parcel to a receiver.</p><p className="mt-2 text-sm text-gray-400">Visible context, real handoff, clear human benefit.</p></div><div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-gray-500"><p className="text-xs font-semibold uppercase tracking-[.16em]">Avoid</p><p className="mt-3 text-lg font-semibold text-gray-700">A generic delivery truck with no DropX context.</p><p className="mt-2 text-sm">If the story could belong to any courier, it is not specific enough.</p></div></div>
+          </section>
+
+          <section id="motion" className="scroll-mt-32">
+            <Section number="11" title="Motion & interaction" description="Motion should explain a change in parcel state and get out of the way." />
+            <div className="grid gap-4 md:grid-cols-3"><MotionCard icon={<Timer />} title="Quick feedback" value="150–200ms" body="Hover, focus, button press, and inline validation." /><MotionCard icon={<ArrowUpRight />} title="Navigation" value="200–300ms" body="Sheets, menus, page transitions, and status reveals." /><MotionCard icon={<Zap />} title="Reduce motion" value="Respect setting" body="Remove travel and looping animation when reduced motion is enabled." /></div>
+          </section>
+
+          <section id="content" className="scroll-mt-32">
+            <Section number="12" title="Content & localization" description="Write for busy people, then make the same clarity work in every language." />
+            <div className="grid gap-4 lg:grid-cols-2"><Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileText className="size-5 text-[#FF5500]" /> Message patterns</CardTitle></CardHeader><CardContent className="grid gap-3"><CopyExample label="Success" good="Pickup confirmed" bad="Your pickup request has been successfully processed" /><CopyExample label="Delay" good="Pickup delayed · We’ll update you by 4:00 PM" bad="There has been an unexpected issue" /><CopyExample label="Error" good="Enter a valid 11-digit phone number" bad="Invalid input" /></CardContent></Card><Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Globe2 className="size-5 text-[#FF5500]" /> Localization</CardTitle></CardHeader><CardContent className="grid gap-3 text-sm text-gray-600"><p>Use plain English and short sentences. Keep labels expandable for longer translations.</p><p>Support Bangla copy without shrinking type below 14px. Test mixed-script numbers, dates, and currency.</p><p>Keep brand names, tracking numbers, and status labels consistent across channels.</p></CardContent></Card></div>
+          </section>
+
+          <section id="production" className="scroll-mt-32">
+            <Section number="13" title="Production applications" description="The identity should be unmistakable on screen, in print, and on the road." />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><ApplicationCard icon={<Package />} title="Packaging" body="Obsidian base, centered orange lockup, generous clear space." /><ApplicationCard icon={<MonitorSmartphone />} title="Digital" body="Light-first customer surfaces; dark operational surfaces where focus matters." /><ApplicationCard icon={<Printer />} title="Print" body="Use the light lockup on white stock and preserve a minimum 12mm mark height." /><ApplicationCard icon={<Move />} title="Fleet & gear" body="High-visibility orange mark on navy or obsidian; prioritize legibility at distance." /></div>
+            <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-5 text-sm text-orange-900"><strong className="text-gray-900">Export rule:</strong> use SVG for digital and large-format work, PDF for print handoff, and PNG only when a raster asset is required. Never screenshot a logo from the website.</div>
+          </section>
+
+          <section id="governance" className="scroll-mt-32">
+            <Section number="14" title="Governance & handoff" description="A brand system stays useful when ownership and change are explicit." />
+            <div className="grid gap-4 md:grid-cols-3"><RuleCard title="Source of truth" body="Keep logo assets in apps/web/public/brand and update this page with every approved identity change." /><RuleCard title="Versioning" body="Current release: v1.1 · 28 September 2026. Record material palette, typography, or logo changes here." /><RuleCard title="Owner" body="DropX Brand & Product Design. Request review before creating a new logo, status color, or campaign lockup." /></div>
           </section>
         </div>
       </main>
@@ -205,6 +287,26 @@ function Field({ label, value, placeholder }: { label: string; value?: string; p
 
 function TableRow({ parcel, destination, status, statusClass, amount }: { parcel: string; destination: string; status: string; statusClass: string; amount: string }) {
   return <tr className="transition hover:bg-gray-50"><td className="px-3 py-4 font-medium text-gray-900">{parcel}</td><td className="px-3 py-4 text-gray-600">{destination}</td><td className="px-3 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusClass}`}>{status}</span></td><td className="px-3 py-4 text-right font-mono text-gray-700">{amount}</td></tr>
+}
+
+function TokenLine({ label, value }: { label: string; value: string }) {
+  return <div className="flex flex-col gap-1 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between"><span className="text-gray-500">{label}</span><code className="text-sm text-gray-900 sm:text-right">{value}</code></div>
+}
+
+function ImagePrinciple({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+  return <Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><span className="mb-2 flex size-10 items-center justify-center rounded-xl bg-orange-50 text-[#FF5500]">{icon}</span><CardTitle>{title}</CardTitle><CardDescription className="text-gray-600">{body}</CardDescription></CardHeader></Card>
+}
+
+function MotionCard({ icon, title, value, body }: { icon: React.ReactNode; title: string; value: string; body: string }) {
+  return <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"><span className="flex size-9 items-center justify-center rounded-lg bg-orange-50 text-[#FF5500]">{icon}</span><p className="mt-5 text-xs font-semibold uppercase tracking-[.16em] text-[#D94300]">{title}</p><p className="mt-2 text-2xl font-bold text-gray-900">{value}</p><p className="mt-2 text-sm leading-relaxed text-gray-600">{body}</p></div>
+}
+
+function CopyExample({ label, good, bad }: { label: string; good: string; bad: string }) {
+  return <div className="grid gap-2 border-b border-gray-100 pb-3 text-sm sm:grid-cols-[70px_1fr]"><span className="font-medium text-gray-500">{label}</span><div className="grid gap-1"><span className="text-green-700">✓ {good}</span><span className="text-gray-400 line-through">{bad}</span></div></div>
+}
+
+function ApplicationCard({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+  return <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><span className="text-[#FF5500]">{icon}</span><h3 className="mt-4 font-bold text-gray-900">{title}</h3><p className="mt-2 text-sm leading-relaxed text-gray-600">{body}</p></div>
 }
 
 function MousePointerIcon() {
