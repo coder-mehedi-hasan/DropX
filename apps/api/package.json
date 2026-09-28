@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo dist",
     "seed": "TZ=UTC bun --env-file=../../.env run ./scripts/seed.ts",
+    "bootstrap-admin": "TZ=UTC bun --env-file=../../.env run ./scripts/bootstrap-admin.ts",
     "smoke": "TZ=UTC API_LOG_LEVEL=silent DATABASE_URL=mysql://smoke:smoke@127.0.0.1:3306/dropx_smoke bun run ./scripts/smoke.ts",
     "check:read-paths": "TZ=UTC API_LOG_LEVEL=silent bun --env-file=../../.env run ./scripts/check-read-paths.ts",
     "migrate": "bun run --cwd ../../packages/db migrate"
