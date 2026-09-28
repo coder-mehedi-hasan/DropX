@@ -10,7 +10,6 @@ import {
   DropXLogo,
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -172,12 +171,9 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
         </div>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center bg-white px-6 py-10 sm:px-12 lg:px-16">
-        <div className="w-full max-w-lg">
-          <div className="mb-16 lg:hidden">
-            <DropXLogo size="lg" />
-          </div>
-          <div className="mb-12 hidden lg:block">
+      <section className="flex min-h-screen items-center justify-center bg-white px-6 py-12 sm:px-12 lg:px-20">
+        <div className="w-full max-w-md">
+          <div className="mb-14">
             <DropXLogo size="lg" />
           </div>
           <Tabs value={challenge ? "code" : "identifier"} className="gap-4">
@@ -240,7 +236,7 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
               />
             ) : null}
           </Tabs>
-          <p className="text-muted-foreground mt-16 text-center text-sm">
+          <p className="text-muted-foreground mt-12 text-center text-sm">
             <a href="/track" className="hover:text-foreground underline underline-offset-4">
               Track a parcel without signing in
             </a>
@@ -268,14 +264,14 @@ function IdentifierStep({
 
   return (
     <TabsContent value="identifier" className="gap-0">
-      <div className="mb-8 text-center">
+      <div className="mb-12 text-center">
         <h1 className="text-3xl font-semibold tracking-tight">Sign in to DropX</h1>
-        <p className="text-muted-foreground mt-3 text-base">
+        <p className="text-muted-foreground mx-auto mt-3 max-w-sm text-sm leading-6">
           We&apos;ll send a one-time code to your phone or email.
         </p>
       </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" noValidate>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
           <FormField
             control={form.control}
             name="identifier"
@@ -292,9 +288,6 @@ function IdentifierStep({
                     className="h-12 rounded-lg"
                   />
                 </FormControl>
-                <FormDescription>
-                  We match the channel to what you enter — no account needed first.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -312,9 +305,9 @@ function IdentifierStep({
                       onCheckedChange={(checked) => field.onChange(checked === true)}
                     />
                   </FormControl>
-                  <FormLabel className="items-start leading-snug font-normal">
-                    I agree to DropX storing my phone number and email to deliver my parcels, and to
-                    be contacted about them.
+                  <FormLabel className="items-start text-sm leading-5 font-normal">
+                    I agree to DropX using my contact details to deliver and update me about
+                    parcels.
                   </FormLabel>
                 </div>
                 <FormMessage />
@@ -362,9 +355,9 @@ function CodeStep({
 
   return (
     <TabsContent value="code" className="gap-0">
-      <div className="mb-8 text-center">
+      <div className="mb-12 text-center">
         <h1 className="text-3xl font-semibold tracking-tight">Enter OTP</h1>
-        <p className="text-muted-foreground mt-3 text-base">
+        <p className="text-muted-foreground mx-auto mt-3 max-w-sm text-sm leading-6">
           We have sent a code to <span className="font-medium">{challenge.destination}</span>
         </p>
       </div>
@@ -372,7 +365,7 @@ function CodeStep({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((values) => void onVerify(values.code))}
-          className="grid gap-4"
+          className="grid gap-7"
           noValidate
         >
           <FormField
@@ -383,7 +376,7 @@ function CodeStep({
                 <FormLabel className="sr-only">Six-digit code</FormLabel>
                 <FormControl>
                   <div
-                    className="flex justify-center gap-2.5 sm:gap-3"
+                    className="flex justify-center gap-3 sm:gap-3.5"
                     role="group"
                     aria-label="Six-digit verification code"
                   >
@@ -399,7 +392,7 @@ function CodeStep({
                         autoComplete={index === 0 ? "one-time-code" : "off"}
                         maxLength={1}
                         aria-label={`Digit ${index + 1} of 6`}
-                        className="size-12 rounded-lg border-slate-300 p-0 text-center font-mono text-xl font-semibold sm:size-14"
+                        className="size-12 rounded-lg border-slate-300 p-0 text-center font-mono text-xl font-semibold sm:size-13"
                         onChange={(event) => {
                           const digit = event.target.value.replace(/\D/g, "").slice(-1)
                           const nextCode = field.value.split("")
@@ -437,7 +430,7 @@ function CodeStep({
         </form>
       </Form>
 
-      <div className="mt-7 flex flex-col items-center gap-4 text-sm">
+      <div className="mt-8 flex flex-col items-center gap-3 text-sm">
         <p className="text-muted-foreground">
           Didn&apos;t receive code?{" "}
           <button
@@ -453,10 +446,6 @@ function CodeStep({
           <ArrowLeftIcon aria-hidden /> Use a different number
         </Button>
       </div>
-
-      <p className="text-muted-foreground mt-8 text-center text-xs">
-        A code can be tried five times before it is invalidated.
-      </p>
     </TabsContent>
   )
 }
