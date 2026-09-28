@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@dropx/ui/styles.css";
 
+/* Shared UI components are workspace source, not a built dependency. */
+@source "../../../packages/ui/src";
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

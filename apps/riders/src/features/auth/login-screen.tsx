@@ -8,18 +8,10 @@ import {
   AlertDescription,
   AlertTitle,
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  DropXLockup,
+  DropXLogo,
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
+  FormInput,
+  FormPasswordInput,
   LoadingButton,
 } from "@dropx/ui"
 
@@ -69,18 +61,15 @@ export function LoginScreen() {
   })
 
   return (
-    <main className="bg-background text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10">
-      <div className="mb-8 flex flex-col items-center gap-3 text-center">
-        <DropXLockup />
-        <p className="text-muted-foreground text-sm">Sign in to see today's jobs.</p>
-      </div>
+    <main className="bg-background text-foreground flex min-h-dvh w-full items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <DropXLogo size="lg" />
+          <h1 className="mt-8 text-2xl font-semibold tracking-tight">Rider sign in</h1>
+          <p className="text-muted-foreground mt-2 text-sm">Sign in to see today&apos;s jobs.</p>
+        </div>
 
-      <Card className="gap-0 py-0">
-        <CardHeader className="border-b">
-          <CardTitle className="text-lg">Rider sign in</CardTitle>
-          <CardDescription>Use the email and password from dispatch.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
+        <Card className="rounded-feature border-border/80 p-6 shadow-lg sm:p-8">
           {serverError ? (
             <Alert variant="destructive" className="mb-4">
               <AlertTitle>Sign in failed</AlertTitle>
@@ -91,46 +80,23 @@ export function LoginScreen() {
           ) : null}
 
           <Form {...form}>
-            <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-              <FormField
-                control={form.control}
+            <form onSubmit={onSubmit} className="grid gap-6" noValidate>
+              <FormInput<LoginValues>
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base">Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        inputMode="email"
-                        autoComplete="username"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        className="h-12 text-base"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Email"
+                type="email"
+                inputMode="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="h-12 text-base"
               />
 
-              <FormField
-                control={form.control}
+              <FormPasswordInput<LoginValues>
                 name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base">Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        autoComplete="current-password"
-                        className="h-12 text-base"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Password"
+                autoComplete="current-password"
+                className="h-12 text-base"
               />
 
               <LoadingButton
@@ -143,10 +109,10 @@ export function LoginScreen() {
               </LoadingButton>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </Card>
 
-      <p className="text-muted-foreground mt-6 text-center text-xs">API: {getApiUrl()}</p>
+        <p className="text-muted-foreground mt-6 text-center text-xs">API: {getApiUrl()}</p>
+      </div>
     </main>
   )
 }
