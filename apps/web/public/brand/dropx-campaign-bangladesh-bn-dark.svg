@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628" role="img" aria-labelledby="title">
+  <title id="title">DropX Bangla campaign lockup for dark backgrounds</title>
+  <rect width="1200" height="628" rx="32" fill="#0D0F12"/>
+  <rect x="72" y="100" width="150" height="150" rx="38" fill="#FF5500"/>
+  <path fill="#fff" d="M109 135h33c23 0 39 15 39 39s-16 39-39 39h-33v-78Zm28 57c12 0 19-6 19-18s-7-18-19-18h-6v36h6Z"/>
+  <path fill="#FF5500" d="M163 165h21v9h-21z"/><path fill="#FF5500" d="m177 157 18 13-18 13v-9h-14v-7h14v-10Z"/>
+  <text x="270" y="190" fill="#FFFFFF" font-family="Inter, Noto Sans Bengali, Arial, sans-serif" font-size="104" font-weight="800" letter-spacing="-5">Drop<tspan fill="#FF5500">X</tspan></text>
+  <text x="278" y="244" fill="#A7AFBD" font-family="Noto Sans Bengali, Inter, Arial, sans-serif" font-size="20" font-weight="600">বাংলাদেশজুড়ে স্মার্ট ডেলিভারি</text>
+  <path d="M72 378h1056" stroke="#FF5500" stroke-width="4" opacity=".45"/>
+  <text x="72" y="470" fill="#FFFFFF" font-family="Noto Sans Bengali, Inter, Arial, sans-serif" font-size="40" font-weight="700">আপনার প্রয়োজনীয় জিনিস, পৌঁছাক ঠিক সময়ে।</text>
+  <text x="72" y="520" fill="#A7AFBD" font-family="Noto Sans Bengali, Inter, Arial, sans-serif" font-size="22">মার্চেন্ট, রাইডার এবং গ্রাহকের জন্য সহজ ও নির্ভরযোগ্য পার্সেল ডেলিভারি।</text>
+</svg>
