@@ -171,6 +171,11 @@ export default function BrandGuidelinesPage() {
               <LogoAssetCard src="/brand/dropx-stack-light.svg" alt="DropX stacked lockup" label="Stacked lockup" note="Poster · cover · campaign" />
               <LogoAssetCard src="/brand/dropx-email-signature-light.svg" alt="DropX email signature" label="Signature lockup" note="Email · partner document" wide />
             </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              <ChannelAsset src="/brand/dropx-social-cover-light.svg" alt="DropX social cover" label="Social cover · 16:9" />
+              <ChannelAsset src="/brand/dropx-social-story-light.svg" alt="DropX social story" label="Social story · 9:16" tall />
+              <ChannelAsset src="/brand/dropx-campaign-bangladesh-light.svg" alt="DropX Bangladesh campaign" label="Local campaign lockup" />
+            </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <RuleCard title="Clear space" body="Keep a minimum clear space around the lockup equal to the height of the orange D-mark on all sides." />
               <RuleCard title="Protect the identity" body="Use approved colors, preserve proportions, and never stretch, rotate, or add effects to the mark." />
@@ -281,6 +286,10 @@ function LogoLockup({ light }: { light: boolean }) {
 
 function LogoAssetCard({ src, alt, label, note, wide = false }: { src: string; alt: string; label: string; note: string; wide?: boolean }) {
   return <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div className={`flex h-32 items-center justify-center rounded-xl bg-gray-50 p-4 ${wide ? "sm:col-span-2" : ""}`}><img src={src} alt={alt} className="max-h-full w-full object-contain" /></div><p className="mt-4 text-sm font-semibold text-gray-900">{label}</p><p className="mt-1 text-xs text-gray-500">{note}</p></div>
+}
+
+function ChannelAsset({ src, alt, label, tall = false }: { src: string; alt: string; label: string; tall?: boolean }) {
+  return <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><div className={`flex items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3 ${tall ? "h-64" : "h-40"}`}><img src={src} alt={alt} className="h-full w-full object-contain" /></div><p className="mt-4 text-sm font-semibold text-gray-900">{label}</p></div>
 }
 
 function RuleCard({ title, body, icon }: { title: string; body: string; icon?: React.ReactNode }) {

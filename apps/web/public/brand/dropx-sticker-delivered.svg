@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-labelledby="title">
+  <title id="title">DropX delivered smart sticker</title>
+  <circle cx="500" cy="500" r="460" fill="#FF5500"/>
+  <circle cx="500" cy="500" r="412" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="10 18" opacity=".8"/>
+  <path fill="#fff" d="M276 282h128c91 0 154 59 154 154s-63 154-154 154H276V282Zm110 220c45 0 74-23 74-66s-29-66-74-66h-23v132h23Z"/>
+  <path fill="#FF5500" d="M488 404h83v36h-83z"/><path fill="#FF5500" d="m546 370 72 50-72 50v-36h-55v-28h55v-36Z"/>
+  <text x="500" y="720" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="7">DELIVERED SMART</text>
+</svg>

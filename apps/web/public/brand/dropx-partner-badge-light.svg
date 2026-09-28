@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-labelledby="title">
+  <title id="title">Powered by DropX partner badge</title>
+  <rect x="2" y="2" width="796" height="236" rx="28" fill="#fff" stroke="#D9DEE7" stroke-width="4"/>
+  <rect x="48" y="66" width="108" height="108" rx="28" fill="#FF5500"/>
+  <path fill="#fff" d="M75 91h24c17 0 29 11 29 29s-12 29-29 29H75V91Zm21 43c9 0 14-5 14-14s-5-14-14-14h-5v28h5Z"/>
+  <path fill="#FF5500" d="M115 113h16v7h-16z"/><path fill="#FF5500" d="m126 107 14 10-14 10v-7h-11v-6h11v-7Z"/>
+  <text x="198" y="118" fill="#667085" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="3">POWERED BY</text>
+  <text x="198" y="166" fill="#0D0F12" font-family="Inter, Arial, sans-serif" font-size="56" font-weight="800" letter-spacing="-2">Drop<tspan fill="#FF5500">X</tspan></text>
+</svg>

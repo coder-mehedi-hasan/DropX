@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title">
+  <title id="title">DropX social cover for dark campaigns</title>
+  <rect width="1600" height="900" fill="#0D0F12"/>
+  <circle cx="1450" cy="120" r="420" fill="#FF5500" opacity=".15"/>
+  <path d="M1030 0h570v900h-250c-115-190-218-380-320-900Z" fill="#FF5500" opacity=".12"/>
+  <rect x="120" y="262" width="180" height="180" rx="48" fill="#FF5500"/>
+  <path fill="#fff" d="M164 304h39c28 0 47 18 47 47s-19 47-47 47h-39v-94Zm34 68c14 0 23-7 23-21s-9-21-23-21h-7v42h7Z"/>
+  <path fill="#FF5500" d="M229 340h25v11h-25z"/><path fill="#FF5500" d="m246 330 22 15-22 15v-11h-17v-8h17v-11Z"/>
+  <text x="350" y="378" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="126" font-weight="800" letter-spacing="-6">Drop<tspan fill="#FF5500">X</tspan></text>
+  <text x="358" y="448" fill="#A7AFBD" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="600" letter-spacing="6">SMART LOGISTICS</text>
+  <text x="120" y="675" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="700">Move what matters.</text>
+  <text x="120" y="730" fill="#A7AFBD" font-family="Inter, Arial, sans-serif" font-size="26">Fast, clear, dependable parcel delivery across Bangladesh.</text>
+</svg>
