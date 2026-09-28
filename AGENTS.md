@@ -13,6 +13,10 @@ Canonical product docs:
 - [`docs/er-diagram.md`](docs/er-diagram.md) — ER diagram
 - [`migrate.sql`](migrate.sql) — MySQL schema (source of truth for DB)
 
+Point-in-time session notes (stale by nature — delete once the open items are closed):
+
+- [`docs/handoff.md`](docs/handoff.md) — last verification pass: four bugs found, `check:read-paths` added, outstanding gaps, suggested skills for the next session
+
 ## Monorepo layout
 
 Bun workspace, TypeScript throughout, apps consume `packages/*` as source (no build step for packages).
