@@ -1,0 +1,47 @@
+<mjml>
+  <mj-head>
+    <mj-title>DropX — Your verification code</mj-title>
+    <mj-attributes>
+      <mj-all font-family="Inter, Helvetica, Arial, sans-serif" />
+      <mj-section background-color="#f4f4f5" padding="0" />
+      <mj-column background-color="#ffffff" />
+    </mj-attributes>
+    <mj-style>
+      .pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </mj-style>
+  </mj-head>
+  <mj-body>
+    <mj-section padding="32px 16px" background-color="#f4f4f5">
+      <mj-column>
+        <mj-text font-size="14px" font-weight="700" color="#18181b">DropX</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="32px 16px" background-color="#ffffff">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="600" color="#18181b" padding-bottom="8px">
+          Verify your account
+        </mj-text>
+        <mj-text font-size="15px" color="#52525b" padding-bottom="24px">
+          Use the code below to complete your sign-in. It expires in 5 minutes.
+        </mj-text>
+
+        <mj-text font-size="32px" font-weight="700" color="#18181b" class="pre" padding-bottom="24px">
+          {{code}}
+        </mj-text>
+
+        <mj-text font-size="13px" color="#71717a" padding-bottom="16px">
+          If you did not request this code, you can ignore this email.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="16px" background-color="#f4f4f5">
+      <mj-column>
+        <mj-text font-size="12px" color="#a1a1aa" align="center">
+          &copy; DropX. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

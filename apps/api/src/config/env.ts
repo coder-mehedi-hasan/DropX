@@ -34,6 +34,11 @@ const schema = z.object({
   REDIS_URL: z.string().default("redis://localhost:6379"),
 
   MAIL_FROM: z.string().default("no-reply@dropx.local"),
+  MAIL_HOST: z.string().optional(),
+  MAIL_PORT: z.coerce.number().int().positive().optional(),
+  MAIL_SECURE: z.coerce.boolean().default(false),
+  MAIL_USER: z.string().optional(),
+  MAIL_PASSWORD: z.string().optional(),
 })
 
 export type AppConfig = {
@@ -51,7 +56,14 @@ export type AppConfig = {
     audiences: string[]
   }
   redis: { url: string }
-  mail: { from: string }
+  mail: {
+    from: string
+    host?: string
+    port?: number
+    secure?: boolean
+    user?: string
+    password?: string
+  }
 }
 
 function load(env: Record<string, string | undefined>): AppConfig {
@@ -85,7 +97,14 @@ function load(env: Record<string, string | undefined>): AppConfig {
       audiences: csv(value.TOKEN_AUDIENCES),
     },
     redis: { url: value.REDIS_URL },
-    mail: { from: value.MAIL_FROM },
+    mail: {
+      from: value.MAIL_FROM,
+      host: value.MAIL_HOST,
+      port: value.MAIL_PORT,
+      secure: value.MAIL_SECURE,
+      user: value.MAIL_USER,
+      password: value.MAIL_PASSWORD,
+    },
   }
 }
 
