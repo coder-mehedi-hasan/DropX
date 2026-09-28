@@ -1,4 +1,4 @@
-import { TABLES, toDecimal, toNullableDecimal, type Database, type Id } from "@dropx/db"
+import { TABLES, getDatabase, toDecimal, toNullableDecimal, type Id } from "@dropx/db"
 
 import { ERROR_CODES, DomainError } from "../../core"
 
@@ -42,8 +42,8 @@ export type Quote = {
   currency: "BDT"
 }
 
-export async function quoteDeliveryFee(db: Database, input: QuoteInput): Promise<Quote> {
-  const rule = await findMatchingRule(db, input)
+export async function quoteDeliveryFee(input: QuoteInput): Promise<Quote> {
+  const rule = await findMatchingRule(input)
 
   if (!rule) {
     throw new DomainError(
@@ -78,8 +78,8 @@ export async function quoteDeliveryFee(db: Database, input: QuoteInput): Promise
   }
 }
 
-async function findMatchingRule(db: Database, input: QuoteInput): Promise<PricingRuleRow | null> {
-  return db.queryOne<PricingRuleRow>(
+async function findMatchingRule(input: QuoteInput): Promise<PricingRuleRow | null> {
+  return getDatabase().queryOne<PricingRuleRow>(
     `SELECT id, min_weight, max_weight, base_price, price_per_kg,
             cod_percentage, cod_fixed_fee, express_fee
        FROM ${TABLES.pricingRules}

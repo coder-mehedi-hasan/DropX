@@ -132,6 +132,13 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
 
     try {
       const result = await authApi.requestOtp(values.identifier)
+      /**
+       * Captured from the submitted values, never mirrored from the input. The
+       * identifier step remounts when a challenge exists — a live mirror is
+       * reset to `""` by that remount, and the code step then verifies against
+       * the empty string.
+       */
+      setIdentifier(values.identifier.trim())
       setChallenge(result)
       setSecondsLeft(result.expiresInSeconds)
       if (isResend) toast.success("A new code is on its way")
@@ -173,10 +180,11 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
           ) : null}
 
           <IdentifierStep
+            // Remounts on a new challenge so the field clears for a different
+            // identifier; consent stays ticked because it was already given.
             key={challenge ? challenge.destination : "blank"}
             onSubmit={(values) => void startChallenge(values, false)}
             busy={sending}
-            onIdentifierChange={setIdentifier}
             initialConsent={challenge !== null}
           />
 
@@ -222,12 +230,10 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
 function IdentifierStep({
   onSubmit,
   busy,
-  onIdentifierChange,
   initialConsent,
 }: {
   onSubmit: (values: IdentifierValues) => void
   busy: boolean
-  onIdentifierChange: (value: string) => void
   initialConsent: boolean
 }) {
   const form = useForm<IdentifierValues>({
@@ -235,12 +241,6 @@ function IdentifierStep({
     defaultValues: { identifier: "", consent: initialConsent },
     mode: "onSubmit",
   })
-
-  const identifier = form.watch("identifier")
-
-  React.useEffect(() => {
-    onIdentifierChange(identifier.trim())
-  }, [identifier, onIdentifierChange])
 
   return (
     <TabsContent value="identifier">

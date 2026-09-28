@@ -1,3 +1,5 @@
+import { getDatabase } from "@dropx/db"
+
 import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
@@ -27,7 +29,7 @@ router.get(
   defineOperation({ id: "health.ready", public: true }, { method: "GET", path: "/health/ready" }),
   async (c) => {
     try {
-      await c.get("db").ping()
+      await getDatabase().ping()
       return c.json({ status: "ready", database: "up" })
     } catch (error) {
       c.get("logger").error("readiness check failed", { error })

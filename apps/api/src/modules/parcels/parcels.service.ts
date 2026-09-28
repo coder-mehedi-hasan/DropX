@@ -3,9 +3,8 @@ import { randomInt } from "node:crypto"
 import {
   buildPage,
   canTransitionParcel,
+  getDatabase,
   normalizeListParams,
-  type Database,
-  type Executor,
   type Id,
   type ListParams,
   type Page,
@@ -36,6 +35,9 @@ import {
  * recomputed here and never read from the request. Parcel + items + the first
  * tracking event commit together, and domain events are emitted only after
  * that commit.
+ *
+ * The handle is resolved here rather than passed in, and threaded explicitly
+ * into the repository so a transaction can hand it a `tx` executor.
  */
 
 const TRACKING_PREFIX = "DPX"
@@ -67,7 +69,6 @@ export type ParcelListFilter = {
 }
 
 export async function listParcelsForStaff(
-  db: Database,
   scope: Scope,
   query: ListParcelsQuery,
   sortColumns: readonly string[],
@@ -76,7 +77,7 @@ export async function listParcelsForStaff(
   const params = toListParams(query)
 
   const { nodes, totalCount } = await listParcels(
-    db,
+    getDatabase(),
     scope,
     params,
     { ...query, search: params.search, searchFields },
@@ -87,7 +88,6 @@ export async function listParcelsForStaff(
 }
 
 export async function listParcelsForCustomerPortal(
-  db: Database,
   customerId: Id,
   query: ListParcelsQuery,
   sortColumns: readonly string[],
@@ -96,7 +96,7 @@ export async function listParcelsForCustomerPortal(
   const params = toListParams(query)
 
   const { nodes, totalCount } = await listParcelsForCustomer(
-    db,
+    getDatabase(),
     customerId,
     params,
     { status: query.status, search: params.search, searchFields },
@@ -106,24 +106,20 @@ export async function listParcelsForCustomerPortal(
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getParcelForStaff(db: Database, scope: Scope, parcelId: Id): Promise<Parcel> {
-  const parcel = await findParcelById(db, scope, parcelId)
+export async function getParcelForStaff(scope: Scope, parcelId: Id): Promise<Parcel> {
+  const parcel = await findParcelById(getDatabase(), scope, parcelId)
   if (!parcel) throw notFound("Parcel not found")
   return parcel
 }
 
-export async function getParcelForCustomer(
-  db: Database,
-  customerId: Id,
-  parcelId: Id,
-): Promise<Parcel> {
-  const parcel = await findParcelForCustomer(db, parcelId, customerId)
+export async function getParcelForCustomer(customerId: Id, parcelId: Id): Promise<Parcel> {
+  const parcel = await findParcelForCustomer(getDatabase(), parcelId, customerId)
   if (!parcel) throw notFound("Parcel not found")
   return parcel
 }
 
-export function getParcelItems(db: Executor, parcelId: Id) {
-  return listParcelItems(db, parcelId)
+export function getParcelItems(parcelId: Id) {
+  return listParcelItems(getDatabase(), parcelId)
 }
 
 export type CreateParcelCommand = {
@@ -133,7 +129,8 @@ export type CreateParcelCommand = {
   actorId: Id | null
 }
 
-export async function createParcel(db: Database, command: CreateParcelCommand): Promise<Parcel> {
+export async function createParcel(command: CreateParcelCommand): Promise<Parcel> {
+  const db = getDatabase()
   const { input, senderCustomerId, actorId: actor } = command
 
   if (input.originHubId === input.destinationHubId) {
@@ -149,7 +146,7 @@ export async function createParcel(db: Database, command: CreateParcelCommand): 
   }
 
   // Recomputed server-side: a client-supplied fee is never trusted.
-  const quote = await quoteDeliveryFee(db, {
+  const quote = await quoteDeliveryFee({
     originZoneId: command.originZoneId,
     destinationZoneId: input.destinationZoneId,
     weightKg: input.weight,
@@ -230,10 +227,8 @@ const STATUS_EVENT: Readonly<Record<Parcel["status"], string>> = {
   RETURNED: "RETURNED",
 }
 
-export async function updateParcelStatus(
-  db: Database,
-  command: UpdateStatusCommand,
-): Promise<Parcel> {
+export async function updateParcelStatus(command: UpdateStatusCommand): Promise<Parcel> {
+  const db = getDatabase()
   const current = await findParcelById(db, command.scope, command.parcelId)
   if (!current) throw notFound("Parcel not found")
 

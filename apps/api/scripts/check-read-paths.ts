@@ -100,7 +100,7 @@ cases.push(
   {
     name: "pricing.quoteDeliveryFee",
     run: () =>
-      pricing.quoteDeliveryFee(db, {
+      pricing.quoteDeliveryFee({
         originZoneId: "1",
         destinationZoneId: "2",
         weightKg: 2.5,
@@ -111,7 +111,7 @@ cases.push(
   {
     name: "pricing.quoteDeliveryFee(prepaid)",
     run: () =>
-      pricing.quoteDeliveryFee(db, {
+      pricing.quoteDeliveryFee({
         originZoneId: "1",
         destinationZoneId: "2",
         weightKg: 0.5,

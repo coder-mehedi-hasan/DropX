@@ -1,5 +1,3 @@
-import type { Database } from "@dropx/db"
-
 import type { Logger } from "../core/logger"
 import type { AuthContext } from "../shared/auth/auth-context"
 
@@ -7,10 +5,11 @@ import type { AuthContext } from "../shared/auth/auth-context"
  * The per-request context Hono carries.
  *
  * Everything a handler needs is on `c.get(...)` and is populated by middleware,
- * so handlers never re-parse headers or build a database handle themselves.
+ * so handlers never re-parse headers. Infrastructure is the exception: the
+ * database handle and the cache are process-wide, so a service resolves them
+ * itself instead of the transport passing an identity copy down per request.
  */
 export type AppVariables = {
-  db: Database
   logger: Logger
   /** Correlation id — echoed as `X-Request-Id` and attached to every log line. */
   requestId: string

@@ -40,7 +40,6 @@ router.get(
   validateQuery(listParcelsQuerySchema),
   async (c) => {
     const page = await parcels.listParcelsForStaff(
-      c.get("db"),
       scopeFromAuth(c.get("auth")),
       c.req.valid("query"),
       PARCEL_SORT_COLUMNS,
@@ -58,13 +57,8 @@ router.get(
   ),
   idParam,
   async (c) => {
-    const db = c.get("db")
-    const parcel = await parcels.getParcelForStaff(
-      db,
-      scopeFromAuth(c.get("auth")),
-      c.req.param("id"),
-    )
-    const items = await parcels.getParcelItems(db, parcel.id)
+    const parcel = await parcels.getParcelForStaff(scopeFromAuth(c.get("auth")), c.req.param("id"))
+    const items = await parcels.getParcelItems(parcel.id)
     return c.json({ ...parcel, items })
   },
 )
@@ -86,7 +80,7 @@ router.post(
       })
     }
 
-    const parcel = await parcels.createParcel(c.get("db"), {
+    const parcel = await parcels.createParcel({
       senderCustomerId: input.senderCustomerId,
       originZoneId: input.originZoneId,
       input,
@@ -108,7 +102,7 @@ router.patch(
   async (c) => {
     const input = c.req.valid("json")
 
-    const parcel = await parcels.updateParcelStatus(c.get("db"), {
+    const parcel = await parcels.updateParcelStatus({
       parcelId: c.req.param("id"),
       status: input.status,
       reason: input.reason,
@@ -130,7 +124,7 @@ router.post(
   idParam,
   validateJson(cancelParcelSchema),
   async (c) => {
-    const parcel = await parcels.updateParcelStatus(c.get("db"), {
+    const parcel = await parcels.updateParcelStatus({
       parcelId: c.req.param("id"),
       status: "CANCELLED",
       reason: c.req.valid("json").reason,
@@ -158,7 +152,6 @@ router.get(
     }
 
     const page = await parcels.listParcelsForCustomerPortal(
-      c.get("db"),
       auth.actor.customerId,
       c.req.valid("query"),
       PARCEL_SORT_COLUMNS,
@@ -182,9 +175,8 @@ router.get(
       throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
     }
 
-    const db = c.get("db")
-    const parcel = await parcels.getParcelForCustomer(db, auth.actor.customerId, c.req.param("id"))
-    const items = await parcels.getParcelItems(db, parcel.id)
+    const parcel = await parcels.getParcelForCustomer(auth.actor.customerId, c.req.param("id"))
+    const items = await parcels.getParcelItems(parcel.id)
     return c.json({ ...parcel, items })
   },
 )
@@ -206,7 +198,7 @@ router.post(
 
     // The sender is the session, never the request body — `createOwnParcelSchema`
     // does not even accept the field.
-    const parcel = await parcels.createParcel(c.get("db"), {
+    const parcel = await parcels.createParcel({
       senderCustomerId: auth.actor.customerId,
       originZoneId: input.originZoneId,
       input: { ...input, senderCustomerId: auth.actor.customerId },

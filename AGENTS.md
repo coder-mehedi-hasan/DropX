@@ -113,7 +113,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 13. **Parcels are the hub of the domain** — pickups, transfers, deliveries, payments, events hang off parcels.
 14. **Schema changes** — update `migrate.sql` and keep `docs/er-diagram.md` in sync when tables/FKs change.
 15. **RBAC / product changes** — update `docs/rbac.md` and `docs/overview.md`.
-16. **The database is reached only through the port** — `apps/api` imports `@dropx/db` and never `mysql2`. SQL composes via the `QueryBuilder`; sort columns are allowlisted because they arrive from clients.
+16. **The database is reached only through the port** — `apps/api` imports `@dropx/db` and never `mysql2`. SQL composes via the `QueryBuilder`; sort columns are allowlisted because they arrive from clients. The handle and the cache are process-wide: a **service** resolves them with `getDatabase()` / `getCache()`, a **repository** takes an `Executor` so a transaction can pass `tx`, and a **route** passes neither — it supplies business input only. Tests install a double with `setDatabase()` / `setCache()`.
 17. **Audience and permission are separate axes** — a rider token holds `rider.jobs.*` and must never satisfy `parcels.*`; the console and rider surfaces are separate modules, not one route with two audiences.
 
 ## Where to put work
