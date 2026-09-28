@@ -188,6 +188,13 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
   let customer = await authRepository.findCustomerByIdentifier(db, identifier)
   const isNewCustomer = customer === null
 
+  if (!customer && !input.acceptSignup) {
+    throw new DomainError(
+      ERROR_CODES.UNREGISTERED_USER,
+      "No account exists for this phone number or email",
+    )
+  }
+
   if (!customer) {
     // Placeholder name — the customer supplies it after verifying.
     const { phone, email } = splitIdentifier(identifier)

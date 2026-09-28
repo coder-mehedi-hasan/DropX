@@ -25,11 +25,11 @@ import type {
  */
 
 export const authApi = {
-  requestOtp(identifier: string): Promise<OtpRequestResult> {
+  requestOtp(identifier: string, acceptSignup = false): Promise<OtpRequestResult> {
     return apiRequest<OtpRequestResult>("/auth/otp/request", {
       method: "POST",
       auth: false,
-      body: { identifier, consent: true },
+      body: { identifier, consent: true, acceptSignup },
     })
   },
 
