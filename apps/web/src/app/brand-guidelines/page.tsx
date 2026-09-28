@@ -82,6 +82,7 @@ export default function BrandGuidelinesPage() {
             ["content", "Content"],
             ["production", "Production"],
             ["governance", "Governance"],
+            ["handoff", "Handoff"],
           ].map(([href, label]) => (
             <a key={href} href={`#${href}`} className="whitespace-nowrap transition-colors hover:text-[#FF5500]">
               {label}
@@ -94,7 +95,7 @@ export default function BrandGuidelinesPage() {
         <section className="relative overflow-hidden border-b border-gray-200">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,85,0,.16),_transparent_58%)]" />
           <div className="relative mx-auto max-w-5xl px-4 py-20 text-center sm:py-28">
-            <Badge className="border border-orange-500/20 bg-orange-500/10 text-[#FF8A4C] hover:bg-orange-500/10">Official brand guidelines · v1.1</Badge>
+            <Badge className="border border-orange-500/20 bg-orange-500/10 text-[#FF8A4C] hover:bg-orange-500/10">Official brand guidelines · v1.2</Badge>
             <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-extrabold tracking-tight text-gray-900 text-balance sm:text-6xl lg:text-7xl">
               Building the future of <span className="bg-gradient-to-r from-[#FF5500] to-amber-400 bg-clip-text text-transparent">smart logistics</span>
             </h1>
@@ -253,7 +254,13 @@ export default function BrandGuidelinesPage() {
 
           <section id="governance" className="scroll-mt-32">
             <Section number="14" title="Governance & handoff" description="A brand system stays useful when ownership and change are explicit." />
-            <div className="grid gap-4 md:grid-cols-3"><RuleCard title="Source of truth" body="Keep logo assets in apps/web/public/brand and update this page with every approved identity change." /><RuleCard title="Versioning" body="Current release: v1.1 · 28 September 2026. Record material palette, typography, or logo changes here." /><RuleCard title="Owner" body="DropX Brand & Product Design. Request review before creating a new logo, status color, or campaign lockup." /></div>
+            <div className="grid gap-4 md:grid-cols-3"><RuleCard title="Source of truth" body="Keep logo assets in apps/web/public/brand and update this page with every approved identity change." /><RuleCard title="Versioning" body="Current release: v1.2 · 28 September 2026. Record material palette, typography, or logo changes here." /><RuleCard title="Owner" body="DropX Brand & Product Design. Request review before creating a new logo, status color, or campaign lockup." /></div>
+          </section>
+
+          <section id="handoff" className="scroll-mt-32">
+            <Section number="15" title="Production handoff" description="The final checks before a logo or campaign leaves the team." />
+            <div className="grid gap-4 md:grid-cols-3"><RuleCard title="Accessibility" body="Use the approved contrast pairs, include meaningful alt text, and pair every status color with text or an icon." /><RuleCard title="Print proof" body="Convert wordmarks to outlines, proof CMYK physically, and preserve the minimum print sizes before vendor delivery." /><RuleCard title="Legal review" body="Confirm trademark status, copyright ownership, and final campaign copy with the appropriate owner before external publication." /></div>
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm"><strong className="text-gray-900">Handoff files:</strong> see <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">docs/brand-guidelines.md</code> for the WCAG contrast audit, print checklist, localization notes, and source-file requirements.</div>
           </section>
         </div>
       </main>
