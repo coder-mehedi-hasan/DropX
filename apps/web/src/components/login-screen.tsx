@@ -7,6 +7,12 @@ import {
   AlertTitle,
   Button,
   DropXLogo,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Form,
   FormCheckbox,
   FormInput,
@@ -34,8 +40,8 @@ import type { OtpRequestResult } from "@/lib/types"
  *
  * The rules mirror `otpIdentifier` in `apps/api`'s `auth.dto.ts` so the customer
  * is told about a typo before a request is made. Consent is a literal `true` in
- * the payload because the API creates a TEMP `customers` row on the first
- * request — there is no later moment to accept the terms.
+ * the payload; account creation is separately confirmed after the API reports
+ * that the identifier is not registered.
  */
 
 const email = z.string().trim().toLowerCase().email("Enter a valid email address").max(255)
@@ -97,6 +103,8 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
   const [formError, setFormError] = React.useState<string | null>(null)
   const [sending, setSending] = React.useState(false)
   const [verifying, setVerifying] = React.useState(false)
+  const [signupPromptOpen, setSignupPromptOpen] = React.useState(false)
+  const [pendingSignupIdentifier, setPendingSignupIdentifier] = React.useState<string | null>(null)
 
   const destination = safePath(requestedPath)
 
@@ -118,12 +126,16 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
     return () => window.clearInterval(timer)
   }, [secondsLeft])
 
-  async function startChallenge(values: IdentifierValues, isResend: boolean) {
+  async function startChallenge(
+    values: IdentifierValues,
+    isResend: boolean,
+    acceptSignup = false,
+  ) {
     setSending(true)
     setFormError(null)
 
     try {
-      const result = await authApi.requestOtp(values.identifier)
+      const result = await authApi.requestOtp(values.identifier, acceptSignup)
       /**
        * Captured from the submitted values, never mirrored from the input. The
        * identifier step remounts when a challenge exists — a live mirror is
@@ -135,6 +147,11 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
       setSecondsLeft(result.expiresInSeconds)
       if (isResend) toast.success("A new code is on its way")
     } catch (error) {
+      if (isApiError(error) && error.code === "UNREGISTERED_USER" && !acceptSignup) {
+        setPendingSignupIdentifier(values.identifier.trim())
+        setSignupPromptOpen(true)
+        return
+      }
       setFormError(
         isApiError(error) ? error.message : "We could not send a code. Please try again.",
       )
@@ -232,6 +249,48 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
               />
             ) : null}
           </Tabs>
+          <Dialog
+            open={signupPromptOpen}
+            onOpenChange={(open) => {
+              setSignupPromptOpen(open)
+              if (!open) setPendingSignupIdentifier(null)
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create a DropX account?</DialogTitle>
+                <DialogDescription>
+                  We couldn&apos;t find an account for this contact. Create one and continue with
+                  OTP verification?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSignupPromptOpen(false)
+                    setPendingSignupIdentifier(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <LoadingButton
+                  loading={sending}
+                  onClick={() => {
+                    if (!pendingSignupIdentifier) return
+                    setSignupPromptOpen(false)
+                    void startChallenge(
+                      { identifier: pendingSignupIdentifier, consent: true },
+                      false,
+                      true,
+                    )
+                  }}
+                >
+                  Create account
+                </LoadingButton>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <p className="text-muted-foreground mt-12 text-center text-sm">
             <a href="/track" className="hover:text-foreground underline underline-offset-4">
               Track a parcel without signing in

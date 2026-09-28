@@ -203,6 +203,7 @@ export type ApiErrorCode =
   | "OTP_NOT_VERIFIED"
   | "CUSTOMER_NOT_ACTIVE"
   | "EMAIL_ALREADY_REGISTERED"
+  | "UNREGISTERED_USER"
   | "RATE_LIMITED"
   | "INTERNAL_ERROR"
   | "SERVICE_UNAVAILABLE"
@@ -215,11 +216,12 @@ export type ApiFieldIssue = {
 }
 
 export type ApiErrorEnvelope = {
-  error: {
-    code: ApiErrorCode | string
-    message: string
-    details?: ApiFieldIssue[]
-  }
+  error: string
+  data: null
+  status: number
+  success: false
+  code: ApiErrorCode | string
+  details?: ApiFieldIssue[]
 }
 
 export type ListQueryParams = {

@@ -126,8 +126,9 @@ async function readErrorBody(response: Response): Promise<ApiErrorEnvelope | nul
       typeof payload === "object" &&
       payload !== null &&
       "error" in payload &&
-      typeof (payload as { error: unknown }).error === "object" &&
-      (payload as { error: unknown }).error !== null
+      ((typeof (payload as { error: unknown }).error === "string" && "code" in payload) ||
+        (typeof (payload as { error: unknown }).error === "object" &&
+          (payload as { error: unknown }).error !== null))
     ) {
       return payload as ApiErrorEnvelope
     }
@@ -153,11 +154,26 @@ async function toApiError(response: Response): Promise<ApiError> {
     })
   }
 
+  if (typeof envelope.error === "string") {
+    return new ApiError({
+      status: envelope.status ?? response.status,
+      code: envelope.code,
+      message: envelope.error,
+      details: envelope.details,
+    })
+  }
+
+  // Backward-compatible parsing for an older API error envelope.
+  const legacy = envelope.error as unknown as {
+    code?: string
+    message?: string
+    details?: ApiFieldIssue[]
+  }
   return new ApiError({
     status: response.status,
-    code: envelope.error.code,
-    message: envelope.error.message,
-    details: envelope.error.details,
+    code: legacy.code ?? "INTERNAL_ERROR",
+    message: legacy.message ?? "Request failed",
+    details: legacy.details,
   })
 }
 
@@ -185,7 +201,11 @@ async function refreshSession(): Promise<TokenPair | null> {
         return null
       }
 
-      const tokens = (await response.json()) as TokenPair
+      const payload: unknown = await response.json()
+      const tokens =
+        typeof payload === "object" && payload !== null && "data" in payload
+          ? (payload as { data: TokenPair }).data
+          : (payload as TokenPair)
       writeTokens(tokens)
       return tokens
     } catch {
@@ -254,7 +274,10 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   }
 
   try {
-    return (await response.json()) as T
+    const payload = (await response.json()) as { data?: T; success?: boolean }
+    return (payload && typeof payload === "object" && "data" in payload
+      ? payload.data
+      : payload) as T
   } catch {
     return undefined as T
   }
