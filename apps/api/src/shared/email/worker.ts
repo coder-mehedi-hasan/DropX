@@ -31,13 +31,15 @@ function getEmail() {
 }
 
 async function deliver(job: EmailJob): Promise<void> {
-  const rendered = await renderEmail(job.template, job.context)
+  const config = getConfig()
+  const rendered = await renderEmail(job.template, job.context, {
+    brandAssetUrl: config.mail.brandAssetUrl,
+  })
   const message: EmailMessage = {
     to: job.to,
     subject: job.subject,
     html: rendered.html,
     text: rendered.text,
-    attachments: rendered.attachments,
   }
   await getEmail().send(message)
 }

@@ -47,6 +47,7 @@ const schema = z.object({
   MAIL_SECURE: bool(false),
   MAIL_USER: z.string().optional(),
   MAIL_PASSWORD: z.string().optional(),
+  MAIL_BRAND_ASSET_URL: z.string().url().optional(),
 })
 
 export type AppConfig = {
@@ -71,6 +72,7 @@ export type AppConfig = {
     secure?: boolean
     user?: string
     password?: string
+    brandAssetUrl?: string
   }
 }
 
@@ -94,6 +96,9 @@ function load(env: Record<string, string | undefined>): AppConfig {
     if (!env.REDIS_URL) throw new Error("REDIS_URL must be set in production")
     if (!value.MAIL_HOST || !value.MAIL_USER || !value.MAIL_PASSWORD) {
       throw new Error("MAIL_HOST, MAIL_USER and MAIL_PASSWORD must be set in production")
+    }
+    if (!value.MAIL_BRAND_ASSET_URL || !value.MAIL_BRAND_ASSET_URL.startsWith("https://")) {
+      throw new Error("MAIL_BRAND_ASSET_URL must be a public HTTPS URL in production")
     }
     if (value.MAIL_FROM.endsWith(".local")) {
       throw new Error("MAIL_FROM must use a real sender domain in production")
@@ -122,6 +127,7 @@ function load(env: Record<string, string | undefined>): AppConfig {
       secure: value.MAIL_SECURE,
       user: value.MAIL_USER,
       password: value.MAIL_PASSWORD,
+      brandAssetUrl: value.MAIL_BRAND_ASSET_URL,
     },
   }
 }

@@ -10,12 +10,6 @@ export type EmailMessage = {
   subject: string
   html: string
   text: string
-  attachments?: Array<{
-    filename: string
-    content: string
-    cid: string
-    contentType: string
-  }>
 }
 
 export type Email = {
@@ -76,7 +70,6 @@ class SmtpEmail implements Email {
       subject: message.subject,
       html: message.html,
       text: message.text,
-      attachments: message.attachments,
     })
   }
 }

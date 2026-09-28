@@ -28,38 +28,33 @@ async function loadTemplate(name: TemplateName): Promise<string> {
   return loadFile(join(templatesDir, `${name}.mjml`))
 }
 
+function svgDataUri(source: string): string {
+  return `data:image/svg+xml;base64,${Buffer.from(source, "utf8").toString("base64")}`
+}
+
 export type RenderedEmail = {
   html: string
   text: string
-  attachments: Array<{
-    filename: string
-    content: string
-    cid: string
-    contentType: string
-  }>
+}
+
+export type EmailRenderOptions = {
+  brandAssetUrl?: string
 }
 
 export async function renderEmail(
   template: TemplateName,
   context: TemplateContext,
+  options: EmailRenderOptions = {},
 ): Promise<RenderedEmail> {
   const [source, brandSignature] = await Promise.all([loadTemplate(template), loadFile(brandAsset)])
 
   const html = source
-    .replace(/\{\{code\}\}/g, context.code)
-    .replace(/\{\{brandSignatureCid\}\}/g, "cid:dropx-email-signature-light")
+    .replace(/\{\{\s*code\s*\}\}/g, context.code)
+    .replace(/\{\{brandSignatureSrc\}\}/g, options.brandAssetUrl ?? svgDataUri(brandSignature))
   const { html: rendered } = await mjml2html(html)
   return {
     html: rendered,
     text: `DropX — Your verification code\n\nUse the code below to complete your sign-in. It expires in 5 minutes.\n\n${context.code}\n\nIf you did not request this code, you can ignore this email.`,
-    attachments: [
-      {
-        filename: "dropx-email-signature-light.svg",
-        content: brandSignature,
-        cid: "dropx-email-signature-light",
-        contentType: "image/svg+xml",
-      },
-    ],
   }
 }
 
