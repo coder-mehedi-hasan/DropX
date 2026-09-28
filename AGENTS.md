@@ -36,9 +36,9 @@ mprocs.yaml  # `bun run dev` runs api + console + riders + web together
 | Workspace      | Audience         | Auth                                      | Dev port |
 | -------------- | ---------------- | ----------------------------------------- | -------- |
 | `apps/web`     | Customers        | OTP to phone or email — no password       | 3000     |
-| `apps/riders`  | Riders           | `users` email + password; row in `riders` | 3003     |
-| `apps/console` | Staff            | `users` email + password + RBAC           | 3002     |
-| `apps/api`     | All of the above | Auth, business logic, DB access           | 3001     |
+| `apps/riders`  | Riders           | `users` email + password; row in `riders` | 5174     |
+| `apps/console` | Staff            | `users` email + password + RBAC           | 5173     |
+| `apps/api`     | All of the above | Auth, business logic, DB access           | 8000     |
 | `packages/db`  | —                | Database port/adapter, no app logic       | —        |
 | `packages/ui`  | —                | Tokens + components, no app logic         | —        |
 

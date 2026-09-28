@@ -14,11 +14,11 @@ const csv = (value: string) =>
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-  API_BASE_URL: z.string().url().default("http://localhost:3001"),
+  API_PORT: z.coerce.number().int().min(1).max(65535).default(8000),
+  API_BASE_URL: z.string().url().default("http://localhost:8000"),
   API_CORS_ORIGINS: z
     .string()
-    .default("http://localhost:3000,http://localhost:3002,http://localhost:3003"),
+    .default("http://localhost:3000,http://localhost:5173,http://localhost:5174"),
   API_LOG_LEVEL: z.enum(["debug", "info", "warn", "error", "silent"]).default("info"),
   API_TRUST_PROXY: z.coerce.boolean().default(false),
 

@@ -5,9 +5,9 @@
   "type": "module",
   "description": "DropX rider app \u2014 assigned jobs, delivery status and proof of delivery, built for a phone on the road.",
   "scripts": {
-    "dev": "vite --port 3003",
+    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 3003",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "clean": "rm -rf node_modules dist .vite"
   },

@@ -67,7 +67,7 @@ const env = import.meta.env
 const API_URL: string =
   typeof env.VITE_API_URL === "string"
     ? env.VITE_API_URL.replace(/\/+$/, "")
-    : "http://localhost:3001"
+    : "http://localhost:8000"
 
 const API_BASE = `${API_URL}/api/v1`
 

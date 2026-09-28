@@ -7,7 +7,7 @@
  * on `code` instead of re-parsing the `{ error: { ... } }` envelope.
  */
 
-const DEFAULT_API_URL = "http://localhost:3001"
+const DEFAULT_API_URL = "http://localhost:8000"
 const API_PREFIX = "/api/v1"
 
 /** Console tokens are audience-bound; the refresh path must match the login path. */

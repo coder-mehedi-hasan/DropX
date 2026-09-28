@@ -10,7 +10,7 @@ import type { ApiErrorCode, ApiErrorEnvelope, ApiFieldIssue, TokenPair } from "@
  * successful refresh means the session is genuinely dead, not merely stale.
  */
 
-const DEFAULT_API_URL = "http://localhost:3001"
+const DEFAULT_API_URL = "http://localhost:8000"
 
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL).replace(/\/+$/, "")
 

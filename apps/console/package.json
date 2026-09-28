@@ -5,9 +5,9 @@
   "type": "module",
   "description": "DropX admin / ops console — staff portal for parcels, tracking and operations.",
   "scripts": {
-    "dev": "vite --port 3002",
+    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 3002",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "clean": "rm -rf node_modules dist .vite"
   },
