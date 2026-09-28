@@ -153,15 +153,15 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Sign in to DropX</CardTitle>
+    <Card className="w-full gap-0 py-0 shadow-sm">
+      <CardHeader className="border-b">
+        <CardTitle className="text-lg">Sign in to DropX</CardTitle>
         <CardDescription>
           We send a six-digit code to your phone or email. There is no password to remember.
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-6">
         <Tabs value={challenge ? "code" : "identifier"} className="gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="identifier" className="text-xs">
@@ -370,7 +370,7 @@ function CodeStep({
                     autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="000000"
-                    className="text-center font-mono text-lg tracking-[0.5em]"
+                    className="text-primary text-center font-mono text-lg font-bold tracking-[0.5em]"
                     onChange={(event) =>
                       field.onChange(event.target.value.replace(/\D/g, "").slice(0, 6))
                     }

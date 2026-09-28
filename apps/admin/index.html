@@ -1,10 +1,53 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <!--
+      Deep Obsidian. The brand makes dark the primary environment for operations,
+      tracking and dispatch, and this is the colour the mobile browser paints
+      behind the app before the first frame.
+    -->
+    <meta name="theme-color" content="#0D0F12" />
+    <link rel="icon" type="image/svg+xml" href="/brand/dropx-favicon.svg" />
     <title>DropX Admin</title>
+    <!--
+      Inter, the brand's working voice. Preconnect so the stylesheet is fetched
+      over the same connection as the document rather than after first paint.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    />
+    <script>
+      /*
+       * Resolve the theme before first paint.
+       *
+       * The brand makes dark the default for operations, so the fallback is dark
+       * and only an explicit stored "light" — or an OS set to light with no
+       * stored choice — resolves the other way. Without this the admin flashes
+       * a white canvas before React mounts, which on an Obsidian app is the
+       * single most jarring thing the brand does not ask for.
+       */
+      ;(function () {
+        var dark = true
+        try {
+          var stored = window.localStorage.getItem("dropx.admin.theme")
+          if (stored === "dark" || stored === "light") {
+            dark = stored === "dark"
+          } else {
+            dark = !window.matchMedia("(prefers-color-scheme: light)").matches
+          }
+        } catch (error) {
+          void error
+        }
+        document.documentElement.classList.toggle("dark", dark)
+        document.documentElement.style.colorScheme = dark ? "dark" : "light"
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

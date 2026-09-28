@@ -6,6 +6,7 @@ import {
   AvatarFallback,
   Badge,
   Button,
+  DropXLogo,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -43,9 +44,11 @@ export function Header() {
             <Menu />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64">
+        <SheetContent side="left" className="w-72">
           <SheetHeader>
-            <SheetTitle>DropX admin</SheetTitle>
+            <SheetTitle className="flex items-center">
+              <DropXLogo size="sm" />
+            </SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-1 px-4" aria-label="Main">
             {items.map((item) => (
@@ -54,9 +57,9 @@ export function Header() {
                 to={item.to}
                 search={item.search}
                 onClick={() => setMobileNavOpen(false)}
-                className="hover:bg-accent hover:text-accent-foreground flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium"
+                className="hover:bg-accent hover:text-accent-foreground flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors duration-150 ease-brand"
               >
-                <item.icon className="size-4" />
+                <item.icon className="size-4 shrink-0" aria-hidden />
                 {item.label}
               </Link>
             ))}
@@ -67,6 +70,8 @@ export function Header() {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">Operations</p>
       </div>
+
+      <Separator orientation="vertical" className="hidden h-6 sm:block" />
 
       <Button
         variant="ghost"

@@ -34,14 +34,20 @@ export function BottomNav() {
               <Link
                 to={item.to}
                 aria-current={active ? "page" : undefined}
+                /*
+                 * The active tab is marked three ways: a Volt rail, a Volt icon
+                 * and bold ink. A rider glances at this bar dozens of times a
+                 * shift in sunlight, so the destination never depends on
+                 * spotting a colour alone.
+                 */
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 px-3 py-2 text-sm font-medium transition-colors",
+                  "flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 px-3 py-2 text-sm transition-colors duration-150 ease-brand",
                   active
-                    ? "border-primary text-foreground"
-                    : "text-muted-foreground border-transparent",
+                    ? "border-primary text-foreground font-semibold"
+                    : "text-muted-foreground border-transparent font-medium",
                 )}
               >
-                <item.icon className="size-6" aria-hidden />
+                <item.icon className={cn("size-6", active && "text-primary")} aria-hidden />
                 {item.label}
               </Link>
             </li>

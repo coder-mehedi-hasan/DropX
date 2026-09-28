@@ -12,14 +12,14 @@ import { cn } from "../../lib/cn"
  * ops staff to ignore alerts.
  */
 const alertVariants = cva(
-  "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-lg border px-4 py-3 text-sm has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+  "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-lg border px-4 py-3 text-sm has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
-        destructive: "border-destructive/50 text-destructive [&>svg]:text-destructive",
-        warning: "border-warning/50 text-warning [&>svg]:text-warning",
-        success: "border-success/50 text-success [&>svg]:text-success",
+        default: "bg-card text-card-foreground [&>svg]:text-primary",
+        destructive: "border-destructive/30 bg-destructive/8 text-foreground [&>svg]:text-destructive",
+        warning: "border-warning/30 bg-warning/8 text-foreground [&>svg]:text-warning",
+        success: "border-success/30 bg-success/8 text-foreground [&>svg]:text-success",
       },
     },
     defaultVariants: {
@@ -58,8 +58,7 @@ export function AlertDescription({ className, ...props }: React.ComponentProps<"
       className={cn(
         "text-muted-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed",
         className,
-      )}
-      {...props}
+      )}      {...props}
     />
   )
 }

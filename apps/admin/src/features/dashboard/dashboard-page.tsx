@@ -59,6 +59,7 @@ export function DashboardPage() {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader
+          eyebrow="Overview"
           title={`Welcome, ${displayName || "there"}`}
           description="Your DropX admin overview."
         />
@@ -74,6 +75,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        eyebrow="Overview"
         title={`Welcome, ${displayName || "there"}`}
         description="Your DropX admin overview. Everything here reflects the live scope your roles allow."
       />
@@ -233,10 +235,10 @@ function SummaryCard({
   if (hidden) return null
 
   return (
-    <Card className="gap-2 py-4">
+    <Card className="gap-2 py-4 transition-colors hover:border-primary/30">
       <CardHeader className="px-4">
-        <CardTitle className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-          <Icon className="size-3.5" />
+        <CardTitle className="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+          <Icon className="text-primary size-3.5" aria-hidden />
           {title}
         </CardTitle>
       </CardHeader>
@@ -244,7 +246,7 @@ function SummaryCard({
         {value === null ? (
           <Skeleton className="h-8 w-20" />
         ) : (
-          <p className="text-2xl font-semibold tracking-tight">{value}</p>
+          <p className="text-2xl font-bold tracking-tight">{value}</p>
         )}
         <p className="text-muted-foreground mt-1 text-xs">{description}</p>
       </CardContent>
@@ -270,8 +272,8 @@ function Step({
       <span
         className={
           done
-            ? "bg-success text-success-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-            : "bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+            ? "bg-success text-success-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+            : "bg-muted text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
         }
       >
         {done ? <Rocket className="size-3.5" /> : index}

@@ -119,6 +119,7 @@ export function ParcelDetailPage({ parcelId }: { parcelId: string }) {
       <BackLink />
 
       <PageHeader
+        eyebrow="Parcel"
         title={data.trackingNumber}
         description={`Booked ${formatDateTime(data.createdAt)} · last updated ${formatDateTime(data.updatedAt)}`}
         actions={

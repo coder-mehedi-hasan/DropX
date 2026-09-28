@@ -8,80 +8,133 @@
  * redefining it. Components reference semantic names — `bg-primary`,
  * `text-muted-foreground` — never raw colours, which is what makes the admin's
  * dense tables and the rider app's high-contrast buttons stay consistent.
+ *
+ * The palette is the one in `docs/brand-guidelines.md` and the brand book at
+ * `/brand-guidelines`. The load-bearing constraint is that a colour has a
+ * *role*, and the role decides which tokens may use it:
+ *
+ *   Volt Orange #FF5500  3.21:1 on white — fills, buttons, focus, progress
+ *   Volt Deep   #D94300  accent *text*: links, small orange type on light
+ *   Obsidian    #0D0F12  dark canvas, and body/heading ink on any surface
+ *   Carbon      #1A1D24  dark raised surfaces
+ *   Terminal    #00C853  success / delivered
+ *   Amber       #F59E0B  attention / pending
+ *
+ * Volt Orange is deliberately never a text colour on a light surface, and the
+ * green and amber are never text either — which is why `StatusBadge` renders
+ * the label in ink and the status as a dot. The brand requires a label beside
+ * every status colour; this is that rule made structural.
  */
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
+  /* 12px default card, 16px feature — the brand's radius pair. */
+  --radius: 0.75rem;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /*
+   * Motion. The brand splits feedback (hover, focus, press, inline validation)
+   * from navigation (sheets, menus, status reveals) so a tap never feels like it
+   * is waiting for a page.
+   */
+  --brand-duration-fast: 150ms;
+  --brand-duration-base: 200ms;
+  --brand-duration-slow: 300ms;
+  --brand-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --background: oklch(0.9789 0.0029 264.54); /* #F7F8FA — brand light canvas */
+  --foreground: oklch(0.1676 0.0071 258.37); /* #0D0F12 — Deep Obsidian ink */
+  --card: oklch(1 0 0); /* #FFFFFF — Pure White surfaces */
+  --card-foreground: oklch(0.1676 0.0071 258.37);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.596 0.145 163.225);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.769 0.155 70.08);
-  --warning-foreground: oklch(0.145 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.1676 0.0071 258.37);
+  --primary: oklch(0.6759 0.2175 38.8); /* #FF5500 — Volt Orange */
+  /*
+   * Obsidian ink on the Volt fill, not white. The brand table lists white on
+   * Volt Orange as "Large/UI only" at 3.21:1, and a 14px button label is not
+   * large text — so the palette's own 4.5:1 rule is only satisfiable the other
+   * way round. Obsidian on Volt measures 5.99:1 and passes at any size.
+   */
+  --primary-foreground: oklch(0.1676 0.0071 258.37);
+  --secondary: oklch(0.9548 0.0058 264.53);
+  --secondary-foreground: oklch(0.1676 0.0071 258.37);
+  --muted: oklch(0.9548 0.0058 264.53);
+  --muted-foreground: oklch(0.4422 0.0355 257.79); /* #475467 — 7.69:1 on white */
+  --accent: oklch(0.9548 0.0058 264.53);
+  --accent-foreground: oklch(0.1676 0.0071 258.37);
+  --destructive: oklch(0.5003 0.1821 29.51); /* #B42318 — 6.57:1 on white */
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.509 0.1301 152.05); /* #0B7A3E — Terminal Green, inked */
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.535 0.1064 77.55); /* #8F6410 — Alert Amber, inked */
+  --warning-foreground: oklch(1 0 0);
+  --border: oklch(0.9271 0.0075 260.73); /* #E4E7EC */
+  --input: oklch(0.8715 0.0123 259.82); /* #D0D5DD — inputs carry more edge */
+  --ring: oklch(0.6759 0.2175 38.8); /* focus is orange, per the brand */
 
-  /* Parcel status colours — shared by the admin tables and the rider app. */
-  --status-created: oklch(0.708 0 0);
-  --status-in-transit: oklch(0.623 0.188 259.815);
-  --status-out-for-delivery: oklch(0.769 0.155 70.08);
-  --status-delivered: oklch(0.596 0.145 163.225);
-  --status-failed: oklch(0.577 0.245 27.325);
-  --status-returned: oklch(0.553 0.041 257.417);
+  /*
+   * Accent text. Split out from `--primary` because Volt Orange cannot legally
+   * set small text on a light surface (3.21:1) while Volt Deep can (4.42:1).
+   * Anything that reads as a link or a small orange label uses this instead.
+   */
+  --accent-ink: oklch(0.5474 0.1791 38.03); /* #C23C00 */
+  --accent-ink-hover: oklch(0.5257 0.1725 37.89); /* #B83800 */
+
+  /*
+   * Parcel status. The brand has no blue, so the six roles are drawn from the
+   * palette it does ship: orange is "progress", amber is "attention", green is
+   * "complete", obsidian is "not moving yet", and red is "blocked".
+   */
+  --status-created: oklch(0.4422 0.0355 257.79); /* Carbon ink — not yet moving */
+  --status-in-transit: oklch(0.6759 0.2175 38.8); /* Volt Orange — progress */
+  --status-out-for-delivery: oklch(0.535 0.1064 77.55); /* Alert Amber — attention */
+  --status-delivered: oklch(0.509 0.1301 152.05); /* Terminal Green — complete */
+  --status-failed: oklch(0.5003 0.1821 29.51); /* red — blocked */
+  --status-returned: oklch(0.4422 0.0355 257.79); /* Carbon — terminal, not alarming */
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.696 0.17 162.48);
-  --success-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.828 0.189 84.429);
-  --warning-foreground: oklch(0.145 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: oklch(0.556 0 0);
+  --background: oklch(0.1676 0.0071 258.37); /* #0D0F12 — Deep Obsidian canvas */
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.2308 0.0143 266.95); /* #1A1D24 — Carbon Gray surfaces */
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.2308 0.0143 266.95);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.6759 0.2175 38.8); /* Volt Orange — 5.99:1 on Obsidian */
+  --primary-foreground: oklch(0.1676 0.0071 258.37); /* Obsidian ink on the fill */
+  --secondary: oklch(0.2731 0.0195 267.96); /* #232731 — raised on Carbon */
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.2731 0.0195 267.96);
+  --muted-foreground: oklch(0.6904 0.0243 260.71); /* 6.93:1 on Obsidian */
+  --accent: oklch(0.2731 0.0195 267.96);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6156 0.2044 27.33);
+  --destructive-foreground: oklch(0.1676 0.0071 258.37);
+  --success: oklch(0.7266 0.2085 148.34); /* #00C853 — 8.58:1 on Obsidian */
+  --success-foreground: oklch(0.1676 0.0071 258.37);
+  --warning: oklch(0.7686 0.1647 70.08); /* #F59E0B — 8.94:1 on Obsidian */
+  --warning-foreground: oklch(0.1676 0.0071 258.37);
+  --border: oklch(0.7131 0.0241 260.71 / 16%);
+  --input: oklch(0.7131 0.0241 260.71 / 24%);
+  --ring: oklch(0.6759 0.2175 38.8);
 
-  --status-created: oklch(0.708 0 0);
-  --status-in-transit: oklch(0.685 0.169 237.323);
-  --status-out-for-delivery: oklch(0.828 0.189 84.429);
-  --status-delivered: oklch(0.696 0.17 162.48);
-  --status-failed: oklch(0.704 0.191 22.216);
-  --status-returned: oklch(0.704 0.14 259.695);
+  /* On Obsidian the vivid brand values are legible, so links use them directly. */
+  --accent-ink: oklch(0.6759 0.2175 38.8);
+  --accent-ink-hover: oklch(0.7425 0.1748 43.31);
+
+  --status-created: oklch(0.6904 0.0243 260.71);
+  --status-in-transit: oklch(0.6759 0.2175 38.8);
+  --status-out-for-delivery: oklch(0.7686 0.1647 70.08);
+  --status-delivered: oklch(0.7266 0.2085 148.34);
+  --status-failed: oklch(0.6156 0.2044 27.33);
+  --status-returned: oklch(0.6904 0.0243 260.71);
 }
 
 @theme inline {
+  --font-sans:
+    var(--font-dropx), "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -106,6 +159,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-ink-hover: var(--accent-ink-hover);
+
   --color-status-created: var(--status-created);
   --color-status-in-transit: var(--status-in-transit);
   --color-status-out-for-delivery: var(--status-out-for-delivery);
@@ -113,13 +169,20 @@
   --color-status-failed: var(--status-failed);
   --color-status-returned: var(--status-returned);
 
+  /* The brand's 1200px content width, so `max-w-page` states the rule. */
+  --container-page: 1200px;
+  --container-reading: 640px;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-feature: calc(var(--radius) + 4px);
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --ease-brand: var(--brand-ease);
+
+  --animate-accordion-down: accordion-down var(--brand-duration-base) var(--brand-ease);
+  --animate-accordion-up: accordion-up var(--brand-duration-base) var(--brand-ease);
 
   @keyframes accordion-down {
     from {
@@ -150,5 +213,48 @@
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
+    /* Inter, when the app supplies it. */
+    font-family: var(--font-sans);
+  }
+
+  /*
+   * Motion is capped at the brand's navigation budget by default, and
+   * `prefers-reduced-motion` collapses it entirely. Every app that needs the
+   * full stop already inherits this, so no screen can ship an animation the
+   * platform has asked the user to turn off.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * The brand's link treatment, for the bare `<a>` elements in footers and prose
+   * that never pass through a primitive. Volt Deep rather than Volt Orange,
+   * because a link is small text and only the deep value clears 4.5:1 on a light
+   * surface. A bare element selector on purpose: any utility class on the link
+   * — the muted nav links, the white header links — still wins over this.
+   *
+   * Focus stays with the primitives: every one of them sets its own
+   * `focus-visible` ring against `--ring`, and a global rule here would lose to
+   * the `focus-visible:outline-none` each of them declares.
+   */
+  a {
+    color: var(--accent-ink);
+    text-decoration-color: color-mix(in oklab, var(--accent-ink) 35%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  a:hover {
+    color: var(--accent-ink-hover);
+    text-decoration-color: currentColor;
   }
 }
