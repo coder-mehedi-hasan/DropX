@@ -98,15 +98,16 @@ const errorDetail = z.object({
 })
 
 /**
- * The error envelope, from the same `ApiErrorBody` contract the handler emits.
+ * The common response envelope emitted by both success and error paths.
  * Kept here as Zod so `code` cannot fall out of sync with `ERROR_CODES`.
  */
 export const errorResponseSchema = z.object({
-  error: z.object({
-    code: z.enum(Object.values(ERROR_CODES)),
-    message: z.string(),
-    details: z.array(errorDetail).optional(),
-  }),
+  error: z.string().nullable(),
+  data: z.null(),
+  status: z.number(),
+  success: z.literal(false),
+  code: z.enum(Object.values(ERROR_CODES)),
+  details: z.array(errorDetail).optional(),
 })
 
 /** `{ ok: true }` — the shape of no-op acknowledgements like `POST /auth/logout`. */

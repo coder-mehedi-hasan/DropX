@@ -1,4 +1,5 @@
 import { ERROR_CODES, DomainError, validateJson } from "../../core"
+import { response } from "../../core/http"
 import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
@@ -21,7 +22,7 @@ router.post(
   validateJson(staffLoginSchema),
   async (c) => {
     const result = await authService.loginWithPassword(c.req.valid("json"), "admin")
-    return c.json(result)
+    return c.json(response.success(result))
   },
 )
 
@@ -34,7 +35,7 @@ router.post(
   validateJson(staffLoginSchema),
   async (c) => {
     const result = await authService.loginWithPassword(c.req.valid("json"), "riders")
-    return c.json(result)
+    return c.json(response.success(result))
   },
 )
 
@@ -58,7 +59,7 @@ router.post(
     }
 
     const tokens = await authService.refreshSession(c.req.valid("json").refreshToken, audience)
-    return c.json(tokens)
+    return c.json(response.success(tokens))
   },
 )
 
@@ -72,7 +73,7 @@ router.post(
   async (c) => {
     const result = await authService.requestOtp(c.req.valid("json"))
     // 202: the code is on its way; nothing else about the account is revealed.
-    return c.json(result, 202)
+    return c.json(response.success(result, 202), 202)
   },
 )
 
@@ -85,7 +86,7 @@ router.post(
   validateJson(otpVerifySchema),
   async (c) => {
     const result = await authService.verifyOtp(c.req.valid("json"))
-    return c.json(result)
+    return c.json(response.success(result))
   },
 )
 
@@ -94,7 +95,7 @@ router.get("/me", defineOperation({ id: "auth.me" }, { method: "GET", path: "/au
 
   switch (actor.kind) {
     case "staff":
-      return c.json({
+      return c.json(response.success({
         kind: "staff" as const,
         audience,
         id: actor.userId,
@@ -103,9 +104,9 @@ router.get("/me", defineOperation({ id: "auth.me" }, { method: "GET", path: "/au
         permissions: [...actor.permissions],
         branchId: actor.branchId,
         hubIds: actor.hubIds,
-      })
+      }))
     case "rider":
-      return c.json({
+      return c.json(response.success({
         kind: "rider" as const,
         audience,
         id: actor.userId,
@@ -113,14 +114,14 @@ router.get("/me", defineOperation({ id: "auth.me" }, { method: "GET", path: "/au
         hubId: actor.hubId,
         email: actor.email,
         permissions: [...actor.permissions],
-      })
+      }))
     case "customer":
-      return c.json({
+      return c.json(response.success({
         kind: "customer" as const,
         audience,
         id: actor.customerId,
         status: actor.status,
-      })
+      }))
     case "public":
       throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
   }
@@ -132,7 +133,7 @@ router.post(
   (c) => {
     // Access tokens are stateless and short-lived; the client discards its
     // refresh token. Add a `sid` denylist here if instant revocation is needed.
-    return c.json({ ok: true })
+    return c.json(response.success({ ok: true }))
   },
 )
 

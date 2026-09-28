@@ -53,6 +53,7 @@ export const otpRequestSchema = z.object({
   consent: z.literal(true, {
     error: "You must accept the terms to continue",
   }),
+  acceptSignup: z.boolean().optional().default(false),
 })
 
 export type OtpRequestInput = z.infer<typeof otpRequestSchema>

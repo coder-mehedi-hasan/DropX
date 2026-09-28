@@ -1,6 +1,7 @@
 import { getDatabase } from "@dropx/db"
 
 import { defineOperation } from "../../shared/auth/policy"
+import { response } from "../../core/http"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
 
@@ -16,12 +17,12 @@ const router = new Hono<AppEnv>()
 const healthPolicy = { id: "health.read", public: true as const }
 
 router.get("/", defineOperation(healthPolicy, { method: "GET", path: "/health" }), (c) =>
-  c.json({
+  c.json(response.success({
     status: "ok",
     service: "dropx-api",
     uptimeSeconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
-  }),
+  })),
 )
 
 router.get(
@@ -30,10 +31,10 @@ router.get(
   async (c) => {
     try {
       await getDatabase().ping()
-      return c.json({ status: "ready", database: "up" })
+      return c.json(response.success({ status: "ready", database: "up" }))
     } catch (error) {
       c.get("logger").error("readiness check failed", { error })
-      return c.json({ status: "degraded", database: "down" }, 503)
+      return c.json(response.success({ status: "degraded", database: "down" }, 503), 503)
     }
   },
 )

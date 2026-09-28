@@ -1,6 +1,6 @@
 import { getConfig } from "../../config"
 import { ERROR_CODES, isDomainError } from "../../core/errors"
-import { internalErrorBody, notFoundBody } from "../../core/http/responses"
+import { internalErrorBody, notFoundBody, response } from "../../core/http/responses"
 import { createLogger, type Logger } from "../../core/logger"
 import type { AppEnv } from "../../types/env"
 import type { Context, ErrorHandler, NotFoundHandler } from "hono"
@@ -42,13 +42,7 @@ export const onError: ErrorHandler<AppEnv> = (error, c) => {
     }
 
     return c.json(
-      {
-        error: {
-          code: error.code,
-          message: error.message,
-          ...(error.details ? { details: error.details } : {}),
-        },
-      },
+      { ...response.error(error.code, error.message, error.details), status: error.status },
       error.status as 400,
     )
   }

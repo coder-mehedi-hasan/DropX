@@ -1,4 +1,5 @@
 import { ERROR_CODES, DomainError, validateJson, validateParam, validateQuery } from "../../core"
+import { response } from "../../core/http"
 import { PERMISSIONS } from "../../shared/auth/permissions"
 import { actorId, isCustomer, scopeFromAuth } from "../../shared/auth/auth-context"
 import { defineOperation } from "../../shared/auth/policy"
@@ -45,7 +46,7 @@ router.get(
       PARCEL_SORT_COLUMNS,
       PARCEL_SEARCH_COLUMNS,
     )
-    return c.json(page)
+    return c.json(response.success(page))
   },
 )
 
@@ -59,7 +60,7 @@ router.get(
   async (c) => {
     const parcel = await parcels.getParcelForStaff(scopeFromAuth(c.get("auth")), c.req.param("id"))
     const items = await parcels.getParcelItems(parcel.id)
-    return c.json({ ...parcel, items })
+    return c.json(response.success({ ...parcel, items }))
   },
 )
 
@@ -87,7 +88,7 @@ router.post(
       actorId: actorId(auth),
     })
 
-    return c.json(parcel, 201)
+    return c.json(response.success(parcel, 201), 201)
   },
 )
 
@@ -111,7 +112,7 @@ router.patch(
       actorId: actorId(c.get("auth")),
     })
 
-    return c.json(parcel)
+    return c.json(response.success(parcel))
   },
 )
 
@@ -132,7 +133,7 @@ router.post(
       actorId: actorId(c.get("auth")),
     })
 
-    return c.json(parcel)
+    return c.json(response.success(parcel))
   },
 )
 
@@ -158,7 +159,7 @@ router.get(
       ["p.tracking_number"],
     )
 
-    return c.json(page)
+    return c.json(response.success(page))
   },
 )
 
@@ -177,7 +178,7 @@ router.get(
 
     const parcel = await parcels.getParcelForCustomer(auth.actor.customerId, c.req.param("id"))
     const items = await parcels.getParcelItems(parcel.id)
-    return c.json({ ...parcel, items })
+    return c.json(response.success({ ...parcel, items }))
   },
 )
 
@@ -205,7 +206,7 @@ router.post(
       actorId: null,
     })
 
-    return c.json(parcel, 201)
+    return c.json(response.success(parcel, 201), 201)
   },
 )
 

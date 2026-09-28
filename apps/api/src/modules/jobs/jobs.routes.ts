@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 
 import { ERROR_CODES, DomainError, validateJson, validateParam, validateQuery } from "../../core"
+import { response } from "../../core/http"
 import { isRider } from "../../shared/auth/auth-context"
 import { PERMISSIONS } from "../../shared/auth/permissions"
 import { defineOperation } from "../../shared/auth/policy"
@@ -31,7 +32,7 @@ router.get(
     if (!isRider(auth)) {
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     }
-    return c.json(await listJobs(auth.actor.riderId, c.req.valid("query")))
+    return c.json(response.success(await listJobs(auth.actor.riderId, c.req.valid("query"))))
   },
 )
 
@@ -47,7 +48,7 @@ router.get(
     if (!isRider(auth)) {
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     }
-    return c.json(await getJob(auth.actor.riderId, c.req.param("id")))
+    return c.json(response.success(await getJob(auth.actor.riderId, c.req.param("id"))))
   },
 )
 
@@ -72,7 +73,7 @@ router.patch(
       input: c.req.valid("json"),
     })
 
-    return c.json(job)
+    return c.json(response.success(job))
   },
 )
 

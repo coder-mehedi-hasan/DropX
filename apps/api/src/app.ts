@@ -12,6 +12,7 @@ import { assertPolicyCatalog, getPolicyCatalog } from "./shared/auth/policy"
 import { assertOpenApiCoverage } from "./openapi/coverage"
 import { openApiRouter } from "./openapi"
 import { MODULES, moduleManifest, registerModules } from "./modules"
+import { response } from "./core/http"
 import type { AppEnv } from "./types/env"
 
 /**
@@ -55,7 +56,7 @@ export function createApp(): Hono<AppEnv> {
   app.route("/", openApiRouter)
 
   app.get("/", (c) =>
-    c.json({
+    c.json(response.success({
       service: "dropx-api",
       version: "0.0.0",
       modules: moduleManifest(),
@@ -65,7 +66,7 @@ export function createApp(): Hono<AppEnv> {
         swagger: "/docs",
         product: "docs/overview.md and docs/rbac.md",
       },
-    }),
+    })),
   )
 
   registerModules(app)
