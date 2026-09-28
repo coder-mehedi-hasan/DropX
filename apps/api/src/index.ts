@@ -13,6 +13,26 @@ import { getConfig } from "./config"
 const config = getConfig()
 const app = createApp()
 
+/**
+ * `bun --watch` re-evaluates this module on every save, so module state cannot
+ * own the socket. The live server and the one-time signal wiring hang off
+ * `globalThis`, and a reload stops the previous server before binding the new
+ * one — without that the second `Bun.serve` dies with EADDRINUSE on save.
+ *
+ * There is deliberately no default export carrying `fetch`: Bun's reload path
+ * auto-serves a default export of its own, which would race the explicit server
+ * below for the same port. Callers that want the app itself import `createApp`.
+ */
+type Runtime = {
+  server?: ReturnType<typeof Bun.serve>
+  listenersBound?: boolean
+}
+
+const globalScope = globalThis as typeof globalThis & { __dropxApi?: Runtime }
+const runtime: Runtime = (globalScope.__dropxApi ??= {})
+
+runtime.server?.stop(true)
+
 try {
   await getDatabase().ping()
 } catch (error) {
@@ -29,17 +49,21 @@ const server = Bun.serve({
   idleTimeout: 30,
 })
 
+runtime.server = server
+
 console.info(`[api] listening on http://localhost:${server.port} (${config.env})`)
+
+if (!runtime.listenersBound) {
+  runtime.listenersBound = true
+  process.on("SIGINT", () => void shutdown("SIGINT"))
+  process.on("SIGTERM", () => void shutdown("SIGTERM"))
+}
 
 async function shutdown(signal: string): Promise<void> {
   console.info(`[api] ${signal} received, shutting down`)
-  await server.stop(true)
+  await runtime.server?.stop(true)
   await closeDatabase()
   process.exit(0)
 }
 
-process.on("SIGINT", () => void shutdown("SIGINT"))
-process.on("SIGTERM", () => void shutdown("SIGTERM"))
-
 export { app, server }
-export default { port: server.port, fetch: app.fetch }
