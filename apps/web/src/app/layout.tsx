@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   },
   description:
     "Book a parcel, follow it hub to hub, and pay on delivery. Track any parcel with its tracking number — no account needed.",
+  icons: {
+    icon: "/brand/dropx-favicon.svg",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
