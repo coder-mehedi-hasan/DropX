@@ -110,8 +110,6 @@ export function LoginScreen() {
             </form>
           </Form>
         </Card>
-
-        <p className="text-muted-foreground mt-6 text-center text-xs">API: {getApiUrl()}</p>
       </div>
     </main>
   )
