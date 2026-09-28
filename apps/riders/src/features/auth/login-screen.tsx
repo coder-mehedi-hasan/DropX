@@ -8,7 +8,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Button,
   Card,
   CardContent,
   CardDescription,
@@ -21,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  LoadingButton,
 } from "@dropx/ui"
 
 import { describeApiError } from "../../components/feedback"
@@ -138,14 +138,14 @@ export function LoginScreen() {
                 )}
               />
 
-              <Button
+              <LoadingButton
                 type="submit"
                 size="lg"
                 className="tap-target mt-2 w-full text-base"
-                disabled={form.formState.isSubmitting}
+                loading={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
-              </Button>
+              </LoadingButton>
             </form>
           </Form>
         </CardContent>

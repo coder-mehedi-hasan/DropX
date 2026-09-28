@@ -20,6 +20,8 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  LoadingButton,
+  QuantityStepper,
   Select,
   SelectContent,
   SelectItem,
@@ -678,7 +680,12 @@ export function BookParcel() {
                             <FormItem>
                               <FormLabel>Quantity</FormLabel>
                               <FormControl>
-                                <Input {...field} inputMode="numeric" />
+                                <QuantityStepper
+                                  value={Number(field.value)}
+                                  min={1}
+                                  max={9999}
+                                  onValueChange={(next) => field.onChange(String(next))}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -808,9 +815,13 @@ export function BookParcel() {
                 </Alert>
               ) : null}
 
-              <Button type="submit" disabled={createParcel.isPending || !referenceDataReady}>
+              <LoadingButton
+                type="submit"
+                loading={createParcel.isPending}
+                disabled={!referenceDataReady}
+              >
                 {createParcel.isPending ? "Booking…" : "Book this parcel"}
-              </Button>
+              </LoadingButton>
 
               {!referenceDataReady ? (
                 <p className="text-muted-foreground text-xs">

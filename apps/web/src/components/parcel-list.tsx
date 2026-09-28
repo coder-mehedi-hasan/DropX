@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   CardContent,
+  DataTable,
   EmptyState,
   Input,
   Select,
@@ -16,13 +17,8 @@ import {
   SelectValue,
   Skeleton,
   StatusBadge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   parcelStatusLabel,
+  type DataTableColumn,
 } from "@dropx/ui"
 import { PackageOpenIcon, SearchIcon, TriangleAlertIcon } from "lucide-react"
 import Link from "next/link"
@@ -31,7 +27,7 @@ import * as React from "react"
 import { isApiError } from "@/lib/api-client"
 import { formatDateTime, formatMoney, formatWeight } from "@/lib/format"
 import { useMyParcels } from "@/lib/queries"
-import { PARCEL_STATUSES, type ListQueryParams, type ParcelStatus } from "@/lib/types"
+import { PARCEL_STATUSES, type ListQueryParams, type Parcel, type ParcelStatus } from "@/lib/types"
 
 const PAGE_SIZE = 20
 
@@ -74,6 +70,59 @@ export function ParcelList() {
   const isFiltered = search !== "" || status !== "ALL"
 
   const errorMessage = isApiError(query.error) ? query.error.message : null
+
+  const columns = React.useMemo<DataTableColumn<Parcel>[]>(
+    () => [
+      {
+        id: "trackingNumber",
+        header: "Tracking number",
+        cell: (parcel) => (
+          <Link
+            href={`/parcels/${parcel.id}`}
+            className="font-mono text-sm font-medium hover:underline"
+          >
+            {parcel.trackingNumber}
+          </Link>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (parcel) => <StatusBadge status={parcel.status} />,
+        value: (parcel) => parcel.status,
+      },
+      { id: "parcelType", header: "Type", value: (parcel) => parcel.parcelType },
+      {
+        id: "paymentType",
+        header: "Payment",
+        value: (parcel) =>
+          parcel.paymentType === "COD" ? `COD · ${formatMoney(parcel.codAmount)}` : "Prepaid",
+      },
+      {
+        id: "weight",
+        header: "Weight",
+        numeric: true,
+        cell: (parcel) => formatWeight(parcel.weight),
+        value: (parcel) => parcel.weight,
+      },
+      {
+        id: "deliveryFee",
+        header: "Fee",
+        numeric: true,
+        cell: (parcel) => formatMoney(parcel.deliveryFee),
+        value: (parcel) => parcel.deliveryFee,
+      },
+      {
+        id: "createdAt",
+        header: "Booked",
+        cell: (parcel) => (
+          <span className="text-muted-foreground">{formatDateTime(parcel.createdAt)}</span>
+        ),
+        value: (parcel) => parcel.createdAt,
+      },
+    ],
+    [],
+  )
 
   return (
     <div className="grid gap-4">
@@ -162,51 +211,15 @@ export function ParcelList() {
 
           {parcels.length > 0 ? (
             <div className="grid gap-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tracking number</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Fee</TableHead>
-                    <TableHead>Booked</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {parcels.map((parcel) => (
-                    <TableRow key={parcel.id}>
-                      <TableCell>
-                        <Link
-                          href={`/parcels/${parcel.id}`}
-                          className="font-mono text-sm font-medium hover:underline"
-                        >
-                          {parcel.trackingNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={parcel.status} />
-                      </TableCell>
-                      <TableCell>{parcel.parcelType}</TableCell>
-                      <TableCell>
-                        {parcel.paymentType === "COD"
-                          ? `COD · ${formatMoney(parcel.codAmount)}`
-                          : "Prepaid"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatWeight(parcel.weight)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatMoney(parcel.deliveryFee)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDateTime(parcel.createdAt)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                data={parcels}
+                columns={columns}
+                rowId={(parcel) => parcel.id}
+                caption={`Your ${parcels.length} parcels`}
+                variant="bordered"
+                keyboardNavigation={false}
+                clipboard={false}
+              />
 
               <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 text-sm">
                 <p>
