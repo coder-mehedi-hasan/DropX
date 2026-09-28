@@ -12,6 +12,17 @@ const csv = (value: string) =>
     .map((entry) => entry.trim())
     .filter(Boolean)
 
+/**
+ * `z.coerce.boolean()` turns the string `"false"` into `true` — any non-empty
+ * string is truthy. Parse the literal values explicitly instead, so
+ * `MAIL_SECURE=false` in `.env` actually means `false`.
+ */
+const bool = (def: boolean) =>
+  z.preprocess(
+    (val: unknown) => (val === undefined ? def : val === "true"),
+    z.boolean(),
+  )
+
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(8000),
@@ -20,7 +31,7 @@ const schema = z.object({
     .string()
     .default("http://localhost:3000,http://localhost:5173,http://localhost:5174"),
   API_LOG_LEVEL: z.enum(["debug", "info", "warn", "error", "silent"]).default("info"),
-  API_TRUST_PROXY: z.coerce.boolean().default(false),
+  API_TRUST_PROXY: bool(false),
 
   APP_SECRET: z
     .string()
@@ -36,7 +47,7 @@ const schema = z.object({
   MAIL_FROM: z.string().default("no-reply@dropx.local"),
   MAIL_HOST: z.string().optional(),
   MAIL_PORT: z.coerce.number().int().positive().optional(),
-  MAIL_SECURE: z.coerce.boolean().default(false),
+  MAIL_SECURE: bool(false),
   MAIL_USER: z.string().optional(),
   MAIL_PASSWORD: z.string().optional(),
 })
