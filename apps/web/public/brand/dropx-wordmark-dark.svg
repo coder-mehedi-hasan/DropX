@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 128" role="img" aria-labelledby="title desc">
+  <title id="title">DropX wordmark for dark backgrounds</title>
+  <desc id="desc">DropX orange mark and white wordmark.</desc>
+  <rect x="0" y="0" width="128" height="128" rx="32" fill="#FF5500"/>
+  <path fill="#fff" d="M31 30h28c20 0 34 13 34 34s-14 34-34 34H31V30Zm24 49c10 0 16-5 16-15s-6-15-16-15h-5v30h5Z"/>
+  <path fill="#FF5500" d="M77 56h18v8H77z"/><path fill="#FF5500" d="m89 49 15 11-15 11v-8H77v-6h12v-8Z"/>
+  <text x="154" y="84" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="800" letter-spacing="-3">Drop<tspan fill="#FF5500">X</tspan></text>
+</svg>
