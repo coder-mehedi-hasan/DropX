@@ -7,6 +7,10 @@ import {
   Camera,
   Check,
   Clipboard,
+  CircleAlert,
+  CircleCheck,
+  Clock3,
+  Download,
   FileText,
   Globe2,
   Grid3X3,
@@ -15,14 +19,18 @@ import {
   MessageCircle,
   Moon,
   Move,
+  Plus,
   Palette,
   Package,
+  PanelLeft,
   Printer,
   ShieldCheck,
   Sparkles,
   Sun,
   Table2,
   Timer,
+  Trash2,
+  Truck,
   X,
   Zap,
 } from "lucide-react"
@@ -204,6 +212,10 @@ export default function BrandGuidelinesPage() {
 
               <Card className="overflow-hidden border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Table2 className="size-5 text-[#FF5500]" /> Tables</CardTitle><CardDescription className="text-gray-600">Optimize for scanning. Right-align numbers and keep status labels short.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500"><tr><th className="px-3 py-3">Parcel</th><th className="px-3 py-3">Destination</th><th className="px-3 py-3">Status</th><th className="px-3 py-3 text-right">COD amount</th></tr></thead><tbody className="divide-y divide-gray-200"><TableRow parcel="DX-10482" destination="Gulshan 2" status="Delivered" statusClass="bg-green-100 text-green-700" amount="৳ 1,280" /><TableRow parcel="DX-10483" destination="Mirpur 10" status="In transit" statusClass="bg-amber-100 text-amber-700" amount="৳ 860" /></tbody></table></CardContent></Card>
 
+              <ActionMatrix />
+              <StatusMatrix />
+              <ResponsiveMatrix />
+
               <div className="grid gap-4 md:grid-cols-3"><RuleCard title="Buttons" body="One primary action per region. Use sentence case and verbs: Create parcel, Assign rider." icon={<ArrowUpRight />} /><RuleCard title="Status" body="Green means complete, amber means attention, red means blocked. Always include text." icon={<Info />} /><RuleCard title="Responsive" body="Stack forms on small screens. Let tables scroll horizontally; never shrink critical data until unreadable." icon={<Accessibility />} /></div>
             </div>
           </section>
@@ -317,6 +329,41 @@ function TableRow({ parcel, destination, status, statusClass, amount }: { parcel
 
 function TokenLine({ label, value }: { label: string; value: string }) {
   return <div className="flex flex-col gap-1 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between"><span className="text-gray-500">{label}</span><code className="text-sm text-gray-900 sm:text-right">{value}</code></div>
+}
+
+function ActionMatrix() {
+  return <Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Plus className="size-5 text-[#FF5500]" /> Buttons & actions</CardTitle><CardDescription className="text-gray-600">The same hierarchy should remain clear in both themes. Use one primary action per region and keep labels verb-first.</CardDescription></CardHeader><CardContent className="grid gap-4 lg:grid-cols-2"><ActionTheme dark={false} /><ActionTheme dark /></CardContent></Card>
+}
+
+function ActionTheme({ dark }: { dark: boolean }) {
+  const surface = dark ? "border-white/10 bg-[#0D0F12] text-white" : "border-gray-200 bg-[#F7F8FA] text-gray-900"
+  const muted = dark ? "text-gray-400" : "text-gray-600"
+  return <div className={`rounded-xl border p-5 ${surface}`}><div className="flex items-center justify-between"><p className="text-sm font-semibold">{dark ? "Dark mode" : "Light mode"}</p><span className={`text-xs ${muted}`}>{dark ? "Obsidian canvas" : "White canvas"}</span></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#FF5500] px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#E64D00] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF8A4C]"><Plus className="size-4" /> Create parcel</button><button type="button" className={`h-9 rounded-lg border px-3.5 text-sm font-semibold transition ${dark ? "border-white/20 bg-white/5 text-white hover:bg-white/10" : "border-gray-300 bg-white text-gray-900 hover:bg-gray-100"}`}>Track parcel</button><button type="button" className={`h-9 rounded-lg border px-3.5 text-sm font-semibold transition ${dark ? "border-[#FF5500]/60 text-[#FF8A4C] hover:bg-[#FF5500]/10" : "border-[#D94300]/60 text-[#B93800] hover:bg-orange-50"}`}>View details</button></div><div className="mt-4 flex flex-wrap items-center gap-3 border-t border-current/10 pt-4"><button type="button" aria-label="Download receipt" className={`flex size-9 items-center justify-center rounded-lg border transition ${dark ? "border-white/20 hover:bg-white/10" : "border-gray-300 bg-white hover:bg-gray-100"}`}><Download className="size-4" /></button><button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg bg-red-600 px-3.5 text-sm font-semibold text-white hover:bg-red-700"><Trash2 className="size-4" /> Delete</button><button type="button" disabled className={`h-9 rounded-lg px-3.5 text-sm font-semibold opacity-45 ${dark ? "bg-white/15 text-white" : "bg-gray-200 text-gray-500"}`}>Disabled</button><button type="button" disabled className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#FF5500] px-3.5 text-sm font-semibold text-white opacity-80"><span className="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Saving…</button></div><button type="button" className={`mt-4 text-sm font-semibold underline-offset-4 hover:underline ${dark ? "text-[#FF8A4C]" : "text-[#B93800]"}`}>View all parcels <span aria-hidden>→</span></button><p className={`mt-3 text-xs ${muted}`}>Focus uses a visible orange ring. Destructive actions require confirmation. Loading actions preserve width and label.</p></div>
+}
+
+function StatusMatrix() {
+  return <Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><CircleCheck className="size-5 text-[#FF5500]" /> Status badges</CardTitle><CardDescription className="text-gray-600">Badges are compact labels, not the only source of meaning. Keep the status name visible and use the same semantic color in both modes.</CardDescription></CardHeader><CardContent className="grid gap-4 lg:grid-cols-2"><StatusTheme dark={false} /><StatusTheme dark /></CardContent></Card>
+}
+
+function StatusTheme({ dark }: { dark: boolean }) {
+  const surface = dark ? "border-white/10 bg-[#0D0F12]" : "border-gray-200 bg-[#F7F8FA]"
+  const statuses = [
+    ["Created", "bg-gray-200 text-gray-700", <Clock3 className="size-3.5" key="created" />],
+    ["In transit", "bg-blue-100 text-blue-700", <Truck className="size-3.5" key="transit" />],
+    ["Out for delivery", "bg-amber-100 text-amber-700", <CircleAlert className="size-3.5" key="out" />],
+    ["Delivered", "bg-green-100 text-green-700", <CircleCheck className="size-3.5" key="delivered" />],
+    ["Failed", "bg-red-100 text-red-700", <CircleAlert className="size-3.5" key="failed" />],
+    ["Returned", "bg-slate-200 text-slate-700", <RotateIcon className="size-3.5" key="returned" />],
+  ] as const
+  return <div className={`rounded-xl border p-5 ${surface}`}><div className="flex items-center justify-between"><p className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>{dark ? "Dark mode" : "Light mode"}</p><span className="text-xs text-gray-500">Icon + label</span></div><div className="mt-4 flex flex-wrap gap-2">{statuses.map(([label, style, icon]) => <span key={label} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${style}`}><span className="flex size-3.5 shrink-0 items-center justify-center">{icon}</span>{label}</span>)}</div><p className={`mt-4 text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>Do not rely on color alone. Statuses should remain understandable in grayscale and with color-vision differences.</p></div>
+}
+
+function ResponsiveMatrix() {
+  return <Card className="border-gray-200 bg-white text-gray-900 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><PanelLeft className="size-5 text-[#FF5500]" /> Responsive behavior</CardTitle><CardDescription className="text-gray-600">Responsive design changes density and arrangement—not the meaning or priority of an action.</CardDescription></CardHeader><CardContent><div className="grid gap-4 md:grid-cols-2"><div className="rounded-xl border border-gray-200 bg-gray-50 p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-[.16em] text-[#D94300]">Desktop · 1024px+</span><span className="h-2 w-24 rounded-full bg-[#FF5500]" /></div><div className="mt-5 grid grid-cols-[1fr_2fr] gap-3"><div className="h-24 rounded-lg bg-white shadow-sm" /><div className="grid gap-3"><div className="h-10 rounded-lg bg-white shadow-sm" /><div className="grid grid-cols-3 gap-3"><div className="h-16 rounded-lg bg-white shadow-sm" /><div className="h-16 rounded-lg bg-white shadow-sm" /><div className="h-16 rounded-lg bg-white shadow-sm" /></div></div></div><p className="mt-4 text-sm font-medium text-gray-900">Show context, navigation, and supporting metrics together.</p></div><div className="rounded-xl border border-gray-200 bg-gray-50 p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-[.16em] text-[#D94300]">Mobile · under 640px</span><span className="h-2 w-14 rounded-full bg-[#FF5500]" /></div><div className="mx-auto mt-5 max-w-[190px] rounded-2xl border-4 border-gray-300 bg-white p-3 shadow-sm"><div className="h-7 rounded-md bg-gray-100" /><div className="mt-3 grid gap-2"><div className="h-10 rounded-md bg-gray-100" /><div className="h-10 rounded-md bg-gray-100" /><div className="h-10 rounded-md bg-[#FF5500]/20" /></div></div><p className="mt-4 text-sm font-medium text-gray-900">Stack forms, keep primary actions reachable, and scroll wide tables.</p></div></div><div className="mt-4 grid gap-2 text-sm text-gray-600 sm:grid-cols-3"><p><strong className="text-gray-900">Forms:</strong> one column, full-width controls.</p><p><strong className="text-gray-900">Tables:</strong> preserve columns with horizontal scroll.</p><p><strong className="text-gray-900">Actions:</strong> keep the primary action visible first.</p></div></CardContent></Card>
+}
+
+function RotateIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4" /></svg>
 }
 
 function ImagePrinciple({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
