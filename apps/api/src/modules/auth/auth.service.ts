@@ -90,7 +90,7 @@ function splitIdentifier(identifier: string): { phone: string | null; email: str
 
 export async function loginWithPassword(
   input: StaffLoginInput,
-  audience: Extract<Audience, "console" | "riders">,
+  audience: Extract<Audience, "admin" | "riders">,
 ): Promise<LoginResult> {
   const db = getDatabase()
   const user = await authRepository.findUserByEmail(db, input.email)

@@ -24,7 +24,7 @@ const PARCEL_STATUS_LABELS: Record<string, string> = {
 /**
  * Status → `--status-*` token class.
  *
- * Maps to the shared status colours so the console table, the rider job card and
+ * Maps to the shared status colours so the admin table, the rider job card and
  * the customer's tracking view all render the same status identically. `CANCELLED`
  * has no dedicated token in `styles.css`, so it borrows the neutral `created`
  * grey — cancellation is a terminal, non-alarming state, unlike `FAILED`.

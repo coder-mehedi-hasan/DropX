@@ -9,7 +9,7 @@ import { openApiDocument } from "./document"
  *
  * Deliberately **public and unversioned** (`/openapi.json`, `/docs`): the spec is
  * the map of the whole surface including its version, so gating it behind
- * `/api/v1` would be circular, and a console token would be needed to read the
+ * `/api/v1` would be circular, and an admin token would be needed to read the
  * doc that says how to get one. The spec describes no secrets — only shapes.
  *
  * This is a self-describing contract, not a secret. If a deployment needs it

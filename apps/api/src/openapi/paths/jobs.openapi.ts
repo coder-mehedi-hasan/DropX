@@ -11,8 +11,8 @@ import {
 /**
  * `jobs` operations — the rider app's surface.
  *
- * Gated on `rider.jobs.*` rather than the console's `parcels.*` keys, so a rider
- * token can never reach a console operation, and the payload is scoped to the
+ * Gated on `rider.jobs.*` rather than the admin's `parcels.*` keys, so a rider
+ * token can never reach an admin operation, and the payload is scoped to the
  * rider's own assignments in the repository. `:id` is the parcel id; the rider
  * is never asked for, and never sends, a rider id.
  */

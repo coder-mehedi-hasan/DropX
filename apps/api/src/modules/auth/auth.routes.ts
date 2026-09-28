@@ -13,14 +13,14 @@ import * as authService from "./auth.service"
 const router = new Hono<AppEnv>()
 
 router.post(
-  "/console/login",
+  "/admin/login",
   defineOperation(
-    { id: "auth.loginConsole", public: true },
-    { method: "POST", path: "/auth/console/login" },
+    { id: "auth.loginAdmin", public: true },
+    { method: "POST", path: "/auth/admin/login" },
   ),
   validateJson(staffLoginSchema),
   async (c) => {
-    const result = await authService.loginWithPassword(c.req.valid("json"), "console")
+    const result = await authService.loginWithPassword(c.req.valid("json"), "admin")
     return c.json(result)
   },
 )
@@ -39,7 +39,7 @@ router.post(
 )
 
 /**
- * Audience is a path segment rather than a body field, so a console refresh
+ * Audience is a path segment rather than a body field, so an admin refresh
  * token cannot be exchanged for a rider one.
  */
 router.post(
@@ -51,9 +51,9 @@ router.post(
   validateJson(refreshSchema),
   async (c) => {
     const audience = c.req.param("audience")
-    if (audience !== "console" && audience !== "riders" && audience !== "web") {
+    if (audience !== "admin" && audience !== "riders" && audience !== "web") {
       throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "Unknown audience", {
-        details: [{ field: "audience", message: "Expected console, riders or web" }],
+        details: [{ field: "audience", message: "Expected admin, riders or web" }],
       })
     }
 

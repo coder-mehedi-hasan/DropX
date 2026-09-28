@@ -8,7 +8,7 @@ import { cn } from "../../lib/cn"
  *
  * Radix rather than a bare `<label>`: it blocks the double-click-to-select-text
  * and double-click-to-focus-the-control behaviour that makes form panels in the
- * console feel janky.
+ * admin feel janky.
  */
 export function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (

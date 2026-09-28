@@ -25,24 +25,24 @@ Bun workspace, TypeScript throughout, apps consume `packages/*` as source (no bu
 apps/
   web/       # Customer portal (OTP phone/email) — Next.js App Router
   riders/    # Rider app (email + password) — Vite, mobile-first
-  console/   # Admin / ops console (email + password) — Vite
+  admin/     # Admin / ops portal (email + password) — Vite
   api/       # Backend API for all clients — Hono, run by Bun
 packages/
   db/        # Database port + MySQL adapter, entities, query builder, migrate runner
   ui/        # Shared design tokens and shadcn-style components on Radix
-mprocs.yaml  # `bun run dev` runs api + console + riders + web together
+mprocs.yaml  # `bun run dev` runs api + admin + riders + web together
 ```
 
-| Workspace      | Audience         | Auth                                      | Dev port |
-| -------------- | ---------------- | ----------------------------------------- | -------- |
-| `apps/web`     | Customers        | OTP to phone or email — no password       | 3000     |
-| `apps/riders`  | Riders           | `users` email + password; row in `riders` | 5174     |
-| `apps/console` | Staff            | `users` email + password + RBAC           | 5173     |
-| `apps/api`     | All of the above | Auth, business logic, DB access           | 8000     |
-| `packages/db`  | —                | Database port/adapter, no app logic       | —        |
-| `packages/ui`  | —                | Tokens + components, no app logic         | —        |
+| Workspace     | Audience         | Auth                                      | Dev port |
+| ------------- | ---------------- | ----------------------------------------- | -------- |
+| `apps/web`    | Customers        | OTP to phone or email — no password       | 3000     |
+| `apps/riders` | Riders           | `users` email + password; row in `riders` | 5174     |
+| `apps/admin`  | Staff            | `users` email + password + RBAC           | 5173     |
+| `apps/api`    | All of the above | Auth, business logic, DB access           | 8000     |
+| `packages/db` | —                | Database port/adapter, no app logic       | —        |
+| `packages/ui` | —                | Tokens + components, no app logic         | —        |
 
-**Do not** create separate portals for branches or hubs. Branch/hub staff use `apps/console` with role + branch/hub scoping.
+**Do not** create separate portals for branches or hubs. Branch/hub staff use `apps/admin` with role + branch/hub scoping.
 
 ### Commands
 
@@ -58,7 +58,12 @@ mprocs.yaml  # `bun run dev` runs api + console + riders + web together
 | `bun run --cwd apps/api smoke`            | Boot the app; assert the policy catalog **and** OpenAPI coverage        |
 | `bun run --cwd apps/api check:read-paths` | Run every read query against the real schema (needs `db:migrate` first) |
 
-`.env` at the repo root is the single source of runtime configuration; the API and the scripts read it from there whatever directory they run in.
+Server-side config (`DATABASE_URL`, `APP_SECRET`, `API_*`, `BOOTSTRAP_*`) lives in
+`.env` at the repo root; the API and the scripts read it from there whatever
+directory they run in. Each frontend loads its own URL from its own `.env`
+(Next/Vite auto-load from the app directory) — see `apps/web/.env.example`,
+`apps/admin/.env.example` and `apps/riders/.env.example`. Local overrides go in
+`.env.local` per app (gitignored).
 
 `smoke` needs no database — it asserts policy and auth wiring. `check:read-paths` is the complement: it executes every SELECT against a migrated database, which is how a query referencing a column that does not exist gets caught. An empty database is enough, since a bad column throws while a valid one simply returns no rows. Run both after touching SQL.
 
@@ -105,7 +110,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 5. **No guest booking**; **public tracking** by tracking number is allowed without login.
 6. **Parcels can be created by customers and staff**.
 7. **Hub scope** — `user_hubs` links staff to hubs. Single-tenant, so the guard is `Scope` (`branchId` + `hubIds`), not an `org_id`.
-8. **Riders are users** — `riders.user_id` → `users`; may also have console roles.
+8. **Riders are users** — `riders.user_id` → `users`; may also have admin roles.
 9. **Transfer drivers are staff** (`transfers.driver_id` → `users`), not riders.
 10. **Delivery retries** — multiple `deliveries` rows per parcel via `attempt_no`; only one attempt may be open at a time, enforced by the API.
 11. **Pricing** — parcel stores `destination_zone_id`; fee uses destination zone rules and is always recomputed server-side.
@@ -114,7 +119,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 14. **Schema changes** — update `migrate.sql` and keep `docs/er-diagram.md` in sync when tables/FKs change.
 15. **RBAC / product changes** — update `docs/rbac.md` and `docs/overview.md`.
 16. **The database is reached only through the port** — `apps/api` imports `@dropx/db` and never `mysql2`. SQL composes via the `QueryBuilder`; sort columns are allowlisted because they arrive from clients. The handle and the cache are process-wide: a **service** resolves them with `getDatabase()` / `getCache()`, a **repository** takes an `Executor` so a transaction can pass `tx`, and a **route** passes neither — it supplies business input only. Tests install a double with `setDatabase()` / `setCache()`.
-17. **Audience and permission are separate axes** — a rider token holds `rider.jobs.*` and must never satisfy `parcels.*`; the console and rider surfaces are separate modules, not one route with two audiences.
+17. **Audience and permission are separate axes** — a rider token holds `rider.jobs.*` and must never satisfy `parcels.*`; the admin and rider surfaces are separate modules, not one route with two audiences.
 
 ## Where to put work
 
@@ -122,7 +127,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 | ------------------------------------- | -------------------------- |
 | Customer UI / OTP login UX            | `apps/web`                 |
 | Rider jobs, location, proof UI        | `apps/riders`              |
-| Admin/ops screens, branch/hub mgmt    | `apps/console`             |
+| Admin/ops screens, branch/hub mgmt    | `apps/admin`               |
 | Auth, permissions checks, domain APIs | `apps/api`                 |
 | Shared components, design tokens      | `packages/ui`              |
 | DB port, entities, query composition  | `packages/db`              |

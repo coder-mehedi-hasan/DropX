@@ -17,7 +17,7 @@ export const securitySchemes: Record<string, unknown> = {
     scheme: "bearer",
     bearerFormat: "JWT",
     description:
-      "Access token from a login or OTP exchange. Sent as `Authorization: Bearer <token>`; the audience is part of the token, so a console token is rejected on rider and customer routes.",
+      "Access token from a login or OTP exchange. Sent as `Authorization: Bearer <token>`; the audience is part of the token, so an admin token is rejected on rider and customer routes.",
   },
 }
 

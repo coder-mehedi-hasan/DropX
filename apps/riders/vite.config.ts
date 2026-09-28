@@ -8,7 +8,7 @@ import { defineConfig } from "vite"
  * Dev server port 5174 — the rider app's fixed slot. `strictPort` is on because
  * every other DropX frontend falls forward when its own port is busy, so two
  * checkouts would otherwise collide on the fallback range and a rider build
- * could silently come up on the console's port.
+ * could silently come up on the admin's port.
  *
  * The port lives here only: `package.json` runs a bare `vite` so a CLI flag
  * cannot silently override it.

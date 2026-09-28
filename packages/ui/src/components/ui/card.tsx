@@ -5,7 +5,7 @@ import { cn } from "../../lib/cn"
 /**
  * Card.
  *
- * The single surface primitive for every panel in the console and web portal.
+ * The single surface primitive for every panel in the admin and web portal.
  * Sub-components are plain styled elements rather than a compound component so a
  * consumer can put a `CardAction` in the header without the nesting gymnastics a
  * dot-notation API would force.

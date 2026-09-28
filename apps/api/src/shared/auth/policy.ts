@@ -17,7 +17,7 @@ import { assertActiveCustomer, assertAudience, assertPermissions } from "./middl
  * Rules enforced at boot and per request:
  *   - unknown/absent policy  -> 401 (fail closed)
  *   - public ops             -> no token needed
- *   - audience mismatch      -> 401 (a console token cannot call rider routes)
+ *   - audience mismatch      -> 401 (an admin token cannot call rider routes)
  *   - missing permission     -> 403 with the missing keys
  *   - TEMP customer          -> 403 on portal operations
  */

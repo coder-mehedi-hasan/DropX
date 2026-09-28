@@ -6,28 +6,28 @@ Permission keys are **static in application code**. The database only stores whi
 
 ## Apps & who authenticates
 
-| App          | Path           | Audience                            | Auth                             |
-| ------------ | -------------- | ----------------------------------- | -------------------------------- |
-| Customer web | `apps/web`     | Customers                           | OTP (phone or email)             |
-| Rider app    | `apps/riders`  | Riders                              | Email + password (`users`)       |
-| Ops console  | `apps/console` | Staff (admin, branch, hub, support) | Email + password (`users`)       |
-| API          | `apps/api`     | All clients                         | Issues/validates sessions/tokens |
+| App          | Path          | Audience                            | Auth                             |
+| ------------ | ------------- | ----------------------------------- | -------------------------------- |
+| Customer web | `apps/web`    | Customers                           | OTP (phone or email)             |
+| Rider app    | `apps/riders` | Riders                              | Email + password (`users`)       |
+| Ops admin    | `apps/admin`  | Staff (admin, branch, hub, support) | Email + password (`users`)       |
+| API          | `apps/api`    | All clients                         | Issues/validates sessions/tokens |
 
-Branches and hubs do **not** get their own apps. Branch/hub staff use `apps/console` with scoped roles.
+Branches and hubs do **not** get their own apps. Branch/hub staff use `apps/admin` with scoped roles.
 
 ---
 
 ## Actors
 
-| Actor    | Identity table                                  | Portal         |
-| -------- | ----------------------------------------------- | -------------- |
-| Customer | `customers` (`TEMP` → `ACTIVE` after OTP)       | `apps/web`     |
-| Rider    | `users` + `riders`                              | `apps/riders`  |
-| Staff    | `users` + `user_roles` (+ optional `user_hubs`) | `apps/console` |
+| Actor    | Identity table                                  | Portal        |
+| -------- | ----------------------------------------------- | ------------- |
+| Customer | `customers` (`TEMP` → `ACTIVE` after OTP)       | `apps/web`    |
+| Rider    | `users` + `riders`                              | `apps/riders` |
+| Staff    | `users` + `user_roles` (+ optional `user_hubs`) | `apps/admin`  |
 
 Customers are **not** in RBAC. After OTP (ACTIVE only) they may access their own data and create parcels. Public tracking by tracking number does not require login.
 
-A user may hold **both** `RIDER` and console roles — allowed; API still enforces app-route boundaries per token/client.
+A user may hold **both** `RIDER` and admin roles — allowed; API still enforces app-route boundaries per token/client.
 
 Hub operators (and similar) are scoped via **`user_hubs`**, not only `users.branch_id`.
 
@@ -121,7 +121,7 @@ Seed these role names; assign keys via `role_permissions`.
 
 ### `ADMIN`
 
-All keys except rider-only keys are optional; typically **every** console key including `audit.view` and `roles.manage`. Full company scope (all branches/hubs).
+All keys except rider-only keys are optional; typically **every** admin key including `audit.view` and `roles.manage`. Full company scope (all branches/hubs).
 
 ### `BRANCH_MANAGER`
 
@@ -189,7 +189,7 @@ Used only by `apps/riders`.
 
 ## Enforcement rules (`apps/api`)
 
-1. **Console & rider** — load `user` → roles → `permission_key` set; reject if required key missing.
+1. **Admin & rider** — load `user` → roles → `permission_key` set; reject if required key missing.
 2. **Customer** — OTP session identifies `customer_id`; never check `role_permissions`. Require `customers.status = ACTIVE`. Filter queries to that customer. Allow `parcels.create` for own bookings.
 3. **Public tracking** — tracking-number lookup is public (no auth). Do not expose unrelated customer PII beyond tracking payload.
 4. **No guest booking** — creating parcels as a customer requires ACTIVE OTP session.
@@ -205,8 +205,8 @@ Used only by `apps/riders`.
 
 ## Role → portal map
 
-| Role                                                                          | Allowed app    |
-| ----------------------------------------------------------------------------- | -------------- |
-| `ADMIN`, `BRANCH_MANAGER`, `HUB_OPERATOR`, `DISPATCHER`, `SUPPORT`, `FINANCE` | `apps/console` |
-| `RIDER`                                                                       | `apps/riders`  |
-| (customer session)                                                            | `apps/web`     |
+| Role                                                                          | Allowed app   |
+| ----------------------------------------------------------------------------- | ------------- |
+| `ADMIN`, `BRANCH_MANAGER`, `HUB_OPERATOR`, `DISPATCHER`, `SUPPORT`, `FINANCE` | `apps/admin`  |
+| `RIDER`                                                                       | `apps/riders` |
+| (customer session)                                                            | `apps/web`    |

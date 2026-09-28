@@ -40,7 +40,7 @@ async function main(): Promise<void> {
   const expectedOps = [
     "health.read",
     "health.ready",
-    "auth.loginConsole",
+    "auth.loginAdmin",
     "auth.loginRider",
     "auth.refresh",
     "auth.otpRequest",
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
     `got ${tracking.status}`,
   )
 
-  // The console parcel collection requires `parcels.view`; the rider job list
+  // The admin parcel collection requires `parcels.view`; the rider job list
   // requires `rider.jobs.view` and the `riders` audience. An anonymous caller must
   // never be told which, and a caller holding one must not satisfy the other.
   const riderOps = catalog.get("job.list")

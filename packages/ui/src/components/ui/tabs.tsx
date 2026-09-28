@@ -6,7 +6,7 @@ import { cn } from "../../lib/cn"
 /**
  * Tabs.
  *
- * Used for the parcel detail view (Timeline / Events / Payments) and the console's
+ * Used for the parcel detail view (Timeline / Events / Payments) and the admin's
  * scoped tables. Radix keeps arrow-key navigation and the `aria-controls` wiring
  * between a trigger and its panel, which hand-rolled tab bars in DropX got wrong.
  */

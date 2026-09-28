@@ -8,7 +8,7 @@ import type { DeliveryStatus, Job, JobDetail, Page } from "../../lib/domain"
  * `GET /jobs/:id` and `PATCH /jobs/:id/status` on the `riders` audience, gated on
  * the `rider.jobs.*` keys — and the repository scopes every query to the signed
  * in rider's own delivery attempts. This module is the single place that mapping
- * lives: no screen builds a job URL, and the console `parcels` surface a rider
+ * lives: no screen builds a job URL, and the admin `parcels` surface a rider
  * token is refused on is never called.
  *
  * The list filters on a *delivery* status, not a parcel status. A job is one

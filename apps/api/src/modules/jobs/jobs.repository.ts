@@ -147,7 +147,7 @@ export async function findJobForRider(
   parcelId: Id,
 ): Promise<Job | null> {
   // The rider may hold several attempts on one parcel; the latest wins, and the
-  // historical ones stay visible on the parcel timeline in the console.
+  // historical ones stay visible on the parcel timeline in the admin.
   const row = await db.queryOne<JobRow>(
     `SELECT ${JOB_COLUMNS}
        FROM ${TABLES.deliveries} d

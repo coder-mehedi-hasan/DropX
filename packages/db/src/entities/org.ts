@@ -37,7 +37,7 @@ export type Hub = EntityBase &
     status: HubStatus
   }
 
-/** Branch + hub as returned by scoped selectors in the console. */
+/** Branch + hub as returned by scoped selectors in the admin. */
 export type HubWithBranch = Hub & {
   branchName: string
   branchCode: string

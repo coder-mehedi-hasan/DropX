@@ -122,8 +122,8 @@ export function ProfileScreen() {
           <AlertTitle>Rider sign-in</AlertTitle>
           <AlertDescription>
             <p>
-              This app only talks to the riders audience. Console and customer sessions cannot be
-              used here.
+              This app only talks to the riders audience. Admin and customer sessions cannot be used
+              here.
             </p>
           </AlertDescription>
         </Alert>

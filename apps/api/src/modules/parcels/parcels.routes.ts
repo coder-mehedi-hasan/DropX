@@ -34,7 +34,7 @@ const idParam = validateParam(parcelIdParamSchema)
 router.get(
   "/",
   defineOperation(
-    { id: "parcel.list", audience: ["console"], permissions: [PERMISSIONS.PARCELS_VIEW] },
+    { id: "parcel.list", audience: ["admin"], permissions: [PERMISSIONS.PARCELS_VIEW] },
     { method: "GET", path: "/parcels" },
   ),
   validateQuery(listParcelsQuerySchema),
@@ -52,7 +52,7 @@ router.get(
 router.get(
   "/:id",
   defineOperation(
-    { id: "parcel.read", audience: ["console"], permissions: [PERMISSIONS.PARCELS_VIEW] },
+    { id: "parcel.read", audience: ["admin"], permissions: [PERMISSIONS.PARCELS_VIEW] },
     { method: "GET", path: "/parcels/:id" },
   ),
   idParam,
@@ -66,7 +66,7 @@ router.get(
 router.post(
   "/",
   defineOperation(
-    { id: "parcel.create", audience: ["console"], permissions: [PERMISSIONS.PARCELS_CREATE] },
+    { id: "parcel.create", audience: ["admin"], permissions: [PERMISSIONS.PARCELS_CREATE] },
     { method: "POST", path: "/parcels" },
   ),
   validateJson(createParcelSchema),
@@ -94,7 +94,7 @@ router.post(
 router.patch(
   "/:id/status",
   defineOperation(
-    { id: "parcel.updateStatus", audience: ["console"], permissions: [PERMISSIONS.PARCELS_UPDATE] },
+    { id: "parcel.updateStatus", audience: ["admin"], permissions: [PERMISSIONS.PARCELS_UPDATE] },
     { method: "PATCH", path: "/parcels/:id/status" },
   ),
   idParam,
@@ -118,7 +118,7 @@ router.patch(
 router.post(
   "/:id/cancel",
   defineOperation(
-    { id: "parcel.cancel", audience: ["console"], permissions: [PERMISSIONS.PARCELS_CANCEL] },
+    { id: "parcel.cancel", audience: ["admin"], permissions: [PERMISSIONS.PARCELS_CANCEL] },
     { method: "POST", path: "/parcels/:id/cancel" },
   ),
   idParam,

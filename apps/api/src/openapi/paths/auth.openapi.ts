@@ -27,12 +27,12 @@ const json = (schema: ReturnType<typeof jsonSchemaOf>) => ({
 const unauth = errorResponse("Not authenticated, or the token is missing/expired.")
 
 export const authPaths = {
-  "/auth/console/login": {
+  "/auth/admin/login": {
     post: {
-      operationId: "auth.loginConsole",
+      operationId: "auth.loginAdmin",
       summary: "Staff login",
       description:
-        "Exchanges email + password for a console-audience token pair. Replaces the portal's login step for staff.",
+        "Exchanges email + password for an admin-audience token pair. Replaces the portal's login step for staff.",
       tags: ["auth"],
       security: [],
       requestBody: { required: true, ...json(jsonSchemaOf(staffLoginSchema, "input")) },
@@ -47,7 +47,7 @@ export const authPaths = {
       operationId: "auth.loginRider",
       summary: "Rider login",
       description:
-        "Exchanges email + password for a rider-audience token pair. The audience differs from console, so the token cannot be replayed on staff routes.",
+        "Exchanges email + password for a rider-audience token pair. The audience differs from admin, so the token cannot be replayed on staff routes.",
       tags: ["auth"],
       security: [],
       requestBody: { required: true, ...json(jsonSchemaOf(staffLoginSchema, "input")) },
@@ -62,7 +62,7 @@ export const authPaths = {
       operationId: "auth.refresh",
       summary: "Refresh a session",
       description:
-        "Exchanges a refresh token for a new pair. The audience is a path segment, not a body field, so a console refresh token cannot be exchanged for a rider one.",
+        "Exchanges a refresh token for a new pair. The audience is a path segment, not a body field, so an admin refresh token cannot be exchanged for a rider one.",
       tags: ["auth"],
       security: [],
       parameters: [
@@ -70,7 +70,7 @@ export const authPaths = {
           name: "audience",
           in: "path",
           required: true,
-          schema: { type: "string", enum: ["console", "riders", "web"] },
+          schema: { type: "string", enum: ["admin", "riders", "web"] },
         },
       ],
       requestBody: { required: true, ...json(jsonSchemaOf(refreshSchema, "input")) },

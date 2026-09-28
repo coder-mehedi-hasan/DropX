@@ -20,7 +20,7 @@ export const attachAuth = createMiddleware<AppEnv>(async (c, next) => {
   const header = c.req.header("Authorization")
 
   if (!header?.startsWith("Bearer ")) {
-    c.set("auth", { audience: "console", actor: { kind: "public" }, sessionId: "" })
+    c.set("auth", { audience: "admin", actor: { kind: "public" }, sessionId: "" })
     return next()
   }
 

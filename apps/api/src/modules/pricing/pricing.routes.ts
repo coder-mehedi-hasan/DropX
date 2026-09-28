@@ -7,7 +7,7 @@ import { quoteSchema } from "./pricing.dto"
 import { quoteDeliveryFee } from "./pricing.service"
 
 /**
- * `GET /pricing/quote` — available to the console and the customer portal so a
+ * `GET /pricing/quote` — available to the admin and the customer portal so a
  * fee can be shown before committing. Customers see the quote only; the booking
  * endpoint re-computes it and ignores anything sent here.
  */
@@ -16,7 +16,7 @@ const router = new Hono<AppEnv>()
 router.get(
   "/quote",
   defineOperation(
-    { id: "pricing.quote", audience: ["console", "web"] },
+    { id: "pricing.quote", audience: ["admin", "web"] },
     { method: "GET", path: "/pricing/quote" },
   ),
   validateQuery(quoteSchema),

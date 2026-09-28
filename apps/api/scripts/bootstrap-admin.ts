@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 /**
- * Creates the first console administrator.
+ * Creates the first administrator.
  *
- * Nothing else can: the console login reads `users`, and no module, screen or
+ * Nothing else can: the admin login reads `users`, and no module, screen or
  * seed writes that table, so a fresh database has no way in. The first account
- * has to come from a script; every account after it belongs in the console's
+ * has to come from a script; every account after it belongs in the admin's
  * staff screen.
  *
  * Deliberately idempotent in the safe direction — an email that already exists is
@@ -26,7 +26,6 @@ import {
 import { hashPassword } from "../src/core/crypto/password"
 import { DEFAULT_ROLE_GRANTS } from "../src/shared/auth/permissions"
 
-
 const db = createDatabaseWith(resolveDatabaseConfig())
 
 function required(name: string): string {
@@ -42,7 +41,6 @@ async function main(): Promise<void> {
   const email = required("BOOTSTRAP_ADMIN_EMAIL").toLowerCase()
   const password = required("BOOTSTRAP_ADMIN_PASSWORD")
   const name = process.env.BOOTSTRAP_ADMIN_NAME?.trim() || "Administrator"
-
 
   const roleName = "ADMIN"
   if (!DEFAULT_ROLE_GRANTS[roleName]) {

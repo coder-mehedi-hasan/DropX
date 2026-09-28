@@ -28,8 +28,8 @@ const schema = z.object({
     .default("dev-only-insecure-secret-change-me-now-please"),
   ACCESS_TOKEN_TTL: z.coerce.number().int().positive().default(900),
   REFRESH_TOKEN_TTL: z.coerce.number().int().positive().default(1_209_600),
-  /** One audience per app, so a console token cannot call rider endpoints. */
-  TOKEN_AUDIENCES: z.string().default("console,riders,web"),
+  /** One audience per app, so an admin token cannot call rider endpoints. */
+  TOKEN_AUDIENCES: z.string().default("admin,riders,web"),
 
   REDIS_URL: z.string().default("redis://localhost:6379"),
 
