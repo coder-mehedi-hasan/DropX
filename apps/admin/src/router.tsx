@@ -21,12 +21,12 @@ const routeTree = rootRoute.addChildren([
 /**
  * The route tree is assembled here, by hand.
  *
- * A convention-based file tree would be fine too, but the console is small and
+ * A convention-based file tree would be fine too, but the admin is small and
  * the shapes that matter — one pathless authenticated layout, and a guard on
  * every screen that needs a permission key — are easier to audit in one list
  * than spread across a directory of route files.
  */
-export function createConsoleRouter(client: QueryClient = queryClient) {
+export function createAdminRouter(client: QueryClient = queryClient) {
   return createRouter({
     routeTree,
     context: { queryClient: client },
@@ -38,6 +38,6 @@ export function createConsoleRouter(client: QueryClient = queryClient) {
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof createConsoleRouter>
+    router: ReturnType<typeof createAdminRouter>
   }
 }

@@ -37,11 +37,11 @@ import type { PermissionKey } from "@/lib/permissions"
  *
  * There is no stats endpoint in `apps/api`, so nothing here is invented: each
  * card is either a real read (`GET /parcels` for the in-scope count) or a fact
- * `/auth/me` already returned. When a role has no console permissions at all,
+ * `/auth/me` already returned. When a role has no admin permissions at all,
  * the screen says so instead of showing an empty grid of zeros.
  */
 export function DashboardPage() {
-  const { user, displayName, consolePermissions, hasPermission, hasAnyPermission } = useAuth()
+  const { user, displayName, adminPermissions, hasPermission, hasAnyPermission } = useAuth()
   const canReadParcels = hasPermission("parcels.view")
   const canCreateParcels = hasPermission("parcels.create")
 
@@ -53,19 +53,19 @@ export function DashboardPage() {
     staleTime: 30_000,
   })
 
-  const nothingToDo = consolePermissions.length === 0
+  const nothingToDo = adminPermissions.length === 0
 
   if (nothingToDo) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader
           title={`Welcome, ${displayName || "there"}`}
-          description="Your DropX console overview."
+          description="Your DropX admin overview."
         />
         <EmptyState
           icon={KeyRound}
-          title="No console permissions yet"
-          description="Your account is active but no role grants a console permission key. An administrator has to assign a console role (for example HUB_OPERATOR or DISPATCHER) before any operations screen becomes available."
+          title="No admin permissions yet"
+          description="Your account is active but no role grants an admin permission key. An administrator has to assign an admin role (for example HUB_OPERATOR or DISPATCHER) before any operations screen becomes available."
         />
       </div>
     )
@@ -75,7 +75,7 @@ export function DashboardPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={`Welcome, ${displayName || "there"}`}
-        description="Your DropX console overview. Everything here reflects the live scope your roles allow."
+        description="Your DropX admin overview. Everything here reflects the live scope your roles allow."
       />
 
       <ServerError
@@ -125,8 +125,8 @@ export function DashboardPage() {
         <SummaryCard
           title="Permissions granted"
           icon={Building2}
-          value={String(consolePermissions.length)}
-          description="Console keys attached to your roles. Rider-only keys are not included."
+          value={String(adminPermissions.length)}
+          description="Admin keys attached to your roles. Rider-only keys are not included."
         />
       </div>
 

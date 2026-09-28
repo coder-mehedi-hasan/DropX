@@ -10,24 +10,24 @@ DropX is a **single-tenant** parcel delivery and logistics management platform f
 apps/
   web/       # Customer portal
   riders/    # Rider app
-  console/   # Admin / ops console
+  admin/     # Admin / ops portal
   api/       # Backend API
 packages/
   db/        # Database port + MySQL adapter
   ui/        # Shared design tokens and components
 ```
 
-| App            | Audience                                                           | Login                                                          |
-| -------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
-| `apps/web`     | Customers (senders / receivers)                                    | **OTP** via phone or email                                     |
-| `apps/riders`  | Pickup / delivery riders                                           | Email + password (`users`)                                     |
-| `apps/console` | Admins, branch staff, hub operators, dispatchers, support, finance | Email + password (`users`) + RBAC                              |
-| `apps/api`     | All clients                                                        | Validates sessions/tokens; enforces permissions and data scope |
+| App           | Audience                                                           | Login                                                          |
+| ------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `apps/web`    | Customers (senders / receivers)                                    | **OTP** via phone or email                                     |
+| `apps/riders` | Pickup / delivery riders                                           | Email + password (`users`)                                     |
+| `apps/admin`  | Admins, branch staff, hub operators, dispatchers, support, finance | Email + password (`users`) + RBAC                              |
+| `apps/api`    | All clients                                                        | Validates sessions/tokens; enforces permissions and data scope |
 
 `bun run dev` starts all four apps together via `mprocs`. The three frontends share
 tokens and components from `packages/ui`; all data access goes through `packages/db`.
 
-Branches and hubs are **not** separate apps. Their staff use `apps/console` with role- and branch/hub-scoped access. See [`rbac.md`](./rbac.md).
+Branches and hubs are **not** separate apps. Their staff use `apps/admin` with role- and branch/hub-scoped access. See [`rbac.md`](./rbac.md).
 
 Public **tracking** (by tracking number only) is available without login. **Booking / creating parcels as a customer** requires OTP login — no guest booking.
 
@@ -44,7 +44,7 @@ Public **tracking** (by tracking number only) is available without login. **Book
 
 OTP codes are short-lived and never persisted in the database.
 
-### Staff (`apps/console`)
+### Staff (`apps/admin`)
 
 Email + `password_hash` on `users`, plus roles → `role_permissions`. Permission keys are static in code.
 
@@ -52,20 +52,20 @@ Hub-scoped staff are linked via **`user_hubs`** (many hubs per user). Branch sco
 
 ### Rider (`apps/riders`)
 
-Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role. A user **may** also hold console roles (e.g. rider + hub operator) — allowed.
+Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role. A user **may** also hold admin roles (e.g. rider + hub operator) — allowed.
 
 A rider reaches its own surface at `/api/v1/jobs`, gated on `rider.jobs.view` /
 `rider.jobs.update` and the `riders` audience. A rider reports one of four
 outcomes — `OUT_FOR_DELIVERY`, `DELIVERED`, `FAILED`, `RETURNED` — and the API
 moves the open `deliveries` attempt and the customer-visible `parcels.status` in
 the same transaction. `FAILED` and `RETURNED` require a reason. Riders never
-receive the console `parcels.*` keys, so a rider token cannot reach `/api/v1/parcels`.
+receive the admin `parcels.*` keys, so a rider token cannot reach `/api/v1/parcels`.
 
 ---
 
 ## Organization
 
-- **Branches** — regional offices; managed in console.
+- **Branches** — regional offices; managed in admin.
 - **Hubs** — origin / sorting / transit / destination nodes under a branch.
 - **Users** — staff and riders; optional `branch_id`; roles; optional hub assignments via `user_hubs`.
 - **Riders** — operational profile + home hub; `compensation_type` (salaried / contractual / commission / mixed); location history in `rider_locations`.
@@ -105,7 +105,7 @@ CREATED → PICKED_UP → IN_TRANSIT / AT_HUB → OUT_FOR_DELIVERY → DELIVERED
                                                                     ↘ FAILED / CANCELLED / RETURNED
 ```
 
-1. **Create** — by **customer** (`apps/web`) or **staff** (`apps/console`); sender/receiver, hubs, destination zone, weight, prepaid or COD.
+1. **Create** — by **customer** (`apps/web`) or **staff** (`apps/admin`); sender/receiver, hubs, destination zone, weight, prepaid or COD.
 2. **Pickup** — assign rider; track pickup status.
 3. **Transfer** — load onto hub-to-hub transfer (vehicle, route, **staff driver**).
 4. **Delivery** — last-mile from destination hub; proof (signature, photo, OTP, identity). **Retries allowed** — new `deliveries` row with next `attempt_no` after FAILED/CANCELLED.
@@ -127,7 +127,7 @@ Parcels are the center of the model: items, pickups, transfers, deliveries, paym
 ## Notifications & Support
 
 - SMS / email / push about parcel events.
-- Support tickets for a customer (optional parcel), assignable to staff in console.
+- Support tickets for a customer (optional parcel), assignable to staff in admin.
 
 ---
 

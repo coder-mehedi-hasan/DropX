@@ -45,7 +45,7 @@ export function Header() {
         </SheetTrigger>
         <SheetContent side="left" className="w-64">
           <SheetHeader>
-            <SheetTitle>DropX console</SheetTitle>
+            <SheetTitle>DropX admin</SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-1 px-4" aria-label="Main">
             {items.map((item) => (

@@ -71,9 +71,7 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
 export const ALL_PERMISSION_KEYS: PermissionKey[] = Object.values(PERMISSIONS)
 
 /** Groups used by the seeder to build default role grants. */
-export const CONSOLE_PERMISSION_KEYS = ALL_PERMISSION_KEYS.filter(
-  (key) => !key.startsWith("rider."),
-)
+export const ADMIN_PERMISSION_KEYS = ALL_PERMISSION_KEYS.filter((key) => !key.startsWith("rider."))
 
 export const RIDER_PERMISSION_KEYS: PermissionKey[] = [
   PERMISSIONS.RIDER_JOBS_VIEW,
@@ -85,11 +83,11 @@ export const RIDER_PERMISSION_KEYS: PermissionKey[] = [
 /**
  * Default grants per role, matching `docs/rbac.md`.
  *
- * Only used to seed `role_permissions`; a role edited in the console keeps its
+ * Only used to seed `role_permissions`; a role edited in the admin keeps its
  * own rows afterwards.
  */
 export const DEFAULT_ROLE_GRANTS: Readonly<Record<string, PermissionKey[]>> = {
-  ADMIN: CONSOLE_PERMISSION_KEYS,
+  ADMIN: ADMIN_PERMISSION_KEYS,
 
   BRANCH_MANAGER: [
     PERMISSIONS.HUBS_VIEW,

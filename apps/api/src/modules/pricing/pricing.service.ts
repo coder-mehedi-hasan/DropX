@@ -10,7 +10,7 @@ import { ERROR_CODES, DomainError } from "../../core"
  * match, then fee = base + perKg × weight, plus COD and express adders.
  *
  * This is its own module because `pricing_rules` is a domain that other
- * features (console pricing screens, settlements) also need.
+ * features (admin pricing screens, settlements) also need.
  */
 
 type PricingRuleRow = {

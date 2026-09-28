@@ -1,8 +1,8 @@
 /**
- * Wire types for the console.
+ * Wire types for the admin.
  *
  * `Parcel`, `ParcelItem` and the status/type unions are re-exported from
- * `@dropx/db/entities` rather than restated, so the console cannot drift from
+ * `@dropx/db/entities` rather than restated, so the admin cannot drift from
  * the API's domain model. The remaining types describe envelopes the API adds
  * around those entities: the `{ nodes, meta }` list contract, the tracking
  * projection, and the staff identity from `/auth/me`.
@@ -35,10 +35,10 @@ export type {
   ParcelWithItems,
 }
 
-/** Alias for the one envelope the console adds to the shared entity types. */
+/** Alias for the one envelope the admin adds to the shared entity types. */
 export type ParcelDetail = ParcelWithItems
 
-/** `GET /auth/me` for a `console` audience token. */
+/** `GET /auth/me` for an `admin` audience token. */
 export type StaffIdentity = {
   kind: "staff"
   audience: string

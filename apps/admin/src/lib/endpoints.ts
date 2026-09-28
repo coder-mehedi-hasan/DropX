@@ -1,5 +1,5 @@
 /**
- * Endpoint functions, one per API operation the console uses.
+ * Endpoint functions, one per API operation the admin uses.
  *
  * Keeping the paths here means a route change is a one-line diff and the
  * `useQuery` call sites stay declarative. Nothing here catches — `api-client`
@@ -19,7 +19,7 @@ import type {
 import type { DeliveryQuote, LoginResult, ParcelTracking, StaffIdentity } from "./types"
 
 export function loginWithPassword(email: string, password: string) {
-  return api.post<LoginResult>("/auth/console/login", { email, password }, { anonymous: true })
+  return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
 }
 
 export function fetchCurrentStaff(signal?: AbortSignal) {
@@ -62,7 +62,7 @@ export function cancelParcel(parcelId: string, body: CancelParcelBody) {
   return api.post<Parcel>(`/parcels/${parcelId}/cancel`, body)
 }
 
-/** Public — the console's tracking screen and the parcel timeline share this. */
+/** Public — the admin's tracking screen and the parcel timeline share this. */
 export function trackParcel(trackingNumber: string, signal?: AbortSignal) {
   return api.get<ParcelTracking>(`/tracking/${encodeURIComponent(trackingNumber)}`, {
     anonymous: true,

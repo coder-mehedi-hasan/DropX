@@ -7,7 +7,7 @@ import { cn } from "../../lib/cn"
  * Separator.
  *
  * Defaults to `decorative`: a `role="separator"` that screen readers announce
- * adds noise to the console's panel lists, and DropX's separators are decorative
+ * adds noise to the admin's panel lists, and DropX's separators are decorative
  * almost everywhere. Pass `decorative={false}` only when it actually divides
  * sections a screen-reader user needs to know about.
  */

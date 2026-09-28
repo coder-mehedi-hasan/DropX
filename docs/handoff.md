@@ -18,7 +18,7 @@ The session finished a large build-out (API + 3 frontends + 2 packages, docs, de
 | --- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `mprocs.yaml` schema invalid  | `bun run dev` died with `Expected object at <config>.procs`                                                                                | `procs` is a **map**, not an array; `ready_pattern` / `max_restarts` do not exist in mprocs 0.9.6. Rewritten with `shell` + `cwd: <CONFIG_DIR>/…` + `autorestart`                      |
 | 2   | API/frontend port split-brain | API defaulted to `4000`; all 3 frontends hardcode `3001`; `.env` only holds `DATABASE_URL` → clients hit a dead port on any fresh checkout | Standardised on `3001` across `apps/api/src/config/env.ts` + `.env.example`                                                                                                            |
-| 3   | CORS blocked both staff apps  | `API_CORS_ORIGINS` defaulted to `5173,5174,3000`; console is `3002`, riders `3003`                                                         | Default now `3000,3002,3003`; verified per-origin, and a hostile origin still gets no header                                                                                           |
+| 3   | CORS blocked both staff apps  | `API_CORS_ORIGINS` defaulted to `5173,5174,3000`; admin is `3002`, riders `3003`                                                           | Default now `3000,3002,3003`; verified per-origin, and a hostile origin still gets no header                                                                                           |
 | 4   | `hubs.city` does not exist    | Public tracking returned **500 on every lookup**                                                                                           | `hubs` has `district` (unlike `branches` / `customer_addresses`, which have both). Renamed `HubRef.city` → `district` plus all column refs. Unknown numbers now return a clean **404** |
 
 ### Why these survived so long
@@ -61,7 +61,7 @@ No dev servers left running; no leftover listeners on 3000–3003.
 
 - Root `.env` is **intentionally tracked** and contains a **live Aiven MySQL credential**. The user explicitly asked that it not be modified. Never print, log, or copy its value. Only the key name `DATABASE_URL` appears in this document.
 - A local `.env.example` is committed and safe to edit; it mirrors the live file's shape and was updated for the `3001`/CORS fixes.
-- No app accounts exist (no seed run), so there are no credentials to leak — but also no way to log into console/riders against the live DB.
+- No app accounts exist (no seed run), so there are no credentials to leak — but also no way to log into admin/riders against the live DB.
 
 ---
 
@@ -72,7 +72,7 @@ No dev servers left running; no leftover listeners on 3000–3003.
 3. **Never introduce multi-tenant org tables, a permissions catalog table, or separate branch/hub apps.** Permission keys are static in code and stored as strings on `role_permissions`.
 4. **Customers are not RBAC users** — OTP to phone/email, codes in cache/Redis only, never MySQL. No customer passwords.
 5. **No guest booking**, but unauthenticated tracking by tracking number is allowed and must stay.
-6. **Audience and permission are separate axes.** A rider token holds `rider.jobs.*` and must never satisfy `parcels.*`. Console and rider surfaces are separate modules, not one route with two audiences.
+6. **Audience and permission are separate axes.** A rider token holds `rider.jobs.*` and must never satisfy `parcels.*`. Admin and rider surfaces are separate modules, not one route with two audiences.
 7. **The DB is reached only through the `@dropx/db` port.** `apps/api` must never import `mysql2`. SQL composes via `QueryBuilder`; sort columns are allowlisted because they arrive from clients.
 8. Every route declares its operation via `defineOperation`; a route missing from the catalog fails `smoke` rather than failing open.
 
@@ -83,7 +83,7 @@ No dev servers left running; no leftover listeners on 3000–3003.
 - **Customer booking is incomplete** — no hub/zone/recipient reference-data endpoints exist. The web app ships an honest typed empty placeholder with submit disabled.
 - **Rider POD is a placeholder** — no delivery-proof endpoint.
 - **Rider `/jobs` covers delivery attempts only** — pickup and transfer job assignment are not modelled.
-- **Console dashboard has no statistics endpoint**; renders a getting-started state.
+- **Admin dashboard has no statistics endpoint**; renders a getting-started state.
 - **Production needs the Redis cache driver.** OTP/rate limiting currently uses a per-process in-memory cache, which breaks across multiple API instances.
 - Isolated live E2E is not possible: no local MySQL, and no Docker/Colima/Podman available.
 - `rg` is unavailable in this environment; use `grep`.
@@ -107,8 +107,8 @@ Call these with the Skill tool, in this order:
 - **`api-modules`** — first choice for the reference-data endpoints (item 1). It covers folder layout, DTO/service/transport split, tenancy, policy registration, pagination, and domain errors.
 - **`api-patterns`** — review framing for any backend work: feature co-location, validated inputs, the `{ nodes, meta }` contract, thin transport, structured errors, side effects after write.
 - **`api-review`** — run against the API modules after the changes above; the TENANT/AUTH/ERR/LAY/PAGE/SIDE checklist maps directly onto the standing constraints above.
-- **`react-patterns`** — the console and rider apps are the most recent frontend work and the least battle-tested; useful before extending either.
-- **`react-lists`** — the console parcel list is a URL-driven table; relevant if reference data changes filtering or sharing.
+- **`react-patterns`** — the admin and rider apps are the most recent frontend work and the least battle-tested; useful before extending either.
+- **`react-lists`** — the admin parcel list is a URL-driven table; relevant if reference data changes filtering or sharing.
 - **`react-shadcn`** — if new `packages/ui` components are needed, or before editing anything under `packages/ui/src/components/ui`.
 
 Skip `react-forms` / `react-overlays` unless the customer booking form or the rider outcome sheet are being reworked — the web booking form is currently disabled pending reference data, so form work is premature until item 1 lands.

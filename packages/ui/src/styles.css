@@ -6,7 +6,7 @@
  * shadcn's token layout (raw values in `:root`, mapped into Tailwind's theme in
  * `@theme inline`) so every app gets the same palette without each one
  * redefining it. Components reference semantic names — `bg-primary`,
- * `text-muted-foreground` — never raw colours, which is what makes the console's
+ * `text-muted-foreground` — never raw colours, which is what makes the admin's
  * dense tables and the rider app's high-contrast buttons stay consistent.
  */
 
@@ -39,7 +39,7 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
 
-  /* Parcel status colours — shared by the console tables and the rider app. */
+  /* Parcel status colours — shared by the admin tables and the rider app. */
   --status-created: oklch(0.708 0 0);
   --status-in-transit: oklch(0.623 0.188 259.815);
   --status-out-for-delivery: oklch(0.769 0.155 70.08);

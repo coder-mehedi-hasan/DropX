@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api-client"
 /**
  * The single failure surface for a screen.
  *
- * Per the console's data contract, API failures render here — as the first child
+ * Per the admin's data contract, API failures render here — as the first child
  * of the form or above the list toolbar — instead of a toast. A toast disappears
  * before it can be read, and the form must stay open with the user's input
  * intact so a validation `details[]` entry can be mapped back onto its field.

@@ -11,7 +11,7 @@ export { DEFAULT_PARCELS_SEARCH, paymentFilter, statusFilter } from "@/lib/parce
  *
  * Every field is coerced and `.catch`-guarded so a hand-edited or stale link
  * degrades to `DEFAULT_PARCELS_SEARCH` instead of throwing a route error — a
- * shared parcel URL is a normal way to open the console. The `""` members of the
+ * shared parcel URL is a normal way to open the admin. The `""` members of the
  * filter unions exist purely so a `<Select>` can express "no filter"; read them
  * through `statusFilter` / `paymentFilter` to get the narrowed type.
  */

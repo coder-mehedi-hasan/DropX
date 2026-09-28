@@ -11,8 +11,8 @@ import { getJob, listJobs, reportOutcome } from "./jobs.service"
 /**
  * The rider app's job surface.
  *
- * Gated on `rider.jobs.*` rather than the console's `parcels.*` keys, so a rider
- * token can never reach a console operation, and the payload is scoped to the
+ * Gated on `rider.jobs.*` rather than the admin's `parcels.*` keys, so a rider
+ * token can never reach an admin operation, and the payload is scoped to the
  * rider's own assignments in the repository. The rider is never asked for an id.
  */
 const router = new Hono<AppEnv>()

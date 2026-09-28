@@ -6,7 +6,7 @@ import { cn } from "../../lib/cn"
  * Input.
  *
  * A plain `<input>` with the token-driven border/focus treatment, so every text
- * field in the console, rider app and web portal looks identical without each
+ * field in the admin, rider app and web portal looks identical without each
  * form re-declaring the same focus ring.
  */
 export function Input({ className, type, ...props }: React.ComponentProps<"input">) {

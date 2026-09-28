@@ -1,5 +1,5 @@
 /**
- * Permission keys the console gates on.
+ * Permission keys the admin gates on.
  *
  * A copy of the constants in `apps/api/src/shared/auth/permissions.ts`, which is
  * the single source of truth. Duplicated rather than imported because the
@@ -59,9 +59,9 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
 export const RIDER_PERMISSION_PREFIX = "rider."
 
 /**
- * `rider.*` keys are never granted to a console session — the rider app has its
+ * `rider.*` keys are never granted to an admin session — the rider app has its
  * own audience — so they are excluded when reporting what a user can do here.
  */
-export function isConsolePermission(key: string): key is PermissionKey {
+export function isAdminPermission(key: string): key is PermissionKey {
   return !key.startsWith(RIDER_PERMISSION_PREFIX)
 }

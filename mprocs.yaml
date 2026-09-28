@@ -7,8 +7,9 @@
 # or `cmd`. `<CONFIG_DIR>` expands to the directory holding this file, so the
 # paths stay correct no matter which directory mprocs was launched from.
 #
-# `.env` at the repo root is the single source of runtime configuration; each
-# script loads it itself via `--env-file=../../.env`, so nothing here is needed.
+# Each process runs in its app directory (`cwd`), so the frontends pick up their
+# own `.env` from there and the API/scripts load the root `.env` themselves via
+# `--env-file=../../.env`; no env is forwarded from here.
 
 procs:
   api:
@@ -16,8 +17,8 @@ procs:
     shell: bun run dev
     autorestart: true
 
-  console:
-    cwd: <CONFIG_DIR>/apps/console
+  admin:
+    cwd: <CONFIG_DIR>/apps/admin
     shell: bun run dev
     autorestart: true
 

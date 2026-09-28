@@ -23,7 +23,7 @@ function NotFound() {
         className="w-full"
         icon={Compass}
         title="Page not found"
-        description="That address does not match any console screen."
+        description="That address does not match any admin screen."
         action={
           <Button asChild>
             <Link to="/">Back to the dashboard</Link>

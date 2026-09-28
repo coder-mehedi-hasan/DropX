@@ -8,7 +8,7 @@ import { cn } from "../../lib/cn"
  * Badge.
  *
  * The `success` / `warning` / `destructive` variants exist because parcel status
- * is read at a glance in the console tables; fixed token names keep "delivered"
+ * is read at a glance in the admin tables; fixed token names keep "delivered"
  * green everywhere instead of each screen picking its own shade.
  */
 const badgeVariants = cva(

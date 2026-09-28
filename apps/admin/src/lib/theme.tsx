@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 
 export type Theme = "light" | "dark"
 
-const STORAGE_KEY = "dropx.console.theme"
+const STORAGE_KEY = "dropx.admin.theme"
 
 type ThemeContextValue = {
   theme: Theme
@@ -19,7 +19,7 @@ function readInitialTheme(): Theme {
 }
 
 /**
- * The console owns the `dark` class.
+ * The admin owns the `dark` class.
  *
  * `@dropx/ui` ships the tokens for both schemes but no mechanism to switch, and
  * its `Toaster` needs the resolved theme handed to it — so one class on `<html>`

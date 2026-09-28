@@ -59,7 +59,7 @@ export function Sidebar() {
         </span>
         <div className="leading-tight">
           <p className="text-sm font-semibold">DropX</p>
-          <p className="text-muted-foreground text-xs">Ops console</p>
+          <p className="text-muted-foreground text-xs">Ops portal</p>
         </div>
       </div>
 

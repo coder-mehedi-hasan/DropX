@@ -10,7 +10,7 @@ import { parcelsSearchSchema } from "@/routes/search-params"
  * was" behaviour without either a cast or an open-redirect: a path that is not
  * one of these three falls back to the dashboard.
  */
-export type ConsoleDestination =
+export type AdminDestination =
   | { to: "/" }
   | { to: "/parcels"; search: ReturnType<typeof resolveParcelSearch> }
   | { to: "/parcels/$parcelId"; params: { parcelId: string } }
@@ -18,10 +18,10 @@ export type ConsoleDestination =
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
-export function resolveRedirect(raw: string | undefined): ConsoleDestination {
+export function resolveRedirect(raw: string | undefined): AdminDestination {
   if (!raw || !raw.startsWith("/")) return { to: "/" }
 
-  const url = new URL(raw, "http://console.invalid")
+  const url = new URL(raw, "http://admin.invalid")
   const path = url.pathname
 
   if (path === "/") return { to: "/" }

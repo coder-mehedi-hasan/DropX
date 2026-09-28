@@ -5,7 +5,7 @@ import { quoteResponseSchema, quoteSchema } from "../../modules/pricing/pricing.
 /**
  * `pricing` — delivery-fee quoting.
  *
- * A read (`GET` with query params), available to the console and the customer
+ * A read (`GET` with query params), available to the admin and the customer
  * portal so a fee can be shown before committing. The rule is anchored on the
  * **destination zone**; the fee is always recomputed server-side at booking and
  * anything the client sends here is ignored.

@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "mprocs",
     "dev:api": "bun run --cwd apps/api dev",
-    "dev:console": "bun run --cwd apps/console dev",
+    "dev:admin": "bun run --cwd apps/admin dev",
     "dev:rider": "bun run --cwd apps/riders dev",
     "dev:web": "bun run --cwd apps/web dev",
     "build": "bun run --filter \"./apps/*\" --filter \"./packages/*\" build",

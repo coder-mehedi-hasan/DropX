@@ -7,7 +7,7 @@ import { cn } from "../../lib/cn"
 /**
  * DropdownMenu.
  *
- * The console's per-row overflow actions (cancel parcel, retry delivery, print
+ * The admin's per-row overflow actions (cancel parcel, retry delivery, print
  * label). Radix supplies the typeahead, roving focus and outside-click handling
  * that makes it usable with a keyboard on a dense table.
  */
@@ -176,7 +176,7 @@ export function DropdownMenuSeparator({
  * DropdownMenuShortcut.
  *
  * A hint of the keyboard shortcut, kept decorative: the actual handler lives in
- * the console's command layer, so rendering the key here is documentation, not
+ * the admin's command layer, so rendering the key here is documentation, not
  * behaviour.
  */
 export function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<"span">) {

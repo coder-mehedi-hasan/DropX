@@ -6,12 +6,12 @@ import { Toaster } from "@dropx/ui"
 
 import { AuthProvider } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
-import { createConsoleRouter } from "@/router"
+import { createAdminRouter } from "@/router"
 import { ThemeProvider, useTheme } from "@/lib/theme"
 
 import "./index.css"
 
-const router = createConsoleRouter(queryClient)
+const router = createAdminRouter(queryClient)
 
 const container = document.getElementById("root")
 if (!container) throw new Error("Root container #root is missing from index.html")

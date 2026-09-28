@@ -11,9 +11,9 @@ import {
 } from "../../modules/parcels/parcels.dto"
 
 /**
- * `parcels` operations — the console and customer parcel surface.
+ * `parcels` operations — the admin and customer parcel surface.
  *
- * The console list and the customer list share one response envelope but accept
+ * The admin list and the customer list share one response envelope but accept
  * different filter inputs, so they are described separately even where the 200
  * body is identical.
  */
@@ -57,7 +57,7 @@ export const parcelsPaths = {
   "/parcels": {
     get: {
       operationId: "parcel.list",
-      summary: "List parcels (console)",
+      summary: "List parcels (admin)",
       description:
         "Branch/hub-scoped list for staff. Ordering is limited to an allowlist of columns; an unknown `sortBy` is rejected rather than interpolated into SQL.",
       tags: ["parcels"],
@@ -137,7 +137,7 @@ export const parcelsPaths = {
   "/parcels/{id}": {
     get: {
       operationId: "parcel.read",
-      summary: "Read a parcel (console)",
+      summary: "Read a parcel (admin)",
       description: "Full parcel with its items, scoped to the caller's branch/hubs.",
       tags: ["parcels"],
       security: bearerSecurity,
@@ -153,7 +153,7 @@ export const parcelsPaths = {
   "/parcels/{id}/status": {
     patch: {
       operationId: "parcel.updateStatus",
-      summary: "Update parcel status (console)",
+      summary: "Update parcel status (admin)",
       description:
         "Advances the parcel lifecycle. A transition that is not legal from the current status is rejected with `INVALID_STATE_TRANSITION`.",
       tags: ["parcels"],
@@ -174,7 +174,7 @@ export const parcelsPaths = {
   "/parcels/{id}/cancel": {
     post: {
       operationId: "parcel.cancel",
-      summary: "Cancel a parcel (console)",
+      summary: "Cancel a parcel (admin)",
       description: "Cancels a parcel that has not been delivered yet. A reason is required.",
       tags: ["parcels"],
       security: bearerSecurity,
@@ -192,5 +192,5 @@ export const parcelsPaths = {
 } as const
 
 export const parcelsTags = [
-  { name: "parcels", description: "Parcel booking plus the console and customer parcel views." },
+  { name: "parcels", description: "Parcel booking plus the admin and customer parcel views." },
 ]

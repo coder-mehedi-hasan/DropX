@@ -1,9 +1,9 @@
 {
-  "name": "@dropx/console",
+  "name": "@dropx/admin",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "DropX admin / ops console — staff portal for parcels, tracking and operations.",
+  "description": "DropX admin — staff portal for parcels, tracking and operations.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

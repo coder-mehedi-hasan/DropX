@@ -9,7 +9,7 @@ import { cn } from "../../lib/cn"
  *
  * Native `<select>` can't be styled into the token palette, so zones, branches and
  * hubs are all this. `position="popper"` lets the listbox match the trigger's
- * width — the console's filter bars otherwise get a mismatched dropdown that looks
+ * width — the admin's filter bars otherwise get a mismatched dropdown that looks
  * broken next to a `w-56` trigger.
  */
 export function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {

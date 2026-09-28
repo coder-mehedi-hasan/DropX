@@ -11,24 +11,8 @@
         "typescript": "^7.0.2",
       },
     },
-    "apps/api": {
-      "name": "@dropx/api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@dropx/db": "workspace:*",
-        "@hono/swagger-ui": "^0.6.1",
-        "@hono/zod-validator": "^0.9.1",
-        "hono": "^4.13.9",
-        "zod": "^4.6.5",
-      },
-      "devDependencies": {
-        "@types/bun": "^1.4.2",
-        "@types/node": "^26.6.3",
-        "typescript": "^7.0.2",
-      },
-    },
-    "apps/console": {
-      "name": "@dropx/console",
+    "apps/admin": {
+      "name": "@dropx/admin",
       "version": "0.0.0",
       "dependencies": {
         "@dropx/db": "workspace:*",
@@ -52,6 +36,22 @@
         "tailwindcss": "^4.3.3",
         "typescript": "^7.0.2",
         "vite": "^8.0.0",
+      },
+    },
+    "apps/api": {
+      "name": "@dropx/api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@dropx/db": "workspace:*",
+        "@hono/swagger-ui": "^0.6.1",
+        "@hono/zod-validator": "^0.9.1",
+        "hono": "^4.13.9",
+        "zod": "^4.6.5",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.2",
+        "@types/node": "^26.6.3",
+        "typescript": "^7.0.2",
       },
     },
     "apps/riders": {
@@ -192,9 +192,9 @@
 
     "@babel/types": ["@babel/types@7.29.8", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg=="],
 
-    "@dropx/api": ["@dropx/api@workspace:apps/api"],
+    "@dropx/admin": ["@dropx/admin@workspace:apps/admin"],
 
-    "@dropx/console": ["@dropx/console@workspace:apps/console"],
+    "@dropx/api": ["@dropx/api@workspace:apps/api"],
 
     "@dropx/db": ["@dropx/db@workspace:packages/db"],
 

@@ -71,7 +71,7 @@ export function LoginPage() {
             <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md text-sm font-bold">
               DX
             </span>
-            <CardTitle>DropX console</CardTitle>
+            <CardTitle>DropX admin</CardTitle>
           </div>
           <CardDescription>Staff sign in with your work email and password.</CardDescription>
         </CardHeader>

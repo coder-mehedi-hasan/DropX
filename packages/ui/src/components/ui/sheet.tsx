@@ -9,7 +9,7 @@ import { cn } from "../../lib/cn"
  *
  * Built on Radix Dialog rather than a drawer library: same focus trap and scroll
  * lock, no extra dependency, and the `side` prop is the only thing a DropX
- * consumer needs (the console docks filters on the right, the rider app uses a
+ * consumer needs (the admin docks filters on the right, the rider app uses a
  * bottom sheet for parcel actions).
  */
 export function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {

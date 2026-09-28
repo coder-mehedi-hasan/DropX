@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle, Button, Skeleton } from "@dropx/ui
 
 import { ApiError, onUnauthorized, readTokens, setTokens } from "./api-client"
 import { fetchCurrentStaff, loginWithPassword, logout as logoutRequest } from "./endpoints"
-import { isConsolePermission, type PermissionKey } from "./permissions"
+import { isAdminPermission, type PermissionKey } from "./permissions"
 import type { StaffIdentity } from "./types"
 
 export type AuthStatus = "loading" | "authenticated" | "anonymous"
@@ -20,12 +20,12 @@ type AuthContextValue = {
   logout: () => Promise<void>
   hasPermission: (permission: PermissionKey) => boolean
   hasAnyPermission: (permissions: readonly PermissionKey[]) => boolean
-  consolePermissions: readonly string[]
+  adminPermissions: readonly string[]
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const NAME_STORAGE_KEY = "dropx.console.name"
+const NAME_STORAGE_KEY = "dropx.admin.name"
 
 function readDisplayName(): string {
   return window.localStorage.getItem(NAME_STORAGE_KEY) ?? ""
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * A refresh that fails mid-session must drop the console to the login screen
+   * A refresh that fails mid-session must drop the admin to the login screen
    * rather than leaving screens rendering against a dead token.
    */
   useEffect(
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const granted = useMemo(
-    () => new Set((user?.permissions ?? []).filter(isConsolePermission)),
+    () => new Set((user?.permissions ?? []).filter(isAdminPermission)),
     [user?.permissions],
   )
 
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       hasPermission: (permission) => granted.has(permission),
       hasAnyPermission: (permissions) => permissions.some((permission) => granted.has(permission)),
-      consolePermissions: [...granted].sort(),
+      adminPermissions: [...granted].sort(),
     }),
     [status, user, displayName, login, logout, granted],
   )

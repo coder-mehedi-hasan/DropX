@@ -6,7 +6,7 @@ import { cn } from "../../lib/cn"
  * Table.
  *
  * Wraps a real `<div data-slot="table-container">` around the `<table>` so the
- * console's dense parcel tables can scroll horizontally inside a fixed-width
+ * admin's dense parcel tables can scroll horizontally inside a fixed-width
  * sidebar layout without the whole page scrolling sideways.
  */
 export function Table({ className, ...props }: React.ComponentProps<"table">) {

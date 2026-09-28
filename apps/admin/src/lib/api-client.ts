@@ -10,8 +10,8 @@
 const DEFAULT_API_URL = "http://localhost:8000"
 const API_PREFIX = "/api/v1"
 
-/** Console tokens are audience-bound; the refresh path must match the login path. */
-const AUDIENCE = "console"
+/** Admin tokens are audience-bound; the refresh path must match the login path. */
+const AUDIENCE = "admin"
 
 /** A trailing slash in `VITE_API_URL` would double up on every path. */
 export const API_URL: string = (
@@ -68,7 +68,7 @@ type TokenStore = {
   write: (tokens: Tokens | null) => void
 }
 
-const TOKEN_STORAGE_KEY = "dropx.console.tokens"
+const TOKEN_STORAGE_KEY = "dropx.admin.tokens"
 
 function browserTokenStore(): TokenStore {
   return {
@@ -210,7 +210,7 @@ async function send<T>(
 /**
  * Single-flight refresh.
  *
- * A console screen fires several queries at once, so an expired access token
+ * An admin screen fires several queries at once, so an expired access token
  * produces a burst of 401s. Without this latch every request would spend its own
  * refresh token and the later ones would fail on a rotated session.
  */

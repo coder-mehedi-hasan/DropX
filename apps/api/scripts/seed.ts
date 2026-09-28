@@ -5,7 +5,7 @@
  * Permission keys are imported from `src/shared/auth/permissions` — the database
  * only records which keys each role holds, so this is where code and
  * `role_permissions` are reconciled. Safe to re-run: grants are inserted with
- * `INSERT IGNORE`, and a role later edited in the console keeps its extra keys.
+ * `INSERT IGNORE`, and a role later edited in the admin keeps its extra keys.
  */
 import {
   closeDatabase,

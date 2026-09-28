@@ -3,7 +3,7 @@ import { QueryClient } from "@tanstack/react-query"
 import { ApiError } from "./api-client"
 
 /**
- * One client for the whole console.
+ * One client for the whole admin.
  *
  * Retries are suppressed for auth/permission failures: a 401 or 403 will never
  * succeed on a second attempt, and retrying them just delays the redirect to

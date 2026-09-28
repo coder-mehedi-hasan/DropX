@@ -10,7 +10,7 @@ import type { Id } from "@dropx/db"
 export type ActorKind = "customer" | "staff" | "rider" | "public"
 
 /** Which app the token was minted for. Prevents cross-app route access. */
-export type Audience = "console" | "riders" | "web"
+export type Audience = "admin" | "riders" | "web"
 
 export type StaffAuth = {
   kind: "staff"
