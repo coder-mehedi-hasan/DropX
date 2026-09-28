@@ -11,6 +11,7 @@ Canonical product docs:
 - [`docs/overview.md`](docs/overview.md) — system overview, portals, login
 - [`docs/rbac.md`](docs/rbac.md) — roles, permission keys, enforcement
 - [`docs/er-diagram.md`](docs/er-diagram.md) — ER diagram
+- [`docs/brand-guidelines.md`](docs/brand-guidelines.md) — brand system, logo asset matrix, accessibility, and production handoff
 - [`migrate.sql`](migrate.sql) — MySQL schema (source of truth for DB)
 
 Point-in-time session notes (stale by nature — delete once the open items are closed):
@@ -31,6 +32,15 @@ packages/
   db/        # Database port + MySQL adapter, entities, query builder, migrate runner
   ui/        # Shared design tokens and shadcn-style components on Radix
 mprocs.yaml  # `bun run dev` runs api + admin + riders + web together
+```
+
+Brand assets and the interactive brand book live in:
+
+```text
+apps/web/
+  public/brand/                         # approved SVG logos and imagery brief
+  src/app/brand-guidelines/page.tsx     # public interactive guidelines route
+docs/brand-guidelines.md                 # written brand contract and handoff checklist
 ```
 
 | Workspace     | Audience         | Auth                                      | Dev port |
@@ -120,6 +130,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 15. **RBAC / product changes** — update `docs/rbac.md` and `docs/overview.md`.
 16. **The database is reached only through the port** — `apps/api` imports `@dropx/db` and never `mysql2`. SQL composes via the `QueryBuilder`; sort columns are allowlisted because they arrive from clients. The handle and the cache are process-wide: a **service** resolves them with `getDatabase()` / `getCache()`, a **repository** takes an `Executor` so a transaction can pass `tx`, and a **route** passes neither — it supplies business input only. Tests install a double with `setDatabase()` / `setCache()`.
 17. **Audience and permission are separate axes** — a rider token holds `rider.jobs.*` and must never satisfy `parcels.*`; the admin and rider surfaces are separate modules, not one route with two audiences.
+18. **Branding has a source-of-truth contract** — use the approved assets in `apps/web/public/brand/`; do not recreate or manually combine logos in app code. Material brand changes update the interactive page, asset README, and `docs/brand-guidelines.md` together. The web brand page is light-first; dark mode is a documented paired environment.
 
 ## Where to put work
 
@@ -130,6 +141,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 | Admin/ops screens, branch/hub mgmt    | `apps/admin`               |
 | Auth, permissions checks, domain APIs | `apps/api`                 |
 | Shared components, design tokens      | `packages/ui`              |
+| Brand guidelines, logos, marketing assets | `apps/web/public/brand`, `apps/web/src/app/brand-guidelines`, `docs/brand-guidelines.md` |
 | DB port, entities, query composition  | `packages/db`              |
 | Driver specifics (pool, TLS, errors)  | `packages/db/src/adapters` |
 | Tables / indexes / FKs                | `migrate.sql`              |
@@ -142,6 +154,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 - Do not invent multi-tenant org tables, a permissions catalog table, or extra apps for branch/hub.
 - Keep customer auth OTP-based (Redis); do not add customer passwords or MySQL OTP tables unless product docs change.
 - Do not allow guest parcel booking; do allow unauthenticated tracking by tracking number.
+- For brand/UI changes, preserve the documented light/dark variants, visible focus states, status labels, responsive behavior, and approved logo usage rules.
 
 ## Quick domain map
 
