@@ -98,6 +98,22 @@ export function findPolicy(id: string): CatalogEntry | undefined {
   return catalog.get(id)
 }
 
+/**
+ * Namespaces an operation id may be prefixed with.
+ *
+ * `{namespace}.{domain}.{action}` is the shape a surface's operations take, e.g.
+ * `admin.parcel.list`. The list is closed on purpose: a prefix is only worth
+ * having if something can enumerate the surfaces and check them, and an open
+ * set makes a typo like `admni.parcel.list` look like a new namespace rather
+ * than a mistake. `surface.ts` enforces the same list at definition time.
+ */
+export const OPERATION_NAMESPACES = ["admin", "customer", "rider"] as const
+
+const NAMESPACE_SET = new Set<string>(OPERATION_NAMESPACES)
+
+/** `{domain}.{action}` or `{namespace}.{domain}.{action}`. */
+const OPERATION_ID = /^[a-z][a-zA-Z]*(\.[a-zA-Z]+){1,2}$/
+
 /** Startup self-check: the catalog must not be empty and ids must be namespaced. */
 export function assertPolicyCatalog(): void {
   if (catalog.size === 0) {
@@ -105,8 +121,18 @@ export function assertPolicyCatalog(): void {
   }
 
   for (const id of catalog.keys()) {
-    if (!/^[a-z][a-zA-Z]*\.[a-zA-Z]+$/.test(id)) {
-      throw new Error(`Operation id "${id}" must look like "{domain}.{action}"`)
+    if (!OPERATION_ID.test(id)) {
+      throw new Error(
+        `Operation id "${id}" must look like "{domain}.{action}" or "{namespace}.{domain}.{action}"`,
+      )
+    }
+
+    const segments = id.split(".")
+    const namespace = segments[0]
+    if (segments.length === 3 && (!namespace || !NAMESPACE_SET.has(namespace))) {
+      throw new Error(
+        `Operation id "${id}" must start with a known namespace: ${OPERATION_NAMESPACES.join(", ")}`,
+      )
     }
   }
 }

@@ -12,6 +12,7 @@ Canonical product docs:
 - [`docs/rbac.md`](docs/rbac.md) — roles, permission keys, enforcement
 - [`docs/er-diagram.md`](docs/er-diagram.md) — ER diagram
 - [`docs/brand-guidelines.md`](docs/brand-guidelines.md) — brand system, logo asset matrix, accessibility, and production handoff
+- [`docs/admin-plan.md`](docs/admin-plan.md) — admin/ops feature plan, the operation-surface system, and the phased build order
 - [`migrate.sql`](migrate.sql) — MySQL schema (source of truth for DB)
 
 Point-in-time session notes (stale by nature — delete once the open items are closed):
@@ -84,30 +85,73 @@ directory they run in. Each frontend loads its own URL from its own `.env`
 - **Every route declares its operation** through `defineOperation` in `apps/api/src/shared/auth/policy.ts`, which registers it in the catalog _and_ enforces it. A route that is missing from the catalog fails the `smoke` check rather than failing open.
 - Modules are registered in one place: `apps/api/src/modules/index.ts`.
 
-### Adding an operation — the contract comes with the route
+### Adding an operation — declare it once
 
-An operation is three things, and they are checked against each other at boot. Skipping any one fails `smoke`:
+There are two ways to add an operation. **Prefer a registry.** A registry entry _is_ the whole contract; nothing downstream restates any of it.
+
+**1. In a registry (the current way for `admin`)** — one entry in `modules/<surface>/registry/<feature>.ts`, plus one handler in `modules/<surface>/handlers.ts`:
+
+```ts
+export const ADMIN_SURFACE = defineSurface({
+  namespace: "admin",
+  basePath: "/admin",
+  features: {
+    parcels: {
+      tag: "parcels",
+      operations: {
+        cancel: {
+          method: "POST",
+          path: "/parcels/:id/cancel",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PARCELS_CANCEL] },
+          summary: "Cancel a parcel (staff)",
+          successDescription: "Cancelled.",
+          params: parcelIdParamSchema,
+          body: cancelParcelSchema,
+          response: parcelResponseSchema,
+          errors: { 409: "The parcel cannot be cancelled from its current status." },
+        },
+      },
+    },
+  },
+})
+```
+
+`mountSurface` derives the operation id (`admin.parcels.cancel`) and the mounted path (`/admin/parcels/:id/cancel`), registers the policy via `defineOperation`, mounts the handler behind it, and generates the OpenAPI operation. **You never write the id or the path twice, and there is no spec file to update.**
+
+Two rules make this safe:
+
+- **Registry and handlers must be a bijection.** A registry entry with no handler, or a handler with no registry entry, throws at boot naming both orphans. `smoke` exercises this.
+- **`response` XOR `listNodes`.** A plain body, or a `{ nodes, meta }` page of that schema — not both, not neither.
+
+Mount the **relative** `path`; `registerModules` prefixes `basePath` when it calls `app.route()`. `defineOperation` and the spec get the absolute one. The registry derives both, so you only ever write the relative path.
+
+**2. By hand (`auth`, `jobs`, `tracking`, `pricing`, and the customer `parcels`)** — still three things, checked against each other at boot. Skipping any one fails `smoke`:
 
 1. **Route + policy** — `defineOperation(...)` in the module's `*.routes.ts`.
 2. **DTOs** — request schemas _and_ response schemas in the module's `*.dto.ts`. Both live there because the published contract and the runtime validation must be the same object; a hand-written response body is a second source of truth that drifts.
-3. **OpenAPI entry** — an operation in the module's `openapi/paths/<domain>.openapi.ts`, describing only what the schema cannot: `operationId`, tag, summary, and status codes. **Do not restate fields** — request/response bodies and parameters are pulled from the Zod DTOs via `jsonSchemaOf()`.
+3. **OpenAPI entry** — an operation in `openapi/paths/<domain>.openapi.ts`, describing only what the schema cannot: `operationId`, tag, summary, and status codes. **Do not restate fields** — bodies and parameters are pulled from the Zod DTOs via `jsonSchemaOf()`.
 
 ```text
 apps/api/src/openapi/
-  schema.ts        # Zod -> OpenAPI 3.1 conversion; pageSchema(); propertySchemaOf()
-  components.ts    # only cross-cutting shapes: ErrorResponse, PageMeta, bearerAuth
-  paths/*.openapi.ts   # one fragment per domain, registered in document.ts
-  document.ts      # assembles info/servers/tags/components + merges the fragments
-  coverage.ts      # the catalog <-> spec guarantee (see below)
-  router.ts        # serves /openapi.json and /docs
+  schema.ts          # Zod -> OpenAPI 3.1 conversion; pageSchema(); propertySchemaOf()
+  components.ts      # only cross-cutting shapes: ErrorResponse, PageMeta, bearerAuth
+  surface-spec.ts    # registry -> OpenAPI operations
+  paths/*.openapi.ts # one hand-written fragment per remaining domain, in document.ts
+  document.ts        # assembles info/servers/tags/components + merges fragments and surfaces
+  coverage.ts        # the catalog <-> spec guarantee for hand-written fragments only
+  router.ts          # serves /openapi.json and /docs
 ```
 
 Two details that are easy to get wrong:
 
-- `jsonSchemaOf(schema, io)` takes an **io mode**. Requests use `"input"` (a field with `.default()` is optional); responses use `"output"` (the server always sends it, so it is required). The two are genuinely different documents.
-- `document.ts` must import the new fragment, or it is silently absent — and `assertOpenApiCoverage()` will fail the boot with the operation id and the expected path.
+- `jsonSchemaOf(schema, io)` takes an **io mode**. Requests use `"input"` (a field with `.default()` is optional); responses use `"output"` (the server always sends it, so it is required). The two are genuinely different documents. `surface-spec.ts` handles this for you.
+- `document.ts` must import a new hand-written fragment, or it is silently absent — and `assertOpenApiCoverage()` will fail the boot with the operation id and the expected path.
 
-**The drift guard.** `coverage.ts` compares the policy catalog against the spec and throws at boot unless: every enforced operation is documented, every documented operation is enforced, `operationId` and method match, and the documented path matches the mounted path. This is the same fail-closed philosophy as `assertPolicyCatalog` — a route must not be able to ship enforced one way and documented another. Verified to fail on injected drift in both directions.
+**The drift guard, and its shrinking scope.** `coverage.ts` compares the policy catalog against the spec and throws at boot unless: every enforced operation is documented, every documented operation is enforced, `operationId` and method match, and the documented path matches the mounted path. This is the same fail-closed philosophy as `assertPolicyCatalog` — a route must not be able to ship enforced one way and documented another. Verified to fail on injected drift in both directions.
+
+It now guards **only the hand-written fragments**: a registry operation is generated from the same object that registered its policy, so it is trivially consistent and the check says nothing useful about it. As each module moves to a registry this file's surface area shrinks; when the last one does, delete `coverage.ts` and `paths/`.
+
+Operation ids are `{domain}.{action}`, or `{namespace}.{domain}.{action}` where the namespace is one of `OPERATION_NAMESPACES` in `policy.ts` — a closed list, because a prefix is only worth having if something can enumerate the surfaces and check them.
 
 The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **`/docs`**. It contains shapes only, no secrets, so it needs no token; gate both at the edge if a deployment wants them private.
 
@@ -134,18 +178,18 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 
 ## Where to put work
 
-| Change                                | Put it in                  |
-| ------------------------------------- | -------------------------- |
-| Customer UI / OTP login UX            | `apps/web`                 |
-| Rider jobs, location, proof UI        | `apps/riders`              |
-| Admin/ops screens, branch/hub mgmt    | `apps/admin`               |
-| Auth, permissions checks, domain APIs | `apps/api`                 |
-| Shared components, design tokens      | `packages/ui`              |
+| Change                                    | Put it in                                                                                |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Customer UI / OTP login UX                | `apps/web`                                                                               |
+| Rider jobs, location, proof UI            | `apps/riders`                                                                            |
+| Admin/ops screens, branch/hub mgmt        | `apps/admin`                                                                             |
+| Auth, permissions checks, domain APIs     | `apps/api`                                                                               |
+| Shared components, design tokens          | `packages/ui`                                                                            |
 | Brand guidelines, logos, marketing assets | `apps/web/public/brand`, `apps/web/src/app/brand-guidelines`, `docs/brand-guidelines.md` |
-| DB port, entities, query composition  | `packages/db`              |
-| Driver specifics (pool, TLS, errors)  | `packages/db/src/adapters` |
-| Tables / indexes / FKs                | `migrate.sql`              |
-| Product / auth / RBAC docs            | `docs/`                    |
+| DB port, entities, query composition      | `packages/db`                                                                            |
+| Driver specifics (pool, TLS, errors)      | `packages/db/src/adapters`                                                               |
+| Tables / indexes / FKs                    | `migrate.sql`                                                                            |
+| Product / auth / RBAC docs                | `docs/`                                                                                  |
 
 ## Coding expectations
 

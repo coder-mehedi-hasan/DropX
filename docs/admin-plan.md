@@ -11,6 +11,7 @@
 | Decision                                   | Choice                                                                                          | Section |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------- |
 | Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice | §3      |
+| Status                                     | **A1 landed**; A2's admin half landed with it, customer half not started                        | §3.9    |
 | How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                    | §3.3    |
 | What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                   | §3.5    |
 | Layout under the new namespace             | `modules/admin/` with `registry.ts` + `handlers.ts` — surface-first, one place for contracts    | §3.3    |
@@ -18,7 +19,9 @@
 | Registry scope                             | **admin surface only, proved on 5 operations** — extend once it works                           | §3.2    |
 | Riders                                     | out of scope for this change                                                                    | §3.8    |
 
-Still open: whether any external system calls this API today, which decides in-place vs `/api/v2` (§3.7); the reference-data shape (§6); and where the generated OpenAPI is written (§3.7, default proposed: in memory, served at `/openapi.json`).
+Closed since the first draft: the generated OpenAPI is **in memory**, served at `/openapi.json` rather than written to `openapi/paths/` (§3.7); the version bump is **in place** (§3.7).
+
+Still open: the reference-data shape (§6), and the customer half of the namespace split (§3.6, rows 3 and 4).
 
 ---
 
@@ -160,12 +163,13 @@ export const handlers = {
 
 **What A1 deletes**
 
-| Gone                                                     | Because                                                                                |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `openapi/paths/parcels.openapi.ts` (196 lines)           | the admin half is generated; the customer half follows in A2                           |
-| `openapi/coverage.ts`                                    | drift between catalog and spec is _structurally impossible_ — they are the same object |
-| `smoke.ts:40-63` — the hardcoded 22 ids                  | derivable from the registries; the smoke test asserts the bijection instead            |
-| one of the three "add an operation" steps in `AGENTS.md` | the contract is one entry, not a route call plus a spec entry that must agree          |
+| Gone                                                                   | Because                                                                          |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| the staff half of `openapi/paths/parcels.openapi.ts` (196 -> 89 lines) | generated from the registry; the customer half follows in A2                     |
+| `smoke.ts:40-63` — the hardcoded 22 ids                                | surface ids now come from the registry, so adding one needs no edit to this file |
+| one of the three "add an operation" steps in `AGENTS.md`               | the contract is one entry, not a route call plus a spec entry that must agree    |
+
+**`openapi/coverage.ts` survived**, which the first draft of this plan got wrong. It is no longer needed _for a registry operation_ — those are generated from the same object that registered the policy, so there is nothing to drift. But 17 operations across `auth`, `jobs`, `tracking`, `pricing` and the customer `parcels` are still hand-written, and for those it is a real check that still catches real bugs. Deleting it now would throw away a working guard. Its scope is now documented: it guards the hand-written fragments, and goes when the last module moves to a registry.
 
 **What A1 does not change:** `defineOperation` itself, `assertPolicyCatalog`'s fail-closed behaviour, the `audience` check, or the DTOs. Handlers keep their current bodies — this is a wiring change, not a business-logic change.
 
@@ -256,35 +260,37 @@ If A1 lands first, `defineSurface` derives ids and the regex is the only thing t
 
 `defineOperation`'s second argument is the **absolute mounted path**, not a relative one, so both it and the OpenAPI fragment key must change together (`coverage.ts:65` compares them). Anything not listed keeps its current path and id.
 
-| Current id            | Audience  | New id                      | New path                          |
-| --------------------- | --------- | --------------------------- | --------------------------------- |
-| `parcel.list`         | admin     | `admin.parcel.list`         | `GET /admin/parcels`              |
-| `parcel.read`         | admin     | `admin.parcel.read`         | `GET /admin/parcels/:id`          |
-| `parcel.create`       | admin     | `admin.parcel.create`       | `POST /admin/parcels`             |
-| `parcel.updateStatus` | admin     | `admin.parcel.updateStatus` | `PATCH /admin/parcels/:id/status` |
-| `parcel.cancel`       | admin     | `admin.parcel.cancel`       | `POST /admin/parcels/:id/cancel`  |
-| `parcel.listOwn`      | web       | `customer.parcel.list`      | `GET /customer/parcels`           |
-| `parcel.readOwn`      | web       | `customer.parcel.read`      | `GET /customer/parcels/:id`       |
-| `parcel.createOwn`    | web       | `customer.parcel.create`    | `POST /customer/parcels`          |
-| `health.*` (2)        | public    | unchanged                   | unchanged                         |
-| `auth.*` (7)          | mixed     | unchanged                   | unchanged                         |
-| `tracking.lookup`     | public    | unchanged                   | unchanged                         |
-| `pricing.quote`       | admin+web | unchanged                   | unchanged — see 3.6               |
-| `job.*` (3)           | riders    | unchanged                   | unchanged — see 3.7               |
+| Current id            | Audience  | New id                       | New path                          |
+| --------------------- | --------- | ---------------------------- | --------------------------------- |
+| `parcel.list`         | admin     | `admin.parcels.list`         | `GET /admin/parcels`              |
+| `parcel.read`         | admin     | `admin.parcels.read`         | `GET /admin/parcels/:id`          |
+| `parcel.create`       | admin     | `admin.parcels.create`       | `POST /admin/parcels`             |
+| `parcel.updateStatus` | admin     | `admin.parcels.updateStatus` | `PATCH /admin/parcels/:id/status` |
+| `parcel.cancel`       | admin     | `admin.parcels.cancel`       | `POST /admin/parcels/:id/cancel`  |
+| `parcel.listOwn`      | web       | `customer.parcel.list`       | `GET /customer/parcels`           |
+| `parcel.readOwn`      | web       | `customer.parcel.read`       | `GET /customer/parcels/:id`       |
+| `parcel.createOwn`    | web       | `customer.parcel.create`     | `POST /customer/parcels`          |
+| `health.*` (2)        | public    | unchanged                    | unchanged                         |
+| `auth.*` (7)          | mixed     | unchanged                    | unchanged                         |
+| `tracking.lookup`     | public    | unchanged                    | unchanged                         |
+| `pricing.quote`       | admin+web | unchanged                    | unchanged — see 3.7               |
+| `job.*` (3)           | riders    | unchanged                    | unchanged — see 3.8               |
 
-Note the customer paths get **shorter**, not longer: `/parcels/mine/list` becomes `/customer/parcels`, because the namespace now says what `/mine` was repeating. The `mine` suffix disappears rather than being kept alongside.
+**The admin ids are plural** (`admin.parcels.list`, not `admin.parcel.list`) because the id is `namespace` + feature key + operation key, and the feature is `parcels` to match the tag and the `parcels.dto.ts` it draws its schemas from. That is the point of deriving the id: you read the registry and know the id without consulting a table of conventions.
+
+Note the customer paths get **shorter**, not longer: `/parcels/mine/list` becomes `/customer/parcels`, because the namespace now says what `/mine` was repeating. The `mine` suffix disappears rather than being kept alongside. **Still to do in A2** — the customer side is a registry of its own (`customer/registry.ts`), which is the only remaining piece of the split.
 
 ### 3.6 A2 files that must change — 5
 
 A1 already removed the spec fragments and the smoke id list, so this is the residue:
 
-| #   | File                                                         | Change                                                                             |
-| --- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| 1   | `apps/api/src/shared/auth/policy.ts`                         | regex + `NAMESPACES` + error message (§3.4)                                        |
-| 2   | `apps/api/src/modules/index.ts`                              | 2 new entries: `{ name: "admin", basePath: "/admin" }` and the customer equivalent |
-| 3   | `apps/api/src/modules/customer/{index,registry,handlers}.ts` | **new** — the 3 customer operations, split out of `parcels.routes.ts`              |
-| 4   | `apps/api/src/modules/parcels/parcels.dto.ts`                | staff and customer schemas split to their two registries                           |
-| 5   | `apps/admin/src/lib/endpoints.ts`                            | 5 path strings, lines 34-62 — the **only** client change                           |
+| #   | File                                                         | Change                                                                        |
+| --- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| 1   | `apps/api/src/shared/auth/policy.ts`                         | regex + `NAMESPACES` + error message (§3.4) — **done in A1**                  |
+| 2   | `apps/api/src/modules/index.ts`                              | `{ name: "admin", basePath: "/admin" }` — **done in A1**                      |
+| 3   | `apps/api/src/modules/customer/{index,registry,handlers}.ts` | **not started** — the 3 customer operations, split out of `parcels.routes.ts` |
+| 4   | `apps/api/src/modules/parcels/parcels.dto.ts`                | **not started** — staff and customer schemas split to their two registries    |
+| 5   | `apps/admin/src/lib/endpoints.ts`                            | 5 path strings, lines 34-62 — **done in A1**                                  |
 
 `apps/api/src/modules/parcels/parcels.service.ts` and `parcels.repository.ts` are **not** in the list — they do not move, so `check:read-paths.ts` keeps importing them from the same path.
 
@@ -297,9 +303,9 @@ Two things that are **safe** and worth knowing so nobody re-checks them:
 
 **`pricing.quote` stays at `/pricing/quote`.** It is genuinely cross-audience (admin and web both call it) and serves one calculation. Splitting it would duplicate the DTOs for one function. Same category as `auth.*` — a shared module, not a surface. Revisit in Phase 2 if `pricing_rules` CRUD makes the audiences diverge.
 
-**Where the generated OpenAPI lives.** A1 generates the admin fragment. Whether it is written to `src/openapi/paths/` (where `AGENTS.md` documents it) or kept in memory and only ever served at `/openapi.json` is a real choice: the second removes a file-writing concern but breaks the documented path contract. **Default: generate in memory, serve at `/openapi.json`, and update `AGENTS.md` to say the spec is derived rather than authored.** That is the honest end state once a registry exists.
+**Where the generated OpenAPI lives — decided: in memory.** `surface-spec.ts` returns a `paths` object that `document.ts` spreads in; nothing is written to `src/openapi/paths/`. The spec is derived, not authored, and `AGENTS.md` now says so. A file on disk would be a second thing to keep in sync, which is the thing this change exists to remove.
 
-**Version bump: in place, or `/api/v2`?** Recommendation is **in place**, because this project is pre-production — `docs/handoff.md` lists live E2E as impossible and there is no deployed consumer to break. Mount both `v1` (frozen) and `v2` only if something outside this repo already calls the API. **Confirm before starting: is any external system calling this API today?**
+**Version bump — decided: in place.** The project is pre-production; `docs/handoff.md` lists live E2E as impossible and there is no deployed consumer to break. The paths moved under `/api/v1` rather than a new `/api/v2`. If an external caller does exist, this decision needs revisiting before it ships.
 
 ### 3.8 Riders are deliberately out of scope
 
@@ -307,12 +313,15 @@ Two things that are **safe** and worth knowing so nobody re-checks them:
 
 ### 3.9 Gate
 
-**After A1**
+**After A1 — passed**
 
-1. `bun run --cwd apps/api smoke` passes with the id list replaced by the bijection check.
-2. `GET /openapi.json` still shows all 5 parcel operations, with the same bodies as before — compare the JSON, not your memory.
-3. `openapi/coverage.ts` is deleted and nothing imports it.
-4. A deliberately broken key (rename one handler) fails boot with both orphans named.
+1. ✅ `smoke` green, 22 operations, 0 failures.
+2. ✅ `/openapi.json` diffed against the pre-change baseline. Every request body, response body, status code and error description is **byte-identical**. The only differences are the intended `admin.parcels.*` rename and `/admin` path prefix, plus `minLength: 1` appearing on the `id` path param — the hand-written fragment claimed `{ type: "string" }` while the DTO has always rejected an empty id. That is the payoff of deriving from the schema.
+3. ⚠️ `openapi/coverage.ts` is **kept**, deliberately — see the A1 table above. Gate item corrected rather than met.
+4. ✅ A renamed handler key fails boot with both orphans named: `registry entries with no handler: parcels.cancel; handlers with no registry entry: parcels.cancle`.
+5. ✅ `bun run typecheck` green across all six workspaces.
+
+A1 added two smoke assertions not in the original gate: every `/admin` operation requires the `admin` audience, and every `admin.`-prefixed id is mounted under `/admin`. The prefix is only worth having if something enforces it.
 
 **After A2**
 

@@ -10,6 +10,13 @@ import { specOperations } from "./document"
  * exists to stop them drifting apart — the failure mode being a route that is
  * enforced one way and documented another.
  *
+ * **This now guards only the hand-written fragments.** An operation declared in
+ * a registry (`modules/<surface>/registry.ts`) is generated into the spec from the same
+ * object that registered its policy, so it is trivially consistent and this check
+ * says nothing useful about it. As each remaining module moves to a registry,
+ * the surface area of this file shrinks; when the last one does, it can be
+ * deleted along with the `paths/` directory.
+ *
  * Three properties are checked, each of which has actually caught something:
  *   1. every enforced operation is documented, and vice versa (no orphan either way)
  *   2. a documented operation's id and method match the catalog's, so `operationId`
@@ -18,8 +25,8 @@ import { specOperations } from "./document"
  *      leave a spec entry pointing at a URL that 404s
  *
  * This is a boot assertion, not a test-only helper: a missing entry fails the
- * process at startup, exactly like `assertPolicyCatalog`, rather than shipping
- * a quietly incomplete spec.
+ * process at startup, exactly like `assertPolicyCatalog`, rather than shipping a
+ * quietly incomplete spec.
  */
 
 type Mismatch = string[]
