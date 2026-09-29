@@ -4,13 +4,16 @@
  *
  * Builds the real app and asserts the things that only break once modules are
  * wired together: every registered route has a policy entry, the catalog has no
- * duplicates, and a public route answers while a protected one fails closed.
+ * duplicates, a surface's registry and handlers agree, and a public route answers
+ * while a protected one fails closed.
  *
  * Runs without a database — middleware is never reached because the failures
  * happen in routing and policy, which is the point.
  */
 import { createApp } from "../src/app"
+import { ADMIN_SURFACE } from "../src/modules/admin/registry"
 import { getPolicyCatalog } from "../src/shared/auth/policy"
+import { surfaceOperations } from "../src/shared/auth/surface"
 import { findCoverageMismatches } from "../src/openapi/coverage"
 import { moduleManifest } from "../src/modules"
 
@@ -37,7 +40,8 @@ async function main(): Promise<void> {
   console.log("· policy catalog")
   check("catalog is populated", catalog.size > 0, `size=${catalog.size}`)
 
-  const expectedOps = [
+  // Operations declared by hand, one `defineOperation` call each.
+  const handWrittenOps = [
     "health.read",
     "health.ready",
     "auth.loginAdmin",
@@ -48,11 +52,6 @@ async function main(): Promise<void> {
     "auth.me",
     "auth.logout",
     "tracking.lookup",
-    "parcel.list",
-    "parcel.read",
-    "parcel.create",
-    "parcel.updateStatus",
-    "parcel.cancel",
     "parcel.listOwn",
     "parcel.readOwn",
     "parcel.createOwn",
@@ -62,14 +61,36 @@ async function main(): Promise<void> {
     "job.reportOutcome",
   ]
 
-  for (const id of expectedOps) {
+  for (const id of handWrittenOps) {
     check(`registered: ${id}`, catalog.has(id))
+  }
+
+  // Operations declared by a surface. Their ids are derived, so the list is not
+  // restated here — a registry entry that fails to register is the failure this
+  // catches, and adding one to a registry needs no change to this file.
+  const surfaceOps = surfaceOperations(ADMIN_SURFACE)
+  check("admin surface declares operations", surfaceOps.length > 0, `${surfaceOps.length}`)
+  for (const operation of surfaceOps) {
+    const entry = catalog.get(operation.id)
+    check(
+      `registered: ${operation.id}`,
+      entry !== undefined &&
+        entry.path === operation.mountedPath &&
+        entry.method === operation.method,
+      entry
+        ? `mounted at ${entry.method} ${entry.path}, registry says ${operation.method} ${operation.mountedPath}`
+        : "absent",
+    )
   }
 
   console.log("· fail-closed behaviour")
 
-  const unauthenticated = await app.request("/api/v1/parcels")
-  const body = (await unauthenticated.json()) as { error?: string; code?: string; success?: boolean }
+  const unauthenticated = await app.request("/api/v1/admin/parcels")
+  const body = (await unauthenticated.json()) as {
+    error?: string
+    code?: string
+    success?: boolean
+  }
   check(
     "protected route rejects an anonymous caller",
     unauthenticated.status === 401,
@@ -111,6 +132,21 @@ async function main(): Promise<void> {
     "rider job list is not reachable anonymously",
     riderOps !== undefined && riderOps.audience?.includes("riders") === true,
     JSON.stringify(riderOps),
+  )
+
+  // An audience axis is only meaningful if it holds on both sides: an admin
+  // operation must require `admin`, and nothing outside the admin mount may.
+  const adminOps = [...catalog.values()].filter((entry) => entry.path.startsWith("/admin"))
+  check(
+    "every /admin operation requires the admin audience",
+    adminOps.length > 0 && adminOps.every((entry) => entry.audience?.includes("admin") === true),
+    `${adminOps.length} admin operations`,
+  )
+  check(
+    "every admin-prefixed id is mounted under /admin",
+    [...catalog.keys()]
+      .filter((id) => id.startsWith("admin."))
+      .every((id) => catalog.get(id)?.path.startsWith("/admin") === true),
   )
 
   console.log("· OpenAPI coverage")

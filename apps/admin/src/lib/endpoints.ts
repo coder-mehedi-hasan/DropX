@@ -31,7 +31,7 @@ export function logout() {
 }
 
 export function listParcels(params: ParcelListParams, signal?: AbortSignal) {
-  return api.get<Page<Parcel>>("/parcels", {
+  return api.get<Page<Parcel>>("/admin/parcels", {
     query: {
       page: params.page,
       limit: params.limit,
@@ -47,19 +47,19 @@ export function listParcels(params: ParcelListParams, signal?: AbortSignal) {
 }
 
 export function getParcel(parcelId: string, signal?: AbortSignal) {
-  return api.get<ParcelDetail>(`/parcels/${parcelId}`, signal ? { signal } : undefined)
+  return api.get<ParcelDetail>(`/admin/parcels/${parcelId}`, signal ? { signal } : undefined)
 }
 
 export function createParcel(body: CreateParcelBody) {
-  return api.post<Parcel>("/parcels", body)
+  return api.post<Parcel>("/admin/parcels", body)
 }
 
 export function updateParcelStatus(parcelId: string, body: UpdateParcelStatusBody) {
-  return api.patch<Parcel>(`/parcels/${parcelId}/status`, body)
+  return api.patch<Parcel>(`/admin/parcels/${parcelId}/status`, body)
 }
 
 export function cancelParcel(parcelId: string, body: CancelParcelBody) {
-  return api.post<Parcel>(`/parcels/${parcelId}/cancel`, body)
+  return api.post<Parcel>(`/admin/parcels/${parcelId}/cancel`, body)
 }
 
 /** Public — the admin's tracking screen and the parcel timeline share this. */

@@ -1,4 +1,5 @@
 import { getConfig } from "../config"
+import { ADMIN_SURFACE } from "../modules/admin/registry"
 import { getPolicyCatalog, type CatalogEntry } from "../shared/auth/policy"
 import { bearerSecurity, schemas as componentSchemas, securitySchemes } from "./components"
 import { errorResponseSchema, jsonSchemaOf } from "./schema"
@@ -9,21 +10,29 @@ import { jobsPaths, jobsTags } from "./paths/jobs.openapi"
 import { parcelsPaths, parcelsTags } from "./paths/parcels.openapi"
 import { pricingPaths, pricingTags } from "./paths/pricing.openapi"
 import { trackingPaths, trackingTags } from "./paths/tracking.openapi"
+import { buildSurfacePaths, buildSurfaceTags } from "./surface-spec"
 
 /**
  * The OpenAPI document.
  *
- * Assembled from the per-domain `*.openapi.ts` fragments plus the live policy
- * catalog. Request and response schemas come from the same Zod DTOs the routes
- * validate with, so the published contract and the runtime contract are the same
- * object. See `schema.ts` for why that matters and `coverage.ts` for the
- * guarantee that no operation is documented one way and enforced another.
+ * Assembled from the hand-written `*.openapi.ts` fragments, the generated
+ * fragment for each operation surface, and the live policy catalog. Request and
+ * response schemas come from the same Zod DTOs the routes validate with, so the
+ * published contract and the runtime contract are the same object.
+ *
+ * Two sources of paths coexist on purpose, and the difference is whether the
+ * operation declares itself in a registry:
+ *   - a surface (`admin`) generates its paths from the registry, so the spec and
+ *     the policy catalog are the same object and cannot disagree;
+ *   - a hand-written module (`auth`, `jobs`, …) still has a fragment, because it
+ *     has no registry to read from. `coverage.ts` is the check for those.
  */
 
 const paths = {
   ...healthPaths,
   ...authPaths,
   ...trackingPaths,
+  ...buildSurfacePaths(ADMIN_SURFACE),
   ...parcelsPaths,
   ...jobsPaths,
   ...pricingPaths,
@@ -33,6 +42,7 @@ const tags = [
   ...healthTags,
   ...authTags,
   ...trackingTags,
+  ...buildSurfaceTags(ADMIN_SURFACE),
   ...parcelsTags,
   ...jobsTags,
   ...pricingTags,

@@ -1,6 +1,7 @@
 import type { Hono } from "hono"
 
 import type { AppEnv } from "../types/env"
+import admin from "./admin"
 import auth from "./auth/auth.routes"
 import health from "./health/health.routes"
 import jobs from "./jobs/jobs.routes"
@@ -15,6 +16,10 @@ import tracking from "./tracking/tracking.routes"
  * `defineOperation` is what populates the policy catalog, a module missing from
  * this list also means its operations are unregistered — which `assertPolicyCatalog`
  * and the route smoke test will surface, rather than failing silently open.
+ *
+ * A *surface* (`admin`) is registered the same way as a hand-written module: it
+ * exports one composed router, and `mountSurface` has already registered and
+ * mounted each of its operations by the time this list is read.
  */
 export type FeatureModule = {
   name: string
@@ -26,6 +31,7 @@ const modules: readonly FeatureModule[] = [
   { name: "health", basePath: "/health", router: health },
   { name: "auth", basePath: "/auth", router: auth },
   { name: "tracking", basePath: "/tracking", router: tracking },
+  { name: "admin", basePath: "/admin", router: admin },
   { name: "parcels", basePath: "/parcels", router: parcels },
   { name: "jobs", basePath: "/jobs", router: jobs },
   { name: "pricing", basePath: "/pricing", router: pricing },

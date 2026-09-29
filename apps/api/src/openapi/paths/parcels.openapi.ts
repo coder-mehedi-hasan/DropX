@@ -5,30 +5,20 @@ import {
   parcelResponseSchema,
   parcelWithItemsResponseSchema,
   createOwnParcelSchema,
-  createParcelSchema,
-  updateParcelStatusSchema,
-  cancelParcelSchema,
 } from "../../modules/parcels/parcels.dto"
 
 /**
- * `parcels` operations — the admin and customer parcel surface.
+ * `parcels` operations — the **customer** surface only.
  *
- * The admin list and the customer list share one response envelope but accept
- * different filter inputs, so they are described separately even where the 200
- * body is identical.
+ * The five staff operations moved to the admin surface, where the registry
+ * generates this fragment. What remains is described here by hand because these
+ * operations are not in a registry yet; `coverage.ts` is the check that keeps
+ * this file honest against the policy catalog.
  */
 
 const json = (schema: ReturnType<typeof jsonSchemaOf>) => ({
   content: { "application/json": { schema } },
 })
-
-const idParam = {
-  name: "id",
-  in: "path",
-  required: true,
-  schema: { type: "string" },
-  description: "Parcel id.",
-} as const
 
 /** The shared list query, described from the DTO so params cannot drift. */
 const listQueryParams = () => {
@@ -42,49 +32,21 @@ const listQueryParams = () => {
 }
 
 const unauth = errorResponse("Not authenticated, or the token is missing/expired.")
-const forbidden = errorResponse(
-  "Missing a required permission, or outside the caller's branch/hub scope.",
-)
-const notFound = errorResponse("No such parcel in scope.")
 const notActive = errorResponse("The customer session is not ACTIVE (OTP not verified).")
-const validation = errorResponse("Validation failed, or no pricing rule covers the route/weight.")
+const notFound = errorResponse("No such parcel in scope.")
 
 const parcelPage = json(pageSchema(jsonSchemaOf(parcelResponseSchema, "output")))
 const parcelBody = json(jsonSchemaOf(parcelWithItemsResponseSchema, "output"))
-const parcel = json(jsonSchemaOf(parcelResponseSchema, "output"))
+
+const idParam = {
+  name: "id",
+  in: "path",
+  required: true,
+  schema: { type: "string" },
+  description: "Parcel id.",
+} as const
 
 export const parcelsPaths = {
-  "/parcels": {
-    get: {
-      operationId: "parcel.list",
-      summary: "List parcels (admin)",
-      description:
-        "Branch/hub-scoped list for staff. Ordering is limited to an allowlist of columns; an unknown `sortBy` is rejected rather than interpolated into SQL.",
-      tags: ["parcels"],
-      security: bearerSecurity,
-      parameters: listQueryParams(),
-      responses: {
-        200: { description: "A page of parcels.", ...parcelPage },
-        401: unauth,
-        403: forbidden,
-      },
-    },
-    post: {
-      operationId: "parcel.create",
-      summary: "Create a parcel (staff)",
-      description:
-        "Books a parcel on a customer's behalf, so `senderCustomerId` is required. The delivery fee is quoted server-side from the destination zone and is never accepted from the client.",
-      tags: ["parcels"],
-      security: bearerSecurity,
-      requestBody: { required: true, ...json(jsonSchemaOf(createParcelSchema, "input")) },
-      responses: {
-        201: { description: "Created.", ...parcelBody },
-        401: unauth,
-        403: forbidden,
-        422: validation,
-      },
-    },
-  },
   "/parcels/mine": {
     post: {
       operationId: "parcel.createOwn",
@@ -98,7 +60,7 @@ export const parcelsPaths = {
         201: { description: "Created.", ...parcelBody },
         401: unauth,
         403: notActive,
-        422: validation,
+        422: errorResponse("Validation failed, or no pricing rule covers the route/weight."),
       },
     },
   },
@@ -134,63 +96,8 @@ export const parcelsPaths = {
       },
     },
   },
-  "/parcels/{id}": {
-    get: {
-      operationId: "parcel.read",
-      summary: "Read a parcel (admin)",
-      description: "Full parcel with its items, scoped to the caller's branch/hubs.",
-      tags: ["parcels"],
-      security: bearerSecurity,
-      parameters: [idParam],
-      responses: {
-        200: { description: "The parcel.", ...parcelBody },
-        401: unauth,
-        403: forbidden,
-        404: notFound,
-      },
-    },
-  },
-  "/parcels/{id}/status": {
-    patch: {
-      operationId: "parcel.updateStatus",
-      summary: "Update parcel status (admin)",
-      description:
-        "Advances the parcel lifecycle. A transition that is not legal from the current status is rejected with `INVALID_STATE_TRANSITION`.",
-      tags: ["parcels"],
-      security: bearerSecurity,
-      parameters: [idParam],
-      requestBody: { required: true, ...json(jsonSchemaOf(updateParcelStatusSchema, "input")) },
-      responses: {
-        200: { description: "Updated.", ...parcel },
-        401: unauth,
-        403: forbidden,
-        404: notFound,
-        409: errorResponse(
-          "The requested status transition is not allowed from the current status.",
-        ),
-      },
-    },
-  },
-  "/parcels/{id}/cancel": {
-    post: {
-      operationId: "parcel.cancel",
-      summary: "Cancel a parcel (admin)",
-      description: "Cancels a parcel that has not been delivered yet. A reason is required.",
-      tags: ["parcels"],
-      security: bearerSecurity,
-      parameters: [idParam],
-      requestBody: { required: true, ...json(jsonSchemaOf(cancelParcelSchema, "input")) },
-      responses: {
-        200: { description: "Cancelled.", ...parcel },
-        401: unauth,
-        403: forbidden,
-        404: notFound,
-        409: errorResponse("The parcel cannot be cancelled from its current status."),
-      },
-    },
-  },
 } as const
 
 export const parcelsTags = [
-  { name: "parcels", description: "Parcel booking plus the admin and customer parcel views." },
+  { name: "parcels", description: "Customer parcel booking and the customer's own parcel views." },
 ]
