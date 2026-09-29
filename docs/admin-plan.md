@@ -11,6 +11,7 @@
 | Decision                                   | Choice                                                                                          | Section |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------- |
 | Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice | §3      |
+| Phase 0 scope                              | **the `reference` module only** — the `audit` writer is deferred (§4, Phase 0)                  | §4      |
 | Status                                     | **Phase A complete** — registry on two surfaces, namespace split done, no hand-written parcels  | §3.9    |
 | How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                    | §3.3    |
 | What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                   | §3.5    |
@@ -356,18 +357,22 @@ A1 added two smoke assertions not in the original gate: every `/admin` operation
 
 Sequential. Each phase's **Gate** must pass before the next starts. Estimates assume one engineer familiar with the codebase; they exclude review, the restructure in §3, and the cross-cutting work in §5.
 
-### Phase 0 — Foundation · ~2-3 days · 2 modules, ~10 operations
+### Phase 0 — Foundation · ~2-3 days · 1 module, ~7 operations
 
-Nothing else is buildable without this. Both modules land as registry entries in the `admin/` surface established in §3, so they mount at `/api/v1/admin/reference/...` and `/api/v1/admin/audit-logs` with `admin.*` ids — no `*.routes.ts` file to write, just a registry entry and a handler.
+Nothing else is buildable without this. The module lands as a registry entry in the `admin/` surface established in §3, so it mounts at `/api/v1/admin/reference/...` with `admin.*` ids — no `*.routes.ts` file to write, just a registry entry and a handler. The `audit` module is deferred; see below.
 
 **API**
 
-| Module      | Ops | Registry entry          | Contents                                                                                                                    |
-| ----------- | --- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `reference` | ~7  | `registry/reference.ts` | read endpoints for hubs, zones, branches, customer search, users, riders, vehicles — all gated by the matching `*.view` key |
-| `audit`     | ~3  | `registry/audit.ts`     | `GET /audit-logs` (`audit.view`) **plus the writer** wired into every mutation service                                      |
+| Module      | Ops | Registry entry          | Contents                                                                                                                                           |
+| ----------- | --- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reference` | ~7  | `registry/reference.ts` | read endpoints for hubs, zones, branches, customer search, users, riders, vehicles — all gated by the matching `*.view` key                        |
+| `audit`     | ~3  | deferred                | **OUT OF SCOPE for now.** The `audit.view` key and the `audit_logs` table stay; nothing consumes them. Revisit before the first production deploy. |
 
 `audit_logs` has a seeded permission, a documented purpose, and a UI claim that is currently false. Retrofitting a writer into 20 mutation services later costs several times what doing it now costs.
+
+**Deferred, and that is a decision with a cost.** The `audit` module is out of scope for now, so Phase 0 is the `reference` module alone. What that buys: one surface, seven read operations, and the picker layer every later phase depends on — reached with one concept in the code. What it defers: the writer. Every mutation service that lands in Phases 1-4 is a service the writer will later have to be added to, and a service written without it is one someone has to remember to come back for.
+
+The mitigation is that **nothing may claim audit history exists** — no screen, no doc, no `/audit-logs` route — until the writer does. `GET /audit-logs` should not be added on its own either: a readable empty table is worse than no route, because it looks like a finished feature.
 
 **UI — `packages/ui`, then `apps/admin`**
 
@@ -377,7 +382,9 @@ Nothing else is buildable without this. Both modules land as registry entries in
 4. `usePaginatedListWhere` for TanStack Router — URL-driven filters, debounce, page reset.
 5. Replace the raw-ID inputs in `parcel-create-dialog.tsx` with real comboboxes; add the missing `hubId` filter control.
 
-**Gate:** the parcel-create dialog has zero numeric-ID text inputs, and the parcels list has a working `hubId` control. One reference-driven list screen and one reference-driven CRUD screen exist end to end, as the pattern for Phases 1-4.
+**Gate:** the parcel-create dialog has zero free-text ID inputs — the six it has today (`senderCustomerId`, `receiverCustomerId`, `originHubId`, `destinationHubId`, `originZoneId`, `destinationZoneId`) are all comboboxes backed by `reference` — and the parcels list has a working `hubId` control. One reference-driven list screen and one reference-driven CRUD screen exist end to end, as the pattern for Phases 1-4.
+
+The six fields above are the whole reason Phase 0 exists, and they set the minimum: a customer search and two list endpoints. Branches, users, riders, and vehicles are speculative until a screen needs them — see §6 for whether to declare them now or when the first picker asks.
 
 ---
 
