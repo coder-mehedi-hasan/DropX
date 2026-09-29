@@ -1,36 +1,19 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { LayoutDashboard, PackageSearch, Truck } from "lucide-react"
+import { Building2, LayoutDashboard, PackageSearch, Truck, Warehouse } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { DropXLogo, cn } from "@dropx/ui"
 
 import { useAuth } from "@/lib/auth"
-import { DEFAULT_PARCELS_SEARCH } from "@/lib/parcels"
-import type { ParcelListSearch } from "@/lib/parcels"
+import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH, DEFAULT_PARCELS_SEARCH } from "@/lib/parcels"
+import type { BranchesSearch, HubsSearch, ParcelListSearch } from "@/lib/parcels"
 import type { PermissionKey } from "@/lib/permissions"
-
-/**
- * `validateSearch` on `/parcels` makes its search object required, so that nav
- * entry carries one while the untyped paths must not.
- *
- * `permission: null` means the screen is open to any signed-in staff member; a
- * key hides the item outright so the sidebar never advertises a screen that
- * would immediately render a refusal.
- */
-export type NavItem =
-  | {
-      label: string
-      to: "/parcels"
-      search: ParcelListSearch
-      icon: LucideIcon
-      permission: PermissionKey | null
-    }
-  | {
-      label: string
-      to: "/" | "/tracking"
-      search?: undefined
-      icon: LucideIcon
-      permission: PermissionKey | null
-    }
+export type NavItem = {
+  label: string
+  to: "/" | "/parcels" | "/tracking" | "/branches" | "/hubs"
+  search?: ParcelListSearch | BranchesSearch | HubsSearch | undefined
+  icon: LucideIcon
+  permission: PermissionKey | null
+}
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard, permission: null },
@@ -42,6 +25,20 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: "parcels.view",
   },
   { label: "Tracking", to: "/tracking", icon: Truck, permission: "parcels.view" },
+  {
+    label: "Branches",
+    to: "/branches",
+    search: DEFAULT_BRANCHES_SEARCH,
+    icon: Building2,
+    permission: "branches.view",
+  },
+  {
+    label: "Hubs",
+    to: "/hubs",
+    search: DEFAULT_HUBS_SEARCH,
+    icon: Warehouse,
+    permission: "hubs.view",
+  },
 ]
 
 export function Sidebar() {

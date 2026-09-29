@@ -37,6 +37,13 @@ export type HubRef = {
   status: HubStatus
 }
 
+export type BranchRef = {
+  id: string
+  name: string
+  code: string
+  status: "ACTIVE" | "INACTIVE"
+}
+
 export type ZoneRef = {
   id: string
   name: string
@@ -60,6 +67,9 @@ const CUSTOMER_COLUMNS = "c.id, c.name, c.phone, c.email, c.type, c.status"
 const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status"] as const
 const ZONE_SORT_COLUMNS = ["z.name", "z.code", "z.status"] as const
 const CUSTOMER_SORT_COLUMNS = ["c.name", "c.phone", "c.created_at", "c.id"] as const
+const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status"] as const
+
+const BRANCH_COLUMNS = "b.id, b.name, b.code, b.status"
 
 /**
  * `hubs.branch_id` means a hub belongs to exactly one branch, so a hub picker
@@ -90,6 +100,34 @@ async function pageOf<T>(
   ])
 
   return { nodes: rows.rows.map(decode), totalCount }
+}
+
+export type ListBranchesFilter = {
+  search?: string | undefined
+}
+
+export async function listBranchRefs(
+  db: Executor,
+  params: ListParams,
+  filter: ListBranchesFilter,
+): Promise<{ nodes: BranchRef[]; totalCount: number }> {
+  const builder = new QueryBuilder().select(BRANCH_COLUMNS).from(TABLES.branches, "b")
+  builder.whereSearch(filter.search, ["b.name", "b.code"])
+
+  return pageOf<BranchRef>(
+    db,
+    builder.orderByListParams(params, BRANCH_SORT_COLUMNS, [
+      { column: "b.name", direction: "asc" },
+      { column: "b.id", direction: "asc" },
+    ]),
+    params,
+    (row) => ({
+      id: toId(row.id),
+      name: String(row.name),
+      code: String(row.code),
+      status: row.status as "ACTIVE" | "INACTIVE",
+    }),
+  )
 }
 
 export type ListHubRefsFilter = {

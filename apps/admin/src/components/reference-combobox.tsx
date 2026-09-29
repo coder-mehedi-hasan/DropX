@@ -16,8 +16,13 @@ import {
   PopoverTrigger,
 } from "@dropx/ui"
 
-import { listHubsForPicker, listZonesForPicker, searchCustomersForPicker } from "@/lib/endpoints"
-import type { CustomerOption, HubOption, ZoneOption } from "@/lib/types"
+import {
+  listBranchesForPicker,
+  listHubsForPicker,
+  listZonesForPicker,
+  searchCustomersForPicker,
+} from "@/lib/endpoints"
+import type { BranchOption, CustomerOption, HubOption, ZoneOption } from "@/lib/types"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 
 /**
@@ -38,7 +43,7 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
  * so the page size here is a display concern rather than a safety one.
  */
 
-export type PickerSource = "hubs" | "zones" | "customers"
+export type PickerSource = "branches" | "hubs" | "zones" | "customers"
 
 type Row = {
   id: string
@@ -61,6 +66,15 @@ const PAGE_SIZE = 25
  * casts, and a cast here would compile while quietly reading `code` off a
  * customer. Narrowing on `source` is what makes these type-safe.
  */
+function toBranchRows(nodes: readonly BranchOption[]): Row[] {
+  return nodes.map((branch) => ({
+    id: branch.id,
+    label: branch.name,
+    hint: branch.code,
+    status: branch.status,
+  }))
+}
+
 function toHubRows(nodes: readonly HubOption[]): Row[] {
   return nodes.map((hub) => ({
     id: hub.id,
@@ -90,6 +104,13 @@ function useReferenceRows(
 ): { rows: Row[]; isFetching: boolean; isError: boolean } {
   const params = { page: 1, limit: PAGE_SIZE, search: search || undefined }
 
+  const branches = useQuery({
+    queryKey: ["reference", "branches", params],
+    queryFn: ({ signal }) => listBranchesForPicker(params, signal),
+    enabled: enabled && source === "branches",
+    staleTime: 60_000,
+  })
+
   const hubs = useQuery({
     queryKey: ["reference", "hubs", params],
     queryFn: ({ signal }) => listHubsForPicker(params, signal),
@@ -111,23 +132,33 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
-  // Only the matching query is enabled, so the other two never hold data. Their
-  // pending flags are read anyway: an unused query is `isFetching === false`,
-  // which is exactly the answer wanted for a source that is not in play.
+  // Only the matching query is enabled, so the other three never hold data.
+  // Their pending flags are read anyway: an unused query is
+  // `isFetching === false`, which is exactly the answer wanted for a source
+  // that is not in play.
   const isFetching =
-    source === "hubs"
-      ? hubs.isFetching
-      : source === "zones"
-        ? zones.isFetching
-        : customers.isFetching
+    source === "branches"
+      ? branches.isFetching
+      : source === "hubs"
+        ? hubs.isFetching
+        : source === "zones"
+          ? zones.isFetching
+          : customers.isFetching
   const isError =
-    source === "hubs" ? hubs.isError : source === "zones" ? zones.isError : customers.isError
+    source === "branches"
+      ? branches.isError
+      : source === "hubs"
+        ? hubs.isError
+        : source === "zones"
+          ? zones.isError
+          : customers.isError
 
   const rows = React.useMemo(() => {
+    if (source === "branches") return toBranchRows(branches.data?.nodes ?? [])
     if (source === "hubs") return toHubRows(hubs.data?.nodes ?? [])
     if (source === "zones") return toZoneRows(zones.data?.nodes ?? [])
     return toCustomerRows(customers.data?.nodes ?? [])
-  }, [source, hubs.data, zones.data, customers.data])
+  }, [source, branches.data, hubs.data, zones.data, customers.data])
 
   return { rows, isFetching, isError }
 }

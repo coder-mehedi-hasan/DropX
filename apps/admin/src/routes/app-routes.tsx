@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell"
 import { RequirePermission } from "@/lib/auth"
 
 import { rootRoute } from "./root"
+import { branchesSearchSchema, hubsSearchSchema } from "./org-search-params"
 import { loginSearchSchema, parcelsSearchSchema, trackingSearchSchema } from "./search-params"
 
 /**
@@ -27,6 +28,14 @@ const ParcelDetailPage = lazyRouteComponent(
 const TrackingPage = lazyRouteComponent(
   () => import("@/features/tracking/tracking-page"),
   "TrackingPage",
+)
+const BranchesListPage = lazyRouteComponent(
+  () => import("@/features/org/branches-list-page"),
+  "BranchesListPage",
+)
+const HubsListPage = lazyRouteComponent(
+  () => import("@/features/org/hubs-list-page"),
+  "HubsListPage",
 )
 
 export const loginRoute = createRoute({
@@ -72,6 +81,20 @@ export const trackingRoute = createRoute({
   component: TrackingRoute,
 })
 
+export const branchesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/branches",
+  validateSearch: branchesSearchSchema,
+  component: BranchesListPageRoute,
+})
+
+export const hubsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/hubs",
+  validateSearch: hubsSearchSchema,
+  component: HubsListPageRoute,
+})
+
 /**
  * These wrappers exist so the permission key that guards a screen sits directly
  * above that screen's route, instead of being buried inside a page component
@@ -100,6 +123,24 @@ function TrackingRoute() {
   return (
     <RequirePermission permission="parcels.view">
       <TrackingPage tracking={search.tracking} />
+    </RequirePermission>
+  )
+}
+
+function BranchesListPageRoute() {
+  const search = branchesRoute.useSearch()
+  return (
+    <RequirePermission permission="branches.view">
+      <BranchesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function HubsListPageRoute() {
+  const search = hubsRoute.useSearch()
+  return (
+    <RequirePermission permission="hubs.view">
+      <HubsListPage search={search} />
     </RequirePermission>
   )
 }

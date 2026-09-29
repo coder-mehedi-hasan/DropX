@@ -427,14 +427,14 @@ The "admin and their staffs" core: who works here, what they may do, which hubs 
 
 | Module      | Ops | Screens                                                        | Notes                                                              |
 | ----------- | --- | -------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `branches`  | 4   | **LANDED (API).** list, create/edit sheet                      | regional office; code, district, lat/lng, ACTIVE/INACTIVE          |
-| `hubs`      | 4   | **LANDED (API).** list, create/edit                            | ORIGIN/SORTING/TRANSIT/DESTINATION, capacity, MAINTENANCE status   |
+| `branches`  | 4   | **LANDED (API + UI).** list and create sheet                   | regional office; code, district, lat/lng, ACTIVE/INACTIVE          |
+| `hubs`      | 4   | **LANDED (API + UI).** list and create sheet                   | ORIGIN/SORTING/TRANSIT/DESTINATION, capacity, MAINTENANCE status   |
 | `zones`     | 4   | list, create/edit                                              | geographic pricing areas                                           |
 | `users`     | 5   | list, create, edit, reset password, activate/deactivate        | `bootstrap-admin.ts` is currently the only writer of a `users` row |
 | `roles`     | 5   | **permission matrix editor**                                   | checkbox grid over all 40 keys                                     |
 | `customers` | 6   | list, detail (addresses, parcel history), activate TEMP→ACTIVE | also covers `customer_addresses`                                   |
 
-`branches` and `hubs` are the first two modules and they are landed as API only — the screens are the next step, and they follow the same pattern the parcels list established: a `ServerDataTable` over a registry operation, with the create/edit overlay as a `FormSheetShell`.
+`branches` and `hubs` are the first two modules and they are landed with screens as well as API. Both follow the pattern the parcels list established: a `ServerDataTable` over the registry operation, URL-owned list state, and a create overlay as a `FormSheetShell` — the same `OrgFormShell` for both, since branches and hubs share enough fields that two near-duplicates would be the failure mode. The hub-create form picks its branch from a `ReferenceCombobox`, which is why the `branches` picker endpoint was added to the `reference` feature.
 
 **The permission matrix is the highest-leverage screen in the product.** `apps/api/scripts/seed.ts` is `INSERT IGNORE` and never revokes, so a misconfigured role can only be fixed by hand-written SQL. This screen makes grants editable and revocable, which is the point of having `roles.view`/`roles.manage` at all.
 

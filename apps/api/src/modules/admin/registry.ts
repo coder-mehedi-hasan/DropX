@@ -1,8 +1,10 @@
 import { PERMISSIONS } from "../../shared/auth/permissions"
 import { defineSurface } from "../../shared/auth/surface"
 import {
+  branchRefResponseSchema,
   customerRefResponseSchema,
   hubRefResponseSchema,
+  listBranchesQuerySchema,
   listHubsQuerySchema,
   listZonesQuerySchema,
   searchCustomersQuerySchema,
@@ -262,8 +264,19 @@ export const ADMIN_SURFACE = defineSurface({
     reference: {
       tag: "reference",
       tagDescription:
-        "Read-only lookups that populate pickers: hubs, zones, and customer search. Narrow projections for comboboxes, not table dumps.",
+        "Read-only lookups that populate pickers: branches, hubs, zones, and customer search. Narrow projections for comboboxes, not table dumps.",
       operations: {
+        listBranches: {
+          method: "GET",
+          path: "/reference/branches",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.BRANCHES_VIEW] },
+          summary: "List branches (picker)",
+          successDescription: "A page of branches.",
+          description:
+            "Branch lookup for the hub-create picker. Narrow projection — name and code only, no city, coordinates or phone.",
+          query: listBranchesQuerySchema,
+          listNodes: branchRefResponseSchema,
+        },
         listHubs: {
           method: "GET",
           path: "/reference/hubs",

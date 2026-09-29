@@ -1,14 +1,22 @@
 import { buildPage, getDatabase, normalizeListParams, type ListParams, type Page } from "@dropx/db"
 
 import type { Scope } from "../../shared/auth/auth-context"
-import type { ListHubsQuery, ListZonesQuery, SearchCustomersQuery } from "./reference.dto"
+import type {
+  ListBranchesQuery,
+  ListHubsQuery,
+  ListZonesQuery,
+  SearchCustomersQuery,
+} from "./reference.dto"
 import {
+  listBranchRefs,
   listHubRefs,
   listZoneRefs,
   searchCustomerRefs,
+  type BranchRef,
   type CustomerRef,
   type HubRef,
   type ListHubRefsFilter,
+  type ListBranchesFilter,
   type ZoneRef,
 } from "./reference.repository"
 
@@ -75,6 +83,16 @@ export async function listZones(query: ListZonesQuery): Promise<Page<ZoneRef>> {
   const { nodes, totalCount } = await listZoneRefs(getDatabase(), params, {
     search: params.search,
   })
+
+  return buildPage(nodes, totalCount, params)
+}
+
+export async function listBranches(query: ListBranchesQuery): Promise<Page<BranchRef>> {
+  const params = pickerParams(query)
+
+  const { nodes, totalCount } = await listBranchRefs(getDatabase(), params, {
+    search: params.search,
+  } satisfies ListBranchesFilter)
 
   return buildPage(nodes, totalCount, params)
 }
