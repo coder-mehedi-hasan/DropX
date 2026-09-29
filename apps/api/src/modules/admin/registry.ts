@@ -9,6 +9,18 @@ import {
   zoneRefResponseSchema,
 } from "../reference/reference.dto"
 import {
+  branchIdParamSchema as branchIdParam,
+  branchResponseSchema as branchResponse,
+  createBranchSchema as createBranchBody,
+  createHubSchema as createHubBody,
+  hubIdParamSchema as hubIdParam,
+  hubResponseSchema as hubResponse,
+  listBranchesQuerySchema as listBranchesQuery,
+  listHubsQuerySchema as listHubsQuery,
+  updateBranchSchema as updateBranchBody,
+  updateHubSchema as updateHubBody,
+} from "../org/org.dto"
+import {
   cancelParcelSchema,
   createParcelSchema,
   listParcelsQuerySchema,
@@ -115,6 +127,120 @@ export const ADMIN_SURFACE = defineSurface({
             404: "No such parcel in scope.",
             409: "The parcel cannot be cancelled from its current status.",
           },
+        },
+      },
+    },
+
+    /**
+     * Organization: branches and hubs. The first Phase 1 surface, and the two
+     * things every other admin screen scopes on.
+     *
+     * Reads are company-wide by design — a branch manager creating a hub must
+     * pick its branch from a list, and that list is the whole company. Narrowing
+     * it to the manager's own branch would hide the branches they are allowed to
+     * create hubs under. Writes are gated instead: `branches.manage` and
+     * `hubs.manage` gate every mutation, `hubs.view` gates reads. The Scope guard
+     * that narrows parcel data to a caller's branch/hub does not apply to the
+     * organization tables themselves.
+     *
+     * `hubs` carries its branch's name and code in every row, so a list screen
+     * shows "Dhaka Sorting" without a second request per row.
+     */
+    org: {
+      tag: "organization",
+      tagDescription:
+        "The company's operating structure: branches, then the hubs that hang off them. Reads are company-wide; writes are gated on `branches.manage` and `hubs.manage`.",
+      operations: {
+        listBranches: {
+          method: "GET",
+          path: "/branches",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.BRANCHES_VIEW] },
+          summary: "List branches",
+          successDescription: "A page of branches.",
+          query: listBranchesQuery,
+          listNodes: branchResponse,
+        },
+        readBranch: {
+          method: "GET",
+          path: "/branches/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.BRANCHES_VIEW] },
+          summary: "Read a branch",
+          successDescription: "The branch.",
+          params: branchIdParam,
+          paramDescriptions: { id: "Branch id." },
+          response: branchResponse,
+          errors: { 404: "No such branch." },
+        },
+        createBranch: {
+          method: "POST",
+          path: "/branches",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.BRANCHES_MANAGE] },
+          summary: "Create a branch",
+          successDescription: "Created.",
+          body: createBranchBody,
+          response: branchResponse,
+          successStatus: 201,
+          errors: { 409: "A branch with that code already exists." },
+        },
+        updateBranch: {
+          method: "PATCH",
+          path: "/branches/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.BRANCHES_MANAGE] },
+          summary: "Update a branch",
+          successDescription: "Updated.",
+          params: branchIdParam,
+          paramDescriptions: { id: "Branch id." },
+          body: updateBranchBody,
+          response: branchResponse,
+          errors: { 404: "No such branch.", 409: "A branch with that code already exists." },
+        },
+        listHubs: {
+          method: "GET",
+          path: "/hubs",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.HUBS_VIEW] },
+          summary: "List hubs",
+          successDescription: "A page of hubs, each carrying its branch's name and code.",
+          description:
+            "Each row carries its branch alongside it, so a list screen does not need a join per row. Filterable by branch, type and status.",
+          query: listHubsQuery,
+          listNodes: hubResponse,
+        },
+        readHub: {
+          method: "GET",
+          path: "/hubs/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.HUBS_VIEW] },
+          summary: "Read a hub",
+          successDescription: "The hub, with its branch.",
+          params: hubIdParam,
+          paramDescriptions: { id: "Hub id." },
+          response: hubResponse,
+          errors: { 404: "No such hub." },
+        },
+        createHub: {
+          method: "POST",
+          path: "/hubs",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.HUBS_MANAGE] },
+          summary: "Create a hub",
+          successDescription: "Created.",
+          body: createHubBody,
+          response: hubResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such branch — pick an existing branch.",
+            409: "A hub with that code already exists.",
+          },
+        },
+        updateHub: {
+          method: "PATCH",
+          path: "/hubs/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.HUBS_MANAGE] },
+          summary: "Update a hub",
+          successDescription: "Updated.",
+          params: hubIdParam,
+          paramDescriptions: { id: "Hub id." },
+          body: updateHubBody,
+          response: hubResponse,
+          errors: { 404: "No such hub.", 409: "A hub with that code already exists." },
         },
       },
     },

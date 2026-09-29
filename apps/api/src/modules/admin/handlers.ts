@@ -4,6 +4,7 @@ import { actorId, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
 import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
+import * as org from "../org/org.service"
 import * as reference from "../reference/reference.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -106,6 +107,55 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     searchCustomers: async (c) => {
       const page = await reference.searchCustomers(c.req.valid("query"))
       return c.json(response.success(page))
+    },
+  },
+
+  /**
+   * Organization: branches and hubs. Thin transport — the service owns the
+   * FK-shaped failure (creating a hub against a missing branch surfaces as
+   * `NOT_FOUND` with the branch id in the detail, not a driver message), and
+   * nothing here decides scoping. Reads are company-wide by design; the policy
+   * on each operation is what gates who may touch what.
+   */
+  org: {
+    listBranches: async (c) => {
+      const page = await org.listBranches(c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    readBranch: async (c) => {
+      const branch = await org.getBranch(c.req.valid("param").id)
+      return c.json(response.success(branch))
+    },
+
+    createBranch: async (c) => {
+      const branch = await org.createBranch(c.req.valid("json"))
+      return c.json(response.success(branch), 201)
+    },
+
+    updateBranch: async (c) => {
+      const branch = await org.updateBranch(c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(branch))
+    },
+
+    listHubs: async (c) => {
+      const page = await org.listHubs(c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    readHub: async (c) => {
+      const hub = await org.getHub(c.req.valid("param").id)
+      return c.json(response.success(hub))
+    },
+
+    createHub: async (c) => {
+      const hub = await org.createHub(c.req.valid("json"))
+      return c.json(response.success(hub), 201)
+    },
+
+    updateHub: async (c) => {
+      const hub = await org.updateHub(c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(hub))
     },
   },
 }

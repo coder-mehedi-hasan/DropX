@@ -27,6 +27,7 @@ const auth = await import("../src/modules/auth/auth.repository")
 const actors = await import("../src/shared/auth/actor-loader")
 const pricing = await import("../src/modules/pricing/pricing.service")
 const reference = await import("../src/modules/reference/reference.repository")
+const org = await import("../src/modules/org/org.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -195,6 +196,34 @@ cases.push(
         codAmount: 0,
       }),
   },
+
+  // --- Organization: branches and hubs ------------------------------------
+  //
+  // Every sort key, because `sortBy` arrives from a client and the allowlist is
+  // the only thing between it and the SQL. This is the same discipline the
+  // parcels list exercise applies — a key the allowlist does not name is a 422
+  // at the validator, and a key it names but the column does not exist is a 500.
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `org.listBranches(sortBy=${sortBy})`,
+    run: () =>
+      org.selectBranches(db, { ...listParams, sortBy }, { status: undefined, search: undefined }),
+  })),
+  { name: "org.selectBranch", run: () => org.selectBranch(db, "1") },
+  ...(["name", "code", "type", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `org.listHubs(sortBy=${sortBy})`,
+    run: () =>
+      org.selectHubs(
+        db,
+        { ...listParams, sortBy },
+        {
+          branchId: undefined,
+          type: undefined,
+          status: undefined,
+          search: undefined,
+        },
+      ),
+  })),
+  { name: "org.selectHub", run: () => org.selectHub(db, "1") },
 )
 
 let failures = 0
