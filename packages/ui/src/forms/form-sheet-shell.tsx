@@ -41,6 +41,9 @@ export function FormSheetShell({
   submitLabel,
   busy = false,
   onSubmit,
+  onReset,
+  onClose,
+  maxWidth = "sm:max-w-3xl",
   footerExtra,
   children,
 }: {
@@ -52,6 +55,14 @@ export function FormSheetShell({
   /** Pending save. Locks dismissal and swaps the submit button for a spinner. */
   busy?: boolean
   onSubmit?: () => void
+  /** Reset the form when the sheet opens. A create sheet starts blank; an edit
+   *  sheet starts with the record's values, so callers decide which. */
+  onReset?: () => void
+  /** Clear transient state (errors, toasts) when the sheet closes. */
+  onClose?: () => void
+  /** Width override. The default is the wide one — most CRUD forms are two
+   *  columns wide, and a 384px sheet is a cramped one. */
+  maxWidth?: string
   /** Anything left of the footer that is not a button — e.g. a delete link. */
   footerExtra?: React.ReactNode
   children: React.ReactNode
@@ -60,6 +71,8 @@ export function FormSheetShell({
     // A close requested while saving is dropped, not deferred — re-opening
     // afterwards would be surprising, and the save is about to report itself.
     if (busy && !next) return
+    if (next) onReset?.()
+    else onClose?.()
     onOpenChange(next)
   }
 
@@ -70,12 +83,7 @@ export function FormSheetShell({
       // Escape and outside-click both route through onOpenChange, so `busy`
       // above is what stops either from discarding a pending save.
     >
-      <SheetContent
-        className="w-full gap-0 p-0 sm:max-w-xl"
-        // The close X is hidden rather than merely disabled: a control that
-        // looks available and does nothing is worse than no control.
-        hideClose={busy}
-      >
+      <SheetContent className={`w-full gap-0 p-0 ${maxWidth}`}>
         <SheetHeader className="border-b">
           <SheetTitle>{title}</SheetTitle>
           {description ? <SheetDescription>{description}</SheetDescription> : null}
