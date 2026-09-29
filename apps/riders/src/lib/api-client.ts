@@ -2,9 +2,11 @@
  * Typed HTTP client for the DropX API.
  *
  * Everything the rider app sends to `apps/api` goes through `apiRequest`, so
- * bearer tokens, the single refresh-and-retry and the `{ error: { code, message,
- * details } }` envelope are parsed in exactly one place. Feature modules never
- * call `fetch` themselves.
+ * bearer tokens, the single refresh-and-retry and the response envelope are
+ * parsed in exactly one place. Feature modules never call `fetch` themselves.
+ *
+ * Every operation answers with `{ error, data, status, success, code }`, so
+ * `data` is unwrapped and `error` / `code` / `details` are read flat.
  */
 
 export type ApiErrorDetail = {
@@ -12,12 +14,24 @@ export type ApiErrorDetail = {
   message: string
 }
 
-type ErrorEnvelope = {
-  error?: {
-    code?: string
-    message?: string
-    details?: ApiErrorDetail[]
-  }
+type ApiEnvelope = {
+  error?: string | null
+  data?: unknown
+  status?: number
+  success?: boolean
+  code?: string
+  details?: ApiErrorDetail[]
+}
+
+/** True for the one envelope shape the API sends, so a bare body still passes through. */
+function isEnvelope(value: unknown): value is ApiEnvelope {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "data" in value &&
+    "success" in value &&
+    "code" in value
+  )
 }
 
 export class ApiError extends Error {
@@ -181,13 +195,13 @@ function isAbortError(error: unknown): boolean {
 }
 
 function toApiError(status: number, body: unknown): ApiError {
-  const envelope = (typeof body === "object" && body !== null ? body : {}) as ErrorEnvelope
-  const code = typeof envelope.error?.code === "string" ? envelope.error.code : "UNKNOWN"
+  const envelope = (typeof body === "object" && body !== null ? body : {}) as ApiEnvelope
+  const code = typeof envelope.code === "string" ? envelope.code : "UNKNOWN"
   const message =
-    typeof envelope.error?.message === "string" && envelope.error.message.length > 0
-      ? envelope.error.message
+    typeof envelope.error === "string" && envelope.error.length > 0
+      ? envelope.error
       : "Something went wrong. Please try again."
-  const details = Array.isArray(envelope.error?.details) ? envelope.error.details : undefined
+  const details = Array.isArray(envelope.details) ? envelope.details : undefined
   return new ApiError({ code, message, status, ...(details ? { details } : {}) })
 }
 
@@ -251,11 +265,12 @@ async function refreshSession(): Promise<boolean> {
         method: "POST",
         body: { refreshToken: current.refreshToken },
       })
-      if (status >= 200 && status < 300 && isTokenPair(body) && session) {
+      const tokens = unwrap(body)
+      if (status >= 200 && status < 300 && isTokenPair(tokens) && session) {
         writeSession({
-          accessToken: body.accessToken,
-          refreshToken: body.refreshToken,
-          expiresIn: body.expiresIn,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresIn: tokens.expiresIn,
           account: session.account,
         })
         return true
@@ -276,17 +291,21 @@ function isTokenPair(value: unknown): value is TokenPair {
   return typeof candidate.accessToken === "string" && typeof candidate.refreshToken === "string"
 }
 
+function unwrap(body: unknown): unknown {
+  return isEnvelope(body) ? body.data : body
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const wantsAuth = options.auth === true
   const first = await rawRequest(path, options)
 
   if (wantsAuth && first.status === 401 && (await refreshSession())) {
     const retried = await rawRequest(path, options)
-    if (retried.status >= 200 && retried.status < 300) return retried.body as T
+    if (retried.status >= 200 && retried.status < 300) return unwrap(retried.body) as T
     throw toApiError(retried.status, retried.body)
   }
 
-  if (first.status >= 200 && first.status < 300) return first.body as T
+  if (first.status >= 200 && first.status < 300) return unwrap(first.body) as T
   throw toApiError(first.status, first.body)
 }
 
