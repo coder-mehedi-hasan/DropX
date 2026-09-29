@@ -1,17 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { PARCEL_STATUSES, PAYMENT_TYPES } from "@dropx/db/entities"
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  MoreHorizontal,
-  Package,
-  Plus,
-  Truck,
-} from "lucide-react"
+import { Copy, MoreHorizontal, Package, Plus, Truck } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
@@ -27,21 +16,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   EmptyState,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
   StatusBadge,
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
+  ServerDataTable,
   parcelStatusLabel,
+  type DataTableColumn,
   AppToast,
 } from "@dropx/ui"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
@@ -51,14 +29,12 @@ import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
 import { listParcels } from "@/lib/endpoints"
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format"
-import { paymentFilter, statusFilter } from "@/lib/parcels"
+import { PARCEL_SORT_COLUMNS, paymentFilter, statusFilter } from "@/lib/parcels"
 import type { Parcel, ParcelListParams, ParcelSortColumn } from "@/lib/parcels"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
 import type { ParcelsSearch } from "@/routes/search-params"
 
 import { ParcelCreateDialog } from "./parcel-create-dialog"
-
-const PAGE_SIZES = [10, 20, 50, 100] as const
 
 export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
   const { hasPermission } = useAuth()
@@ -108,15 +84,116 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
    */
   const [, patch] = useQueryParams<ParcelsSearch>("/parcels", search)
 
-  function toggleSort(sortBy: ParcelSortColumn) {
-    const sameColumn = search.sortBy === sortBy
-    patch({ sortBy, sort: sameColumn && search.sort === "asc" ? "desc" : "asc" })
-  }
-
   const meta = query.data?.meta
   const nodes = query.data?.nodes ?? []
-  const firstRow = meta && meta.totalCount > 0 ? (meta.currentPage - 1) * search.limit + 1 : 0
-  const lastRow = meta ? Math.min(meta.currentPage * search.limit, meta.totalCount) : 0
+
+  /**
+   * `ServerDataTable` asks for a flat `ServerPageMeta`, and the API hands back
+   * `PageMeta` — same fields, different names (`currentPage` vs `page`). The
+   * rename lives here rather than in the wrapper, so the wrapper's contract is
+   * one shape and a second caller cannot feed it the wrong one by accident.
+   */
+  const serverMeta = useMemo(
+    () =>
+      meta
+        ? {
+            page: meta.currentPage,
+            limit: search.limit,
+            totalCount: meta.totalCount,
+            totalPages: meta.totalPages,
+            hasNextPage: meta.hasNextPage,
+            hasPreviousPage: meta.hasPreviousPage,
+          }
+        : undefined,
+    [meta, search.limit],
+  )
+
+  const columns = useMemo<DataTableColumn<Parcel>[]>(
+    () => [
+      {
+        id: "trackingNumber",
+        header: "Tracking",
+        cell: (parcel) => (
+          <Link
+            to="/parcels/$parcelId"
+            params={{ parcelId: parcel.id }}
+            className="text-accent-ink hover:text-accent-ink-hover font-mono text-xs font-semibold underline-offset-4 hover:underline"
+          >
+            {parcel.trackingNumber}
+          </Link>
+        ),
+        value: (parcel) => parcel.trackingNumber,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (parcel) => <StatusBadge status={parcel.status} />,
+        value: (parcel) => parcel.status,
+      },
+      {
+        id: "receiver",
+        header: "Receiver",
+        cell: (parcel) => (
+          <span className="text-muted-foreground block max-w-52 truncate text-sm">
+            <span className="text-foreground block font-medium">
+              Customer #{parcel.receiverCustomerId}
+            </span>
+          </span>
+        ),
+        value: (parcel) => parcel.receiverCustomerId,
+      },
+      {
+        id: "parcelType",
+        header: "Type",
+        cell: (parcel) => <Badge variant="secondary">{parcel.parcelType}</Badge>,
+        value: (parcel) => parcel.parcelType,
+      },
+      {
+        id: "paymentType",
+        header: "Payment",
+        cell: (parcel) =>
+          parcel.paymentType === "COD" ? (
+            <Badge variant="warning">COD</Badge>
+          ) : (
+            <Badge variant="outline">Prepaid</Badge>
+          ),
+        value: (parcel) => parcel.paymentType,
+      },
+      {
+        id: "weight",
+        header: "Weight",
+        align: "end",
+        numeric: true,
+        cell: (parcel) => `${formatNumber(parcel.weight)} kg`,
+        value: (parcel) => parcel.weight,
+      },
+      {
+        id: "deliveryFee",
+        header: "Fee",
+        align: "end",
+        numeric: true,
+        cell: (parcel) => formatMoney(parcel.deliveryFee),
+        value: (parcel) => parcel.deliveryFee,
+      },
+      {
+        id: "codAmount",
+        header: "COD",
+        align: "end",
+        numeric: true,
+        cell: (parcel) => (parcel.codAmount > 0 ? formatMoney(parcel.codAmount) : "—"),
+        value: (parcel) => parcel.codAmount,
+      },
+      {
+        id: "createdAt",
+        header: "Created",
+        cell: (parcel) => (
+          <span className="text-muted-foreground text-sm">{formatDateTime(parcel.createdAt)}</span>
+        ),
+        value: (parcel) => parcel.createdAt,
+      },
+    ],
+    [],
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -212,10 +289,16 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
         </CardHeader>
 
         <CardContent className="p-0">
-          {query.isPending ? (
-            <ParcelsTableSkeleton />
-          ) : query.isError ? null : nodes.length === 0 ? (
-            <div className="p-6">
+          <ServerDataTable
+            rowId={(parcel) => parcel.id}
+            data={nodes}
+            columns={columns}
+            meta={serverMeta}
+            sortBy={search.sortBy}
+            sort={search.sort}
+            sortableColumns={PARCEL_SORT_COLUMNS}
+            loading={query.isPending}
+            emptyState={
               <EmptyState
                 icon={Package}
                 title="No parcels match these filters"
@@ -233,113 +316,14 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
                   ) : null
                 }
               />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableHead
-                    label="Tracking"
-                    column="trackingNumber"
-                    active={search.sortBy}
-                    order={search.sort}
-                    onSort={toggleSort}
-                  />
-                  <SortableHead
-                    label="Status"
-                    column="status"
-                    active={search.sortBy}
-                    order={search.sort}
-                    onSort={toggleSort}
-                  />
-                  <TableHead>Receiver</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <SortableHead
-                    label="Weight"
-                    column="weight"
-                    active={search.sortBy}
-                    order={search.sort}
-                    onSort={toggleSort}
-                    align="right"
-                  />
-                  <TableHead className="text-right">Fee</TableHead>
-                  <TableHead className="text-right">COD</TableHead>
-                  <SortableHead
-                    label="Created"
-                    column="createdAt"
-                    active={search.sortBy}
-                    order={search.sort}
-                    onSort={toggleSort}
-                  />
-                  <TableHead className="w-10">
-                    <span className="sr-only">Row actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {nodes.map((parcel) => (
-                  <ParcelRow key={parcel.id} parcel={parcel} />
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={10} className="text-muted-foreground text-xs font-normal">
-                    {meta ? `${firstRow}–${lastRow} of ${formatNumber(meta.totalCount)}` : "—"}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-          )}
+            }
+            rowActions={parcelRowActions}
+            onPageChange={(page) => patch({ page }, { keepPage: true })}
+            onPageSizeChange={(limit) => patch({ limit })}
+            onSortChange={(sortBy, sort) => patch({ sortBy: sortBy as ParcelSortColumn, sort })}
+          />
         </CardContent>
       </Card>
-
-      {meta && meta.totalPages > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">Rows per page</span>
-            <Select
-              value={String(search.limit)}
-              onValueChange={(value) => patch({ limit: Number(value) })}
-            >
-              <SelectTrigger size="sm" className="w-20" aria-label="Rows per page">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZES.map((size) => (
-                  <SelectItem key={size} value={String(size)}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">
-              Page {meta.currentPage} of {meta.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasPreviousPage || query.isFetching}
-              onClick={() => patch({ page: meta.currentPage - 1 }, { keepPage: true })}
-            >
-              <ChevronLeft />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasNextPage || query.isFetching}
-              onClick={() => patch({ page: meta.currentPage + 1 }, { keepPage: true })}
-            >
-              Next
-              <ChevronRight />
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       <ParcelCreateDialog
         open={createOpen}
@@ -350,40 +334,7 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
   )
 }
 
-function SortableHead({
-  label,
-  column,
-  active,
-  order,
-  onSort,
-  align = "left",
-}: {
-  label: string
-  column: ParcelSortColumn
-  active: ParcelSortColumn
-  order: "asc" | "desc"
-  onSort: (column: ParcelSortColumn) => void
-  align?: "left" | "right"
-}) {
-  const sorted = active === column
-  const Icon = !sorted ? ArrowUpDown : order === "asc" ? ArrowUp : ArrowDown
-
-  return (
-    <TableHead className={align === "right" ? "text-right" : undefined}>
-      <button
-        type="button"
-        onClick={() => onSort(column)}
-        className="hover:text-foreground -mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium"
-        aria-label={`Sort by ${label}`}
-      >
-        {label}
-        <Icon className="size-3.5" />
-      </button>
-    </TableHead>
-  )
-}
-
-function ParcelRow({ parcel }: { parcel: Parcel }) {
+function parcelRowActions(parcel: Parcel) {
   const navigate = useNavigate()
 
   function copyTracking() {
@@ -394,84 +345,33 @@ function ParcelRow({ parcel }: { parcel: Parcel }) {
   }
 
   return (
-    <TableRow>
-      <TableCell>
-        <Link
-          to="/parcels/$parcelId"
-          params={{ parcelId: parcel.id }}
-          className="text-accent-ink hover:text-accent-ink-hover font-mono text-xs font-semibold underline-offset-4 hover:underline"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-8" aria-label="Parcel actions">
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel className="font-mono text-xs">{parcel.trackingNumber}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/parcels/$parcelId" params={{ parcelId: parcel.id }}>
+            Open parcel
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={copyTracking}>
+          <Copy />
+          Copy tracking number
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() =>
+            void navigate({ to: "/tracking", search: { tracking: parcel.trackingNumber } })
+          }
         >
-          {parcel.trackingNumber}
-        </Link>
-      </TableCell>
-      <TableCell>
-        <StatusBadge status={parcel.status} />
-      </TableCell>
-      <TableCell className="text-muted-foreground max-w-52 truncate text-sm">
-        <span className="text-foreground block font-medium">
-          Customer #{parcel.receiverCustomerId}
-        </span>
-      </TableCell>
-      <TableCell>
-        <Badge variant="secondary">{parcel.parcelType}</Badge>
-      </TableCell>
-      <TableCell>
-        {parcel.paymentType === "COD" ? (
-          <Badge variant="warning">COD</Badge>
-        ) : (
-          <Badge variant="outline">Prepaid</Badge>
-        )}
-      </TableCell>
-      <TableCell className="text-right">{formatNumber(parcel.weight)} kg</TableCell>
-      <TableCell className="text-right font-semibold">{formatMoney(parcel.deliveryFee)}</TableCell>
-      <TableCell className="text-muted-foreground text-right">
-        {parcel.codAmount > 0 ? formatMoney(parcel.codAmount) : "—"}
-      </TableCell>
-      <TableCell className="text-muted-foreground text-sm">
-        {formatDateTime(parcel.createdAt)}
-      </TableCell>
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8" aria-label="Parcel actions">
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel className="font-mono text-xs">
-              {parcel.trackingNumber}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/parcels/$parcelId" params={{ parcelId: parcel.id }}>
-                Open parcel
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={copyTracking}>
-              <Copy />
-              Copy tracking number
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                void navigate({ to: "/tracking", search: { tracking: parcel.trackingNumber } })
-              }
-            >
-              <Truck />
-              Track
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
-  )
-}
-
-function ParcelsTableSkeleton() {
-  return (
-    <div className="space-y-2 p-4">
-      {Array.from({ length: 10 }, (_, index) => (
-        <Skeleton key={index} className="h-9 w-full" />
-      ))}
-    </div>
+          <Truck />
+          Track
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
