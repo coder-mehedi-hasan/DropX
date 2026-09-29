@@ -4,6 +4,7 @@ import { actorId, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
 import { PARCEL_SEARCH_COLUMNS, PARCEL_SORT_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
+import * as reference from "../reference/reference.service"
 import type { ADMIN_SURFACE } from "./registry"
 
 /**
@@ -84,6 +85,28 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
       })
 
       return c.json(response.success(parcel))
+    },
+  },
+
+  /**
+   * Reference reads. The handlers are one-liners because the service is: the
+   * judgement is the caller's `Scope`, which comes from the token and is
+   * resolved here, not from anything the client sent.
+   */
+  reference: {
+    listHubs: async (c) => {
+      const page = await reference.listHubs(scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    listZones: async (c) => {
+      const page = await reference.listZones(c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    searchCustomers: async (c) => {
+      const page = await reference.searchCustomers(c.req.valid("query"))
+      return c.json(response.success(page))
     },
   },
 }

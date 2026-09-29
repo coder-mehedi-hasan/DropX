@@ -16,7 +16,16 @@ import type {
   QuoteParams,
   UpdateParcelStatusBody,
 } from "./parcels"
-import type { DeliveryQuote, LoginResult, ParcelTracking, StaffIdentity } from "./types"
+import type {
+  CustomerOption,
+  DeliveryQuote,
+  HubOption,
+  LoginResult,
+  ParcelTracking,
+  ReferenceListParams,
+  StaffIdentity,
+  ZoneOption,
+} from "./types"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -79,6 +88,45 @@ export function quoteDeliveryFee(params: QuoteParams, signal?: AbortSignal) {
       codAmount: params.codAmount,
       express: params.express,
     },
+    ...(signal ? { signal } : {}),
+  })
+}
+
+/*
+ * Reference reads — the three pickers.
+ *
+ * `search` is omitted rather than sent empty, so an untouched combobox returns
+ * the first page instead of matching the empty string against every row. The
+ * picker debounces before calling these; see `use-debounced-value`.
+ */
+
+function referenceQuery(params: ReferenceListParams) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sort: params.sort,
+    sortBy: params.sortBy,
+    ...(params.search ? { search: params.search } : {}),
+  }
+}
+
+export function listHubsForPicker(params: ReferenceListParams, signal?: AbortSignal) {
+  return api.get<Page<HubOption>>("/admin/reference/hubs", {
+    query: referenceQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function listZonesForPicker(params: ReferenceListParams, signal?: AbortSignal) {
+  return api.get<Page<ZoneOption>>("/admin/reference/zones", {
+    query: referenceQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function searchCustomersForPicker(params: ReferenceListParams, signal?: AbortSignal) {
+  return api.get<Page<CustomerOption>>("/admin/reference/customers", {
+    query: referenceQuery(params),
     ...(signal ? { signal } : {}),
   })
 }

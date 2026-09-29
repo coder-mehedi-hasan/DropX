@@ -26,6 +26,7 @@ const parcels = await import("../src/modules/parcels/parcels.repository")
 const auth = await import("../src/modules/auth/auth.repository")
 const actors = await import("../src/shared/auth/actor-loader")
 const pricing = await import("../src/modules/pricing/pricing.service")
+const reference = await import("../src/modules/reference/reference.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -96,6 +97,61 @@ cases.push(
   { name: "actor.loadStaffActor", run: () => actors.loadStaffActor(db, "1") },
   { name: "actor.loadRiderActor", run: () => actors.loadRiderActor(db, "1") },
   { name: "actor.loadCustomerActor", run: () => actors.loadCustomerActor(db, "1") },
+
+  // Reference reads. Every sort key is exercised, because `sortBy` arrives from
+  // a client and the allowlist is the only thing standing between it and the SQL
+  // — a column that exists in the schema but not in the allowlist must fail, and
+  // one in the allowlist but not the schema must fail here.
+  { name: "reference.listHubRefs", run: () => reference.listHubRefs(db, scope, listParams, {}) },
+  {
+    name: "reference.listHubRefs(search)",
+    run: () => reference.listHubRefs(db, scope, listParams, { search: "a" }),
+  },
+  {
+    name: "reference.listHubRefs(type)",
+    run: () => reference.listHubRefs(db, scope, listParams, { type: "ORIGIN" }),
+  },
+  {
+    name: "reference.listHubRefs(status)",
+    run: () => reference.listHubRefs(db, scope, listParams, { status: "ACTIVE" }),
+  },
+  {
+    name: "reference.listHubRefs(branch-scoped)",
+    run: () =>
+      reference.listHubRefs(db, { ...scope, isCompanyWide: false, branchId: "1" }, listParams, {}),
+  },
+  {
+    name: "reference.listHubRefs(hub-scoped)",
+    run: () =>
+      reference.listHubRefs(db, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
+  },
+  { name: "reference.listZoneRefs", run: () => reference.listZoneRefs(db, listParams, {}) },
+  {
+    name: "reference.listZoneRefs(search)",
+    run: () => reference.listZoneRefs(db, listParams, { search: "a" }),
+  },
+  {
+    name: "reference.searchCustomerRefs",
+    run: () => reference.searchCustomerRefs(db, listParams, {}),
+  },
+  {
+    name: "reference.searchCustomerRefs(search)",
+    run: () => reference.searchCustomerRefs(db, listParams, { search: "a" }),
+  },
+
+  // Each sort key, so a rename in the schema or the allowlist is caught here.
+  ...(["name", "code", "type", "status"] as const).map((sortBy) => ({
+    name: `reference.listHubRefs(sortBy=${sortBy})`,
+    run: () => reference.listHubRefs(db, scope, { ...listParams, sortBy }, {}),
+  })),
+  ...(["name", "code", "status"] as const).map((sortBy) => ({
+    name: `reference.listZoneRefs(sortBy=${sortBy})`,
+    run: () => reference.listZoneRefs(db, { ...listParams, sortBy }, {}),
+  })),
+  ...(["name", "phone", "createdAt"] as const).map((sortBy) => ({
+    name: `reference.searchCustomerRefs(sortBy=${sortBy})`,
+    run: () => reference.searchCustomerRefs(db, { ...listParams, sortBy }, {}),
+  })),
 
   {
     name: "pricing.quoteDeliveryFee",

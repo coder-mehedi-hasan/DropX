@@ -92,6 +92,13 @@ export const DEFAULT_ROLE_GRANTS: Readonly<Record<string, PermissionKey[]>> = {
   BRANCH_MANAGER: [
     PERMISSIONS.HUBS_VIEW,
     PERMISSIONS.HUBS_MANAGE,
+    // Zones are company-wide, non-sensitive reference data (name, code, status),
+    // and this role books parcels — which is what originZoneId and
+    // destinationZoneId are. Without it the two zone pickers 403 for every branch
+    // manager while working fine for ADMIN, so the gate would pass against a
+    // superadmin and fail in real use. Read only: `zones.manage` is pricing
+    // configuration and stays with ADMIN.
+    PERMISSIONS.ZONES_VIEW,
     PERMISSIONS.USERS_VIEW,
     PERMISSIONS.RIDERS_VIEW,
     PERMISSIONS.RIDERS_MANAGE,

@@ -66,3 +66,47 @@ export type DeliveryQuote = {
   total: number
   currency: string
 }
+
+/*
+ * Reference reads, mirroring the three `admin.reference.*` response schemas.
+ *
+ * Named `*Option`, not `*Ref`, on purpose. `@dropx/db/entities` already exports a
+ * `HubRef` and it is a different thing: that one is the `{ code, name, district }`
+ * join embedded in a parcel detail, and it carries no `id` — a picker option has
+ * to, because its whole job is to be selected and sent back as a foreign key. The
+ * suffix marks a row you can choose, as against a row that decorates another one.
+ */
+
+export type HubOption = {
+  id: Id
+  name: string
+  code: string
+  type: "ORIGIN" | "SORTATION" | "HUB" | "LAST_MILE"
+  district: string | null
+  status: "ACTIVE" | "INACTIVE"
+}
+
+export type ZoneOption = {
+  id: Id
+  name: string
+  code: string
+  status: "ACTIVE" | "INACTIVE"
+}
+
+export type CustomerOption = {
+  id: Id
+  name: string
+  phone: string
+  email: string | null
+  type: "INDIVIDUAL" | "BUSINESS"
+  status: "TEMP" | "ACTIVE" | "BLOCKED"
+}
+
+/** Shared by all three pickers: the API owns the ceiling, the client just sends it. */
+export type ReferenceListParams = {
+  page: number
+  limit: number
+  search?: string
+  sort?: "asc" | "desc"
+  sortBy?: string
+}

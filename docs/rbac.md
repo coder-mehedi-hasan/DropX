@@ -128,6 +128,7 @@ All keys except rider-only keys are optional; typically **every** admin key incl
 Scoped to `users.branch_id`.
 
 - `hubs.view`, `hubs.manage` (own branch)
+- `zones.view` — company-wide reference data, needed to set `originZoneId` / `destinationZoneId` when booking a parcel. Read only; `zones.manage` is pricing configuration and stays with `ADMIN`.
 - `users.view` (own branch)
 - `riders.view`, `riders.manage` (hubs in branch)
 - `parcels.view`, `parcels.create`, `parcels.update`, `parcels.cancel`
