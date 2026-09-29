@@ -103,10 +103,13 @@ export function ServerDataTable<T>({
 
   function handleSortChange(next: DataTableSort | null) {
     if (!onSortChange) return
-    // Clicking the active header clears it on the table's side; the API has no
-    // "unsorted", so that maps to the column's ascending default rather than a
-    // request the endpoint cannot answer.
-    if (!next) return
+    if (!next) {
+      // Third click clears on the table's side; the API has no "unsorted",
+      // so re-apply the same column ascending. That keeps the cycle
+      // asc → desc → asc rather than leaving the header stuck on desc.
+      if (sortBy) onSortChange(sortBy, "asc")
+      return
+    }
     onSortChange(next.columnId, next.direction)
   }
 
