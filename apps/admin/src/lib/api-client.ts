@@ -4,7 +4,12 @@
  * The API is always addressed absolutely — there is no dev proxy — so the only
  * thing this wrapper adds over `fetch` is the session: a bearer token, ONE
  * transparent refresh on 401, and a typed `ApiError` so every screen can branch
- * on `code` instead of re-parsing the `{ error: { ... } }` envelope.
+ * on `code` instead of re-parsing the envelope.
+ *
+ * Every API operation answers with one envelope —
+ * `{ error, data, status, success, code }` — so unwrapping `data` and reading
+ * the flat `error` / `code` / `details` happen here, once, and every call site
+ * above sees the payload it asked for.
  */
 
 const DEFAULT_API_URL = "http://localhost:8000"
@@ -137,6 +142,26 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   return url.toString()
 }
 
+type ApiEnvelope<T> = {
+  error: string | null
+  data: T
+  status: number
+  success: boolean
+  code: string
+  details?: ApiFieldError[]
+}
+
+/** True for the one envelope shape the API sends, so a bare body still passes through. */
+function isEnvelope(value: unknown): value is ApiEnvelope<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "data" in value &&
+    "success" in value &&
+    "code" in value
+  )
+}
+
 async function readErrorBody(
   response: Response,
 ): Promise<{ code: string; message: string; details: ApiFieldError[] }> {
@@ -148,21 +173,13 @@ async function readErrorBody(
 
   try {
     const body: unknown = await response.json()
-    if (typeof body !== "object" || body === null || !("error" in body)) return fallback
-    const error = (body as { error: unknown }).error
-    if (typeof error !== "object" || error === null) return fallback
-
-    const { code, message, details } = error as {
-      code?: unknown
-      message?: unknown
-      details?: unknown
-    }
+    if (!isEnvelope(body)) return fallback
 
     return {
-      code: typeof code === "string" ? code : "HTTP_ERROR",
-      message: typeof message === "string" ? message : fallback.message,
-      details: Array.isArray(details)
-        ? details.filter(
+      code: typeof body.code === "string" ? body.code : "HTTP_ERROR",
+      message: typeof body.error === "string" && body.error ? body.error : fallback.message,
+      details: Array.isArray(body.details)
+        ? body.details.filter(
             (entry): entry is ApiFieldError =>
               typeof entry === "object" &&
               entry !== null &&
@@ -204,7 +221,8 @@ async function send<T>(
   if (!response.ok) throw await parseError(response)
   if (response.status === 204) return undefined as T
 
-  return (await response.json()) as T
+  const body: unknown = await response.json()
+  return (isEnvelope(body) ? body.data : body) as T
 }
 
 /**
