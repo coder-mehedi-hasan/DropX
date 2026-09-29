@@ -24,9 +24,9 @@
 
 Closed since the first draft: the generated OpenAPI is **in memory**, served at `/openapi.json` rather than written to `openapi/paths/` (§3.7); the version bump is **in place** (§3.7).
 
-Closed: the customer half of the namespace split (§3.9), the reference-data shape (§6) — the `reference` module's three operations are built and verified (§4, Phase 0). The registry is now proved on **two** surfaces, 25 operations. The `zones.view` grant for `BRANCH_MANAGER` is in code and in `docs/rbac.md`; the seeded role rows themselves still need the normal seed/deployment path to pick it up (§4).
+Closed: the customer half of the namespace split (§3.9), the reference-data shape (§6) — the `reference` module's three operations are built and verified (§4, Phase 0). The registry is now proved on **two** surfaces, 33 operations. The `zones.view` grant for `BRANCH_MANAGER` is in code and in `docs/rbac.md`; the seeded role rows themselves still need the normal seed/deployment path to pick it up (§4).
 
-Still open: nothing on the Phase 0 surface. Phases 1-4 are unbuilt (§4, §6).
+Still open: nothing on the Phase 0 surface. Phase 1 is in progress — the `org` module (branches and hubs) is landed (§4).
 
 ---
 
@@ -36,12 +36,12 @@ Still open: nothing on the Phase 0 surface. Phases 1-4 are unbuilt (§4, §6).
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
 | Admin screens   | 5 — login, dashboard, parcels list, parcel detail, tracking                                                                                                                          | ~20 more                                     |
 | Nav items       | 3 — Dashboard, Parcels, Tracking                                                                                                                                                     | ~14 more                                     |
-| API modules     | 6 — health, auth, tracking, parcels, jobs, pricing. 25 operations, all documented, zero OpenAPI drift                                                                                | ~23 modules                                  |
+| API modules     | 7 — health, auth, tracking, parcels, jobs, pricing, org. 33 operations, all documented, zero OpenAPI drift                                                                           | ~23 modules                                  |
 | DB tables wired | 13 of 29 (`customers`, `deliveries`, `hubs`, `parcel_events`, `parcel_items`, `parcels`, `pricing_rules`, `riders`, `role_permissions`, `roles`, `user_hubs`, `user_roles`, `users`) | 16 tables have no API **and** no UI anywhere |
 | Permissions     | 40 keys declared, 7 roles seeded, **9 enforced** (`parcels.view/create/update/cancel`, `rider.jobs.view/update`, `hubs.view`, `zones.view`, `customers.view`)                        | 31 keys gate nothing                         |
 | Tests           | Zero test files. No test runner in any `package.json`                                                                                                                                | whole layer                                  |
 
-**The hard truth:** admin can create, list, inspect, and cancel a parcel. That is the entire surface. Pickup, transfer, delivery assignment, payment, settlement, and support exist in `migrate.sql` and in `docs/overview.md:101-114`, but in neither the API nor the UI. Every admin screen past the parcels list is unbuilt.
+**The hard truth:** admin can create, list, inspect, and cancel a parcel, and can now also build the organization that parcels move through — branches and hubs, with full CRUD. Pickup, transfer, delivery assignment, payment, settlement, and support exist in `migrate.sql` and in `docs/overview.md:101-114`, but in neither the API nor the UI. Every admin screen past the parcels list and the org screens is unbuilt.
 
 ### Screens that exist
 
@@ -55,11 +55,11 @@ Still open: nothing on the Phase 0 surface. Phases 1-4 are unbuilt (§4, §6).
 
 ### Operations that exist
 
-`health.read` · `health.ready` · `auth.loginAdmin` · `auth.loginRider` · `auth.refresh` · `auth.otpRequest` · `auth.otpVerify` · `auth.me` · `auth.logout` · `tracking.lookup` · `parcel.list` · `parcel.read` · `parcel.create` · `parcel.updateStatus` · `parcel.cancel` · `parcel.listOwn` · `parcel.readOwn` · `parcel.createOwn` · `job.list` · `job.read` · `job.reportOutcome` · `pricing.quote`
+`health.read` · `health.ready` · `auth.loginAdmin` · `auth.loginRider` · `auth.refresh` · `auth.otpRequest` · `auth.otpVerify` · `auth.me` · `auth.logout` · `tracking.lookup` · `parcel.list` · `parcel.read` · `parcel.create` · `parcel.updateStatus` · `parcel.cancel` · `parcel.listOwn` · `parcel.readOwn` · `parcel.createOwn` · `job.list` · `job.read` · `job.reportOutcome` · `pricing.quote` · `admin.reference.listHubs` · `admin.reference.listZones` · `admin.reference.searchCustomers` · `admin.org.listBranches` · `admin.org.readBranch` · `admin.org.createBranch` · `admin.org.updateBranch` · `admin.org.listHubs` · `admin.org.readHub` · `admin.org.createHub` · `admin.org.updateHub`
 
 ### Tables with no API and no UI
 
-`branches` · `customer_addresses` · `zones` · `vehicles` · `routes` · `route_stops` · `rider_locations` · `pickups` · `transfers` · `transfer_parcels` · `delivery_proofs` · `payments` · `settlements` · `notifications` · `support_tickets` · `audit_logs`
+`customer_addresses` · `zones` · `vehicles` · `routes` · `route_stops` · `rider_locations` · `pickups` · `transfers` · `transfer_parcels` · `delivery_proofs` · `payments` · `settlements` · `notifications` · `support_tickets` · `audit_logs`
 
 ### What the docs promise but the product lacks
 
@@ -427,12 +427,14 @@ The "admin and their staffs" core: who works here, what they may do, which hubs 
 
 | Module      | Ops | Screens                                                        | Notes                                                              |
 | ----------- | --- | -------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `branches`  | 4   | list, create/edit sheet                                        | regional office; code, district, lat/lng, ACTIVE/INACTIVE          |
-| `hubs`      | 5   | list, create/edit, capacity view                               | ORIGIN/SORTING/TRANSIT/DESTINATION, capacity, MAINTENANCE status   |
+| `branches`  | 4   | **LANDED (API).** list, create/edit sheet                      | regional office; code, district, lat/lng, ACTIVE/INACTIVE          |
+| `hubs`      | 4   | **LANDED (API).** list, create/edit                            | ORIGIN/SORTING/TRANSIT/DESTINATION, capacity, MAINTENANCE status   |
 | `zones`     | 4   | list, create/edit                                              | geographic pricing areas                                           |
 | `users`     | 5   | list, create, edit, reset password, activate/deactivate        | `bootstrap-admin.ts` is currently the only writer of a `users` row |
 | `roles`     | 5   | **permission matrix editor**                                   | checkbox grid over all 40 keys                                     |
 | `customers` | 6   | list, detail (addresses, parcel history), activate TEMP→ACTIVE | also covers `customer_addresses`                                   |
+
+`branches` and `hubs` are the first two modules and they are landed as API only — the screens are the next step, and they follow the same pattern the parcels list established: a `ServerDataTable` over a registry operation, with the create/edit overlay as a `FormSheetShell`.
 
 **The permission matrix is the highest-leverage screen in the product.** `apps/api/scripts/seed.ts` is `INSERT IGNORE` and never revokes, so a misconfigured role can only be fixed by hand-written SQL. This screen makes grants editable and revocable, which is the point of having `roles.view`/`roles.manage` at all.
 
