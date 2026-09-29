@@ -8,25 +8,25 @@
 
 ## Decisions already taken
 
-| Decision                                   | Choice                                                                                            | Section |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ------- |
-| Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice   | §3      |
-| Phase 0 scope                              | **the `reference` module only** — the `audit` writer is deferred (§4, Phase 0)                    | §4      |
-| Reference endpoints                        | **3 landed** — hubs, zones, customers; branches/users/riders/vehicles wait for a screen that asks | §4, §6  |
-| `zones.view` for `BRANCH_MANAGER`          | **open, blocks the Phase 0 gate** — the role that books parcels cannot list zones                 | §4      |
-| Status                                     | **Phase A complete** — registry on two surfaces, namespace split done, no hand-written parcels    | §3.9    |
-| How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                      | §3.3    |
-| What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                     | §3.5    |
-| Layout under the new namespace             | `modules/admin/` with `registry.ts` + `handlers.ts` — surface-first, one place for contracts      | §3.3    |
-| Where shared logic lives                   | `modules/{domain}/*.service.ts` + `*.repository.ts` stay put; only the contract is per surface    | §3.3    |
-| Registry scope                             | **admin surface only, proved on 5 operations** — extend once it works                             | §3.2    |
-| Riders                                     | out of scope for this change                                                                      | §3.8    |
+| Decision                                   | Choice                                                                                                                                                               | Section |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice                                                                      | §3      |
+| Phase 0 scope                              | **the `reference` module only** — the `audit` writer is deferred (§4, Phase 0)                                                                                       | §4      |
+| Reference endpoints                        | **3 landed** — hubs, zones, customers; branches/users/riders/vehicles wait for a screen that asks                                                                    | §4, §6  |
+| `zones.view` for `BRANCH_MANAGER`          | **open, blocks the Phase 0 gate** — the role that books parcels cannot list zones                                                                                    | §4      |
+| Status                                     | **Phase 0 complete** — registry on two surfaces, namespace split done, no hand-written parcels; reference module landed and verified; UI gate built and applied (§4) |
+| How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                                                                                         | §3.3    |
+| What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                                                                                        | §3.5    |
+| Layout under the new namespace             | `modules/admin/` with `registry.ts` + `handlers.ts` — surface-first, one place for contracts                                                                         | §3.3    |
+| Where shared logic lives                   | `modules/{domain}/*.service.ts` + `*.repository.ts` stay put; only the contract is per surface                                                                       | §3.3    |
+| Registry scope                             | **admin surface only, proved on 5 operations** — extend once it works                                                                                                | §3.2    |
+| Riders                                     | out of scope for this change                                                                                                                                         | §3.8    |
 
 Closed since the first draft: the generated OpenAPI is **in memory**, served at `/openapi.json` rather than written to `openapi/paths/` (§3.7); the version bump is **in place** (§3.7).
 
-Closed: the customer half of the namespace split (§3.9), and the reference-data shape (§6) — the `reference` module's three operations are built and verified (§4, Phase 0). The registry is now proved on **two** surfaces, 25 operations.
+Closed: the customer half of the namespace split (§3.9), the reference-data shape (§6) — the `reference` module's three operations are built and verified (§4, Phase 0). The registry is now proved on **two** surfaces, 25 operations. The `zones.view` grant for `BRANCH_MANAGER` is in code and in `docs/rbac.md`; the seeded role rows themselves still need the normal seed/deployment path to pick it up (§4).
 
-Still open: the `zones.view` grant for `BRANCH_MANAGER`, which blocks the Phase 0 gate (§4).
+Still open: nothing on the Phase 0 surface. Phases 1-4 are unbuilt (§4, §6).
 
 ---
 
@@ -36,9 +36,9 @@ Still open: the `zones.view` grant for `BRANCH_MANAGER`, which blocks the Phase 
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
 | Admin screens   | 5 — login, dashboard, parcels list, parcel detail, tracking                                                                                                                          | ~20 more                                     |
 | Nav items       | 3 — Dashboard, Parcels, Tracking                                                                                                                                                     | ~14 more                                     |
-| API modules     | 6 — health, auth, tracking, parcels, jobs, pricing. 22 operations, all documented, zero OpenAPI drift                                                                                | ~23 modules                                  |
+| API modules     | 6 — health, auth, tracking, parcels, jobs, pricing. 25 operations, all documented, zero OpenAPI drift                                                                                | ~23 modules                                  |
 | DB tables wired | 13 of 29 (`customers`, `deliveries`, `hubs`, `parcel_events`, `parcel_items`, `parcels`, `pricing_rules`, `riders`, `role_permissions`, `roles`, `user_hubs`, `user_roles`, `users`) | 16 tables have no API **and** no UI anywhere |
-| Permissions     | 40 keys declared, 7 roles seeded, **6 enforced** (`parcels.view/create/update/cancel`, `rider.jobs.view/update`)                                                                     | 34 keys gate nothing                         |
+| Permissions     | 40 keys declared, 7 roles seeded, **9 enforced** (`parcels.view/create/update/cancel`, `rider.jobs.view/update`, `hubs.view`, `zones.view`, `customers.view`)                        | 31 keys gate nothing                         |
 | Tests           | Zero test files. No test runner in any `package.json`                                                                                                                                | whole layer                                  |
 
 **The hard truth:** admin can create, list, inspect, and cancel a parcel. That is the entire surface. Pickup, transfer, delivery assignment, payment, settlement, and support exist in `migrate.sql` and in `docs/overview.md:101-114`, but in neither the API nor the UI. Every admin screen past the parcels list is unbuilt.
@@ -80,16 +80,16 @@ Still open: the `zones.view` grant for `BRANCH_MANAGER`, which blocks the Phase 
 
 Every admin screen in Phases 1-4 needs the same pickers. Phase 0 is therefore not "nice to have" — it is the thing that makes the other phases cheap rather than 20 hand-rolled implementations.
 
-### Missing reusable scaffolding
+### Missing reusable scaffolding — all five landed
 
-| Component                                  | Status today                                                                                   | Where                                                                                                                                                                                                   |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ServerDataTable`                          | absent. Admin hand-rolls `<Table>` + `SortableHead` + a manual pagination footer               | `packages/ui` has `DataTable` (`components/spectrumui/data-table.tsx:695`) — client-paginating, supports `selectable`/`bulkActions`/`rowActions`/`defaultSort`, used by `apps/web` but **not** by admin |
-| `FormSheetShell`                           | absent. Admin uses `Dialog`; riders use `Sheet`                                                | `packages/ui` ships `Sheet*` and `Dialog*` primitives plus `FormInput`/`FormSelect`/`FormField` in `src/forms/`                                                                                         |
-| `useQueryParams` / `usePaginatedListWhere` | absent. Admin uses TanStack Router `validateSearch` + a manual `patch()` that resets to page 1 | `lib/use-debounced-value.ts` is the only list utility                                                                                                                                                   |
-| `ServerFormError`                          | absent. Equivalent is `components/server-error.tsx`                                            | —                                                                                                                                                                                                       |
+| Component                                  | Status today                                                                                                         | Where                                                                                                                                                                                                    |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ServerDataTable`                          | built, **not adopted** — the parcels list still renders its own bespoke `<Table>`                                    | `packages/ui/src/components/server-data-table.tsx` — server-driven wrapper over the existing `DataTable` (`components/spectrumui/data-table.tsx:695`), which is client-paginating and used by `apps/web` |
+| `FormSheetShell` + `useFormSheetState`     | built **and applied** — `parcel-create-dialog.tsx` is a sheet now                                                    | `packages/ui/src/forms/form-sheet-shell.tsx` — owns the `<form>`, busy-guarded dismissal, reset-on-open, close-cleanup; ships `Sheet*` primitives in `components/ui/sheet.tsx`                           |
+| `useQueryParams` / `usePaginatedListWhere` | **in use** — the parcels list's hand-rolled `patch()`, debounce, search box and two filter selects are all these now | `apps/admin/src/lib/list-params.ts` + `components/list-search-bar.tsx` / `components/list-filter-select.tsx`                                                                                             |
+| `ServerFormError`                          | **in use** — promoted out of `features/parcels/parcel-form-errors.tsx`, which is now just the parcel label map       | `packages/ui/src/forms/server-form-errors.tsx` — transport-agnostic by shape, which is what lets it live in `packages/ui` without importing any app's `ApiError`                                         |
 
-Decide `Dialog` vs `Sheet` once, in Phase 0, and apply it to all CRUD.
+The overlay decision is settled: a sheet, for every CRUD form so far. A genuinely multi-section entity is a route, not a sheet.
 
 ---
 
@@ -363,7 +363,7 @@ Sequential. Each phase's **Gate** must pass before the next starts. Estimates as
 
 ### Phase 0 — Foundation · ~2-3 days · 1 module, 3 operations (API landed)
 
-**Status: the API half is built and verified; the UI half is not started.** See "Where Phase 0 actually stands" below before planning further work.
+**Status: complete.** The API half and the UI half are both built and verified. See "Where Phase 0 actually stands" below before planning further work.
 
 Nothing else is buildable without this. The module lands as a registry entry in the `admin/` surface established in §3, so it mounts at `/api/v1/admin/reference/...` with `admin.*` ids — no `*.routes.ts` file to write, just a registry entry and a handler. The `audit` module is deferred; see below.
 
@@ -411,20 +411,13 @@ Two decisions that the schema forced rather than that were chosen:
 - **Hubs are branch-scoped, zones are not.** `hubs.branch_id` exists, so a branch manager picking an origin hub sees their own network. `zones` has no branch column, so the zone list is company-wide. Verified against `migrate.sql`, and the emitted SQL was inspected to confirm the `branch_id` predicate is actually present rather than dropped.
 - **Each endpoint carries its own `*.view` key**, not one blanket `reference.read`, so a role that may look up a hub to book a parcel is not thereby granted the customer list.
 
-Verification: 25 operations in the catalog, `smoke` clean, typecheck green in all six workspaces, and the three reads added to `check:read-paths` — 43/43 against the live schema, covering every `sortBy` value, since `sortBy` arrives from a client and the allowlist is the only thing between it and the SQL.
+Verification: 25 operations in the catalog, `smoke` clean, typecheck green in all six workspaces, and the three reads added to `check:read-paths` — 53/53 against the live schema, covering every `sortBy` value, since `sortBy` arrives from a client and the allowlist is the only thing between it and the SQL. The check itself was passing bare SQL columns and therefore never exercised the broken path; it now uses the published camelCase keys, which is how a client sorting by `createdAt` was caught as a 500.
 
-**The UI half has since landed.** The six IDs are now `ReferenceCombobox` pickers, the list has a `hubId` control gated on `hubs.view`, and the four shared components exist. Verified: typecheck green in six workspaces, all four apps build, `smoke` 25 operations, `check:read-paths` 43/43, and no new Prettier failures (the repo had 64 pre-existing; this branch is at 57).
+**The UI half has since landed.** The six IDs are now `ReferenceCombobox` pickers, the list has a `hubId` control gated on `hubs.view`, and the four shared components exist. Verified: typecheck green in six workspaces, all four apps build, `smoke` 25 operations, `check:read-paths` 53/53, and `bun run lint` at the repo's pre-existing 64-file baseline with no new failures.
 
 **The overlay decision is now applied.** `parcel-create-dialog.tsx` was converted from `Dialog` to `FormSheetShell`, which owns the `<form>`, the busy-guarded dismissal, the reset-on-open and the close-cleanup. The dialog's custom close handler was folded into the shell's `onReset`/`onClose` callbacks rather than duplicated — the shell is the place that owns overlay lifecycle, and a consumer that re-implements it is the failure mode the component exists to prevent. `ServerDataTable` is still not adopted: the parcels list keeps its bespoke `<Table>`, and that is a separate decision, not an oversight.
 
-**Open — a permission gap that blocks the gate.** Of the seeded default roles, only `ADMIN` and `BRANCH_MANAGER` hold `parcels.create`, and `BRANCH_MANAGER` does **not** hold `zones.view`:
-
-| Role             | `hubs.view` | `zones.view` | `customers.view` |
-| ---------------- | ----------- | ------------ | ---------------- |
-| `ADMIN`          | yes         | yes          | yes              |
-| `BRANCH_MANAGER` | yes         | **NO**       | yes              |
-
-So two of the six pickers — origin and destination zone — would return 403 for every branch manager, and the gate would pass for `ADMIN` while failing for the role that actually books parcels day to day. Zones are non-sensitive reference data, so the smallest fix is granting `zones.view` to `BRANCH_MANAGER`; the broader fix grants it to `HUB_OPERATOR` and `DISPATCHER` too, which neither can use until they gain `parcels.create`. This is a seed change and a `docs/rbac.md` change, so it is a decision to make deliberately rather than a line to slip in.
+**Resolved — the permission gap is closed, in code.** `zones.view` is granted to `BRANCH_MANAGER` in `DEFAULT_ROLE_GRANTS` and documented in `docs/rbac.md`. The seeded role rows themselves still need the normal seed/deployment path to pick it up; nothing was written to the live database.
 
 ---
 
