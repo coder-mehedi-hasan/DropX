@@ -5,17 +5,26 @@ import { queryClient } from "@/lib/query-client"
 
 import {
   appRoute,
+  branchesRoute,
   dashboardRoute,
   loginRoute,
   parcelDetailRoute,
   parcelsRoute,
   trackingRoute,
+  hubsRoute,
 } from "./routes/app-routes"
 import { rootRoute } from "./routes/root"
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([dashboardRoute, parcelsRoute, parcelDetailRoute, trackingRoute]),
+  appRoute.addChildren([
+    dashboardRoute,
+    parcelsRoute,
+    parcelDetailRoute,
+    trackingRoute,
+    branchesRoute,
+    hubsRoute,
+  ]),
 ])
 
 /**

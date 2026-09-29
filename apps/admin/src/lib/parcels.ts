@@ -16,6 +16,8 @@ import type {
   ParcelStatus,
   ParcelTracking,
 } from "./types"
+import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
+import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH } from "@/routes/org-search-params"
 
 export type { DeliveryQuote, Id, Page, Parcel, ParcelDetail, ParcelStatus, ParcelTracking }
 export type { ParcelType, PaymentType }
@@ -31,6 +33,14 @@ export const PARCEL_SORT_COLUMNS = [
 ] as const
 export type ParcelSortColumn = (typeof PARCEL_SORT_COLUMNS)[number]
 
+/** Columns the API allowlists in `sortBy` for branches. */
+export const BRANCH_SORT_COLUMNS = ["name", "code", "status", "createdAt"] as const
+export type BranchSortColumn = (typeof BRANCH_SORT_COLUMNS)[number]
+
+/** Columns the API allowlists in `sortBy` for hubs. */
+export const HUB_SORT_COLUMNS = ["name", "code", "type", "status", "createdAt"] as const
+export type HubSortColumn = (typeof HUB_SORT_COLUMNS)[number]
+
 /**
  * The `/parcels` default view. Links into the list need a complete search
  * object because `validateSearch` resolves every field as required, so the
@@ -43,6 +53,10 @@ export const DEFAULT_PARCELS_SEARCH: ParcelListSearch = {
   sort: "desc",
   search: "",
 }
+
+/** Re-exported from `org-search-params` so nav and routes share one default. */
+export type { BranchesSearch, HubsSearch }
+export { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH }
 
 export type ParcelListSearch = {
   page: number

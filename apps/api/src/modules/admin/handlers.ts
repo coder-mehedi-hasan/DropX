@@ -94,6 +94,11 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
    * resolved here, not from anything the client sent.
    */
   reference: {
+    listBranches: async (c) => {
+      const page = await reference.listBranches(c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
     listHubs: async (c) => {
       const page = await reference.listHubs(scopeFromAuth(c.get("auth")), c.req.valid("query"))
       return c.json(response.success(page))

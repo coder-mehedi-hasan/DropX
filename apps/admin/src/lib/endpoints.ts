@@ -17,15 +17,23 @@ import type {
   UpdateParcelStatusBody,
 } from "./parcels"
 import type {
+  Branch,
+  BranchOption,
+  CreateBranchBody,
+  CreateHubBody,
   CustomerOption,
   DeliveryQuote,
+  Hub,
   HubOption,
   LoginResult,
   ParcelTracking,
   ReferenceListParams,
   StaffIdentity,
+  UpdateBranchBody,
+  UpdateHubBody,
   ZoneOption,
 } from "./types"
+import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -129,4 +137,76 @@ export function searchCustomersForPicker(params: ReferenceListParams, signal?: A
     query: referenceQuery(params),
     ...(signal ? { signal } : {}),
   })
+}
+
+/** Branch lookup for the hub-create picker. Narrow projection, same as the others. */
+export function listBranchesForPicker(params: ReferenceListParams, signal?: AbortSignal) {
+  return api.get<Page<BranchOption>>("/admin/reference/branches", {
+    query: referenceQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+/*
+ * Organization: branches and hubs.
+ *
+ * These are the first Phase 1 endpoints, and they follow the same shape as
+ * `listParcels`: the list takes the full query object (page, limit, sort,
+ * filters, search), and the single reads take an id. `search` is omitted
+ * rather than sent empty, so an untouched search box returns the first page
+ * instead of matching the empty string against every row.
+ */
+
+export function listBranches(params: BranchesSearch) {
+  return api.get<Page<Branch>>("/admin/branches", { query: orgQuery(params) })
+}
+
+export function getBranch(branchId: string, signal?: AbortSignal) {
+  return api.get<Branch>(`/admin/branches/${branchId}`, signal ? { signal } : undefined)
+}
+
+export function createBranch(body: CreateBranchBody) {
+  return api.post<Branch>("/admin/branches", body)
+}
+
+export function updateBranch(branchId: string, body: UpdateBranchBody) {
+  return api.patch<Branch>(`/admin/branches/${branchId}`, body)
+}
+
+export function listHubs(params: HubsSearch) {
+  return api.get<Page<Hub>>("/admin/hubs", { query: orgQuery(params) })
+}
+
+export function getHub(hubId: string, signal?: AbortSignal) {
+  return api.get<Hub>(`/admin/hubs/${hubId}`, signal ? { signal } : undefined)
+}
+
+export function createHub(body: CreateHubBody) {
+  return api.post<Hub>("/admin/hubs", body)
+}
+
+export function updateHub(hubId: string, body: UpdateHubBody) {
+  return api.patch<Hub>(`/admin/hubs/${hubId}`, body)
+}
+
+function orgQuery(params: {
+  page: number
+  limit: number
+  sortBy: string
+  sort: "asc" | "desc"
+  search: string
+  status?: string
+  type?: string
+  branchId?: string
+}) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    ...(params.type ? { type: params.type } : {}),
+    ...(params.branchId ? { branchId: params.branchId } : {}),
+  }
 }
