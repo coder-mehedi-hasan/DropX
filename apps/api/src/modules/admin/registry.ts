@@ -1,6 +1,14 @@
 import { PERMISSIONS } from "../../shared/auth/permissions"
 import { defineSurface } from "../../shared/auth/surface"
 import {
+  customerRefResponseSchema,
+  hubRefResponseSchema,
+  listHubsQuerySchema,
+  listZonesQuerySchema,
+  searchCustomersQuerySchema,
+  zoneRefResponseSchema,
+} from "../reference/reference.dto"
+import {
   cancelParcelSchema,
   createParcelSchema,
   listParcelsQuerySchema,
@@ -107,6 +115,61 @@ export const ADMIN_SURFACE = defineSurface({
             404: "No such parcel in scope.",
             409: "The parcel cannot be cancelled from its current status.",
           },
+        },
+      },
+    },
+
+    /**
+     * Reference reads. The Phase 0 feature, and the reason Phase 0 exists: the
+     * parcel-create dialog has six free-text id fields today, and this is what
+     * turns them into comboboxes.
+     *
+     * Three endpoints, not seven, because three is what the gate needs —
+     * customers, hubs, zones. Branches, users, riders, and vehicles are not
+     * declared until a screen asks for one; adding an entry here is a registry
+     * change plus a handler, and the registry is what makes that cheap.
+     *
+     * Each carries its own `*.view` key rather than one blanket `reference.read`,
+     * so a role that may look up a hub to book a parcel is not thereby also
+     * granted the customer list.
+     */
+    reference: {
+      tag: "reference",
+      tagDescription:
+        "Read-only lookups that populate pickers: hubs, zones, and customer search. Narrow projections for comboboxes, not table dumps.",
+      operations: {
+        listHubs: {
+          method: "GET",
+          path: "/reference/hubs",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.HUBS_VIEW] },
+          summary: "List hubs (picker)",
+          successDescription: "A page of hubs.",
+          description:
+            "Branch-scoped hub lookup for pickers. A non-company-wide caller sees only their own branch's hubs, narrowed further to their assigned hubs where the role says so. Only the fields a combobox renders are returned — no coordinates, no capacity.",
+          query: listHubsQuerySchema,
+          listNodes: hubRefResponseSchema,
+        },
+        listZones: {
+          method: "GET",
+          path: "/reference/zones",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_VIEW] },
+          summary: "List zones (picker)",
+          successDescription: "A page of zones.",
+          description:
+            "Delivery zones for pickers. Zones are company-wide rather than branch-scoped, so this is not filtered by the caller's branch.",
+          query: listZonesQuerySchema,
+          listNodes: zoneRefResponseSchema,
+        },
+        searchCustomers: {
+          method: "GET",
+          path: "/reference/customers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_VIEW] },
+          summary: "Search customers (picker)",
+          successDescription: "A page of customers.",
+          description:
+            "Customer search for pickers, matching on name, phone, or email. The projection deliberately excludes addresses and consent timestamps: a combobox has no use for them, and a published contract that omits them cannot be quietly widened later.",
+          query: searchCustomersQuerySchema,
+          listNodes: customerRefResponseSchema,
         },
       },
     },

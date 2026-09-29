@@ -8,21 +8,25 @@
 
 ## Decisions already taken
 
-| Decision                                   | Choice                                                                                          | Section |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------- |
-| Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice | §3      |
-| Phase 0 scope                              | **the `reference` module only** — the `audit` writer is deferred (§4, Phase 0)                  | §4      |
-| Status                                     | **Phase A complete** — registry on two surfaces, namespace split done, no hand-written parcels  | §3.9    |
-| How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                    | §3.3    |
-| What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                   | §3.5    |
-| Layout under the new namespace             | `modules/admin/` with `registry.ts` + `handlers.ts` — surface-first, one place for contracts    | §3.3    |
-| Where shared logic lives                   | `modules/{domain}/*.service.ts` + `*.repository.ts` stay put; only the contract is per surface  | §3.3    |
-| Registry scope                             | **admin surface only, proved on 5 operations** — extend once it works                           | §3.2    |
-| Riders                                     | out of scope for this change                                                                    | §3.8    |
+| Decision                                   | Choice                                                                                            | Section |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ------- |
+| Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice   | §3      |
+| Phase 0 scope                              | **the `reference` module only** — the `audit` writer is deferred (§4, Phase 0)                    | §4      |
+| Reference endpoints                        | **3 landed** — hubs, zones, customers; branches/users/riders/vehicles wait for a screen that asks | §4, §6  |
+| `zones.view` for `BRANCH_MANAGER`          | **open, blocks the Phase 0 gate** — the role that books parcels cannot list zones                 | §4      |
+| Status                                     | **Phase A complete** — registry on two surfaces, namespace split done, no hand-written parcels    | §3.9    |
+| How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                      | §3.3    |
+| What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                     | §3.5    |
+| Layout under the new namespace             | `modules/admin/` with `registry.ts` + `handlers.ts` — surface-first, one place for contracts      | §3.3    |
+| Where shared logic lives                   | `modules/{domain}/*.service.ts` + `*.repository.ts` stay put; only the contract is per surface    | §3.3    |
+| Registry scope                             | **admin surface only, proved on 5 operations** — extend once it works                             | §3.2    |
+| Riders                                     | out of scope for this change                                                                      | §3.8    |
 
 Closed since the first draft: the generated OpenAPI is **in memory**, served at `/openapi.json` rather than written to `openapi/paths/` (§3.7); the version bump is **in place** (§3.7).
 
-Closed: the customer half of the namespace split (§3.9). Still open: the reference-data shape (§6), which is the first decision whoever starts Phase 0 has to make.
+Closed: the customer half of the namespace split (§3.9), and the reference-data shape (§6) — the `reference` module's three operations are built and verified (§4, Phase 0). The registry is now proved on **two** surfaces, 25 operations.
+
+Still open: the `zones.view` grant for `BRANCH_MANAGER`, which blocks the Phase 0 gate (§4).
 
 ---
 
@@ -357,20 +361,22 @@ A1 added two smoke assertions not in the original gate: every `/admin` operation
 
 Sequential. Each phase's **Gate** must pass before the next starts. Estimates assume one engineer familiar with the codebase; they exclude review, the restructure in §3, and the cross-cutting work in §5.
 
-### Phase 0 — Foundation · ~2-3 days · 1 module, ~7 operations
+### Phase 0 — Foundation · ~2-3 days · 1 module, 3 operations (API landed)
+
+**Status: the API half is built and verified; the UI half is not started.** See "Where Phase 0 actually stands" below before planning further work.
 
 Nothing else is buildable without this. The module lands as a registry entry in the `admin/` surface established in §3, so it mounts at `/api/v1/admin/reference/...` with `admin.*` ids — no `*.routes.ts` file to write, just a registry entry and a handler. The `audit` module is deferred; see below.
 
 **API**
 
-| Module      | Ops | Registry entry          | Contents                                                                                                                                           |
-| ----------- | --- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reference` | ~7  | `registry/reference.ts` | read endpoints for hubs, zones, branches, customer search, users, riders, vehicles — all gated by the matching `*.view` key                        |
-| `audit`     | ~3  | deferred                | **OUT OF SCOPE for now.** The `audit.view` key and the `audit_logs` table stay; nothing consumes them. Revisit before the first production deploy. |
+| Module      | Ops | Registry entry      | Contents                                                                                                                                           |
+| ----------- | --- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reference` | 3   | `admin/registry.ts` | **LANDED.** `hubs`, `zones`, `customers` — the three the parcel-create gate needs, each gated by its own matching `*.view` key                     |
+| `audit`     | ~3  | deferred            | **OUT OF SCOPE for now.** The `audit.view` key and the `audit_logs` table stay; nothing consumes them. Revisit before the first production deploy. |
 
 `audit_logs` has a seeded permission, a documented purpose, and a UI claim that is currently false. Retrofitting a writer into 20 mutation services later costs several times what doing it now costs.
 
-**Deferred, and that is a decision with a cost.** The `audit` module is out of scope for now, so Phase 0 is the `reference` module alone. What that buys: one surface, seven read operations, and the picker layer every later phase depends on — reached with one concept in the code. What it defers: the writer. Every mutation service that lands in Phases 1-4 is a service the writer will later have to be added to, and a service written without it is one someone has to remember to come back for.
+**Deferred, and that is a decision with a cost.** The `audit` module is out of scope for now, so Phase 0 is the `reference` module alone. What that buys: one surface, three read operations, and the picker layer every later phase depends on — reached with one concept in the code. What it defers: the writer. Every mutation service that lands in Phases 1-4 is a service the writer will later have to be added to, and a service written without it is one someone has to remember to come back for.
 
 The mitigation is that **nothing may claim audit history exists** — no screen, no doc, no `/audit-logs` route — until the writer does. `GET /audit-logs` should not be added on its own either: a readable empty table is worse than no route, because it looks like a finished feature.
 
@@ -385,6 +391,36 @@ The mitigation is that **nothing may claim audit history exists** — no screen,
 **Gate:** the parcel-create dialog has zero free-text ID inputs — the six it has today (`senderCustomerId`, `receiverCustomerId`, `originHubId`, `destinationHubId`, `originZoneId`, `destinationZoneId`) are all comboboxes backed by `reference` — and the parcels list has a working `hubId` control. One reference-driven list screen and one reference-driven CRUD screen exist end to end, as the pattern for Phases 1-4.
 
 The six fields above are the whole reason Phase 0 exists, and they set the minimum: a customer search and two list endpoints. Branches, users, riders, and vehicles are speculative until a screen needs them — see §6 for whether to declare them now or when the first picker asks.
+
+#### Where Phase 0 actually stands
+
+Landed and verified:
+
+| Operation                         | Path                                    | Permission       |
+| --------------------------------- | --------------------------------------- | ---------------- |
+| `admin.reference.listHubs`        | `GET /api/v1/admin/reference/hubs`      | `hubs.view`      |
+| `admin.reference.listZones`       | `GET /api/v1/admin/reference/zones`     | `zones.view`     |
+| `admin.reference.searchCustomers` | `GET /api/v1/admin/reference/customers` | `customers.view` |
+
+Three rather than the ~7 originally scoped, because three is what the gate needs and each addition is a registry entry plus a handler. The responses are narrow projections — `HubOption` has no coordinates or capacity, `CustomerOption` has no addresses and never joins `customer_addresses`. That is deliberate: a published contract that omits a field cannot be quietly widened later. `limit` is clamped twice, in the DTO and again in the service, because these are hit per keystroke by a picker.
+
+Two decisions that the schema forced rather than that were chosen:
+
+- **Hubs are branch-scoped, zones are not.** `hubs.branch_id` exists, so a branch manager picking an origin hub sees their own network. `zones` has no branch column, so the zone list is company-wide. Verified against `migrate.sql`, and the emitted SQL was inspected to confirm the `branch_id` predicate is actually present rather than dropped.
+- **Each endpoint carries its own `*.view` key**, not one blanket `reference.read`, so a role that may look up a hub to book a parcel is not thereby granted the customer list.
+
+Verification: 25 operations in the catalog, `smoke` clean, typecheck green in all six workspaces, and the three reads added to `check:read-paths` — 43/43 against the live schema, covering every `sortBy` value, since `sortBy` arrives from a client and the allowlist is the only thing between it and the SQL.
+
+**Not done, and it is the rest of the gate:** the UI. `parcel-create-dialog.tsx` still takes all six IDs as text inputs, the parcels list still ships no `hubId` control, and `FormSheetShell` / `ServerDataTable` / `ServerFormError` / `usePaginatedListWhere` do not exist yet. The admin client has the three endpoint functions and their wire types; nothing calls them. A reference module with no picker in front of it is plumbing, not a gate.
+
+**Open — a permission gap that blocks the gate.** Of the seeded default roles, only `ADMIN` and `BRANCH_MANAGER` hold `parcels.create`, and `BRANCH_MANAGER` does **not** hold `zones.view`:
+
+| Role             | `hubs.view` | `zones.view` | `customers.view` |
+| ---------------- | ----------- | ------------ | ---------------- |
+| `ADMIN`          | yes         | yes          | yes              |
+| `BRANCH_MANAGER` | yes         | **NO**       | yes              |
+
+So two of the six pickers — origin and destination zone — would return 403 for every branch manager, and the gate would pass for `ADMIN` while failing for the role that actually books parcels day to day. Zones are non-sensitive reference data, so the smallest fix is granting `zones.view` to `BRANCH_MANAGER`; the broader fix grants it to `HUB_OPERATOR` and `DISPATCHER` too, which neither can use until they gain `parcels.create`. This is a seed change and a `docs/rbac.md` change, so it is a decision to make deliberately rather than a line to slip in.
 
 ---
 
@@ -470,13 +506,11 @@ Dashboard KPIs: parcels by status, in-scope count, failed deliveries, COD outsta
 
 ## 6. The Phase 0 decision
 
-**What shape should reference data take?** Three options:
+**RESOLVED — option 1, narrowed to 3 operations.** One `reference` feature on the `admin` surface: `hubs`, `zones`, `customers`. The six free-text ID fields in `parcel-create-dialog.tsx` need exactly a customer search and two lists, and that is what got built. Branches, users, riders, and vehicles are not speculative-but-free — they are not written at all, and adding one is a registry entry plus a handler, which the registry is what makes cheap.
 
-1. **One `reference` module, ~7 read operations** — single registry entry set, single permission story, one place to add a picker later. _Recommended._ Downside: not a domain noun, so it will not grow into CRUD; Phase 1 supersedes parts of it.
-2. **Three modules** — `hubs`, `zones`, `customers` read-only now, gaining CRUD in Phase 1. Cleaner boundary, but the same fragment is written three times and each table is split across two modules.
-3. **Sub-resources on future modules** — `GET /hubs?picker=1`. No separate module, but every picker call then needs its own permission mix, and Phase 0 still has to invent the response shape.
+The other two options were rejected on the same grounds: option 2 splits three tables across two modules and writes the same fragment three times, and option 3 leaves every picker needing its own permission mix while still inventing the response shape later.
 
-Decision owner: whoever writes Phase 0. Options 1 and 2 differ mainly in how much of Phase 0 Phase 1 throws away — 1 discards more, 2 discards nothing but writes more boilerplate now.
+What narrowing to 3 did not avoid is recorded in §4: the endpoints took their `*.view` keys from the existing permission catalog, and the catalog has a hole — `BRANCH_MANAGER` holds `parcels.create` but not `zones.view`. Picking a key that already exists is what surfaced it, and that is the argument for reusing the catalog rather than inventing a `reference.read`.
 
 Still open from §3, and worth answering before §3 starts rather than during: **is any external system calling this API today?** That decides in-place vs `/api/v2`.
 
