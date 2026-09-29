@@ -4,9 +4,15 @@ import { LogIn } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Card, DropXLogo, Form, FormInput, FormPasswordInput, LoadingButton } from "@dropx/ui"
-import { toast } from "sonner"
-
+import {
+  AppToast,
+  Card,
+  DropXLogo,
+  Form,
+  FormInput,
+  FormPasswordInput,
+  LoadingButton,
+} from "@dropx/ui"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
 import { resolveRedirect } from "@/lib/navigation"
@@ -40,7 +46,7 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(values.email, values.password)
-      toast.success("Signed in")
+      AppToast.success("Signed in")
       await navigate(resolveRedirect(redirect))
     } catch (error) {
       setServerError(error)

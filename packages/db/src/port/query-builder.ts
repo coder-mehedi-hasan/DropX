@@ -174,15 +174,34 @@ export class QueryBuilder {
    * Applies `sortBy`/`sort` when the column passed the allowlist, otherwise
    * `fallback`. Falls back entirely also when sorting on the fallback would
    * contradict an explicit filter-driven order, so callers stay in control.
+   *
+   * `allowed` takes either shape, and the difference is the whole point:
+   *
+   * - An **array** means the strings are already SQL columns, emitted verbatim.
+   * - A **record** means the strings are the *client-facing* keys, and the
+   *   values are the SQL columns they resolve to.
+   *
+   * The record form exists because `sortBy` is published in OpenAPI as a
+   * camelCase key (`createdAt`) while the column is snake_case and qualified
+   * (`p.created_at`). Passing the contract keys as an array looks correct — they
+   * match the DTO enum exactly — and produces `ORDER BY createdAt`, which is a
+   * 500 at runtime rather than a rejected sort. With a record the two can never
+   * be confused, and a key with no mapping falls back instead of reaching SQL.
    */
   orderByListParams(
     params: ListParams,
-    allowed: readonly string[],
+    allowed: readonly string[] | Readonly<Record<string, string>>,
     fallback: readonly SortColumn[],
   ): this {
-    const requested = params.sortBy && allowed.includes(params.sortBy) ? params.sortBy : undefined
-    const columns: SortColumn[] = requested
-      ? [{ column: requested, direction: params.sort }, ...fallback]
+    let column: string | undefined
+    if (Array.isArray(allowed)) {
+      column = allowed.includes(params.sortBy) ? params.sortBy : undefined
+    } else if (params.sortBy) {
+      column = (allowed as Readonly<Record<string, string>>)[params.sortBy]
+    }
+
+    const columns: SortColumn[] = column
+      ? [{ column, direction: params.sort }, ...fallback]
       : [...fallback]
     return this.orderBy(columns)
   }

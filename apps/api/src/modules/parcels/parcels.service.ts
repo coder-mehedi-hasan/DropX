@@ -16,6 +16,7 @@ import type { Scope } from "../../shared/auth/auth-context"
 import { emit } from "../../shared/events/bus"
 import { quoteDeliveryFee } from "../pricing/pricing.service"
 import type { CreateParcelInput, ListParcelsQuery } from "./parcels.dto"
+import { PARCEL_SORT_COLUMN_BY_KEY } from "./parcels.dto"
 import {
   findParcelById,
   findParcelForCustomer,
@@ -68,10 +69,15 @@ export type ParcelListFilter = {
   paymentType?: ListParcelsQuery["paymentType"]
 }
 
+/**
+ * The sort allowlist is not a parameter. It used to be, and a handler passing
+ * the DTO's camelCase keys here is what caused `ORDER BY createdAt` and a 500.
+ * The service owns the key → column map so a caller cannot supply a list that
+ * disagrees with the published contract.
+ */
 export async function listParcelsForStaff(
   scope: Scope,
   query: ListParcelsQuery,
-  sortColumns: readonly string[],
   searchFields: readonly string[],
 ): Promise<Page<Parcel>> {
   const params = toListParams(query)
@@ -81,7 +87,7 @@ export async function listParcelsForStaff(
     scope,
     params,
     { ...query, search: params.search, searchFields },
-    sortColumns,
+    PARCEL_SORT_COLUMN_BY_KEY,
   )
 
   return buildPage(nodes, totalCount, params)
@@ -90,7 +96,6 @@ export async function listParcelsForStaff(
 export async function listParcelsForCustomerPortal(
   customerId: Id,
   query: ListParcelsQuery,
-  sortColumns: readonly string[],
   searchFields: readonly string[],
 ): Promise<Page<Parcel>> {
   const params = toListParams(query)
@@ -100,7 +105,7 @@ export async function listParcelsForCustomerPortal(
     customerId,
     params,
     { status: query.status, search: params.search, searchFields },
-    sortColumns,
+    PARCEL_SORT_COLUMN_BY_KEY,
   )
 
   return buildPage(nodes, totalCount, params)

@@ -81,11 +81,11 @@ export async function listParcels(
   scope: Scope,
   params: ListParams,
   filter: ListParcelsFilter,
-  sortColumns: readonly string[],
+  sortColumnByKey: Readonly<Record<string, string>>,
 ): Promise<{ nodes: Parcel[]; totalCount: number }> {
   const builder = applyScope(applyFilters(baseQuery(), filter), scope).orderByListParams(
     params,
-    sortColumns,
+    sortColumnByKey,
     [
       { column: "p.created_at", direction: "desc" },
       { column: "p.id", direction: "desc" },
@@ -151,7 +151,7 @@ export async function listParcelsForCustomer(
   customerId: Id,
   params: ListParams,
   filter: ListParcelsFilter,
-  sortColumns: readonly string[],
+  sortColumnByKey: Readonly<Record<string, string>>,
 ): Promise<{ nodes: Parcel[]; totalCount: number }> {
   const builder = new QueryBuilder()
     .select(SELECT_COLUMNS)
@@ -161,7 +161,7 @@ export async function listParcelsForCustomer(
 
   applyFilters(builder, filter)
 
-  builder.orderByListParams(params, sortColumns, [
+  builder.orderByListParams(params, sortColumnByKey, [
     { column: "p.created_at", direction: "desc" },
     { column: "p.id", direction: "desc" },
   ])

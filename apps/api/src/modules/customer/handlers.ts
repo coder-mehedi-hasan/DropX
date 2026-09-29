@@ -2,7 +2,6 @@ import { ERROR_CODES, DomainError } from "../../core"
 import { response } from "../../core/http"
 import { isCustomer } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
-import { PARCEL_SORT_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import type { CUSTOMER_SURFACE } from "./registry"
 
@@ -30,7 +29,6 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
       const page = await parcels.listParcelsForCustomerPortal(
         auth.actor.customerId,
         c.req.valid("query"),
-        PARCEL_SORT_COLUMNS,
         ["p.tracking_number"],
       )
 

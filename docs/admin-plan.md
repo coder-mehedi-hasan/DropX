@@ -380,13 +380,15 @@ Nothing else is buildable without this. The module lands as a registry entry in 
 
 The mitigation is that **nothing may claim audit history exists** — no screen, no doc, no `/audit-logs` route — until the writer does. `GET /audit-logs` should not be added on its own either: a readable empty table is worse than no route, because it looks like a finished feature.
 
-**UI — `packages/ui`, then `apps/admin`**
+**UI — `packages/ui`, then `apps/admin`** — all five landed
 
-1. `ServerDataTable` — server-driven wrapper over the existing `DataTable`.
-2. `FormSheetShell` + `useFormSheetState` — one overlay decision, applied to all CRUD.
-3. `ServerFormError` — maps `error.details` → RHF field errors (there is a local precedent in `features/parcels/parcel-form-errors.tsx` to promote).
-4. `usePaginatedListWhere` for TanStack Router — URL-driven filters, debounce, page reset.
-5. Replace the raw-ID inputs in `parcel-create-dialog.tsx` with real comboboxes; add the missing `hubId` filter control.
+1. `ServerDataTable` — server-driven wrapper over the existing `DataTable`. Built, **not yet adopted**: the parcels list still renders its own bespoke `<Table>`, so this is unproven against a real screen.
+2. `FormSheetShell` + `useFormSheetState` — one overlay decision. Built, **not yet adopted**, and it carries the open question in "What Phase 0 still needs" below.
+3. `ServerFormError` + `FormErrorSummary` + `applyServerFieldErrors` + `useServerErrors` — promoted out of `features/parcels/parcel-form-errors.tsx`, which had exactly one call site and is now just the parcel label map. Transport-agnostic by shape rather than by importing any app's `ApiError`, which is what lets it live in `packages/ui`. **In use.**
+4. `useQueryParams` + `usePaginatedListWhere` for TanStack Router, plus `ListSearchBar` / `ListFilterSelect` in `apps/admin`. **In use** — the parcels list's hand-rolled `patch`, debounce, search box and two filter selects are all these now.
+5. `ReferenceCombobox` replacing the six raw-ID inputs in `parcel-create-dialog.tsx`; the `hubId` filter added to the list. **In use.**
+
+Also added, not in the original five: `AppToast` (success-only, with one documented `failure` exception for local non-API failures like a refused clipboard write) and `useConfirmation`. `useConfirmation` is built but unused — `CancelParcelDialog` collects a reason, so it is a form, not a confirm.
 
 **Gate:** the parcel-create dialog has zero free-text ID inputs — the six it has today (`senderCustomerId`, `receiverCustomerId`, `originHubId`, `destinationHubId`, `originZoneId`, `destinationZoneId`) are all comboboxes backed by `reference` — and the parcels list has a working `hubId` control. One reference-driven list screen and one reference-driven CRUD screen exist end to end, as the pattern for Phases 1-4.
 
@@ -411,7 +413,9 @@ Two decisions that the schema forced rather than that were chosen:
 
 Verification: 25 operations in the catalog, `smoke` clean, typecheck green in all six workspaces, and the three reads added to `check:read-paths` — 43/43 against the live schema, covering every `sortBy` value, since `sortBy` arrives from a client and the allowlist is the only thing between it and the SQL.
 
-**Not done, and it is the rest of the gate:** the UI. `parcel-create-dialog.tsx` still takes all six IDs as text inputs, the parcels list still ships no `hubId` control, and `FormSheetShell` / `ServerDataTable` / `ServerFormError` / `usePaginatedListWhere` do not exist yet. The admin client has the three endpoint functions and their wire types; nothing calls them. A reference module with no picker in front of it is plumbing, not a gate.
+**The UI half has since landed.** The six IDs are now `ReferenceCombobox` pickers, the list has a `hubId` control gated on `hubs.view`, and the four shared components exist. Verified: typecheck green in six workspaces, all four apps build, `smoke` 25 operations, `check:read-paths` 43/43, and no new Prettier failures (the repo had 64 pre-existing; this branch is at 57).
+
+**The gate is met on the picker half and open on the overlay half.** `FormSheetShell` exists but the create form is still a `Dialog`, so the "decide `Dialog` vs `Sheet` once" decision has been built and not applied. Converting it changes how a working screen looks and behaves, and it cannot be verified without a browser — so it is left as an explicit decision rather than done blind.
 
 **Open — a permission gap that blocks the gate.** Of the seeded default roles, only `ADMIN` and `BRANCH_MANAGER` hold `parcels.create`, and `BRANCH_MANAGER` does **not** hold `zones.view`:
 

@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
 import type { ReactNode } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
@@ -33,15 +32,17 @@ import {
   Separator,
   Textarea,
   LoadingButton,
+  useServerErrors,
+  FormErrorSummary,
+  ServerFormError,
+  AppToast,
 } from "@dropx/ui"
-import { toast } from "sonner"
-
-import { ServerError } from "@/components/server-error"
+import { ReferenceCombobox } from "@/components/reference-combobox"
 import { createParcel, quoteDeliveryFee } from "@/lib/endpoints"
 import { formatMoney } from "@/lib/format"
 import { PARCEL_TYPES, PAYMENT_TYPES, type CreateParcelBody } from "@/lib/parcels"
 
-import { FieldErrorSummary, mapDetailsToFields } from "./parcel-form-errors"
+import { FIELD_LABELS } from "./parcel-form-errors"
 
 /**
  * Mirrors `createParcelSchema` in `apps/api`.
@@ -180,6 +181,19 @@ const DEFAULT_VALUES: CreateParcelValues = {
   items: [],
 }
 
+/**
+ * Guards `applyServerFieldErrors` against a field the form does not have.
+ *
+ * `details[].field` is a string off the wire, and `setError` on an unknown path
+ * throws in react-hook-form — so an API that names a field this form dropped
+ * would crash the form rather than report a problem. The default values carry
+ * exactly the form's fields, which makes them the local source of truth.
+ */
+const KNOWN_FIELDS = new Set(Object.keys(DEFAULT_VALUES))
+function isKnownField(field: string): boolean {
+  return KNOWN_FIELDS.has(field) || field.startsWith("items.")
+}
+
 export function ParcelCreateDialog({
   open,
   onOpenChange,
@@ -190,12 +204,13 @@ export function ParcelCreateDialog({
   onCreated: () => void
 }) {
   const queryClient = useQueryClient()
-  const [serverError, setServerError] = useState<unknown>(null)
 
   const form = useForm<CreateParcelValues>({
     resolver: zodResolver(createParcelSchema),
     defaultValues: DEFAULT_VALUES,
   })
+
+  const { error, capture, clear } = useServerErrors(form.setError, isKnownField)
 
   const items = useFieldArray({ control: form.control, name: "items" })
 
@@ -236,19 +251,18 @@ export function ParcelCreateDialog({
   const mutation = useMutation({
     mutationFn: (values: CreateParcelBody) => createParcel(values),
     onSuccess: (parcel) => {
-      toast.success(`Parcel ${parcel.trackingNumber} booked`)
+      AppToast.success(`Parcel ${parcel.trackingNumber} booked`)
       onCreated()
       void queryClient.invalidateQueries({ queryKey: ["parcels"] })
       onOpenChange(false)
     },
-    onError: (error: unknown) => {
-      mapDetailsToFields(error, form.setError)
-      setServerError(error)
-    },
+    // `capture` maps details onto the fields and holds the banner in one step,
+    // so the two can never disagree about what failed.
+    onError: capture,
   })
 
   function onSubmit(values: CreateParcelValues) {
-    setServerError(null)
+    clear()
     mutation.mutate(toCreateBody(values))
   }
 
@@ -258,7 +272,7 @@ export function ParcelCreateDialog({
       onOpenChange={(next) => {
         if (mutation.isPending) return
         if (next) form.reset(DEFAULT_VALUES)
-        setServerError(null)
+        clear()
         onOpenChange(next)
       }}
     >
@@ -273,12 +287,12 @@ export function ParcelCreateDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-6">
-            <ServerError
-              error={serverError}
-              title="Unable to book this parcel"
-              onDismiss={() => setServerError(null)}
+            <ServerFormError error={error} title="Unable to book this parcel" onDismiss={clear} />
+            <FormErrorSummary
+              errors={form.formState.errors}
+              labels={FIELD_LABELS}
+              title="Fix these before booking"
             />
-            <FieldErrorSummary errors={form.formState.errors} />
 
             <section className="space-y-3">
               <SectionLabel>Customers</SectionLabel>
@@ -288,9 +302,16 @@ export function ParcelCreateDialog({
                   name="senderCustomerId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Sender customer id</FormLabel>
+                      <FormLabel>Sender</FormLabel>
                       <FormControl>
-                        <Input placeholder="12" disabled={mutation.isPending} {...field} />
+                        <ReferenceCombobox
+                          source="customers"
+                          placeholder="Search the customer sending this"
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={mutation.isPending}
+                          invalid={Boolean(form.formState.errors.senderCustomerId)}
+                        />
                       </FormControl>
                       <FormDescription>
                         Staff bookings always name a sender customer.
@@ -304,9 +325,16 @@ export function ParcelCreateDialog({
                   name="receiverCustomerId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Receiver customer id</FormLabel>
+                      <FormLabel>Receiver</FormLabel>
                       <FormControl>
-                        <Input placeholder="34" disabled={mutation.isPending} {...field} />
+                        <ReferenceCombobox
+                          source="customers"
+                          placeholder="Search the customer receiving this"
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={mutation.isPending}
+                          invalid={Boolean(form.formState.errors.receiverCustomerId)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -359,9 +387,16 @@ export function ParcelCreateDialog({
                   name="originHubId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Origin hub id</FormLabel>
+                      <FormLabel>Origin hub</FormLabel>
                       <FormControl>
-                        <Input placeholder="1" disabled={mutation.isPending} {...field} />
+                        <ReferenceCombobox
+                          source="hubs"
+                          placeholder="Search hubs"
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={mutation.isPending}
+                          invalid={Boolean(form.formState.errors.originHubId)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -372,9 +407,16 @@ export function ParcelCreateDialog({
                   name="destinationHubId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Destination hub id</FormLabel>
+                      <FormLabel>Destination hub</FormLabel>
                       <FormControl>
-                        <Input placeholder="4" disabled={mutation.isPending} {...field} />
+                        <ReferenceCombobox
+                          source="hubs"
+                          placeholder="Search hubs"
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={mutation.isPending}
+                          invalid={Boolean(form.formState.errors.destinationHubId)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -385,9 +427,16 @@ export function ParcelCreateDialog({
                   name="originZoneId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Origin zone id</FormLabel>
+                      <FormLabel>Origin zone</FormLabel>
                       <FormControl>
-                        <Input placeholder="2" disabled={mutation.isPending} {...field} />
+                        <ReferenceCombobox
+                          source="zones"
+                          placeholder="Search zones"
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={mutation.isPending}
+                          invalid={Boolean(form.formState.errors.originZoneId)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -398,9 +447,16 @@ export function ParcelCreateDialog({
                   name="destinationZoneId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Destination zone id</FormLabel>
+                      <FormLabel>Destination zone</FormLabel>
                       <FormControl>
-                        <Input placeholder="5" disabled={mutation.isPending} {...field} />
+                        <ReferenceCombobox
+                          source="zones"
+                          placeholder="Search zones"
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={mutation.isPending}
+                          invalid={Boolean(form.formState.errors.destinationZoneId)}
+                        />
                       </FormControl>
                       <FormDescription>Fees are anchored on the destination zone.</FormDescription>
                       <FormMessage />
@@ -575,7 +631,7 @@ export function ParcelCreateDialog({
 
               {canQuote ? (
                 quote.isError ? (
-                  <ServerError error={quote.error} title="Delivery fee could not be quoted" />
+                  <ServerFormError error={quote.error} title="Delivery fee could not be quoted" />
                 ) : quote.isPending ? (
                   <p className="text-muted-foreground text-sm">Quoting the delivery fee…</p>
                 ) : (
