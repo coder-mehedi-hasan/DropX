@@ -48,12 +48,11 @@ import {
   Textarea,
   LoadingButton,
   parcelStatusLabel,
+  AppToast,
 } from "@dropx/ui"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { toast } from "sonner"
-
 import { DetailRow, PageHeader, PanelTitle } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
@@ -356,7 +355,7 @@ function StatusChangeDialog({
         hubId: values.hubId?.trim() ? values.hubId.trim() : undefined,
       }),
     onSuccess: (updated) => {
-      toast.success(`Parcel is now ${parcelStatusLabel(updated.status).toLowerCase()}`)
+      AppToast.success(`Parcel is now ${parcelStatusLabel(updated.status).toLowerCase()}`)
       void queryClient.invalidateQueries({ queryKey: ["parcels"] })
       onDone()
       onOpenChange(false)
@@ -513,7 +512,7 @@ function CancelParcelDialog({
     mutationFn: (values: z.infer<typeof cancelSchema>) =>
       cancelParcel(parcelId, { reason: values.reason }),
     onSuccess: () => {
-      toast.success("Parcel cancelled")
+      AppToast.success("Parcel cancelled")
       void queryClient.invalidateQueries({ queryKey: ["parcels"] })
       onDone()
       onOpenChange(false)

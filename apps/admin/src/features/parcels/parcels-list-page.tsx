@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
 import { PARCEL_STATUSES, PAYMENT_TYPES } from "@dropx/db/entities"
-import type { ParcelStatus, PaymentType } from "@dropx/db/entities"
 import {
   ArrowDown,
   ArrowUp,
@@ -11,7 +10,6 @@ import {
   MoreHorizontal,
   Package,
   Plus,
-  Search,
   Truck,
 } from "lucide-react"
 import { useMemo, useState } from "react"
@@ -29,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   EmptyState,
-  Input,
   Select,
   SelectContent,
   SelectItem,
@@ -45,52 +42,57 @@ import {
   TableHeader,
   TableRow,
   parcelStatusLabel,
+  AppToast,
 } from "@dropx/ui"
-import { toast } from "sonner"
-
+import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
+import { ReferenceCombobox } from "@/components/reference-combobox"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
 import { listParcels } from "@/lib/endpoints"
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format"
 import { paymentFilter, statusFilter } from "@/lib/parcels"
 import type { Parcel, ParcelListParams, ParcelSortColumn } from "@/lib/parcels"
-import { useDebouncedValue } from "@/lib/use-debounced-value"
+import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
 import type { ParcelsSearch } from "@/routes/search-params"
 
 import { ParcelCreateDialog } from "./parcel-create-dialog"
 
-const ALL = "ALL"
 const PAGE_SIZES = [10, 20, 50, 100] as const
 
 export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
-  const navigate = useNavigate()
   const { hasPermission } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
 
+  /** The hub filter calls `hubs.view`, so it is only offered to roles that hold it. */
+  const canFilterByHub = hasPermission("hubs.view")
+
   // The URL takes the keystroke; only the debounced value costs a request.
-  const debouncedSearch = useDebouncedValue(search.search.trim(), 300)
+  // `usePaginatedListWhere` is what owns that split, and it is also what resets
+  // nothing on its own -- page resets live in `patch`, so the rule is stated
+  // once rather than at each call site.
+  const where = usePaginatedListWhere(search)
 
   const params = useMemo<ParcelListParams>(
     () => ({
-      page: search.page,
-      limit: search.limit,
-      sortBy: search.sortBy,
-      sort: search.sort,
-      search: debouncedSearch || undefined,
-      status: statusFilter(search.status),
-      paymentType: paymentFilter(search.paymentType),
-      hubId: search.hubId,
+      page: where.page,
+      limit: where.limit,
+      sortBy: where.sortBy,
+      sort: where.sort,
+      search: where.search || undefined,
+      status: statusFilter(where.status),
+      paymentType: paymentFilter(where.paymentType),
+      hubId: where.hubId,
     }),
     [
-      search.page,
-      search.limit,
-      search.sortBy,
-      search.sort,
-      debouncedSearch,
-      search.status,
-      search.paymentType,
-      search.hubId,
+      where.page,
+      where.limit,
+      where.sortBy,
+      where.sort,
+      where.search,
+      where.status,
+      where.paymentType,
+      where.hubId,
     ],
   )
 
@@ -101,15 +103,10 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
 
   /**
    * Every list mutation resets to page 1 — page 4 of a new result set is empty.
-   * The whole validated object is written rather than a partial, because an
-   * omitted key would otherwise keep its previous value.
+   * `useQueryParams` owns that rule and the whole-object write; an omitted key
+   * would otherwise keep its previous value and silently refuse to clear a filter.
    */
-  function patch(next: Partial<ParcelsSearch>, options?: { keepPage?: boolean }) {
-    void navigate({
-      to: "/parcels",
-      search: { ...search, ...next, ...(options?.keepPage ? {} : { page: 1 }) },
-    })
-  }
+  const [, patch] = useQueryParams<ParcelsSearch>("/parcels", search)
 
   function toggleSort(sortBy: ParcelSortColumn) {
     const sameColumn = search.sortBy === sortBy
@@ -146,60 +143,67 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
       <Card className="gap-0 py-0">
         <CardHeader className="border-b py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-56 flex-1">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-              <Input
+            <div className="min-w-56 flex-1">
+              <ListSearchBar
                 value={search.search}
-                onChange={(event) => patch({ search: event.target.value })}
+                onChange={(value) => patch({ search: value })}
+                label="Search parcels"
                 placeholder="Tracking number, receiver name or phone"
-                className="pl-8"
-                aria-label="Search parcels"
               />
             </div>
 
-            <Select
-              value={search.status || ALL}
-              onValueChange={(value) =>
-                patch({ status: value === ALL ? undefined : (value as ParcelStatus) })
-              }
-            >
-              <SelectTrigger size="sm" className="w-44" aria-label="Filter by status">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All statuses</SelectItem>
-                {PARCEL_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {parcelStatusLabel(status)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ListFilterSelect
+              className="w-44"
+              label="Filter by status"
+              allLabel="All statuses"
+              value={search.status ?? ""}
+              onChange={(value) => patch({ status: value || undefined })}
+              options={PARCEL_STATUSES.map((status) => ({
+                value: status,
+                label: parcelStatusLabel(status),
+              }))}
+            />
 
-            <Select
-              value={search.paymentType || ALL}
-              onValueChange={(value) =>
-                patch({ paymentType: value === ALL ? undefined : (value as PaymentType) })
-              }
-            >
-              <SelectTrigger size="sm" className="w-36" aria-label="Filter by payment type">
-                <SelectValue placeholder="All payments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All payments</SelectItem>
-                {PAYMENT_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type === "COD" ? "Cash on delivery" : "Prepaid"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ListFilterSelect
+              className="w-36"
+              label="Filter by payment type"
+              allLabel="All payments"
+              value={search.paymentType ?? ""}
+              onChange={(value) => patch({ paymentType: value || undefined })}
+              options={PAYMENT_TYPES.map((type) => ({
+                value: type,
+                label: type === "COD" ? "Cash on delivery" : "Prepaid",
+              }))}
+            />
 
-            {search.status || search.paymentType || search.search ? (
+            {/*
+              Gated on `hubs.view` rather than shown-then-failing: the endpoint
+              answers 403 to a role without the key, and a filter that errors on
+              every change is worse than a filter that is not offered.
+            */}
+            {canFilterByHub ? (
+              <div className="w-52">
+                <ReferenceCombobox
+                  source="hubs"
+                  placeholder="All hubs"
+                  value={search.hubId ?? ""}
+                  onChange={(hubId) => patch({ hubId: hubId || undefined })}
+                />
+              </div>
+            ) : null}
+
+            {search.status || search.paymentType || search.search || search.hubId ? (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => patch({ search: "", status: undefined, paymentType: undefined })}
+                onClick={() =>
+                  patch({
+                    search: "",
+                    status: undefined,
+                    paymentType: undefined,
+                    hubId: undefined,
+                  })
+                }
               >
                 Clear filters
               </Button>
@@ -216,7 +220,7 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
                 icon={Package}
                 title="No parcels match these filters"
                 description={
-                  search.search || search.status || search.paymentType
+                  search.search || search.status || search.paymentType || search.hubId
                     ? "Try a different tracking number, or clear the filters to see everything in your scope."
                     : "Nothing has been booked in your scope yet. Create the first parcel, or ask a hub operator to book on a customer's behalf."
                 }
@@ -385,8 +389,8 @@ function ParcelRow({ parcel }: { parcel: Parcel }) {
   function copyTracking() {
     void navigator.clipboard
       .writeText(parcel.trackingNumber)
-      .then(() => toast.success("Tracking number copied"))
-      .catch(() => toast.error("Could not copy to the clipboard"))
+      .then(() => AppToast.success("Tracking number copied"))
+      .catch(() => AppToast.failure("Could not copy to the clipboard"))
   }
 
   return (

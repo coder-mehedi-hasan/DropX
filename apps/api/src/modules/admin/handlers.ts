@@ -2,7 +2,7 @@ import { ERROR_CODES, DomainError } from "../../core"
 import { response } from "../../core/http"
 import { actorId, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
-import { PARCEL_SEARCH_COLUMNS, PARCEL_SORT_COLUMNS } from "../parcels/parcels.dto"
+import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import * as reference from "../reference/reference.service"
 import type { ADMIN_SURFACE } from "./registry"
@@ -25,7 +25,6 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
       const page = await parcels.listParcelsForStaff(
         scopeFromAuth(c.get("auth")),
         c.req.valid("query"),
-        PARCEL_SORT_COLUMNS,
         PARCEL_SEARCH_COLUMNS,
       )
       return c.json(response.success(page))

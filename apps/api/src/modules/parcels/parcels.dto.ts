@@ -78,7 +78,11 @@ export const cancelParcelSchema = z.object({
   reason: z.string().trim().min(1, "Tell us why you are cancelling").max(500),
 })
 
-/** Columns a client may sort by — the allowlist the query builder enforces. */
+/**
+ * Sort keys a client may ask for — the published contract, and the enum the
+ * query DTO validates against. These are camelCase because they are API surface,
+ * not SQL.
+ */
 export const PARCEL_SORT_COLUMNS = [
   "createdAt",
   "updatedAt",
@@ -86,6 +90,26 @@ export const PARCEL_SORT_COLUMNS = [
   "status",
   "weight",
 ] as const
+
+export type ParcelSortKey = (typeof PARCEL_SORT_COLUMNS)[number]
+
+/**
+ * Sort key → the column it orders by.
+ *
+ * This is the seam the previous code was missing. `PARCEL_SORT_COLUMNS` was
+ * passed to the query builder as if its entries were columns, so a client
+ * sorting by `createdAt` produced `ORDER BY createdAt` and a 500 — the keys match
+ * the DTO enum perfectly, which is exactly why it looked right. Keeping the
+ * contract and the SQL in one map means a key cannot be added without naming the
+ * column it reaches.
+ */
+export const PARCEL_SORT_COLUMN_BY_KEY: Readonly<Record<ParcelSortKey, string>> = {
+  createdAt: "p.created_at",
+  updatedAt: "p.updated_at",
+  trackingNumber: "p.tracking_number",
+  status: "p.status",
+  weight: "p.weight",
+}
 
 /** Columns searched by the list `search` param. */
 export const PARCEL_SEARCH_COLUMNS = ["p.tracking_number", "r.name", "r.phone"] as const

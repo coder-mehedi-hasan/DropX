@@ -35,7 +35,19 @@ const scope: Scope = {
   isCompanyWide: true,
 }
 const listParams: ListParams = { page: 1, limit: 10, offset: 0, sort: "desc" }
-const sortColumns = ["p.created_at", "p.status", "p.tracking_number"] as const
+/**
+ * The sort allowlist as the handler actually receives it: the published
+ * camelCase keys mapped to their SQL columns. Using the bare SQL columns here
+ * would validate the query builder and nothing else — it is how a client
+ * sorting by `createdAt` slipped through as a 500.
+ */
+const parcelSortByKey = {
+  createdAt: "p.created_at",
+  updatedAt: "p.updated_at",
+  trackingNumber: "p.tracking_number",
+  status: "p.status",
+  weight: "p.weight",
+} as const
 
 cases.push(
   {
@@ -58,7 +70,7 @@ cases.push(
 
   {
     name: "parcels.listParcels",
-    run: () => parcels.listParcels(db, scope, listParams, {}, sortColumns),
+    run: () => parcels.listParcels(db, scope, listParams, {}, parcelSortByKey),
   },
   {
     name: "parcels.listParcels(filtered)",
@@ -66,11 +78,15 @@ cases.push(
       parcels.listParcels(
         db,
         scope,
-        { ...listParams, sortBy: "p.created_at" },
+        { ...listParams, sortBy: "createdAt" },
         { status: "CREATED", search: "DX", hubId: "1", paymentType: "COD" },
-        sortColumns,
+        parcelSortByKey,
       ),
   },
+  ...(["createdAt", "updatedAt", "trackingNumber", "status", "weight"] as const).map((sortBy) => ({
+    name: `parcels.listParcels(sortBy=${sortBy})`,
+    run: () => parcels.listParcels(db, scope, { ...listParams, sortBy }, {}, parcelSortByKey),
+  })),
   { name: "parcels.findParcelById", run: () => parcels.findParcelById(db, scope, "1") },
   {
     name: "parcels.findParcelByTrackingNumber",
@@ -78,8 +94,13 @@ cases.push(
   },
   {
     name: "parcels.listParcelsForCustomer",
-    run: () => parcels.listParcelsForCustomer(db, "1", listParams, {}, sortColumns),
+    run: () => parcels.listParcelsForCustomer(db, "1", listParams, {}, parcelSortByKey),
   },
+  ...(["createdAt", "updatedAt", "trackingNumber", "status", "weight"] as const).map((sortBy) => ({
+    name: `parcels.listParcelsForCustomer(sortBy=${sortBy})`,
+    run: () =>
+      parcels.listParcelsForCustomer(db, "1", { ...listParams, sortBy }, {}, parcelSortByKey),
+  })),
   { name: "parcels.findParcelForCustomer", run: () => parcels.findParcelForCustomer(db, "1", "1") },
   { name: "parcels.listParcelItems", run: () => parcels.listParcelItems(db, "1") },
 
