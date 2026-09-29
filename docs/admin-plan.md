@@ -415,7 +415,7 @@ Verification: 25 operations in the catalog, `smoke` clean, typecheck green in al
 
 **The UI half has since landed.** The six IDs are now `ReferenceCombobox` pickers, the list has a `hubId` control gated on `hubs.view`, and the four shared components exist. Verified: typecheck green in six workspaces, all four apps build, `smoke` 25 operations, `check:read-paths` 43/43, and no new Prettier failures (the repo had 64 pre-existing; this branch is at 57).
 
-**The gate is met on the picker half and open on the overlay half.** `FormSheetShell` exists but the create form is still a `Dialog`, so the "decide `Dialog` vs `Sheet` once" decision has been built and not applied. Converting it changes how a working screen looks and behaves, and it cannot be verified without a browser — so it is left as an explicit decision rather than done blind.
+**The overlay decision is now applied.** `parcel-create-dialog.tsx` was converted from `Dialog` to `FormSheetShell`, which owns the `<form>`, the busy-guarded dismissal, the reset-on-open and the close-cleanup. The dialog's custom close handler was folded into the shell's `onReset`/`onClose` callbacks rather than duplicated — the shell is the place that owns overlay lifecycle, and a consumer that re-implements it is the failure mode the component exists to prevent. `ServerDataTable` is still not adopted: the parcels list keeps its bespoke `<Table>`, and that is a separate decision, not an oversight.
 
 **Open — a permission gap that blocks the gate.** Of the seeded default roles, only `ADMIN` and `BRANCH_MANAGER` hold `parcels.create`, and `BRANCH_MANAGER` does **not** hold `zones.view`:
 

@@ -10,12 +10,6 @@ import {
   AlertTitle,
   Badge,
   Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Form,
   FormControl,
   FormDescription,
@@ -31,12 +25,12 @@ import {
   SelectValue,
   Separator,
   Textarea,
-  LoadingButton,
   useServerErrors,
   FormErrorSummary,
   ServerFormError,
   AppToast,
 } from "@dropx/ui"
+import { FormSheetShell } from "@dropx/ui"
 import { ReferenceCombobox } from "@/components/reference-combobox"
 import { createParcel, quoteDeliveryFee } from "@/lib/endpoints"
 import { formatMoney } from "@/lib/format"
@@ -267,534 +261,501 @@ export function ParcelCreateDialog({
   }
 
   return (
-    <Dialog
+    <FormSheetShell
       open={open}
+      title="New parcel"
+      description="Staff booking on a customer's behalf. The sender and receiver must both be existing customers, and the delivery fee is calculated by the API."
+      submitLabel="Book parcel"
+      busy={mutation.isPending}
       onOpenChange={(next) => {
         if (mutation.isPending) return
         if (next) form.reset(DEFAULT_VALUES)
         clear()
         onOpenChange(next)
       }}
+      onReset={() => form.reset(DEFAULT_VALUES)}
+      onClose={clear}
+      onSubmit={form.handleSubmit(onSubmit)}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>New parcel</DialogTitle>
-          <DialogDescription>
-            Staff booking on a customer's behalf. The sender and receiver must both be existing
-            customers, and the delivery fee is calculated by the API.
-          </DialogDescription>
-        </DialogHeader>
+      <Form {...form}>
+        <ServerFormError error={error} title="Unable to book this parcel" onDismiss={clear} />
+        <FormErrorSummary
+          errors={form.formState.errors}
+          labels={FIELD_LABELS}
+          title="Fix these before booking"
+        />
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-6">
-            <ServerFormError error={error} title="Unable to book this parcel" onDismiss={clear} />
-            <FormErrorSummary
-              errors={form.formState.errors}
-              labels={FIELD_LABELS}
-              title="Fix these before booking"
+        <section className="space-y-3">
+          <SectionLabel>Customers</SectionLabel>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="senderCustomerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sender</FormLabel>
+                  <FormControl>
+                    <ReferenceCombobox
+                      source="customers"
+                      placeholder="Search the customer sending this"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={mutation.isPending}
+                      invalid={Boolean(form.formState.errors.senderCustomerId)}
+                    />
+                  </FormControl>
+                  <FormDescription>Staff bookings always name a sender customer.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
+            <FormField
+              control={form.control}
+              name="receiverCustomerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Receiver</FormLabel>
+                  <FormControl>
+                    <ReferenceCombobox
+                      source="customers"
+                      placeholder="Search the customer receiving this"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={mutation.isPending}
+                      invalid={Boolean(form.formState.errors.receiverCustomerId)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="receiverName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Receiver name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ayesha Rahman" disabled={mutation.isPending} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="receiverPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Receiver phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+8801700000000" disabled={mutation.isPending} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </section>
 
-            <section className="space-y-3">
-              <SectionLabel>Customers</SectionLabel>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="senderCustomerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sender</FormLabel>
-                      <FormControl>
-                        <ReferenceCombobox
-                          source="customers"
-                          placeholder="Search the customer sending this"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={mutation.isPending}
-                          invalid={Boolean(form.formState.errors.senderCustomerId)}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Staff bookings always name a sender customer.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="receiverCustomerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Receiver</FormLabel>
-                      <FormControl>
-                        <ReferenceCombobox
-                          source="customers"
-                          placeholder="Search the customer receiving this"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={mutation.isPending}
-                          invalid={Boolean(form.formState.errors.receiverCustomerId)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="receiverName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Receiver name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ayesha Rahman"
-                          disabled={mutation.isPending}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="receiverPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Receiver phone</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="+8801700000000"
-                          disabled={mutation.isPending}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </section>
+        <Separator />
 
-            <Separator />
+        <section className="space-y-3">
+          <SectionLabel>Route</SectionLabel>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="originHubId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Origin hub</FormLabel>
+                  <FormControl>
+                    <ReferenceCombobox
+                      source="hubs"
+                      placeholder="Search hubs"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={mutation.isPending}
+                      invalid={Boolean(form.formState.errors.originHubId)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="destinationHubId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Destination hub</FormLabel>
+                  <FormControl>
+                    <ReferenceCombobox
+                      source="hubs"
+                      placeholder="Search hubs"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={mutation.isPending}
+                      invalid={Boolean(form.formState.errors.destinationHubId)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="originZoneId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Origin zone</FormLabel>
+                  <FormControl>
+                    <ReferenceCombobox
+                      source="zones"
+                      placeholder="Search zones"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={mutation.isPending}
+                      invalid={Boolean(form.formState.errors.originZoneId)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="destinationZoneId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Destination zone</FormLabel>
+                  <FormControl>
+                    <ReferenceCombobox
+                      source="zones"
+                      placeholder="Search zones"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={mutation.isPending}
+                      invalid={Boolean(form.formState.errors.destinationZoneId)}
+                    />
+                  </FormControl>
+                  <FormDescription>Fees are anchored on the destination zone.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </section>
 
-            <section className="space-y-3">
-              <SectionLabel>Route</SectionLabel>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="originHubId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Origin hub</FormLabel>
-                      <FormControl>
-                        <ReferenceCombobox
-                          source="hubs"
-                          placeholder="Search hubs"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={mutation.isPending}
-                          invalid={Boolean(form.formState.errors.originHubId)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="destinationHubId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Destination hub</FormLabel>
-                      <FormControl>
-                        <ReferenceCombobox
-                          source="hubs"
-                          placeholder="Search hubs"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={mutation.isPending}
-                          invalid={Boolean(form.formState.errors.destinationHubId)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="originZoneId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Origin zone</FormLabel>
-                      <FormControl>
-                        <ReferenceCombobox
-                          source="zones"
-                          placeholder="Search zones"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={mutation.isPending}
-                          invalid={Boolean(form.formState.errors.originZoneId)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="destinationZoneId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Destination zone</FormLabel>
-                      <FormControl>
-                        <ReferenceCombobox
-                          source="zones"
-                          placeholder="Search zones"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={mutation.isPending}
-                          invalid={Boolean(form.formState.errors.destinationZoneId)}
-                        />
-                      </FormControl>
-                      <FormDescription>Fees are anchored on the destination zone.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </section>
+        <Separator />
 
-            <Separator />
+        <section className="space-y-3">
+          <SectionLabel>Contents</SectionLabel>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      disabled={mutation.isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="length"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Length (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      disabled={mutation.isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="width"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Width (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      disabled={mutation.isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="height"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Height (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      disabled={mutation.isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-            <section className="space-y-3">
-              <SectionLabel>Contents</SectionLabel>
-              <div className="grid gap-3 sm:grid-cols-4">
-                <FormField
-                  control={form.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Weight (kg)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          disabled={mutation.isPending}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="length"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Length (cm)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          disabled={mutation.isPending}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="width"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Width (cm)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          disabled={mutation.isPending}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="height"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Height (cm)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          disabled={mutation.isPending}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="parcelType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parcel type</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={mutation.isPending}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PARCEL_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="paymentType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Payment type</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={mutation.isPending}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PAYMENT_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type === "COD" ? "Cash on delivery" : "Prepaid"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="codAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount to collect (BDT)</FormLabel>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="parcelType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Parcel type</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={mutation.isPending}
+                  >
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        disabled={mutation.isPending || watched.paymentType !== "COD"}
-                        {...field}
-                      />
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormDescription>Only applies to cash-on-delivery parcels.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {canQuote ? (
-                quote.isError ? (
-                  <ServerFormError error={quote.error} title="Delivery fee could not be quoted" />
-                ) : quote.isPending ? (
-                  <p className="text-muted-foreground text-sm">Quoting the delivery fee…</p>
-                ) : (
-                  <Alert>
-                    <Badge variant="secondary">Estimated fee</Badge>
-                    <AlertTitle>{formatMoney(quote.data.total)}</AlertTitle>
-                    <AlertDescription>
-                      <p>
-                        Base {formatMoney(quote.data.basePrice)} + weight{" "}
-                        {formatMoney(quote.data.weightCharge)}
-                        {quote.data.codFee > 0 ? ` + COD ${formatMoney(quote.data.codFee)}` : ""}.
-                        The API recomputes this when the parcel is booked.
-                      </p>
-                    </AlertDescription>
-                  </Alert>
-                )
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  Choose an origin and destination zone to preview the delivery fee.
-                </p>
+                    <SelectContent>
+                      {PARCEL_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )}
-            </section>
+            />
+            <FormField
+              control={form.control}
+              name="paymentType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment type</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={mutation.isPending}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PAYMENT_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type === "COD" ? "Cash on delivery" : "Prepaid"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-            <Separator />
+          <FormField
+            control={form.control}
+            name="codAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amount to collect (BDT)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    disabled={mutation.isPending || watched.paymentType !== "COD"}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>Only applies to cash-on-delivery parcels.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <SectionLabel>Items</SectionLabel>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={mutation.isPending || items.fields.length >= 50}
-                  onClick={() =>
-                    items.append({ name: "", description: "", quantity: "1", unitPrice: "0" })
-                  }
-                >
-                  <Plus />
-                  Add item
-                </Button>
-              </div>
+          {canQuote ? (
+            quote.isError ? (
+              <ServerFormError error={quote.error} title="Delivery fee could not be quoted" />
+            ) : quote.isPending ? (
+              <p className="text-muted-foreground text-sm">Quoting the delivery fee…</p>
+            ) : (
+              <Alert>
+                <Badge variant="secondary">Estimated fee</Badge>
+                <AlertTitle>{formatMoney(quote.data.total)}</AlertTitle>
+                <AlertDescription>
+                  <p>
+                    Base {formatMoney(quote.data.basePrice)} + weight{" "}
+                    {formatMoney(quote.data.weightCharge)}
+                    {quote.data.codFee > 0 ? ` + COD ${formatMoney(quote.data.codFee)}` : ""}. The
+                    API recomputes this when the parcel is booked.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              Choose an origin and destination zone to preview the delivery fee.
+            </p>
+          )}
+        </section>
 
-              {items.fields.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No line items. Add one when the parcel is a multi-item shipment that needs
-                  declaring.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {items.fields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="grid gap-3 rounded-lg border p-3 sm:grid-cols-12"
+        <Separator />
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <SectionLabel>Items</SectionLabel>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={mutation.isPending || items.fields.length >= 50}
+              onClick={() =>
+                items.append({ name: "", description: "", quantity: "1", unitPrice: "0" })
+              }
+            >
+              <Plus />
+              Add item
+            </Button>
+          </div>
+
+          {items.fields.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No line items. Add one when the parcel is a multi-item shipment that needs declaring.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {items.fields.map((field, index) => (
+                <div key={field.id} className="grid gap-3 rounded-lg border p-3 sm:grid-cols-12">
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.name`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="sm:col-span-5">
+                        <FormLabel>Item</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Cotton shirt"
+                            disabled={mutation.isPending}
+                            {...itemField}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.quantity`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="sm:col-span-2">
+                        <FormLabel>Qty</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            disabled={mutation.isPending}
+                            {...itemField}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.unitPrice`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="sm:col-span-3">
+                        <FormLabel>Unit price</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            disabled={mutation.isPending}
+                            {...itemField}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex items-end sm:col-span-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={mutation.isPending}
+                      onClick={() => items.remove(index)}
+                      aria-label="Remove item"
                     >
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.name`}
-                        render={({ field: itemField }) => (
-                          <FormItem className="sm:col-span-5">
-                            <FormLabel>Item</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Cotton shirt"
-                                disabled={mutation.isPending}
-                                {...itemField}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.quantity`}
-                        render={({ field: itemField }) => (
-                          <FormItem className="sm:col-span-2">
-                            <FormLabel>Qty</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="1"
-                                step="1"
-                                disabled={mutation.isPending}
-                                {...itemField}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.unitPrice`}
-                        render={({ field: itemField }) => (
-                          <FormItem className="sm:col-span-3">
-                            <FormLabel>Unit price</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                disabled={mutation.isPending}
-                                {...itemField}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex items-end sm:col-span-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          disabled={mutation.isPending}
-                          onClick={() => items.remove(index)}
-                          aria-label="Remove item"
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.description`}
-                        render={({ field: itemField }) => (
-                          <FormItem className="sm:col-span-10">
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                rows={2}
-                                placeholder="Optional — helps the hub identify the contents"
-                                disabled={mutation.isPending}
-                                {...itemField}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ))}
+                      <Trash2 />
+                    </Button>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.description`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="sm:col-span-10">
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={2}
+                            placeholder="Optional — helps the hub identify the contents"
+                            disabled={mutation.isPending}
+                            {...itemField}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              )}
-            </section>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={mutation.isPending}
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Book parcel
-              </LoadingButton>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              ))}
+            </div>
+          )}
+        </section>
+      </Form>
+    </FormSheetShell>
   )
 }
 
