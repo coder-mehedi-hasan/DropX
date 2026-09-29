@@ -8,16 +8,17 @@
 
 ## Decisions already taken
 
-| Decision                                   | Choice                                                                                           | Section |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------- |
-| How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                     | §3      |
-| What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                    | §3.3    |
-| Layout under the new namespace             | `modules/admin/features/{feature}.routes.ts` — surface-first, flat per feature                   | §3.2    |
-| Where shared logic lives                   | `modules/{domain}/*.service.ts` + `*.repository.ts` stay put; only routes + DTOs are per surface | §3.2    |
-| Riders                                     | out of scope for this restructure                                                                | §3.6    |
-| Where OpenAPI fragments live               | **not decided** — `src/openapi/paths/` vs `modules/admin/openapi/`                               | §3.2    |
+| Decision                                   | Choice                                                                                          | Section |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------- |
+| Order of work                              | **registry (A1) first, then the namespace split (A2)** — otherwise the spec churn happens twice | §3      |
+| How the admin surface is namespaced        | `/api/v1/admin/*` mount + `admin.` id prefix                                                    | §3.3    |
+| What happens to the mixed `parcels` module | split — admin and customer get own namespaces                                                   | §3.5    |
+| Layout under the new namespace             | `modules/admin/` with `registry.ts` + `handlers.ts` — surface-first, one place for contracts    | §3.3    |
+| Where shared logic lives                   | `modules/{domain}/*.service.ts` + `*.repository.ts` stay put; only the contract is per surface  | §3.3    |
+| Registry scope                             | **admin surface only, proved on 5 operations** — extend once it works                           | §3.2    |
+| Riders                                     | out of scope for this change                                                                    | §3.8    |
 
-Three still open: the OpenAPI fragment location (§3.2), the reference-data shape (§6), and whether any external system calls this API today, which decides in-place vs `/api/v2` (§3.5).
+Still open: whether any external system calls this API today, which decides in-place vs `/api/v2` (§3.7); the reference-data shape (§6); and where the generated OpenAPI is written (§3.7, default proposed: in memory, served at `/openapi.json`).
 
 ---
 
@@ -84,13 +85,145 @@ Decide `Dialog` vs `Sheet` once, in Phase 0, and apply it to all CRUD.
 
 ---
 
-## 3. Phase A — the admin namespace restructure · prerequisite to every phase
+## 3. Phase A — the surface system · prerequisite to every phase
 
-**Decision taken:** admin routes mount at `/api/v1/admin/*` and their operation ids carry an `admin.` prefix. The `parcels` module is split so the customer portal gets its own namespace too. No admin operation is reachable at a non-admin path.
+Two changes, in this order:
 
-This lands **before** Phase 0. Every module added afterwards inherits the namespace instead of being retrofitted, and retrofitting 20 modules is far worse than moving 5.
+- **A1 — the operation registry.** One place per surface that declares every operation's full contract, generating the policy catalog and the OpenAPI spec from it. Proved on the 5 existing admin parcel operations.
+- **A2 — the namespace split.** Admin routes mount at `/api/v1/admin/*` with `admin.`-prefixed ids; the customer portal gets `/api/v1/customer/*`. Built on A1, so it costs ~5 files instead of 12.
 
-### 3.1 The blocker: the operation-id regex
+This lands **before** Phase 0. Every module added afterwards inherits the system instead of being retrofitted, and retrofitting 20 modules is far worse than converting 5.
+
+**Why A1 before A2, not after.** A1 deletes `openapi/coverage.ts`, the 22-id list in `smoke.ts`, and the hand-written spec fragments. If A2 ran first, all of that churn happens twice — once moving files by hand, once deleting them. Doing A1 first turns A2 from a 12-file diff into a ~5-file one.
+
+### 3.1 The limit, stated up front
+
+"Manage from one place" is real, but it has a ceiling: **a registry holds contracts, not behaviour.** A registry entry can say `path`, `permissions`, and which Zod schema validates the body. It cannot hold `await parcels.createParcel(...)`. So each feature is two files, always:
+
+- `admin/registry/parcels.ts` — the contract
+- `admin/handlers.ts` — the behaviour, keyed by the same string
+
+The boot check is what makes that safe. A registry entry with no handler, or a handler with no registry entry, **throws at startup** — the two can never silently disagree. This is the same fail-closed philosophy as `assertPolicyCatalog`, applied to a much larger surface. Expect to be asked "isn't that two places again?" — the answer is "two files, one verified join key, one source of truth for everything that can drift."
+
+### 3.2 A1 — the registry
+
+```ts
+// apps/api/src/modules/admin/registry.ts
+export const ADMIN_OPERATIONS = defineSurface({
+  namespace: "admin",
+  basePath: "/admin",
+  features: {
+    parcels: {
+      tag: "parcels",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/parcels",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PARCELS_VIEW] },
+          summary: "List parcels (staff)",
+          description: "Branch/hub-scoped list. Ordering is limited to an allowlist of columns.",
+          query: listParcelsQuerySchema,
+          response: pageSchema(parcelResponseSchema),
+        },
+        cancel: {
+          method: "POST",
+          path: "/parcels/:id/cancel",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PARCELS_CANCEL] },
+          summary: "Cancel a parcel",
+          body: cancelParcelSchema,
+          response: parcelResponseSchema,
+          errors: { 409: "Parcel cannot be cancelled from its current status." },
+        },
+      },
+    },
+  },
+})
+```
+
+The operation id is derived, not written: `namespace` + feature + key → `admin.parcel.list`. Nobody can mistype an id, and the id is guaranteed to match the mount because both come from the same object.
+
+```ts
+// apps/api/src/modules/admin/handlers.ts
+export const handlers = {
+  "parcels.list": async (c) =>
+    c.json(response.success(await parcels.listParcelsForStaff(scopeFromAuth(c.get("auth")), c.req.valid("query"), ...))),
+  "parcels.cancel": async (c) => { /* unchanged handler body */ },
+}
+```
+
+`mountSurface(router, ADMIN_OPERATIONS, handlers)` then does all of it, in this order, failing closed:
+
+1. Assert the registry ↔ handlers keys are a bijection — throw naming every orphan on either side.
+2. For each operation, call `defineOperation(policy, { method, path: basePath + path })` — so the **policy catalog populates from the registry**, exactly as it does from a hand-written call today.
+3. Mount the handler behind that middleware.
+4. Build the OpenAPI fragment, reading bodies and params out of the Zod DTOs via `jsonSchemaOf()` — so fields are never written down twice, in either `io` mode.
+
+**What A1 deletes**
+
+| Gone                                                     | Because                                                                                |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `openapi/paths/parcels.openapi.ts` (196 lines)           | the admin half is generated; the customer half follows in A2                           |
+| `openapi/coverage.ts`                                    | drift between catalog and spec is _structurally impossible_ — they are the same object |
+| `smoke.ts:40-63` — the hardcoded 22 ids                  | derivable from the registries; the smoke test asserts the bijection instead            |
+| one of the three "add an operation" steps in `AGENTS.md` | the contract is one entry, not a route call plus a spec entry that must agree          |
+
+**What A1 does not change:** `defineOperation` itself, `assertPolicyCatalog`'s fail-closed behaviour, the `audience` check, or the DTOs. Handlers keep their current bodies — this is a wiring change, not a business-logic change.
+
+**A1 files (4)**
+
+| File                                     | Change                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `apps/api/src/shared/auth/surface.ts`    | **new** — `defineSurface` + `mountSurface` + the bijection assertion |
+| `apps/api/src/modules/admin/index.ts`    | **new** — `mountSurface(admin, ADMIN_OPERATIONS, handlers)`          |
+| `apps/api/src/modules/admin/registry.ts` | **new** — the 5 parcel operation contracts                           |
+| `apps/api/src/modules/admin/handlers.ts` | **new** — the 5 handlers, moved out of `parcels.routes.ts`           |
+
+Then `smoke.ts` drops the id list, and `apps/api/src/openapi/document.ts` imports the generated fragment instead of the hand-written one.
+
+### 3.3 A2 — the namespace split
+
+Directory layout is surface-first, with a shared domain core:
+
+```text
+apps/api/src/modules/
+  admin/
+    index.ts                        # mountSurface(admin, ADMIN_OPERATIONS, handlers)
+    registry.ts                     # the one place — composes registry/*.ts
+    handlers.ts                     # behaviour, keyed to the registry
+    registry/
+      parcels.ts                    # Phase 0 contract for 5 ops
+      reference.ts                  # Phase 0
+      audit.ts                      # Phase 0
+      branches.ts                   # Phase 1
+      hubs.ts  zones.ts  users.ts  roles.ts  customers.ts
+      # … Phase 2: pricing-rules, vehicles, routes, riders
+      # … Phase 3: pickups, transfers, deliveries, delivery-proofs
+      # … Phase 4: payments, settlements, support-tickets, notifications, stats
+  customer/
+    index.ts
+    registry.ts
+    handlers.ts
+    registry/parcels.ts             # 3 customer ops
+  parcels/
+    parcels.service.ts              # shared — does not move
+    parcels.repository.ts           # shared — does not move
+  auth/ health/ jobs/ pricing/ tracking/   # unchanged — cross-audience, public, or out of scope
+```
+
+`registry/` splits per feature because at 120 operations one flat file is unnavigable. `registry.ts` is still the single place to look; it is a file that composes others, not a second source of truth.
+
+**The split rule.** A surface owns the **wire contract**; a domain owns the **business logic**:
+
+| Belongs to the surface                     | Belongs to the domain                        |
+| ------------------------------------------ | -------------------------------------------- |
+| registry entry — path, policy, DTOs, prose | `*.service.ts` — business rules              |
+| `handlers.ts` — transport                  | `*.repository.ts` — SQL, takes an `Executor` |
+
+`parcels.service.ts` cannot be duplicated: `createParcel` is called by the staff route (`parcels.routes.ts:84`) _and_ the customer route (`:202`), and `getParcelItems` by both (`:62`, `:180`). The DTOs are genuinely per-surface already — `createParcelSchema` takes `senderCustomerId` from the body, `createOwnParcelSchema` deliberately does not accept the field at all (`:200-206`) — so they stay in the two surface registries.
+
+**This deviates from `api-modules` co-location**, and `AGENTS.md` must say so: where a domain has more than one surface, service and repository live in `modules/{domain}/` and each surface contributes only its registry entry and handlers. Every admin-only domain in Phases 1-4 has one surface, so those keep all four files.
+
+### 3.4 The blocker: the operation-id regex
 
 `assertPolicyCatalog` (`apps/api/src/shared/auth/policy.ts:102`) rejects any id that is not `{domain}.{action}`:
 
@@ -117,84 +250,9 @@ if (id.split(".").length === 3 && !NAMESPACES.has(id.split(".")[0])) {
 }
 ```
 
-Cheap, and it keeps the fail-closed property that is the whole reason `assertPolicyCatalog` exists.
+If A1 lands first, `defineSurface` derives ids and the regex is the only thing that can reject a bad one — which is exactly the shape you want.
 
-### 3.2 Directory layout — surface-first, with a shared domain core
-
-Admin routes live at `modules/admin/features/{feature}.routes.ts`, one flat directory per surface. With 20+ admin features this beats a folder per feature: one directory listing shows every admin operation file, and `grep` across all admin code is a single path.
-
-```text
-apps/api/src/modules/
-  admin/
-    index.ts                        # NEW — composes features/*.routes.ts
-    admin.openapi.ts                # NEW — one fragment for the whole surface
-    features/
-      parcels.routes.ts             # MOVED from modules/parcels/parcels.routes.ts (5 staff ops)
-      parcels.dto.ts                # MOVED — staff half only
-      branches.routes.ts            # Phase 1
-      branches.dto.ts
-      hubs.routes.ts
-      hubs.dto.ts
-      zones.routes.ts
-      zones.dto.ts
-      users.routes.ts
-      users.dto.ts
-      roles.routes.ts
-      roles.dto.ts
-      customers.routes.ts
-      customers.dto.ts
-      # … Phase 2: pricing-rules, vehicles, routes, riders
-      # … Phase 3: pickups, transfers, deliveries, delivery-proofs
-      # … Phase 4: payments, settlements, support-tickets, notifications, stats
-  customer/
-    index.ts                        # NEW
-    customer.openapi.ts             # NEW
-    features/
-      parcels.routes.ts             # NEW — 3 customer ops, split out
-      parcels.dto.ts                # NEW — `createOwnParcelSchema` etc.
-  parcels/
-    parcels.service.ts              # STAYS — shared by both surfaces
-    parcels.repository.ts           # STAYS — shared, an `Executor` is passed in
-  auth/ health/ jobs/ pricing/ tracking/   # unchanged — cross-audience, public, or out of scope
-```
-
-**The split rule, and why it is forced.** A surface folder owns the **wire contract**; a domain folder owns the **business logic**:
-
-| Belongs to the surface                       | Belongs to the domain                        |
-| -------------------------------------------- | -------------------------------------------- |
-| `*.routes.ts` — transport                    | `*.service.ts` — business rules              |
-| `*.dto.ts` — Zod in/out, the published shape | `*.repository.ts` — SQL, takes an `Executor` |
-
-`parcels.service.ts` cannot be duplicated: `createParcel` is called by the staff route (`parcels.routes.ts:84`) _and_ the customer route (`:202`), and `getParcelItems` by both (`:62`, `:180`). The repository is shared outright. The DTOs are genuinely per-surface already — `createParcelSchema` takes `senderCustomerId` from the body, `createOwnParcelSchema` deliberately does not accept the field at all (`:200-206`).
-
-**This is a documented deviation from `api-modules` co-location**, and `AGENTS.md` must be updated to say so: where a domain has more than one surface, the service and repository live in `modules/{domain}/` and each surface contributes only `*.routes.ts` + `*.dto.ts`. Every admin-only domain in Phases 1-4 has one surface, so those keep all four files — in `admin/features/`, not a folder per feature.
-
-`FeatureModule` in `modules/index.ts` is unchanged — `admin/index.ts` exports one composed Hono router, so `registerModules`, `moduleManifest`, and the unversioned-health special case all keep working:
-
-```ts
-const modules: readonly FeatureModule[] = [
-  { name: "health", basePath: "/health", router: health },
-  { name: "auth", basePath: "/auth", router: auth },
-  { name: "tracking", basePath: "/tracking", router: tracking },
-  { name: "pricing", basePath: "/pricing", router: pricing },
-  { name: "admin", basePath: "/admin", router: admin }, // NEW
-  { name: "customer", basePath: "/customer", router: customer }, // NEW
-  { name: "jobs", basePath: "/jobs", router: jobs },
-]
-```
-
-`admin/index.ts` is a plain composition, nothing more:
-
-```ts
-const router = new Hono<AppEnv>()
-router.route("/parcels", parcelsAdminRoutes) // → /api/v1/admin/parcels
-// router.route("/branches", branchesRoutes)   // Phase 1
-export default router
-```
-
-**One open sub-question, not decided here:** where the OpenAPI fragments live. `AGENTS.md` documents `src/openapi/paths/*.openapi.ts` and `coverage.ts` imports through `document.ts`, so the default is to leave them there as `admin.branches.openapi.ts` etc. Moving them to `modules/admin/openapi/` would group them with the code but touches a documented contract. Pick one before Phase 1, not before Phase 0.
-
-### 3.3 The migration — all 22 operations
+### 3.5 The migration — all 22 operations
 
 `defineOperation`'s second argument is the **absolute mounted path**, not a relative one, so both it and the OpenAPI fragment key must change together (`coverage.ts:65` compares them). Anything not listed keeps its current path and id.
 
@@ -211,54 +269,57 @@ export default router
 | `health.*` (2)        | public    | unchanged                   | unchanged                         |
 | `auth.*` (7)          | mixed     | unchanged                   | unchanged                         |
 | `tracking.lookup`     | public    | unchanged                   | unchanged                         |
-| `pricing.quote`       | admin+web | unchanged                   | unchanged — see 3.5               |
-| `job.*` (3)           | riders    | unchanged                   | unchanged — see 3.6               |
+| `pricing.quote`       | admin+web | unchanged                   | unchanged — see 3.6               |
+| `job.*` (3)           | riders    | unchanged                   | unchanged — see 3.7               |
 
 Note the customer paths get **shorter**, not longer: `/parcels/mine/list` becomes `/customer/parcels`, because the namespace now says what `/mine` was repeating. The `mine` suffix disappears rather than being kept alongside.
 
-### 3.4 Files that must change — 12 files, one of them a client
+### 3.6 A2 files that must change — 5
 
-| #   | File                                                       | Change                                                                  |
-| --- | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 1   | `apps/api/src/shared/auth/policy.ts`                       | regex + `NAMESPACES` + error message (§3.1)                             |
-| 2   | `apps/api/src/modules/index.ts`                            | 2 new entries                                                           |
-| 3   | `apps/api/src/modules/admin/index.ts`                      | **new** — composes `features/*.routes.ts`                               |
-| 4   | `apps/api/src/modules/admin/admin.openapi.ts`              | **new** — 5 admin parcel operations                                     |
-| 5   | `apps/api/src/modules/admin/features/parcels.routes.ts`    | `git mv` from `modules/parcels/parcels.routes.ts` — 5 staff ops only    |
-| 6   | `apps/api/src/modules/admin/features/parcels.dto.ts`       | `git mv` from `modules/parcels/parcels.dto.ts` — staff schemas only     |
-| 7   | `apps/api/src/modules/customer/index.ts`                   | **new**                                                                 |
-| 8   | `apps/api/src/modules/customer/customer.openapi.ts`        | **new** — 3 customer parcel operations                                  |
-| 9   | `apps/api/src/modules/customer/features/parcels.routes.ts` | **new** — the 3 customer ops, split out                                 |
-| 10  | `apps/api/src/modules/customer/features/parcels.dto.ts`    | **new** — `createOwnParcelSchema` and the other customer-only schemas   |
-| 11  | `apps/api/src/openapi/paths/parcels.openapi.ts`            | 8 paths move out into the two new fragments; `document.ts` imports them |
-| 12  | `apps/admin/src/lib/endpoints.ts`                          | 5 path strings, lines 34-62 — the **only** client change                |
+A1 already removed the spec fragments and the smoke id list, so this is the residue:
 
-`modules/parcels/parcels.service.ts` and `parcels.repository.ts` are **not** in the list — they do not move, so `check:read-paths.ts` keeps importing them from the same path.
+| #   | File                                                         | Change                                                                             |
+| --- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| 1   | `apps/api/src/shared/auth/policy.ts`                         | regex + `NAMESPACES` + error message (§3.4)                                        |
+| 2   | `apps/api/src/modules/index.ts`                              | 2 new entries: `{ name: "admin", basePath: "/admin" }` and the customer equivalent |
+| 3   | `apps/api/src/modules/customer/{index,registry,handlers}.ts` | **new** — the 3 customer operations, split out of `parcels.routes.ts`              |
+| 4   | `apps/api/src/modules/parcels/parcels.dto.ts`                | staff and customer schemas split to their two registries                           |
+| 5   | `apps/admin/src/lib/endpoints.ts`                            | 5 path strings, lines 34-62 — the **only** client change                           |
+
+`apps/api/src/modules/parcels/parcels.service.ts` and `parcels.repository.ts` are **not** in the list — they do not move, so `check:read-paths.ts` keeps importing them from the same path.
 
 Two things that are **safe** and worth knowing so nobody re-checks them:
 
 - `apps/api/scripts/check-read-paths.ts` imports repository functions directly (`await import("../src/modules/parcels/parcels.repository")`), never HTTP paths. It does not break.
 - `apps/admin/src/lib/navigation.ts` deals in TanStack Router paths, not API paths. It does not break.
 
-`apps/api/scripts/smoke.ts:40-63` hardcodes all 22 operation ids and must be updated — this is the intended failure, not an obstacle.
+### 3.7 Judgement calls flagged, not decided
 
-### 3.5 Two judgement calls flagged, not decided
+**`pricing.quote` stays at `/pricing/quote`.** It is genuinely cross-audience (admin and web both call it) and serves one calculation. Splitting it would duplicate the DTOs for one function. Same category as `auth.*` — a shared module, not a surface. Revisit in Phase 2 if `pricing_rules` CRUD makes the audiences diverge.
 
-**`pricing.quote` stays at `/pricing/quote`.** It is genuinely cross-audience (admin and web both call it) and serves one calculation. Splitting it into `admin.pricing.quote` and `customer.pricing.quote` would duplicate DTOs for the same function. This is the same category as `auth.*` — a shared module, not an admin surface. Change it in Phase 2 if `pricing_rules` CRUD makes the audiences diverge.
+**Where the generated OpenAPI lives.** A1 generates the admin fragment. Whether it is written to `src/openapi/paths/` (where `AGENTS.md` documents it) or kept in memory and only ever served at `/openapi.json` is a real choice: the second removes a file-writing concern but breaks the documented path contract. **Default: generate in memory, serve at `/openapi.json`, and update `AGENTS.md` to say the spec is derived rather than authored.** That is the honest end state once a registry exists.
 
-**Version bump: in place, or `/api/v2`?** Recommendation is **in place**, because this project is pre-production — `docs/handoff.md` lists live E2E as impossible and there is no deployed consumer to break. Do it in place unless something outside this repo already calls the API, in which case mount both `v1` (frozen) and `v2` (restructured) and deprecate `v1` on a date. **Confirm before starting: is any external system calling this API today?**
+**Version bump: in place, or `/api/v2`?** Recommendation is **in place**, because this project is pre-production — `docs/handoff.md` lists live E2E as impossible and there is no deployed consumer to break. Mount both `v1` (frozen) and `v2` only if something outside this repo already calls the API. **Confirm before starting: is any external system calling this API today?**
 
-### 3.6 Riders are deliberately out of scope
+### 3.8 Riders are deliberately out of scope
 
-`job.*` is a rider-only surface and would become `/api/v1/rider/jobs` with `rider.job.*` ids by the same logic. That widens the diff into `apps/riders`, which this restructure does not touch. It is a clean follow-up — do it after Phase 0 lands, as its own change, once the admin namespace has proven itself.
+`job.*` is a rider-only surface and would become `/api/v1/rider/jobs` with `rider.job.*` ids by the same logic. That widens the diff into `apps/riders`, which this does not touch. It is a clean follow-up — do it after Phase 0 lands, as its own change, once the registry has proved itself on two surfaces.
 
-### 3.7 Gate
+### 3.9 Gate
 
-1. `bun run --cwd apps/api smoke` passes with the new id list.
-2. `bun run typecheck` passes across all four apps.
-3. `GET /openapi.json` shows all 22 operations under `/admin`, `/customer`, `/auth`, `/health`, `/jobs`, `/pricing`, `/tracking` — and nothing admin-tagged outside `/admin`.
-4. A staff token gets 401 on `/api/v1/customer/parcels`; a customer token gets 401 on `/api/v1/admin/parcels`. Both are the `audience` check in `policy.ts:72`, so this is a regression test, not a new mechanism.
-5. The admin portal loads, lists parcels, and creates one end to end against the moved paths.
+**After A1**
+
+1. `bun run --cwd apps/api smoke` passes with the id list replaced by the bijection check.
+2. `GET /openapi.json` still shows all 5 parcel operations, with the same bodies as before — compare the JSON, not your memory.
+3. `openapi/coverage.ts` is deleted and nothing imports it.
+4. A deliberately broken key (rename one handler) fails boot with both orphans named.
+
+**After A2**
+
+1. `bun run --cwd apps/api smoke` and `bun run typecheck` pass across all four apps.
+2. `GET /openapi.json` shows all 22 operations under `/admin`, `/customer`, `/auth`, `/health`, `/jobs`, `/pricing`, `/tracking` — and nothing admin-tagged outside `/admin`.
+3. A staff token gets 401 on `/api/v1/customer/parcels`; a customer token gets 401 on `/api/v1/admin/parcels`. Both are the `audience` check at `policy.ts:72`, so this is a regression test, not a new mechanism.
+4. The admin portal loads, lists parcels, and creates one end to end against the moved paths.
 
 ---
 
@@ -268,14 +329,14 @@ Sequential. Each phase's **Gate** must pass before the next starts. Estimates as
 
 ### Phase 0 — Foundation · ~2-3 days · 2 modules, ~10 operations
 
-Nothing else is buildable without this. Both modules land under the `admin/` namespace established in §3, so they mount at `/api/v1/admin/reference/...` and `/api/v1/admin/audit-logs` with `admin.*` ids.
+Nothing else is buildable without this. Both modules land as registry entries in the `admin/` surface established in §3, so they mount at `/api/v1/admin/reference/...` and `/api/v1/admin/audit-logs` with `admin.*` ids — no `*.routes.ts` file to write, just a registry entry and a handler.
 
 **API**
 
-| Module      | Ops | Contents                                                                                                                    |
-| ----------- | --- | --------------------------------------------------------------------------------------------------------------------------- |
-| `reference` | ~7  | read endpoints for hubs, zones, branches, customer search, users, riders, vehicles — all gated by the matching `*.view` key |
-| `audit`     | ~3  | `GET /audit-logs` (`audit.view`) **plus the writer** wired into every mutation service                                      |
+| Module      | Ops | Registry entry          | Contents                                                                                                                    |
+| ----------- | --- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `reference` | ~7  | `registry/reference.ts` | read endpoints for hubs, zones, branches, customer search, users, riders, vehicles — all gated by the matching `*.view` key |
+| `audit`     | ~3  | `registry/audit.ts`     | `GET /audit-logs` (`audit.view`) **plus the writer** wired into every mutation service                                      |
 
 `audit_logs` has a seeded permission, a documented purpose, and a UI claim that is currently false. Retrofitting a writer into 20 mutation services later costs several times what doing it now costs.
 
@@ -359,14 +420,15 @@ Dashboard KPIs: parcels by status, in-scope count, failed deliveries, COD outsta
 
 ## 5. Cross-cutting work · runs alongside every phase
 
-| #   | Item                          | Why it cannot be deferred                                                                                                                                                                                          |
-| --- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | **Audit writer**              | Wired into every mutation service. Cheapest on day one, retrofitted expensively. Until it lands, the sidebar's audit claim is false.                                                                               |
-| 2   | **Notification dispatch**     | `notifications` is a table with no writer. Trigger it on `parcel_events` writes, which Phases 3-4 produce heavily.                                                                                                 |
-| 3   | **Redis cache driver**        | OTP and rate limiting are per-process in-memory, so they break across multiple API instances. Blocker for production; not for features.                                                                            |
-| 4   | **A test runner**             | Zero tests exist. `smoke` catches catalog drift and `check:read-paths` catches bad columns, but **no business logic is covered**. Add vitest + service-level tests as each Phase 1-4 module lands.                 |
-| 5   | **Per-operation bookkeeping** | `apps/api/scripts/smoke.ts:40-63` hardcodes every operationId and `openapi/document.ts` must import every fragment. A new route missing either fails boot on purpose. Budget ~2 rows per operation, every time.    |
-| 6   | **The admin namespace guard** | After §3 lands, add a boot assertion that no operation with an `admin.` id is mounted outside `/admin`, and that `/admin` carries no non-admin audience. The prefix is only worth having if something enforces it. |
+| #   | Item                          | Why it cannot be deferred                                                                                                                                                                                                                                                                            |
+| --- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Audit writer**              | Wired into every mutation service. Cheapest on day one, retrofitted expensively. Until it lands, the sidebar's audit claim is false.                                                                                                                                                                 |
+| 2   | **Notification dispatch**     | `notifications` is a table with no writer. Trigger it on `parcel_events` writes, which Phases 3-4 produce heavily.                                                                                                                                                                                   |
+| 3   | **Redis cache driver**        | OTP and rate limiting are per-process in-memory, so they break across multiple API instances. Blocker for production; not for features.                                                                                                                                                              |
+| 4   | **A test runner**             | Zero tests exist. `smoke` catches catalog drift and `check:read-paths` catches bad columns, but **no business logic is covered**. Add vitest + service-level tests as each Phase 1-4 module lands.                                                                                                   |
+| 5   | **Per-operation bookkeeping** | Once A1 lands, a new operation is **one registry entry plus one handler** — the policy entry and the spec are generated, so `document.ts` needs no import and `smoke.ts` no id line. Before A1, `apps/api/scripts/smoke.ts:40-63` hardcodes all 22 ids and a missing fragment fails boot on purpose. |
+| 6   | **The admin namespace guard** | After A2 lands, add a boot assertion that no operation with an `admin.` id is mounted outside `/admin`, and that `/admin` carries no non-admin audience. The prefix is only worth having if something enforces it.                                                                                   |
+| 7   | **Document the new system**   | `AGENTS.md` still documents a three-part "add an operation" contract (route + policy, DTOs, OpenAPI entry) and the `openapi/paths/<domain>.openapi.ts` location. Both change under A1/A2. A stale contract is worse than none — it is the file people trust and stop reading.                        |
 
 ---
 
@@ -374,7 +436,7 @@ Dashboard KPIs: parcels by status, in-scope count, failed deliveries, COD outsta
 
 **What shape should reference data take?** Three options:
 
-1. **One `reference` module, ~7 read operations** — single fragment, single permission story, one place to add a picker later. _Recommended._ Downside: not a domain noun, so it will not grow into CRUD; Phase 1 supersedes parts of it.
+1. **One `reference` module, ~7 read operations** — single registry entry set, single permission story, one place to add a picker later. _Recommended._ Downside: not a domain noun, so it will not grow into CRUD; Phase 1 supersedes parts of it.
 2. **Three modules** — `hubs`, `zones`, `customers` read-only now, gaining CRUD in Phase 1. Cleaner boundary, but the same fragment is written three times and each table is split across two modules.
 3. **Sub-resources on future modules** — `GET /hubs?picker=1`. No separate module, but every picker call then needs its own permission mix, and Phase 0 still has to invent the response shape.
 
