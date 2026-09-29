@@ -29,6 +29,13 @@ export const ADMIN_SURFACE = defineSurface({
   features: {
     parcels: {
       tag: "parcels",
+      // Declared once, here, because the tag covers both surfaces. `parcels` is
+      // the admin surface's staff half and the customer surface's self-service
+      // half, and a tag is a document-level grouping — without an explicit
+      // description the shared tag falls back to "Operations for parcel.", which
+      // describes neither audience.
+      tagDescription:
+        "Parcel booking, the parcel lifecycle, and a customer's own parcel views — the staff surface under `/admin/parcels` and the self-service surface under `/customer/parcels`.",
       operations: {
         list: {
           method: "GET",

@@ -89,7 +89,7 @@ directory they run in. Each frontend loads its own URL from its own `.env`
 
 There are two ways to add an operation. **Prefer a registry.** A registry entry _is_ the whole contract; nothing downstream restates any of it.
 
-**1. In a registry (the current way for `admin`)** — one entry in `modules/<surface>/registry/<feature>.ts`, plus one handler in `modules/<surface>/handlers.ts`:
+**1. In a registry (the current way for `admin` and `customer`)** — one entry in `modules/<surface>/registry/<feature>.ts`, plus one handler in `modules/<surface>/handlers.ts`:
 
 ```ts
 export const ADMIN_SURFACE = defineSurface({
@@ -118,14 +118,17 @@ export const ADMIN_SURFACE = defineSurface({
 
 `mountSurface` derives the operation id (`admin.parcels.cancel`) and the mounted path (`/admin/parcels/:id/cancel`), registers the policy via `defineOperation`, mounts the handler behind it, and generates the OpenAPI operation. **You never write the id or the path twice, and there is no spec file to update.**
 
-Two rules make this safe:
+Three rules make this safe:
 
 - **Registry and handlers must be a bijection.** A registry entry with no handler, or a handler with no registry entry, throws at boot naming both orphans. `smoke` exercises this.
 - **`response` XOR `listNodes`.** A plain body, or a `{ nodes, meta }` page of that schema — not both, not neither.
+- **Error precedence is operation → surface → built-in.** A surface-level `errors` block corrects the generic 401/403 text for every operation in it, which the customer surface needs: its 403 means "session not ACTIVE (OTP unverified)", not "missing a permission" — a customer holds no permission keys. An operation's own `errors` still wins.
+
+A tag belongs to the document, not to a surface, and one feature can span two — `parcels` is staff and self-service. `buildSurfaceTags(ADMIN_SURFACE, CUSTOMER_SURFACE)` therefore takes every surface and emits one entry per distinct name, with an explicit `tagDescription` beating the derived default regardless of argument order. OpenAPI requires tag names to be unique; `smoke` asserts that, and that no tag is declared-but-unused or used-but-undeclared.
 
 Mount the **relative** `path`; `registerModules` prefixes `basePath` when it calls `app.route()`. `defineOperation` and the spec get the absolute one. The registry derives both, so you only ever write the relative path.
 
-**2. By hand (`auth`, `jobs`, `tracking`, `pricing`, and the customer `parcels`)** — still three things, checked against each other at boot. Skipping any one fails `smoke`:
+**2. By hand (`auth`, `jobs`, `tracking`, `pricing`, `health`)** — still three things, checked against each other at boot. Skipping any one fails `smoke`:
 
 1. **Route + policy** — `defineOperation(...)` in the module's `*.routes.ts`.
 2. **DTOs** — request schemas _and_ response schemas in the module's `*.dto.ts`. Both live there because the published contract and the runtime validation must be the same object; a hand-written response body is a second source of truth that drifts.
@@ -135,7 +138,7 @@ Mount the **relative** `path`; `registerModules` prefixes `basePath` when it cal
 apps/api/src/openapi/
   schema.ts          # Zod -> OpenAPI 3.1 conversion; pageSchema(); propertySchemaOf()
   components.ts      # only cross-cutting shapes: ErrorResponse, PageMeta, bearerAuth
-  surface-spec.ts    # registry -> OpenAPI operations
+  surface-spec.ts    # registry -> OpenAPI paths and tags
   paths/*.openapi.ts # one hand-written fragment per remaining domain, in document.ts
   document.ts        # assembles info/servers/tags/components + merges fragments and surfaces
   coverage.ts        # the catalog <-> spec guarantee for hand-written fragments only

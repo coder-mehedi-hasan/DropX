@@ -120,10 +120,37 @@ export function buildSurfacePaths(spec: SurfaceSpec): Record<string, Record<stri
   return paths
 }
 
-/** The `tags` array a surface contributes, one per feature, in registry order. */
-export function buildSurfaceTags(spec: SurfaceSpec) {
-  return Object.entries(spec.features).map(([feature, contract]) => ({
-    name: contract.tag,
-    description: contract.tagDescription ?? `Operations for ${feature.replace(/s$/, "")}.`,
+/**
+ * The `tags` array for a set of surfaces, one entry per distinct tag name.
+ *
+ * A feature can span surfaces — `parcels` is the admin surface's staff half and
+ * the customer surface's self-service half — and a tag is a document-level
+ * grouping, not a per-surface one. OpenAPI requires tag names to be unique, so
+ * the first surface to claim a name would otherwise shadow the rest and Swagger
+ * UI would render "parcels" twice.
+ *
+ * An explicit `tagDescription` always wins over the derived default, whichever
+ * order the surfaces are passed in, so the shared tag reads as one description
+ * covering both audiences rather than depending on registration order.
+ */
+export function buildSurfaceTags(...specs: SurfaceSpec[]) {
+  const explicit = new Map<string, string>()
+  const derived = new Map<string, string>()
+
+  for (const spec of specs) {
+    for (const [feature, contract] of Object.entries(spec.features)) {
+      if (contract.tagDescription) {
+        explicit.set(contract.tag, contract.tagDescription)
+      } else if (!derived.has(contract.tag)) {
+        derived.set(contract.tag, `Operations for ${feature.replace(/s$/, "")}.`)
+      }
+    }
+  }
+
+  // Derived names first so a surface without a description still gets a slot;
+  // then the explicit ones, which take precedence on collision.
+  return [...new Set([...derived.keys(), ...explicit.keys()])].map((name) => ({
+    name,
+    description: explicit.get(name) ?? derived.get(name)!,
   }))
 }

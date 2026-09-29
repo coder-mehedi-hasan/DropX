@@ -68,12 +68,6 @@ export const createParcelSchema = z.object({
 
 export type CreateParcelInput = z.infer<typeof createParcelSchema>
 
-/**
- * Customer self-service create. The sender is the session, and the fee is
- * quoted by the service — never accepted from the client.
- */
-export const createOwnParcelSchema = createParcelSchema.omit({ senderCustomerId: true })
-
 export const updateParcelStatusSchema = z.object({
   status: z.enum(PARCEL_STATUSES),
   reason: z.string().trim().max(500).optional(),

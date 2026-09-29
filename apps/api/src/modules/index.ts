@@ -3,9 +3,9 @@ import type { Hono } from "hono"
 import type { AppEnv } from "../types/env"
 import admin from "./admin"
 import auth from "./auth/auth.routes"
+import customer from "./customer"
 import health from "./health/health.routes"
 import jobs from "./jobs/jobs.routes"
-import parcels from "./parcels/parcels.routes"
 import pricing from "./pricing/pricing.routes"
 import tracking from "./tracking/tracking.routes"
 
@@ -32,7 +32,7 @@ const modules: readonly FeatureModule[] = [
   { name: "auth", basePath: "/auth", router: auth },
   { name: "tracking", basePath: "/tracking", router: tracking },
   { name: "admin", basePath: "/admin", router: admin },
-  { name: "parcels", basePath: "/parcels", router: parcels },
+  { name: "customer", basePath: "/customer", router: customer },
   { name: "jobs", basePath: "/jobs", router: jobs },
   { name: "pricing", basePath: "/pricing", router: pricing },
 ]
