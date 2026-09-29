@@ -12,6 +12,7 @@
  */
 import { createApp } from "../src/app"
 import { ADMIN_SURFACE } from "../src/modules/admin/registry"
+import { CUSTOMER_SURFACE } from "../src/modules/customer/registry"
 import { getPolicyCatalog } from "../src/shared/auth/policy"
 import { surfaceOperations } from "../src/shared/auth/surface"
 import { findCoverageMismatches } from "../src/openapi/coverage"
@@ -52,9 +53,6 @@ async function main(): Promise<void> {
     "auth.me",
     "auth.logout",
     "tracking.lookup",
-    "parcel.listOwn",
-    "parcel.readOwn",
-    "parcel.createOwn",
     "pricing.quote",
     "job.list",
     "job.read",
@@ -68,8 +66,14 @@ async function main(): Promise<void> {
   // Operations declared by a surface. Their ids are derived, so the list is not
   // restated here — a registry entry that fails to register is the failure this
   // catches, and adding one to a registry needs no change to this file.
-  const surfaceOps = surfaceOperations(ADMIN_SURFACE)
-  check("admin surface declares operations", surfaceOps.length > 0, `${surfaceOps.length}`)
+  const surfaces = [
+    ["admin", ADMIN_SURFACE],
+    ["customer", CUSTOMER_SURFACE],
+  ] as const
+  const surfaceOps = surfaces.flatMap(([name, spec]) =>
+    surfaceOperations(spec).map((operation) => ({ ...operation, surface: name })),
+  )
+  check("surfaces declare operations", surfaceOps.length > 0, `${surfaceOps.length}`)
   for (const operation of surfaceOps) {
     const entry = catalog.get(operation.id)
     check(
@@ -149,6 +153,36 @@ async function main(): Promise<void> {
       .every((id) => catalog.get(id)?.path.startsWith("/admin") === true),
   )
 
+  // The customer portal is scoped by `audience` and `requiresActiveCustomer`
+  // rather than by a permission key — a customer is not an RBAC user. So the
+  // invariant is narrower than admin's: every `/customer` operation must name the
+  // `web` audience and must not require a permission at all, and nothing under
+  // the customer mount may leak into another namespace's prefix.
+  const customerOps = [...catalog.values()].filter((entry) => entry.path.startsWith("/customer"))
+  check(
+    "every /customer operation requires the web audience and no permission",
+    customerOps.length > 0 &&
+      customerOps.every(
+        (entry) =>
+          entry.audience?.includes("web") === true && (entry.permissions?.length ?? 0) === 0,
+      ),
+    `${customerOps.length} customer operations`,
+  )
+  check(
+    "every customer-prefixed id is mounted under /customer",
+    [...catalog.keys()]
+      .filter((id) => id.startsWith("customer."))
+      .every((id) => catalog.get(id)?.path.startsWith("/customer") === true),
+  )
+
+  // A staff token must not be able to satisfy a customer operation, and the
+  // reverse. This is the regression the namespace split exists to prevent, so it
+  // is asserted structurally rather than left to a manual cross-audience test.
+  check(
+    "no customer operation is reachable by the admin audience",
+    customerOps.every((entry) => entry.audience?.includes("admin") !== true),
+  )
+
   console.log("· OpenAPI coverage")
   const mismatches = findCoverageMismatches()
   check(
@@ -161,10 +195,44 @@ async function main(): Promise<void> {
   check("openapi.json is served", specResponse.status === 200, `got ${specResponse.status}`)
   const spec = (await specResponse.json()) as {
     openapi?: string
-    paths?: Record<string, Record<string, { operationId?: string }>>
+    tags?: { name: string }[]
+    paths?: Record<string, Record<string, { operationId?: string; tags?: string[] }>>
   }
   check("document declares OpenAPI 3.1", spec.openapi?.startsWith("3.1") === true, spec.openapi)
   check("document has paths", Object.keys(spec.paths ?? {}).length > 0)
+
+  // OpenAPI requires tag names to be unique in the top-level array, and Swagger
+  // UI renders one group per entry — so a feature split across two surfaces
+  // (parcels is staff + self-service) silently becomes two identical headings
+  // unless the duplicates are collapsed. This shipped once already.
+  const tagNames = (spec.tags ?? []).map((tag) => tag.name)
+  const duplicateTags = tagNames.filter((name, index) => tagNames.indexOf(name) !== index)
+  check(
+    "tag names are unique",
+    duplicateTags.length === 0,
+    duplicateTags.length > 0 ? `duplicated: ${[...new Set(duplicateTags)].join(", ")}` : "",
+  )
+
+  // Every declared tag should be reachable, and every tag an operation carries
+  // should be declared — otherwise /docs shows an operation under a heading that
+  // has no description, or a heading with nothing under it.
+  const usedTags = new Set(
+    Object.values(spec.paths ?? {}).flatMap((item) =>
+      Object.values(item).flatMap((operation) => operation.tags ?? []),
+    ),
+  )
+  const undeclared = [...usedTags].filter((tag) => !tagNames.includes(tag))
+  check(
+    "every operation tag is declared",
+    undeclared.length === 0,
+    undeclared.length > 0 ? `undeclared: ${undeclared.join(", ")}` : "",
+  )
+  const unused = tagNames.filter((name) => !usedTags.has(name))
+  check(
+    "every declared tag is used by an operation",
+    unused.length === 0,
+    unused.length > 0 ? `unused: ${unused.join(", ")}` : "",
+  )
 
   // Swagger UI is served at /docs; assert it is not a 404 and references the spec.
   const docs = await app.request("/docs")

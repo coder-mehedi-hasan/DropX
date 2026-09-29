@@ -83,6 +83,15 @@ export type SurfaceSpec = {
   namespace: string
   /** Mount prefix, e.g. `/admin` -> `/api/v1/admin`. */
   basePath: string
+  /**
+   * Error responses every operation in this surface shares, keyed by status.
+   *
+   * Worth declaring when a surface has its own vocabulary: a customer surface's
+   * 403 means "session not ACTIVE (OTP unverified)", not "missing a permission" —
+   * customers hold no permissions at all. An operation's own `errors` wins, so a
+   * one-off 404 or 409 still reads next to the operation it belongs to.
+   */
+  errors?: Record<number, string>
   features: Record<string, FeatureContract>
 }
 
@@ -151,6 +160,7 @@ function normalizeSurface(spec: SurfaceSpec): {
   basePath: string
   operations: SurfaceOperation[]
 } {
+  const surfaceErrors = spec.errors ?? {}
   if (!NAMESPACES.has(spec.namespace)) {
     throw new Error(
       `Surface namespace "${spec.namespace}" is not one of: ${[...NAMESPACES].join(", ")}`,
@@ -185,12 +195,13 @@ function normalizeSurface(spec: SurfaceSpec): {
       const successStatus = operation.successStatus ?? 200
       const errors: Record<number, string> = {}
 
-      // Defaults first, so a generated response object reads 200/401/403 then
-      // ascending extras — which is the order the spec fragments used to list.
-      if (!operation.policy.public) errors[401] = DEFAULT_ERRORS[401]
-      if (operation.policy.permissions?.length || operation.policy.audience?.length) {
-        errors[403] = DEFAULT_ERRORS[403]
-      }
+      // Precedence, highest first:
+      //   1. the operation's own `errors` — a one-off 404/409 belongs beside it
+      //   2. the surface's `errors` — the vocabulary every operation shares
+      //   3. the built-in defaults below
+      // Read in that order so an explicit 403 beats a surface one and a surface
+      // one beats the generic text, which is what lets the customer surface
+      // correct the built-in "missing a permission" for a caller who holds none.
       for (const [status, description] of Object.entries(operation.errors ?? {})) {
         const code = Number(status)
         if (code === successStatus) {
@@ -199,6 +210,23 @@ function normalizeSurface(spec: SurfaceSpec): {
           )
         }
         errors[code] = description
+      }
+      for (const [status, description] of Object.entries(surfaceErrors)) {
+        const code = Number(status)
+        if (code !== successStatus) errors[code] ??= description
+      }
+
+      // Built-in defaults, only for a status nothing above claimed. Applied last
+      // so a generated response object still reads 200/401/403 then ascending
+      // extras, which is the order the spec fragments used to list.
+      if (!operation.policy.public && errors[401] === undefined) {
+        errors[401] = DEFAULT_ERRORS[401]
+      }
+      if (
+        (operation.policy.permissions?.length || operation.policy.audience?.length) &&
+        errors[403] === undefined
+      ) {
+        errors[403] = DEFAULT_ERRORS[403]
       }
 
       operations.push({

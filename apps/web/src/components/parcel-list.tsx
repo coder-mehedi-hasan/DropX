@@ -34,9 +34,9 @@ const PAGE_SIZE = 20
 /**
  * The customer's own parcel list.
  *
- * Reads `/parcels/mine/list` and never the staff `/parcels` collection: the API
- * refuses a customer token there, and a client that reached for it would show an
- * empty table rather than an obvious mistake.
+ * Reads `/customer/parcels` and never the staff `/admin/parcels` collection: the
+ * API refuses a customer token there, and a client that reached for it would show
+ * an empty table rather than an obvious mistake.
  */
 export function ParcelList() {
   const [page, setPage] = React.useState(1)

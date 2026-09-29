@@ -1,5 +1,6 @@
 import { getConfig } from "../config"
 import { ADMIN_SURFACE } from "../modules/admin/registry"
+import { CUSTOMER_SURFACE } from "../modules/customer/registry"
 import { getPolicyCatalog, type CatalogEntry } from "../shared/auth/policy"
 import { bearerSecurity, schemas as componentSchemas, securitySchemes } from "./components"
 import { errorResponseSchema, jsonSchemaOf } from "./schema"
@@ -7,7 +8,6 @@ import { errorResponseSchema, jsonSchemaOf } from "./schema"
 import { authPaths, authTags } from "./paths/auth.openapi"
 import { healthPaths, healthTags } from "./paths/health.openapi"
 import { jobsPaths, jobsTags } from "./paths/jobs.openapi"
-import { parcelsPaths, parcelsTags } from "./paths/parcels.openapi"
 import { pricingPaths, pricingTags } from "./paths/pricing.openapi"
 import { trackingPaths, trackingTags } from "./paths/tracking.openapi"
 import { buildSurfacePaths, buildSurfaceTags } from "./surface-spec"
@@ -33,7 +33,7 @@ const paths = {
   ...authPaths,
   ...trackingPaths,
   ...buildSurfacePaths(ADMIN_SURFACE),
-  ...parcelsPaths,
+  ...buildSurfacePaths(CUSTOMER_SURFACE),
   ...jobsPaths,
   ...pricingPaths,
 } as const
@@ -42,8 +42,7 @@ const tags = [
   ...healthTags,
   ...authTags,
   ...trackingTags,
-  ...buildSurfaceTags(ADMIN_SURFACE),
-  ...parcelsTags,
+  ...buildSurfaceTags(ADMIN_SURFACE, CUSTOMER_SURFACE),
   ...jobsTags,
   ...pricingTags,
 ]

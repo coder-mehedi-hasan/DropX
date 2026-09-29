@@ -18,10 +18,11 @@ import type {
 /**
  * Every call the customer portal is allowed to make.
  *
- * The staff `/parcels` collection is deliberately absent: a customer token is
- * refused by the API's policy layer, so the portal only ever speaks to
- * `/parcels/mine*`, plus the public `/tracking/:trackingNumber` and the
- * `web`-audience auth and pricing routes.
+ * The staff `/admin/parcels` collection is deliberately absent: a customer token
+ * is refused by the API's policy layer, so the portal only ever speaks to
+ * `/customer/parcels*`, plus the public `/tracking/:trackingNumber` and the
+ * `web`-audience auth and pricing routes. The separation is a mount and an
+ * `audience`, not a path convention the client has to remember.
  */
 
 export const authApi = {
@@ -52,15 +53,15 @@ export const authApi = {
 
 export const parcelsApi = {
   listOwn(params: ListQueryParams): Promise<Page<Parcel>> {
-    return apiRequest<Page<Parcel>>("/parcels/mine/list", { query: { ...params } })
+    return apiRequest<Page<Parcel>>("/customer/parcels", { query: { ...params } })
   },
 
   getOwn(id: string): Promise<ParcelWithItems> {
-    return apiRequest<ParcelWithItems>(`/parcels/mine/${encodeURIComponent(id)}`)
+    return apiRequest<ParcelWithItems>(`/customer/parcels/${encodeURIComponent(id)}`)
   },
 
   createOwn(payload: CreateParcelRequest): Promise<Parcel> {
-    return apiRequest<Parcel>("/parcels/mine", { method: "POST", body: payload })
+    return apiRequest<Parcel>("/customer/parcels", { method: "POST", body: payload })
   },
 }
 

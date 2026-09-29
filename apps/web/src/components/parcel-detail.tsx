@@ -33,8 +33,8 @@ import { useMyParcel, useTracking } from "@/lib/queries"
 /**
  * A customer's own parcel.
  *
- * The portal read (`/parcels/mine/:id`) carries the parcel and its items but no
- * events, so the timeline comes from the public `/tracking/:trackingNumber`
+ * The portal read (`/customer/parcels/:id`) carries the parcel and its items but
+ * no events, so the timeline comes from the public `/tracking/:trackingNumber`
  * projection — the same data a customer would see without signing in, which is
  * also what the API deliberately exposes for it.
  */
