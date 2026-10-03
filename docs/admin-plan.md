@@ -226,7 +226,7 @@ apps/api/src/modules/
 | Belongs to the surface                     | Belongs to the domain                        |
 | ------------------------------------------ | -------------------------------------------- |
 | registry entry — path, policy, DTOs, prose | `*.service.ts` — business rules              |
-| `handlers.ts` — transport                  | `*.repository.ts` — SQL, takes an `Executor` |
+| `handlers.ts` — transport                  | `*.repository.ts` — raw SQL, co-located with its module's service |
 
 `parcels.service.ts` cannot be duplicated: `createParcel` is called by the staff route (`parcels.routes.ts:84`) _and_ the customer route (`:202`), and `getParcelItems` by both (`:62`, `:180`). The DTOs are genuinely per-surface already — `createParcelSchema` takes `senderCustomerId` from the body, `createOwnParcelSchema` deliberately does not accept the field at all (`:200-206`) — so they stay in the two surface registries.
 
@@ -537,5 +537,5 @@ Stated so it is not relitigated mid-phase. These follow from `AGENTS.md` archite
 - No customer passwords and no MySQL OTP tables. Customers are not RBAC users.
 - No guest parcel booking. Unauthenticated tracking by tracking number stays public and stays rate-limited.
 - No new apps. Every screen in this plan lives in `apps/admin`.
-- No `mysql2` import in `apps/api`. The database is reached only through `@dropx/db`.
+- `packages/db` is deleted. The database is reached only through raw MySQL: `apps/api/src/db/pool.ts` owns the single process-wide `mysql2` pool, bound to every request as `c.db`. Each module keeps its own repository in `apps/api/src/modules/{domain}` with the SQL co-located with its service; repositories take the pool (or a transaction) so a caller can pass `tx`. `migrate.sql` is the source of truth for the schema.
 - No rider-surface rename. `/jobs` and `job.*` stay as they are — see §3.6.

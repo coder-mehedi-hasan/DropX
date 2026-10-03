@@ -24,8 +24,7 @@ packages/
 | `apps/admin`  | Admins, branch staff, hub operators, dispatchers, support, finance | Email + password (`users`) + RBAC                              |
 | `apps/api`    | All clients                                                        | Validates sessions/tokens; enforces permissions and data scope |
 
-`bun run dev` starts all four apps together via `mprocs`. The three frontends share
-tokens and components from `packages/ui`; all data access goes through `packages/db`.
+`bun run dev` starts all four apps together via `mprocs`. The three frontends share tokens and components from `packages/ui`; all data access goes through the API's database layer in `apps/api/src/db/`.
 
 Branches and hubs are **not** separate apps. Their staff use `apps/admin` with role- and branch/hub-scoped access. See [`rbac.md`](./rbac.md).
 
@@ -154,7 +153,7 @@ Full matrix: [`rbac.md`](./rbac.md).
 - OTP / short-lived auth codes: Redis (or equivalent cache), not MySQL
 - API base: `/api/v1` (health also served unversioned at `/health`)
 - Lists return `{ nodes, meta }`; errors return `{ error: { code, message, details? } }`
-- The database is reached only through the `packages/db` port, never the driver directly
+- Each repository in `apps/api/src/modules/{domain}` runs raw SQL against `apps/api/src/db/pool.ts` (the single process-wide `mysql2` pool bound to every request as `c.db`). `migrate.sql` is the source of truth for the schema.
 - **OpenAPI 3.1** at `/openapi.json`, **Swagger UI** at `/docs` (public, unversioned)
   - Schemas are derived from the Zod DTOs, so the documented contract and the runtime
     validation are the same object rather than two descriptions that can drift

@@ -50,7 +50,6 @@ docs/brand-guidelines.md                 # written brand contract and handoff ch
 | `apps/riders` | Riders           | `users` email + password; row in `riders` | 5174     |
 | `apps/admin`  | Staff            | `users` email + password + RBAC           | 5173     |
 | `apps/api`    | All of the above | Auth, business logic, DB access           | 8000     |
-| `packages/db` | —                | Database port/adapter, no app logic       | —        |
 | `packages/ui` | —                | Tokens + components, no app logic         | —        |
 
 **Do not** create separate portals for branches or hubs. Branch/hub staff use `apps/admin` with role + branch/hub scoping.
@@ -174,7 +173,13 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 13. **Parcels are the hub of the domain** — pickups, transfers, deliveries, payments, events hang off parcels.
 14. **Schema changes** — update `migrate.sql` and keep `docs/er-diagram.md` in sync when tables/FKs change.
 15. **RBAC / product changes** — update `docs/rbac.md` and `docs/overview.md`.
-16. **The database is reached only through the port** — `apps/api` imports `@dropx/db` and never `mysql2`. SQL composes via the `QueryBuilder`; sort columns are allowlisted because they arrive from clients. The handle and the cache are process-wide: a **service** resolves them with `getDatabase()` / `getCache()`, a **repository** takes an `Executor` so a transaction can pass `tx`, and a **route** passes neither — it supplies business input only. Tests install a double with `setDatabase()` / `setCache()`.
+16. **The database is reached only through raw MySQL** — `apps/api` imports `mysql2/promise` (via `apps/api/src/db/pool.ts`) and never the old `@dropx/db` port; `packages/db` has been deleted. SQL is written directly in repositories against the process-wide pool bound to `c.db`:
+
+     ```ts
+     const [rows] = await c.get("db")!.query<RowDataPacket[]>(sql, params)
+     ```
+
+     Each module keeps its own repository with the SQL for that domain co-located with its service (`modules/{domain}/{module}.repository.ts`). Repositories take a `Pool` (or transaction) so a caller can pass `tx`; a route passes business input only. Sort columns arrive from clients, so the allowlist lives next to each query.
 17. **Audience and permission are separate axes** — a rider token holds `rider.jobs.*` and must never satisfy `parcels.*`; the admin and rider surfaces are separate modules, not one route with two audiences.
 18. **Branding has a source-of-truth contract** — use the approved assets in `apps/web/public/brand/`; do not recreate or manually combine logos in app code. Material brand changes update the interactive page, asset README, and `docs/brand-guidelines.md` together. The web brand page is light-first; dark mode is a documented paired environment.
 
@@ -188,9 +193,7 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 | Auth, permissions checks, domain APIs     | `apps/api`                                                                               |
 | Shared components, design tokens          | `packages/ui`                                                                            |
 | Brand guidelines, logos, marketing assets | `apps/web/public/brand`, `apps/web/src/app/brand-guidelines`, `docs/brand-guidelines.md` |
-| DB port, entities, query composition      | `packages/db`                                                                            |
-| Driver specifics (pool, TLS, errors)      | `packages/db/src/adapters`                                                               |
-| Tables / indexes / FKs                    | `migrate.sql`                                                                            |
+| Database pool, model types, migrations    | `apps/api/src/db/pool.ts`, `apps/api/src/db/models.ts`, `apps/api/src/db/migrate.sql`  |
 | Product / auth / RBAC docs                | `docs/`                                                                                  |
 
 ## Coding expectations
