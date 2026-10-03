@@ -189,7 +189,7 @@ export async function listHubRefs(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM hubs${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM hubs AS h${where ? " " + where : ""}`
   const sortColumn =
     params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
       ? params.sortBy
@@ -227,7 +227,7 @@ export async function listZoneRefs(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM zones${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM zones AS z${where ? " " + where : ""}`
   const sortColumn =
     params.sortBy && (ZONE_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
       ? params.sortBy
@@ -275,7 +275,7 @@ export async function searchCustomerRefs(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM customers${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM customers AS c${where ? " " + where : ""}`
   const sortColumn =
     params.sortBy && (CUSTOMER_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
       ? params.sortBy

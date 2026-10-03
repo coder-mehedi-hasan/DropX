@@ -320,8 +320,11 @@ export function BookParcel() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="mx-auto grid w-full max-w-6xl gap-6">
       <div className="grid gap-1">
+        <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
+          Step {step} of {STEPS.length} · {STEPS[step - 1]?.title}
+        </p>
         <h1 className="text-2xl font-semibold tracking-tight">Book a parcel</h1>
         <p className="text-muted-foreground text-sm">
           A few quick steps. You will see the delivery fee before you confirm.
@@ -354,7 +357,14 @@ export function BookParcel() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
-          <nav aria-label="Booking progress" className="grid gap-3 sm:grid-cols-5">
+          <nav
+            aria-label="Booking progress"
+            className="relative grid gap-3 rounded-2xl border bg-white/60 p-4 sm:grid-cols-5 sm:gap-0 sm:px-6 sm:py-5"
+          >
+            <span
+              className="bg-border absolute top-9 right-[12%] left-[12%] hidden h-px sm:block"
+              aria-hidden
+            />
             {STEPS.map((item, index) => {
               const number = index + 1
               const active = number === step
@@ -363,7 +373,7 @@ export function BookParcel() {
                 <button
                   key={item.title}
                   type="button"
-                  className="group flex items-center gap-2 text-left sm:block"
+                  className="group relative z-10 flex items-center gap-2 text-left sm:grid sm:justify-items-start"
                   onClick={() => number < step && setStep(number)}
                   disabled={number >= step}
                   aria-current={active ? "step" : undefined}
@@ -392,10 +402,10 @@ export function BookParcel() {
             })}
           </nav>
 
-          <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.85fr)]">
             <div className="grid gap-6">
               {step === 1 ? (
-                <Card>
+                <Card className="border-primary/20 bg-primary/[0.025] shadow-sm">
                   <CardHeader>
                     <CardTitle>Receiver</CardTitle>
                     <CardDescription>
@@ -408,13 +418,13 @@ export function BookParcel() {
                       name="receiverCustomerId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Receiving customer</FormLabel>
+                          <FormLabel>Recipient account</FormLabel>
                           <ReferenceSelect
                             value={field.value}
                             onValueChange={field.onChange}
                             options={recipientOptions}
                             source="recipients"
-                            placeholder="Pick a saved recipient"
+                            placeholder="Choose who receives the parcel"
                           />
                           <FormMessage />
                         </FormItem>
@@ -720,14 +730,16 @@ export function BookParcel() {
                   </CardHeader>
                   <CardContent className="grid gap-4">
                     {items.fields.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">
-                        No items listed. You can add them if the receiver will be checking the
-                        contents.
-                      </p>
+                      <div className="bg-muted/35 rounded-xl px-4 py-3 text-sm">
+                        <p className="font-medium">No items added</p>
+                        <p className="text-muted-foreground mt-1">
+                          Optional. Add contents if the receiver needs to check what is inside.
+                        </p>
+                      </div>
                     ) : null}
 
                     {items.fields.map((field, index) => (
-                      <div key={field.id} className="grid gap-3 rounded-lg border p-4">
+                      <div key={field.id} className="bg-muted/20 grid gap-3 rounded-xl border p-4">
                         <div className="flex items-center justify-between">
                           <Badge variant="secondary">Item {index + 1}</Badge>
                           <Button
@@ -836,15 +848,14 @@ export function BookParcel() {
             </div>
 
             <div className="grid h-fit gap-4 lg:sticky lg:top-24">
-              <Card>
-                <CardHeader>
+              <Card className="border-primary/20 bg-primary/[0.025] shadow-sm">
+                <CardHeader className="gap-1 pb-3">
                   <CardTitle className="flex items-center gap-2">
                     <ReceiptIcon className="size-4" aria-hidden />
                     Delivery fee
                   </CardTitle>
                   <CardDescription>
-                    Quoted from the destination zone, the weight band and the amount being
-                    collected.
+                    Your live estimate. It is confirmed again when you book.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3">
@@ -894,9 +905,8 @@ export function BookParcel() {
                     </dl>
                   )}
 
-                  <p className="text-muted-foreground text-xs">
-                    DropX recomputes this fee when the parcel is created, so the amount you are
-                    charged is never taken from the browser.
+                  <p className="text-muted-foreground text-xs leading-5">
+                    Based on your route, weight, and COD amount. DropX recomputes it at booking.
                   </p>
                 </CardContent>
               </Card>
