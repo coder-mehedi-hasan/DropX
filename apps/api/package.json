@@ -13,10 +13,9 @@
     "seed": "TZ=UTC bun --env-file=../../.env run ./scripts/seed.ts",
     "bootstrap-admin": "TZ=UTC bun --env-file=../../.env run ./scripts/bootstrap-admin.ts",
     "check:read-paths": "TZ=UTC API_LOG_LEVEL=silent bun --env-file=../../.env run ./scripts/check-read-paths.ts",
-    "migrate": "bun run --cwd ../../packages/db migrate"
+    "migrate": "bun run src/db/migrate.ts"
   },
   "dependencies": {
-    "@dropx/db": "workspace:*",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",
     "@types/nodemailer": "^8.0.2",
@@ -25,6 +24,7 @@
     "hono": "^4.13.9",
     "ioredis": "^6.0.0",
     "mjml": "^5.4.1",
+    "mysql2": "^3.24.5",
     "nodemailer": "^10.0.12",
     "redis": "^6.2.1",
     "zod": "^4.6.5"

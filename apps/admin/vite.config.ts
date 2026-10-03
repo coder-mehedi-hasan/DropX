@@ -21,6 +21,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@dropx/db/*": fileURLToPath(new URL("../api/src/db/models", import.meta.url)),
     },
   },
   server: {

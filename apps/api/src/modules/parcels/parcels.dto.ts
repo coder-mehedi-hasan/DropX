@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { PARCEL_STATUSES, PARCEL_TYPES, PAYMENT_TYPES } from "@dropx/db"
+import { PARCEL_STATUSES, PARCEL_TYPES, PAYMENT_TYPES } from "../../db/models"
 
 /**
  * Boundary DTOs.

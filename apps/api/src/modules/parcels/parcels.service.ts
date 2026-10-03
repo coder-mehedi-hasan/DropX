@@ -1,15 +1,18 @@
 import { randomInt } from "node:crypto"
 
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
+import { withTransaction } from "../../db/transaction"
+
 import {
   buildPage,
   canTransitionParcel,
-  getDatabase,
   normalizeListParams,
   type Id,
   type ListParams,
   type Page,
   type Parcel,
-} from "@dropx/db"
+} from "../../db/models"
 
 import { ERROR_CODES, DomainError, fromDatabaseError, notFound } from "../../core"
 import type { Scope } from "../../shared/auth/auth-context"
@@ -76,6 +79,7 @@ export type ParcelListFilter = {
  * disagrees with the published contract.
  */
 export async function listParcelsForStaff(
+  c: Context<AppEnv>,
   scope: Scope,
   query: ListParcelsQuery,
   searchFields: readonly string[],
@@ -83,7 +87,7 @@ export async function listParcelsForStaff(
   const params = toListParams(query)
 
   const { nodes, totalCount } = await listParcels(
-    getDatabase(),
+    c.get("db")!,
     scope,
     params,
     { ...query, search: params.search, searchFields },
@@ -94,6 +98,7 @@ export async function listParcelsForStaff(
 }
 
 export async function listParcelsForCustomerPortal(
+  c: Context<AppEnv>,
   customerId: Id,
   query: ListParcelsQuery,
   searchFields: readonly string[],
@@ -101,7 +106,7 @@ export async function listParcelsForCustomerPortal(
   const params = toListParams(query)
 
   const { nodes, totalCount } = await listParcelsForCustomer(
-    getDatabase(),
+    c.get("db")!,
     customerId,
     params,
     { status: query.status, search: params.search, searchFields },
@@ -111,20 +116,20 @@ export async function listParcelsForCustomerPortal(
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getParcelForStaff(scope: Scope, parcelId: Id): Promise<Parcel> {
-  const parcel = await findParcelById(getDatabase(), scope, parcelId)
+export async function getParcelForStaff(c: Context<AppEnv>, scope: Scope, parcelId: Id): Promise<Parcel> {
+  const parcel = await findParcelById(c.get("db")!, scope, parcelId)
   if (!parcel) throw notFound("Parcel not found")
   return parcel
 }
 
-export async function getParcelForCustomer(customerId: Id, parcelId: Id): Promise<Parcel> {
-  const parcel = await findParcelForCustomer(getDatabase(), parcelId, customerId)
+export async function getParcelForCustomer(c: Context<AppEnv>, customerId: Id, parcelId: Id): Promise<Parcel> {
+  const parcel = await findParcelForCustomer(c.get("db")!, parcelId, customerId)
   if (!parcel) throw notFound("Parcel not found")
   return parcel
 }
 
-export function getParcelItems(parcelId: Id) {
-  return listParcelItems(getDatabase(), parcelId)
+export function getParcelItems(c: Context<AppEnv>, parcelId: Id) {
+  return listParcelItems(c.get("db")!, parcelId)
 }
 
 export type CreateParcelCommand = {
@@ -134,8 +139,7 @@ export type CreateParcelCommand = {
   actorId: Id | null
 }
 
-export async function createParcel(command: CreateParcelCommand): Promise<Parcel> {
-  const db = getDatabase()
+export async function createParcel(c: Context<AppEnv>, command: CreateParcelCommand): Promise<Parcel> {
   const { input, senderCustomerId, actorId: actor } = command
 
   if (input.originHubId === input.destinationHubId) {
@@ -151,7 +155,7 @@ export async function createParcel(command: CreateParcelCommand): Promise<Parcel
   }
 
   // Recomputed server-side: a client-supplied fee is never trusted.
-  const quote = await quoteDeliveryFee({
+  const quote = await quoteDeliveryFee(c, {
     originZoneId: command.originZoneId,
     destinationZoneId: input.destinationZoneId,
     weightKg: input.weight,
@@ -161,7 +165,7 @@ export async function createParcel(command: CreateParcelCommand): Promise<Parcel
   const trackingNumber = generateTrackingNumber()
 
   try {
-    const parcelId = await db.transaction(async (tx) => {
+    const parcelId = await withTransaction(c.get("db")!, async (tx) => {
       const id = await insertParcel(tx, {
         trackingNumber,
         senderCustomerId,
@@ -197,7 +201,7 @@ export async function createParcel(command: CreateParcelCommand): Promise<Parcel
       return id
     })
 
-    const parcel = await findParcelById(db, COMPANY_WIDE, parcelId)
+    const parcel = await findParcelById(c.get("db")!, COMPANY_WIDE, parcelId)
     if (!parcel) throw new Error("Parcel disappeared immediately after insert")
 
     // After the commit — a notification outage must not lose the parcel.
@@ -232,9 +236,8 @@ const STATUS_EVENT: Readonly<Record<Parcel["status"], string>> = {
   RETURNED: "RETURNED",
 }
 
-export async function updateParcelStatus(command: UpdateStatusCommand): Promise<Parcel> {
-  const db = getDatabase()
-  const current = await findParcelById(db, command.scope, command.parcelId)
+export async function updateParcelStatus(c: Context<AppEnv>, command: UpdateStatusCommand): Promise<Parcel> {
+  const current = await findParcelById(c.get("db")!, command.scope, command.parcelId)
   if (!current) throw notFound("Parcel not found")
 
   if (current.status === command.status) {
@@ -257,7 +260,7 @@ export async function updateParcelStatus(command: UpdateStatusCommand): Promise<
     })
   }
 
-  await db.transaction(async (tx) => {
+  await withTransaction(c.get("db")!, async (tx) => {
     const affected = await updateStatusRow(tx, command.scope, command.parcelId, {
       status: command.status,
       currentHubId: command.hubId,
@@ -276,7 +279,7 @@ export async function updateParcelStatus(command: UpdateStatusCommand): Promise<
     })
   })
 
-  const updated = await findParcelById(db, command.scope, command.parcelId)
+  const updated = await findParcelById(c.get("db")!, command.scope, command.parcelId)
   if (!updated) throw notFound("Parcel not found")
 
   emit("parcel.status_changed", {

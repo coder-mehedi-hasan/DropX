@@ -1,6 +1,6 @@
-import { buildPage, getDatabase, normalizeListParams, type ListParams, type Page } from "@dropx/db"
+import { buildPage, normalizeListParams, type ListParams, type Page } from "../../db/models"
 
-import type { Branch, HubWithBranch } from "@dropx/db"
+import type { Branch, HubWithBranch } from "../../db/models"
 
 import {
   insertBranch,
@@ -12,6 +12,9 @@ import {
   selectHub,
   selectHubs,
 } from "./org.repository"
+
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
 
 import { DomainError, fromDatabaseError, notFound } from "../../core"
 
@@ -42,7 +45,7 @@ function toListParams(query: {
   })
 }
 
-export async function listBranches(query: {
+export async function listBranches(c: Context<AppEnv>, query: {
   page?: number
   limit?: number
   sortBy?: string
@@ -51,20 +54,20 @@ export async function listBranches(query: {
   search?: string
 }): Promise<Page<Branch>> {
   const params = toListParams(query)
-  const { nodes, totalCount } = await selectBranches(getDatabase(), params, {
+  const { nodes, totalCount } = await selectBranches(c.get("db")!, params, {
     status: query.status as Branch["status"] | undefined,
     search: query.search,
   })
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getBranch(branchId: string): Promise<Branch> {
-  const branch = await selectBranch(getDatabase(), branchId)
+export async function getBranch(c: Context<AppEnv>, branchId: string): Promise<Branch> {
+  const branch = await selectBranch(c.get("db")!, branchId)
   if (!branch) throw notFound("No such branch")
   return branch
 }
 
-export async function createBranch(input: {
+export async function createBranch(c: Context<AppEnv>, input: {
   name: string
   code: string
   phone?: string
@@ -75,7 +78,7 @@ export async function createBranch(input: {
   longitude?: number
   status: Branch["status"]
 }): Promise<Branch> {
-  const id = await insertBranch(getDatabase(), {
+  const id = await insertBranch(c.get("db")!, {
     name: input.name,
     code: input.code,
     phone: input.phone ?? null,
@@ -86,21 +89,22 @@ export async function createBranch(input: {
     longitude: input.longitude ?? null,
     status: input.status,
   })
-  const branch = await selectBranch(getDatabase(), id)
+  const branch = await selectBranch(c.get("db")!, id)
   if (!branch) throw new Error("Branch disappeared immediately after insert")
   return branch
 }
 
 export async function updateBranch(
+  c: Context<AppEnv>,
   branchId: string,
   patch: Partial<Omit<Branch, "id" | "createdAt" | "updatedAt">>,
 ): Promise<Branch> {
-  const branch = await patchBranch(getDatabase(), branchId, patch)
+  const branch = await patchBranch(c.get("db")!, branchId, patch)
   if (!branch) throw notFound("No such branch")
   return branch
 }
 
-export async function listHubs(query: {
+export async function listHubs(c: Context<AppEnv>, query: {
   page?: number
   limit?: number
   sortBy?: string
@@ -111,7 +115,7 @@ export async function listHubs(query: {
   search?: string
 }): Promise<Page<HubWithBranch>> {
   const params = toListParams(query)
-  const { nodes, totalCount } = await selectHubs(getDatabase(), params, {
+  const { nodes, totalCount } = await selectHubs(c.get("db")!, params, {
     branchId: query.branchId,
     type: query.type as HubWithBranch["type"] | undefined,
     status: query.status as HubWithBranch["status"] | undefined,
@@ -120,13 +124,13 @@ export async function listHubs(query: {
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getHub(hubId: string): Promise<HubWithBranch> {
-  const hub = await selectHub(getDatabase(), hubId)
+export async function getHub(c: Context<AppEnv>, hubId: string): Promise<HubWithBranch> {
+  const hub = await selectHub(c.get("db")!, hubId)
   if (!hub) throw notFound("No such hub")
   return hub
 }
 
-export async function createHub(input: {
+export async function createHub(c: Context<AppEnv>, input: {
   branchId: string
   name: string
   code: string
@@ -139,7 +143,7 @@ export async function createHub(input: {
   status: HubWithBranch["status"]
 }): Promise<HubWithBranch> {
   try {
-    const id = await insertHub(getDatabase(), {
+    const id = await insertHub(c.get("db")!, {
       branchId: input.branchId,
       name: input.name,
       code: input.code,
@@ -151,7 +155,7 @@ export async function createHub(input: {
       capacity: input.capacity ?? null,
       status: input.status,
     })
-    const hub = await selectHub(getDatabase(), id)
+    const hub = await selectHub(c.get("db")!, id)
     if (!hub) throw new Error("Hub disappeared immediately after insert")
     return hub
   } catch (error) {
@@ -161,6 +165,7 @@ export async function createHub(input: {
 }
 
 export async function updateHub(
+  c: Context<AppEnv>,
   hubId: string,
   patch: Partial<Omit<HubWithBranch, "id" | "createdAt" | "updatedAt">>,
 ): Promise<HubWithBranch> {
@@ -171,7 +176,7 @@ export async function updateHub(
   const { branchId: _branchId, ...rest } = patch
   void _branchId
 
-  const hub = await patchHub(getDatabase(), hubId, rest)
+  const hub = await patchHub(c.get("db")!, hubId, rest)
   if (!hub) throw notFound("No such hub")
   return hub
 }

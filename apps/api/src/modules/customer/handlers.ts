@@ -27,6 +27,7 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
       }
 
       const page = await parcels.listParcelsForCustomerPortal(
+        c,
         auth.actor.customerId,
         c.req.valid("query"),
         ["p.tracking_number"],
@@ -42,10 +43,11 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
       }
 
       const parcel = await parcels.getParcelForCustomer(
+        c,
         auth.actor.customerId,
         c.req.valid("param").id,
       )
-      const items = await parcels.getParcelItems(parcel.id)
+      const items = await parcels.getParcelItems(c, parcel.id)
       return c.json(response.success({ ...parcel, items }))
     },
 
@@ -59,7 +61,7 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
 
       // The sender is the session, never the request body —
       // `createOwnParcelSchema` does not even accept the field.
-      const parcel = await parcels.createParcel({
+      const parcel = await parcels.createParcel(c, {
         senderCustomerId: auth.actor.customerId,
         originZoneId: input.originZoneId,
         input: { ...input, senderCustomerId: auth.actor.customerId },

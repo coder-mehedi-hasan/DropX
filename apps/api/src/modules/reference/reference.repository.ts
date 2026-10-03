@@ -1,18 +1,6 @@
-import {
-  QueryBuilder,
-  TABLES,
-  toId,
-  toStringOrNull,
-  type CustomerStatus,
-  type CustomerType,
-  type Executor,
-  type HubStatus,
-  type HubType,
-  type ListParams,
-  type RecordStatus,
-} from "@dropx/db"
-
-import type { Scope } from "../../shared/auth/auth-context"
+import type { CustomerStatus, CustomerType, HubStatus, HubType, ListParams, RecordStatus } from "@/db/models"
+import type { Scope } from "@/shared/auth/auth-context"
+import type { Pool, RowDataPacket } from "mysql2/promise"
 
 /**
  * Reference reads, for pickers.
@@ -71,63 +59,80 @@ const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status"] as const
 
 const BRANCH_COLUMNS = "b.id, b.name, b.code, b.status"
 
-/**
- * `hubs.branch_id` means a hub belongs to exactly one branch, so a hub picker
- * must be branch-scoped for the same reason the parcel list is: a branch manager
- * choosing an origin hub should see their own network, not the whole company's.
- * A hub-scoped role narrows further to its own hubs, and a company-wide ADMIN
- * sees everything.
- */
-function applyHubScope(builder: QueryBuilder, scope: Scope): QueryBuilder {
-  if (scope.isCompanyWide) return builder
-  if (scope.branchId) builder.where("h.branch_id = ?", scope.branchId)
-  if (scope.hubIds.length > 0) builder.whereIn("h.id", scope.hubIds)
-  return builder
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (match) => `\\${match}`)
+}
+
+function placeholders(count: number): string {
+  return Array.from({ length: count }, () => "?").join(", ")
+}
+
+type Clause = { text: string; params: unknown[] }
+
+function combineClauses(clauses: Clause[]): Clause {
+  if (clauses.length === 0) return { text: "", params: [] }
+  return {
+    text: `WHERE (${clauses.map((c) => c.text).join(") AND (")})`,
+    params: clauses.flatMap((c) => c.params),
+  }
 }
 
 async function pageOf<T>(
-  db: Executor,
-  builder: QueryBuilder,
-  params: ListParams,
-  decode: (row: T) => T,
+  db: Pool,
+  sql: string,
+  params: unknown[],
+  countSql: string,
+  countParams: unknown[],
+  decode: (row: unknown) => T,
 ): Promise<{ nodes: T[]; totalCount: number }> {
-  const countQuery = builder.buildCount()
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
-
-  const [totalCount, rows] = await Promise.all([
-    db.count(countQuery.sql, countQuery.params),
-    db.query<T>(pageQuery.sql, pageQuery.params),
-  ])
-
-  return { nodes: rows.rows.map(decode), totalCount }
+  const [countRows] = await db.query<RowDataPacket[]>(countSql, countParams)
+  const [rows] = await db.query<RowDataPacket[]>(sql, params)
+  const countRow = countRows[0]
+  const totalCount = countRow?.count == null ? 0 : Number(countRow.count)
+  return { nodes: rows.map(decode), totalCount }
 }
 
 export type ListBranchesFilter = {
   search?: string | undefined
 }
 
+function decodeBranchRef(row: unknown): BranchRef {
+  const r = row as Record<string, unknown>
+  return {
+    id: String(r.id),
+    name: String(r.name),
+    code: String(r.code),
+    status: r.status as "ACTIVE" | "INACTIVE",
+  }
+}
+
 export async function listBranchRefs(
-  db: Executor,
+  db: Pool,
   params: ListParams,
   filter: ListBranchesFilter,
 ): Promise<{ nodes: BranchRef[]; totalCount: number }> {
-  const builder = new QueryBuilder().select(BRANCH_COLUMNS).from(TABLES.branches, "b")
-  builder.whereSearch(filter.search, ["b.name", "b.code"])
+  const clauses: Clause[] = []
+  if (filter.search) {
+    const like = `%${escapeLike(filter.search)}%`
+    clauses.push({
+      text: `(${["b.name", "b.code"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
+      params: [like, like],
+    })
+  }
+  const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
+  const whereParams = clauses.flatMap((c) => c.params)
 
-  return pageOf<BranchRef>(
-    db,
-    builder.orderByListParams(params, BRANCH_SORT_COLUMNS, [
-      { column: "b.name", direction: "asc" },
-      { column: "b.id", direction: "asc" },
-    ]),
-    params,
-    (row) => ({
-      id: toId(row.id),
-      name: String(row.name),
-      code: String(row.code),
-      status: row.status as "ACTIVE" | "INACTIVE",
-    }),
-  )
+  const countSql = `SELECT COUNT(*) AS count FROM branches${where ? " " + where : ""}`
+  const sortColumn =
+    params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+  const orderByClause = sortColumn
+    ? `${sortColumn} ${params.sort.toUpperCase()}, b.name ASC, b.id ASC`
+    : `b.name ASC, b.id ASC`
+
+  const pageSql =
+    `SELECT ${BRANCH_COLUMNS} FROM branches AS b${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+
+  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeBranchRef)
 }
 
 export type ListHubRefsFilter = {
@@ -136,87 +141,139 @@ export type ListHubRefsFilter = {
   search?: string | undefined
 }
 
+function decodeHubRef(row: unknown): HubRef {
+  const r = row as Record<string, unknown>
+  return {
+    id: String(r.id),
+    name: String(r.name),
+    code: String(r.code),
+    type: r.type as HubType,
+    district: toStringOrNull(r.district),
+    status: r.status as HubStatus,
+  }
+}
+
 export async function listHubRefs(
-  db: Executor,
+  db: Pool,
   scope: Scope,
   params: ListParams,
   filter: ListHubRefsFilter,
 ): Promise<{ nodes: HubRef[]; totalCount: number }> {
-  const builder = applyHubScope(
-    new QueryBuilder().select(HUB_COLUMNS).from(TABLES.hubs, "h"),
-    scope,
-  )
+  const clauses: Clause[] = []
+  const scopeClause = applyHubScope(scope)
+  if (scopeClause.params.length) clauses.push(scopeClause)
+  if (filter.type) clauses.push({ text: "h.type = ?", params: [filter.type] })
+  if (filter.status) clauses.push({ text: "h.status = ?", params: [filter.status] })
+  if (filter.search) {
+    const like = `%${escapeLike(filter.search)}%`
+    clauses.push({
+      text: `(${["h.name", "h.code", "h.district"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
+      params: [like, like, like],
+    })
+  }
+  const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
+  const whereParams = clauses.flatMap((c) => c.params)
 
-  if (filter.type) builder.where("h.type = ?", filter.type)
-  if (filter.status) builder.where("h.status = ?", filter.status)
-  builder.whereSearch(filter.search, ["h.name", "h.code", "h.district"])
+  const countSql = `SELECT COUNT(*) AS count FROM hubs${where ? " " + where : ""}`
+  const sortColumn =
+    params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+  const orderByClause = sortColumn
+    ? `${sortColumn} ${params.sort.toUpperCase()}, h.name ASC, h.id ASC`
+    : `h.name ASC, h.id ASC`
 
-  const paged = await pageOf<HubRef>(
-    db,
-    builder.orderByListParams(params, HUB_SORT_COLUMNS, [
-      { column: "h.name", direction: "asc" },
-      { column: "h.id", direction: "asc" },
-    ]),
-    params,
-    (row) => ({
-      id: toId(row.id),
-      name: row.name,
-      code: row.code,
-      type: row.type,
-      district: toStringOrNull(row.district),
-      status: row.status,
-    }),
-  )
+  const pageSql = `SELECT ${HUB_COLUMNS} FROM hubs AS h${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
 
-  return paged
+  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeHubRef)
 }
 
 export async function listZoneRefs(
-  db: Executor,
+  db: Pool,
   params: ListParams,
   filter: { search?: string | undefined },
 ): Promise<{ nodes: ZoneRef[]; totalCount: number }> {
-  const builder = new QueryBuilder().select(ZONE_COLUMNS).from(TABLES.zones, "z")
-  builder.whereSearch(filter.search, ["z.name", "z.code"])
+  const clauses: Clause[] = []
+  if (filter.search) {
+    const like = `%${escapeLike(filter.search)}%`
+    clauses.push({
+      text: `(${["z.name", "z.code"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
+      params: [like, like],
+    })
+  }
+  const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
+  const whereParams = clauses.flatMap((c) => c.params)
 
-  return pageOf<ZoneRef>(
-    db,
-    builder.orderByListParams(params, ZONE_SORT_COLUMNS, [
-      { column: "z.name", direction: "asc" },
-      { column: "z.id", direction: "asc" },
-    ]),
-    params,
-    (row) => ({
-      id: toId(row.id),
-      name: row.name,
-      code: row.code,
-      status: row.status,
-    }),
-  )
+  const countSql = `SELECT COUNT(*) AS count FROM zones${where ? " " + where : ""}`
+  const sortColumn =
+    params.sortBy && (ZONE_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+  const orderByClause = sortColumn
+    ? `${sortColumn} ${params.sort.toUpperCase()}, z.name ASC, z.id ASC`
+    : `z.name ASC, z.id ASC`
+
+  const pageSql = `SELECT ${ZONE_COLUMNS} FROM zones AS z${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+
+  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeZoneRef)
+}
+
+function decodeZoneRef(row: unknown): ZoneRef {
+  const r = row as Record<string, unknown>
+  return {
+    id: String(r.id),
+    name: String(r.name),
+    code: String(r.code),
+    status: r.status as RecordStatus,
+  }
 }
 
 export async function searchCustomerRefs(
-  db: Executor,
+  db: Pool,
   params: ListParams,
   filter: { search?: string | undefined },
 ): Promise<{ nodes: CustomerRef[]; totalCount: number }> {
-  const builder = new QueryBuilder().select(CUSTOMER_COLUMNS).from(TABLES.customers, "c")
-  builder.whereSearch(filter.search, ["c.name", "c.phone", "c.email"])
+  const clauses: Clause[] = []
+  if (filter.search) {
+    const like = `%${escapeLike(filter.search)}%`
+    clauses.push({
+      text: `(${["c.name", "c.phone", "c.email"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
+      params: [like, like, like],
+    })
+  }
+  const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
+  const whereParams = clauses.flatMap((c) => c.params)
 
-  return pageOf<CustomerRef>(
-    db,
-    builder.orderByListParams(params, CUSTOMER_SORT_COLUMNS, [
-      { column: "c.name", direction: "asc" },
-      { column: "c.id", direction: "asc" },
-    ]),
-    params,
-    (row) => ({
-      id: toId(row.id),
-      name: row.name,
-      phone: row.phone,
-      email: toStringOrNull(row.email),
-      type: row.type,
-      status: row.status,
-    }),
-  )
+  const countSql = `SELECT COUNT(*) AS count FROM customers${where ? " " + where : ""}`
+  const sortColumn =
+    params.sortBy && (CUSTOMER_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+  const orderByClause = sortColumn
+    ? `${sortColumn} ${params.sort.toUpperCase()}, c.name ASC, c.phone ASC, c.created_at ASC, c.id ASC`
+    : `c.name ASC, c.phone ASC, c.created_at ASC, c.id ASC`
+
+  const pageSql = `SELECT ${CUSTOMER_COLUMNS} FROM customers AS c${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+
+  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeCustomerRef)
+}
+
+function decodeCustomerRef(row: unknown): CustomerRef {
+  const r = row as Record<string, unknown>
+  return {
+    id: String(r.id),
+    name: String(r.name),
+    phone: String(r.phone),
+    email: toStringOrNull(r.email),
+    type: r.type as CustomerType,
+    status: r.status as CustomerStatus,
+  }
+}
+
+function applyHubScope(scope: Scope): Clause {
+  const clauses: Clause[] = []
+  if (scope.isCompanyWide) return combineClauses(clauses)
+  if (scope.branchId) clauses.push({ text: "h.branch_id = ?", params: [scope.branchId] })
+  if (scope.hubIds.length > 0) {
+    clauses.push({ text: `h.id IN (${placeholders(scope.hubIds.length)})`, params: scope.hubIds })
+  }
+  return combineClauses(clauses)
+}
+
+function toStringOrNull(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value)
 }

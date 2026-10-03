@@ -1,6 +1,18 @@
-import { TABLES, getDatabase, toDecimal, toNullableDecimal, type Id } from "@dropx/db"
+import type { RowDataPacket } from "mysql2/promise"
+
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
 
 import { ERROR_CODES, DomainError } from "../../core"
+
+type Id = string
+
+/**
+ * DECIMAL(12,2) string columns — coerce to number once, here, and nowhere else.
+ */
+function toDecimal(value: string | null | undefined, fallback = 0): number {
+  return value == null ? fallback : Number(value)
+}
 
 /**
  * Delivery fee quoting.
@@ -13,8 +25,7 @@ import { ERROR_CODES, DomainError } from "../../core"
  * features (admin pricing screens, settlements) also need.
  */
 
-type PricingRuleRow = {
-  id: string
+type PricingRuleRow = RowDataPacket & {
   min_weight: string
   max_weight: string | null
   base_price: string
@@ -42,8 +53,8 @@ export type Quote = {
   currency: "BDT"
 }
 
-export async function quoteDeliveryFee(input: QuoteInput): Promise<Quote> {
-  const rule = await findMatchingRule(input)
+export async function quoteDeliveryFee(c: Context<AppEnv>, input: QuoteInput): Promise<Quote> {
+  const rule = await findMatchingRule(c, input)
 
   if (!rule) {
     throw new DomainError(
@@ -78,25 +89,24 @@ export async function quoteDeliveryFee(input: QuoteInput): Promise<Quote> {
   }
 }
 
-async function findMatchingRule(input: QuoteInput): Promise<PricingRuleRow | null> {
-  return getDatabase().queryOne<PricingRuleRow>(
+async function findMatchingRule(c: Context<AppEnv>, input: QuoteInput): Promise<PricingRuleRow | null> {
+  const [rows] = await c.get("db")!.query<PricingRuleRow[]>(
     `SELECT id, min_weight, max_weight, base_price, price_per_kg,
-            cod_percentage, cod_fixed_fee, express_fee
-       FROM ${TABLES.pricingRules}
-      WHERE status = 'ACTIVE'
-        AND origin_zone_id = ?
-        AND destination_zone_id = ?
-        AND min_weight <= ?
-        AND (max_weight IS NULL OR max_weight >= ?)
-      ORDER BY min_weight DESC
-      LIMIT 1`,
+             cod_percentage, cod_fixed_fee, express_fee
+        FROM pricing_rules
+       WHERE status = 'ACTIVE'
+         AND origin_zone_id = ?
+         AND destination_zone_id = ?
+         AND min_weight <= ?
+         AND (max_weight IS NULL OR max_weight >= ?)
+       ORDER BY min_weight DESC
+       LIMIT 1`,
     [input.originZoneId, input.destinationZoneId, input.weightKg, input.weightKg],
   )
+  return rows[0] ?? null
 }
 
 /** DECIMAL(12,2) columns — round once, here, and nowhere else. */
 function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
-
-export { TABLES, toNullableDecimal }

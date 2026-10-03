@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/db"
+import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "../../db/models"
 
 /**
  * Boundary DTOs for the `org` feature.

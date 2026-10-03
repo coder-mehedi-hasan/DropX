@@ -1,11 +1,14 @@
 import {
   buildPage,
   canTransitionParcel,
-  getDatabase,
   normalizeListParams,
   type Id,
   type Page,
-} from "@dropx/db"
+} from "../../db/models"
+
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
+import { withTransaction } from "../../db/transaction"
 
 import { ERROR_CODES, DomainError, notFound } from "../../core"
 import { insertParcelEvent } from "../parcels/parcels.repository"
@@ -38,11 +41,11 @@ const PARCEL_STATUS_FOR_OUTCOME = {
   RETURNED: "RETURNED",
 } as const
 
-export async function listJobs(riderId: Id, query: ListJobsQuery): Promise<Page<Job>> {
+export async function listJobs(c: Context<AppEnv>, riderId: Id, query: ListJobsQuery): Promise<Page<Job>> {
   const params = normalizeListParams({ page: query.page, limit: query.limit })
 
   const { nodes, totalCount } = await listJobsForRider(
-    getDatabase(),
+    c.get("db")!,
     riderId,
     params,
     query.status,
@@ -52,8 +55,8 @@ export async function listJobs(riderId: Id, query: ListJobsQuery): Promise<Page<
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getJob(riderId: Id, parcelId: Id): Promise<JobDetail> {
-  const db = getDatabase()
+export async function getJob(c: Context<AppEnv>, riderId: Id, parcelId: Id): Promise<JobDetail> {
+  const db = c.get("db")!
   const job = await findJobForRider(db, riderId, parcelId)
   if (!job) throw notFound("That job is not assigned to you")
 
@@ -68,11 +71,11 @@ export type ReportOutcomeCommand = {
   input: UpdateJobStatusInput
 }
 
-export async function reportOutcome(command: ReportOutcomeCommand): Promise<JobDetail> {
+export async function reportOutcome(c: Context<AppEnv>, command: ReportOutcomeCommand): Promise<JobDetail> {
   const { riderId, parcelId, input } = command
   const nextStatus = PARCEL_STATUS_FOR_OUTCOME[input.status]
 
-  const parcelIdAfter = await getDatabase().transaction(async (tx) => {
+  const parcelIdAfter = await withTransaction(c.get("db")!, async (tx) => {
     const attempt = await findOpenAttemptForUpdate(tx, riderId, parcelId)
     if (!attempt) {
       throw new DomainError(
@@ -108,5 +111,5 @@ export async function reportOutcome(command: ReportOutcomeCommand): Promise<JobD
     return parcelId
   })
 
-  return getJob(riderId, parcelIdAfter)
+  return getJob(c, riderId, parcelIdAfter)
 }

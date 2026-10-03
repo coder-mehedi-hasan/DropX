@@ -1,4 +1,7 @@
-import { buildPage, getDatabase, normalizeListParams, type ListParams, type Page } from "@dropx/db"
+import { buildPage, normalizeListParams, type ListParams, type Page } from "../../db/models"
+
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
 
 import type { Scope } from "../../shared/auth/auth-context"
 import type {
@@ -65,10 +68,10 @@ function pickerParams(query: {
   return { ...params, limit: Math.min(params.limit, PICKER_MAX_LIMIT) }
 }
 
-export async function listHubs(scope: Scope, query: ListHubsQuery): Promise<Page<HubRef>> {
+export async function listHubs(c: Context<AppEnv>, scope: Scope, query: ListHubsQuery): Promise<Page<HubRef>> {
   const params = pickerParams(query)
 
-  const { nodes, totalCount } = await listHubRefs(getDatabase(), scope, params, {
+  const { nodes, totalCount } = await listHubRefs(c.get("db")!, scope, params, {
     type: query.type,
     status: query.status,
     search: params.search,
@@ -77,30 +80,30 @@ export async function listHubs(scope: Scope, query: ListHubsQuery): Promise<Page
   return buildPage(nodes, totalCount, params)
 }
 
-export async function listZones(query: ListZonesQuery): Promise<Page<ZoneRef>> {
+export async function listZones(c: Context<AppEnv>, query: ListZonesQuery): Promise<Page<ZoneRef>> {
   const params = pickerParams(query)
 
-  const { nodes, totalCount } = await listZoneRefs(getDatabase(), params, {
+  const { nodes, totalCount } = await listZoneRefs(c.get("db")!, params, {
     search: params.search,
   })
 
   return buildPage(nodes, totalCount, params)
 }
 
-export async function listBranches(query: ListBranchesQuery): Promise<Page<BranchRef>> {
+export async function listBranches(c: Context<AppEnv>, query: ListBranchesQuery): Promise<Page<BranchRef>> {
   const params = pickerParams(query)
 
-  const { nodes, totalCount } = await listBranchRefs(getDatabase(), params, {
+  const { nodes, totalCount } = await listBranchRefs(c.get("db")!, params, {
     search: params.search,
   } satisfies ListBranchesFilter)
 
   return buildPage(nodes, totalCount, params)
 }
 
-export async function searchCustomers(query: SearchCustomersQuery): Promise<Page<CustomerRef>> {
+export async function searchCustomers(c: Context<AppEnv>, query: SearchCustomersQuery): Promise<Page<CustomerRef>> {
   const params = pickerParams(query)
 
-  const { nodes, totalCount } = await searchCustomerRefs(getDatabase(), params, {
+  const { nodes, totalCount } = await searchCustomerRefs(c.get("db")!, params, {
     search: params.search,
   })
 

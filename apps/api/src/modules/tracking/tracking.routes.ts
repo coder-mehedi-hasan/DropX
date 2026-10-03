@@ -34,7 +34,7 @@ router.get(
   ),
   validateParam(z.object({ trackingNumber: trackingNumberSchema })),
   async (c) => {
-    const result = await trackParcel(c.req.param("trackingNumber").toUpperCase(), callerKey(c))
+    const result = await trackParcel(c, c.req.param("trackingNumber").toUpperCase(), callerKey(c))
     return c.json(response.success(result))
   },
 )

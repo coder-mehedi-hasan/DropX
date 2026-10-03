@@ -24,6 +24,7 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
   parcels: {
     list: async (c) => {
       const page = await parcels.listParcelsForStaff(
+        c,
         scopeFromAuth(c.get("auth")),
         c.req.valid("query"),
         PARCEL_SEARCH_COLUMNS,
@@ -33,10 +34,11 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
 
     read: async (c) => {
       const parcel = await parcels.getParcelForStaff(
+        c,
         scopeFromAuth(c.get("auth")),
         c.req.valid("param").id,
       )
-      const items = await parcels.getParcelItems(parcel.id)
+      const items = await parcels.getParcelItems(c, parcel.id)
       return c.json(response.success({ ...parcel, items }))
     },
 
@@ -50,7 +52,7 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
         })
       }
 
-      const parcel = await parcels.createParcel({
+      const parcel = await parcels.createParcel(c, {
         senderCustomerId: input.senderCustomerId,
         originZoneId: input.originZoneId,
         input,
@@ -63,7 +65,7 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     updateStatus: async (c) => {
       const input = c.req.valid("json")
 
-      const parcel = await parcels.updateParcelStatus({
+      const parcel = await parcels.updateParcelStatus(c, {
         parcelId: c.req.valid("param").id,
         status: input.status,
         reason: input.reason,
@@ -76,7 +78,7 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     },
 
     cancel: async (c) => {
-      const parcel = await parcels.updateParcelStatus({
+      const parcel = await parcels.updateParcelStatus(c, {
         parcelId: c.req.valid("param").id,
         status: "CANCELLED",
         reason: c.req.valid("json").reason,
@@ -95,22 +97,22 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
    */
   reference: {
     listBranches: async (c) => {
-      const page = await reference.listBranches(c.req.valid("query"))
+      const page = await reference.listBranches(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
 
     listHubs: async (c) => {
-      const page = await reference.listHubs(scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      const page = await reference.listHubs(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
       return c.json(response.success(page))
     },
 
     listZones: async (c) => {
-      const page = await reference.listZones(c.req.valid("query"))
+      const page = await reference.listZones(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
 
     searchCustomers: async (c) => {
-      const page = await reference.searchCustomers(c.req.valid("query"))
+      const page = await reference.searchCustomers(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
   },
@@ -124,42 +126,42 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
    */
   org: {
     listBranches: async (c) => {
-      const page = await org.listBranches(c.req.valid("query"))
+      const page = await org.listBranches(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
 
     readBranch: async (c) => {
-      const branch = await org.getBranch(c.req.valid("param").id)
+      const branch = await org.getBranch(c, c.req.valid("param").id)
       return c.json(response.success(branch))
     },
 
     createBranch: async (c) => {
-      const branch = await org.createBranch(c.req.valid("json"))
+      const branch = await org.createBranch(c, c.req.valid("json"))
       return c.json(response.success(branch), 201)
     },
 
     updateBranch: async (c) => {
-      const branch = await org.updateBranch(c.req.valid("param").id, c.req.valid("json"))
+      const branch = await org.updateBranch(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(branch))
     },
 
     listHubs: async (c) => {
-      const page = await org.listHubs(c.req.valid("query"))
+      const page = await org.listHubs(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
 
     readHub: async (c) => {
-      const hub = await org.getHub(c.req.valid("param").id)
+      const hub = await org.getHub(c, c.req.valid("param").id)
       return c.json(response.success(hub))
     },
 
     createHub: async (c) => {
-      const hub = await org.createHub(c.req.valid("json"))
+      const hub = await org.createHub(c, c.req.valid("json"))
       return c.json(response.success(hub), 201)
     },
 
     updateHub: async (c) => {
-      const hub = await org.updateHub(c.req.valid("param").id, c.req.valid("json"))
+      const hub = await org.updateHub(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(hub))
     },
   },

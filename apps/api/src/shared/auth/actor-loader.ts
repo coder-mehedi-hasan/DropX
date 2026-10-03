@@ -1,5 +1,4 @@
-import { TABLES, toId, type Id } from "@dropx/db"
-import type { Database } from "@dropx/db"
+import type { Pool, RowDataPacket } from "mysql2/promise"
 import { verify } from "hono/jwt"
 
 import { getConfig } from "../../config"
@@ -15,13 +14,12 @@ import { JWT_ALGORITHM, type TokenPayload, type TokenType } from "./tokens"
  * user or a revoked role loses access immediately rather than at token expiry.
  */
 
-export async function loadStaffActor(db: Database, userId: Id): Promise<StaffAuth | null> {
-  const user = await db.queryOne<{
-    id: string
-    branch_id: string | null
-    email: string
-    status: "ACTIVE" | "INACTIVE" | "SUSPENDED"
-  }>(`SELECT id, branch_id, email, status FROM ${TABLES.users} WHERE id = ? LIMIT 1`, [userId])
+export async function loadStaffActor(db: Pool, userId: string): Promise<StaffAuth | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT id, branch_id, email, status FROM users WHERE id = ? LIMIT 1`,
+    [userId],
+  )
+  const user = rows[0]
 
   if (!user) return null
 
@@ -33,53 +31,47 @@ export async function loadStaffActor(db: Database, userId: Id): Promise<StaffAut
   }
 
   const [roles, permissions, hubs] = await Promise.all([
-    db.query<{ name: string }>(
+    db.query<RowDataPacket[]>(
       `SELECT r.name
-         FROM ${TABLES.userRoles} ur
-         JOIN ${TABLES.roles} r ON r.id = ur.role_id
+         FROM user_roles ur
+         JOIN roles r ON r.id = ur.role_id
         WHERE ur.user_id = ?`,
       [userId],
-    ),
-    db.query<{ permission_key: string }>(
+    ).then(([rows]) => rows),
+    db.query<RowDataPacket[]>(
       `SELECT DISTINCT rp.permission_key
-         FROM ${TABLES.userRoles} ur
-         JOIN ${TABLES.rolePermissions} rp ON rp.role_id = ur.role_id
+         FROM user_roles ur
+         JOIN role_permissions rp ON rp.role_id = ur.role_id
         WHERE ur.user_id = ?`,
       [userId],
+    ).then(([rows]) => rows),
+    db.query<RowDataPacket[]>(`SELECT hub_id FROM user_hubs WHERE user_id = ?`, [userId]).then(
+      ([rows]) => rows,
     ),
-    db.query<{ hub_id: string }>(`SELECT hub_id FROM ${TABLES.userHubs} WHERE user_id = ?`, [
-      userId,
-    ]),
   ])
 
   return {
     kind: "staff",
-    userId: toId(user.id),
+    userId: String(user.id),
     email: user.email,
-    roles: roles.rows.map((row) => row.name),
-    permissions: new Set(permissions.rows.map((row) => row.permission_key)),
-    branchId: user.branch_id === null ? null : toId(user.branch_id, "branchId"),
-    hubIds: hubs.rows.map((row) => toId(row.hub_id, "hubId")),
+    roles: roles.map((row) => row.name),
+    permissions: new Set(permissions.map((row) => row.permission_key)),
+    branchId: user.branch_id === null ? null : String(user.branch_id),
+    hubIds: hubs.map((row) => String(row.hub_id)),
   }
 }
 
-export async function loadRiderActor(db: Database, userId: Id): Promise<RiderAuth | null> {
-  const row = await db.queryOne<{
-    id: string
-    hub_id: string
-    email: string
-    branch_id: string | null
-    user_status: "ACTIVE" | "INACTIVE" | "SUSPENDED"
-    rider_status: "AVAILABLE" | "BUSY" | "OFFLINE" | "SUSPENDED"
-  }>(
+export async function loadRiderActor(db: Pool, userId: string): Promise<RiderAuth | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
     `SELECT r.id, r.hub_id, r.status AS rider_status,
             u.email, u.branch_id, u.status AS user_status
-       FROM ${TABLES.riders} r
-       JOIN ${TABLES.users} u ON u.id = r.user_id
+       FROM riders r
+       JOIN users u ON u.id = r.user_id
       WHERE r.user_id = ?
       LIMIT 1`,
     [userId],
   )
+  const row = rows[0]
 
   if (!row) return null
 
@@ -87,37 +79,38 @@ export async function loadRiderActor(db: Database, userId: Id): Promise<RiderAut
     throw new DomainError(ERROR_CODES.FORBIDDEN, "This rider account is not active")
   }
 
-  const permissions = await db.query<{ permission_key: string }>(
+  const [permissions] = await db.query<RowDataPacket[]>(
     `SELECT DISTINCT rp.permission_key
-       FROM ${TABLES.userRoles} ur
-       JOIN ${TABLES.rolePermissions} rp ON rp.role_id = ur.role_id
+       FROM user_roles ur
+       JOIN role_permissions rp ON rp.role_id = ur.role_id
       WHERE ur.user_id = ?`,
     [userId],
   )
 
   return {
     kind: "rider",
-    userId: toId(userId, "userId"),
-    riderId: toId(row.id, "riderId"),
-    hubId: toId(row.hub_id, "hubId"),
+    userId: String(userId),
+    riderId: String(row.id),
+    hubId: String(row.hub_id),
     email: row.email,
     roles: ["RIDER"],
-    permissions: new Set(permissions.rows.map((entry) => entry.permission_key)),
-    branchId: row.branch_id === null ? null : toId(row.branch_id, "branchId"),
+    permissions: new Set(permissions.map((entry) => entry.permission_key)),
+    branchId: row.branch_id === null ? null : String(row.branch_id),
   }
 }
 
-export async function loadCustomerActor(db: Database, customerId: Id): Promise<CustomerAuth> {
-  const customer = await db.queryOne<{ status: "TEMP" | "ACTIVE" }>(
-    `SELECT status FROM ${TABLES.customers} WHERE id = ? LIMIT 1`,
+export async function loadCustomerActor(db: Pool, customerId: string): Promise<CustomerAuth> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT status FROM customers WHERE id = ? LIMIT 1`,
     [customerId],
   )
+  const customer = rows[0]
 
   if (!customer) {
     throw new DomainError(ERROR_CODES.TOKEN_INVALID, "This account no longer exists")
   }
 
-  return { kind: "customer", customerId: toId(customerId, "customerId"), status: customer.status }
+  return { kind: "customer", customerId: String(customerId), status: customer.status }
 }
 
 export async function verifyToken(

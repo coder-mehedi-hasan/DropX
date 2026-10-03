@@ -1,18 +1,5 @@
-import {
-  InsertBuilder,
-  QueryBuilder,
-  TABLES,
-  UpdateBuilder,
-  toDecimal,
-  toId,
-  toNullableDecimal,
-  toStringOrNull,
-  type Executor,
-  type Id,
-  type ListParams,
-} from "@dropx/db"
-
-import type { Branch, Hub, HubWithBranch } from "@dropx/db"
+import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
+import type { Branch, Hub, HubWithBranch, ListParams } from "@/db/models"
 
 /**
  * Persistence for `branches` and `hubs`.
@@ -41,7 +28,7 @@ const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status", "h.created_a
 
 function branchRow(row: Record<string, unknown>): Branch {
   return {
-    id: toId(row.id),
+    id: String(row.id),
     name: String(row.name),
     code: String(row.code),
     phone: toStringOrNull(row.phone),
@@ -58,8 +45,8 @@ function branchRow(row: Record<string, unknown>): Branch {
 
 function hubRow(row: Record<string, unknown>): HubWithBranch {
   return {
-    id: toId(row.id),
-    branchId: toId(row.branch_id),
+    id: String(row.id),
+    branchId: String(row.branch_id),
     name: String(row.name),
     code: String(row.code),
     type: row.type as Hub["type"],
@@ -76,21 +63,41 @@ function hubRow(row: Record<string, unknown>): HubWithBranch {
   }
 }
 
+function toDecimal(value: unknown, fallback = 0): number {
+  if (typeof value === "number") return value
+  if (typeof value === "bigint") return Number(value)
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+  return fallback
+}
+
+function toNullableDecimal(value: unknown): number | null {
+  return value === null || value === undefined ? null : toDecimal(value)
+}
+
+function toStringOrNull(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value)
+}
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (match) => `\\${match}`)
+}
+
 async function pageOf<T>(
-  db: Executor,
-  builder: QueryBuilder,
-  params: ListParams,
+  db: Pool,
+  sql: string,
+  params: unknown[],
+  countSql: string,
+  countParams: unknown[],
   decode: (row: Record<string, unknown>) => T,
 ): Promise<{ nodes: T[]; totalCount: number }> {
-  const countQuery = builder.buildCount()
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
-
-  const [totalCount, rows] = await Promise.all([
-    db.count(countQuery.sql, countQuery.params),
-    db.query<T>(pageQuery.sql, pageQuery.params),
-  ])
-
-  return { nodes: (rows.rows as Record<string, unknown>[]).map(decode), totalCount }
+  const [countRows] = await db.query<RowDataPacket[]>(countSql, countParams)
+  const [rows] = await db.query<RowDataPacket[]>(sql, params)
+  const countRow = countRows[0]
+  const totalCount = countRow?.count == null ? 0 : Number(countRow.count)
+  return { nodes: rows.map(decode), totalCount }
 }
 
 export type ListBranchesFilter = {
@@ -99,149 +106,197 @@ export type ListBranchesFilter = {
 }
 
 export async function selectBranches(
-  db: Executor,
+  db: Pool,
   params: ListParams,
   filter: ListBranchesFilter,
 ): Promise<{ nodes: Branch[]; totalCount: number }> {
-  const builder = new QueryBuilder().select(BRANCH_COLUMNS).from(TABLES.branches, "b")
+  const paramsAcc = []
+  const clauses: string[] = []
 
-  if (filter.status) builder.where("b.status = ?", filter.status)
-  builder.whereSearch(filter.search, ["b.name", "b.code", "b.district"])
+  if (filter.status) {
+    clauses.push("b.status = ?")
+    paramsAcc.push(filter.status)
+  }
+  if (filter.search) {
+    const like = `%${escapeLike(filter.search)}%`
+    clauses.push(
+      `(${["b.name", "b.code", "b.district"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
+    )
+    paramsAcc.push(like, like, like)
+  }
+  const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
 
-  return pageOf(
-    db,
-    builder.orderByListParams(params, BRANCH_SORT_COLUMNS, [
-      { column: "b.name", direction: "asc" },
-      { column: "b.id", direction: "asc" },
-    ]),
-    params,
-    branchRow,
-  )
+  const countSql = `SELECT COUNT(*) AS count FROM branches${where ? " " + where : ""}`
+  const sortColumn =
+    params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+  const orderByClause = sortColumn
+    ? `${sortColumn} ${params.sort.toUpperCase()}, b.name ASC, b.id ASC`
+    : `b.name ASC, b.id ASC`
+
+  const pageSql =
+    `SELECT ${BRANCH_COLUMNS} FROM branches AS b ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageParams = [...paramsAcc, params.limit, params.offset]
+
+  return pageOf(db, pageSql, pageParams, countSql, paramsAcc, branchRow)
 }
 
-export async function selectBranch(db: Executor, branchId: Id): Promise<Branch | null> {
-  const builder = new QueryBuilder()
-    .select(BRANCH_COLUMNS)
-    .from(TABLES.branches, "b")
-    .where("b.id = ?", branchId)
 
-  const { sql, params } = builder.build()
-  const row = await db.queryOne<Record<string, unknown>>(sql, params)
-  return row ? branchRow(row) : null
+export async function selectBranch(db: Pool, branchId: string): Promise<Branch | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${BRANCH_COLUMNS} FROM branches AS b WHERE b.id = ?`,
+    [branchId],
+  )
+  return rows[0] ? branchRow(rows[0]) : null
 }
 
 export async function insertBranch(
-  db: Executor,
+  db: Pool,
   record: Omit<Branch, "id" | "createdAt" | "updatedAt">,
-): Promise<Id> {
-  const { sql, params } = new InsertBuilder(TABLES.branches, {
-    name: record.name,
-    code: record.code,
-    phone: record.phone,
-    address: record.address,
-    city: record.city,
-    district: record.district,
-    latitude: record.latitude,
-    longitude: record.longitude,
-    status: record.status,
-  }).build()
-
-  const result = await db.execute(sql, params)
+): Promise<string> {
+  const { sql, params } = branchInsertSql(record)
+  const [result] = await db.execute<OkPacket>(sql, params)
   if (!result.insertId) throw new Error("Branch insert returned no id")
-  return result.insertId
+  return String(result.insertId)
+}
+
+function branchInsertSql(record: Omit<Branch, "id" | "createdAt" | "updatedAt">) {
+  const params = [
+    record.name,
+    record.code,
+    record.phone,
+    record.address,
+    record.city,
+    record.district,
+    record.latitude,
+    record.longitude,
+    record.status,
+  ]
+  const sql = `INSERT INTO branches (name, code, phone, address, city, district, latitude, longitude, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  return { sql, params }
 }
 
 export async function patchBranch(
-  db: Executor,
-  branchId: Id,
+  db: Pool,
+  branchId: string,
   patch: Partial<Omit<Branch, "id" | "createdAt" | "updatedAt">>,
 ): Promise<Branch | null> {
-  const builder = new UpdateBuilder(TABLES.branches, patch).where("id = ?", branchId)
-  const query = builder.build()
+  const assignments: string[] = []
+  const params = []
 
-  if (!query) return selectBranch(db, branchId)
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined) {
+      assignments.push(`${key} = ?`)
+      params.push(value)
+    }
+  }
 
-  await db.execute(query.sql, query.params)
+  if (assignments.length === 0) return selectBranch(db, branchId)
+
+  const sql = `UPDATE branches SET ${assignments.join(", ")} WHERE id = ?`
+  params.push(branchId)
+
+  await db.execute<OkPacket>(sql, params)
   return selectBranch(db, branchId)
 }
 
 export type ListHubsFilter = {
-  branchId?: Id | undefined
+  branchId?: string | undefined
   type?: Hub["type"] | undefined
   status?: Hub["status"] | undefined
   search?: string | undefined
 }
 
 export async function selectHubs(
-  db: Executor,
+  db: Pool,
   params: ListParams,
   filter: ListHubsFilter,
 ): Promise<{ nodes: HubWithBranch[]; totalCount: number }> {
-  const builder = new QueryBuilder()
-    .select(HUB_COLUMNS)
-    .from(TABLES.hubs, "h")
-    .leftJoin(TABLES.branches, "br.id = h.branch_id", "br")
+  const paramsAcc = []
+  const clauses: string[] = []
 
-  if (filter.branchId) builder.where("h.branch_id = ?", filter.branchId)
-  if (filter.type) builder.where("h.type = ?", filter.type)
-  if (filter.status) builder.where("h.status = ?", filter.status)
-  builder.whereSearch(filter.search, ["h.name", "h.code", "h.district"])
+  if (filter.branchId) {
+    clauses.push("h.branch_id = ?")
+    paramsAcc.push(filter.branchId)
+  }
+  if (filter.type) {
+    clauses.push("h.type = ?")
+    paramsAcc.push(filter.type)
+  }
+  if (filter.status) {
+    clauses.push("h.status = ?")
+    paramsAcc.push(filter.status)
+  }
+  if (filter.search) {
+    const like = `%${escapeLike(filter.search)}%`
+    clauses.push(`(${["h.name", "h.code", "h.district"].map((c) => `${c} LIKE ?`).join(" OR ")})`)
+    paramsAcc.push(like, like, like)
+  }
+  const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
 
-  return pageOf(
-    db,
-    builder.orderByListParams(params, HUB_SORT_COLUMNS, [
-      { column: "h.name", direction: "asc" },
-      { column: "h.id", direction: "asc" },
-    ]),
-    params,
-    hubRow,
-  )
+  const countSql = `SELECT COUNT(*) AS count FROM hubs${where ? " " + where : ""}`
+  const sortColumn =
+    params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+  const orderByClause = sortColumn
+    ? `${sortColumn} ${params.sort.toUpperCase()}, h.name ASC, h.id ASC`
+    : `h.name ASC, h.id ASC`
+
+  const pageSql =
+    `SELECT ${HUB_COLUMNS} FROM hubs AS h LEFT JOIN branches AS br ON br.id = h.branch_id ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageParams = [...paramsAcc, params.limit, params.offset]
+
+  return pageOf(db, pageSql, pageParams, countSql, paramsAcc, hubRow)
 }
 
-export async function selectHub(db: Executor, hubId: Id): Promise<HubWithBranch | null> {
-  const builder = new QueryBuilder()
-    .select(HUB_COLUMNS)
-    .from(TABLES.hubs, "h")
-    .leftJoin(TABLES.branches, "br.id = h.branch_id", "br")
-    .where("h.id = ?", hubId)
-
-  const { sql, params } = builder.build()
-  const row = await db.queryOne<Record<string, unknown>>(sql, params)
-  return row ? hubRow(row) : null
+export async function selectHub(db: Pool, hubId: string): Promise<HubWithBranch | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${HUB_COLUMNS} FROM hubs AS h LEFT JOIN branches AS br ON br.id = h.branch_id WHERE h.id = ?`,
+    [hubId],
+  )
+  return rows[0] ? hubRow(rows[0]) : null
 }
 
 export async function insertHub(
-  db: Executor,
+  db: Pool,
   record: Omit<Hub, "id" | "createdAt" | "updatedAt">,
-): Promise<Id> {
-  const { sql, params } = new InsertBuilder(TABLES.hubs, {
-    branch_id: record.branchId,
-    name: record.name,
-    code: record.code,
-    type: record.type,
-    address: record.address,
-    district: record.district,
-    latitude: record.latitude,
-    longitude: record.longitude,
-    capacity: record.capacity,
-    status: record.status,
-  }).build()
-
-  const result = await db.execute(sql, params)
+): Promise<string> {
+  const params = [
+    record.branchId,
+    record.name,
+    record.code,
+    record.type,
+    record.address,
+    record.district,
+    record.latitude,
+    record.longitude,
+    record.capacity,
+    record.status,
+  ]
+  const sql = `INSERT INTO hubs (branch_id, name, code, type, address, district, latitude, longitude, capacity, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  const [result] = await db.execute<OkPacket>(sql, params)
   if (!result.insertId) throw new Error("Hub insert returned no id")
-  return result.insertId
+  return String(result.insertId)
 }
 
 export async function patchHub(
-  db: Executor,
-  hubId: Id,
+  db: Pool,
+  hubId: string,
   patch: Partial<Omit<Hub, "id" | "createdAt" | "updatedAt">>,
 ): Promise<HubWithBranch | null> {
-  const builder = new UpdateBuilder(TABLES.hubs, patch).where("id = ?", hubId)
-  const query = builder.build()
+  const assignments: string[] = []
+  const params = []
 
-  if (!query) return selectHub(db, hubId)
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined) {
+      assignments.push(`${key} = ?`)
+      params.push(value)
+    }
+  }
 
-  await db.execute(query.sql, query.params)
+  if (assignments.length === 0) return selectHub(db, hubId)
+
+  const sql = `UPDATE hubs SET ${assignments.join(", ")} WHERE id = ?`
+  params.push(hubId)
+
+  await db.execute<OkPacket>(sql, params)
   return selectHub(db, hubId)
 }

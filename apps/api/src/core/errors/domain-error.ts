@@ -1,5 +1,3 @@
-import { DatabaseError } from "@dropx/db"
-
 import { ERROR_CODES, ERROR_STATUS, type ErrorCode } from "./error-codes"
 
 export type ErrorDetail = {
@@ -53,6 +51,14 @@ export function invalidTransition(message: string): DomainError {
   return new DomainError(ERROR_CODES.INVALID_STATE_TRANSITION, message)
 }
 
+function isMySqlError(error: unknown): error is {
+  errno: number
+  code: string
+  sqlMessage?: string
+} {
+  return error != null && typeof error === "object" && "errno" in error
+}
+
 /**
  * Translates a persistence failure into a domain error.
  *
@@ -61,31 +67,45 @@ export function invalidTransition(message: string): DomainError {
  */
 export function fromDatabaseError(error: unknown, context?: string): DomainError {
   if (isDomainError(error)) return error
-  if (!(error instanceof DatabaseError)) {
+  if (!isMySqlError(error)) {
     return new DomainError(ERROR_CODES.DATABASE_ERROR, "A database error occurred", {
       cause: error,
     })
   }
 
-  switch (error.code) {
-    case "UNIQUE_VIOLATION":
-      return new DomainError(
-        ERROR_CODES.ALREADY_EXISTS,
-        context ? `${context} already exists` : "That record already exists",
-        { cause: error },
-      )
-    case "FOREIGN_KEY_VIOLATION":
-      return new DomainError(ERROR_CODES.VALIDATION_FAILED, "A referenced record does not exist", {
-        cause: error,
-      })
-    case "CONNECTION_FAILED":
-    case "TIMEOUT":
-      return new DomainError(ERROR_CODES.SERVICE_UNAVAILABLE, "The database is unavailable", {
-        cause: error,
-      })
-    default:
-      return new DomainError(ERROR_CODES.DATABASE_ERROR, "A database error occurred", {
-        cause: error,
-      })
+  const errno = error.errno
+
+  // 1062 = duplicate entry (unique constraint), 23xxx class = integrity constraint
+  if (errno === 1062 || (typeof error.code === "string" && error.code.startsWith("23"))) {
+    return new DomainError(
+      ERROR_CODES.ALREADY_EXISTS,
+      context ? `${context} already exists` : "That record already exists",
+      { cause: error },
+    )
   }
+
+  // 1451 = cannot add / update a child row, 1452 = cannot update a child row
+  if (errno === 1451 || errno === 1452) {
+    return new DomainError(ERROR_CODES.VALIDATION_FAILED, "A referenced record does not exist", {
+      cause: error,
+    })
+  }
+
+  // 1040/1041 = no connection/too many connections, 1205/1213 = lock wait/timeout
+  if (
+    errno === 1040 ||
+    errno === 1041 ||
+    errno === 1205 ||
+    errno === 1213 ||
+    error.code === "ETIMEDOUT" ||
+    error.code === "ECONNREFUSED"
+  ) {
+    return new DomainError(ERROR_CODES.SERVICE_UNAVAILABLE, "The database is unavailable", {
+      cause: error,
+    })
+  }
+
+  return new DomainError(ERROR_CODES.DATABASE_ERROR, "A database error occurred", {
+    cause: error,
+  })
 }
