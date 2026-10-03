@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/db/entities"
+import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/db"
 
 /**
  * List state for the org screens lives in the URL, same as parcels.

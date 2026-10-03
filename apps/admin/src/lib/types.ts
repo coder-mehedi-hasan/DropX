@@ -2,13 +2,13 @@
  * Wire types for the admin.
  *
  * `Parcel`, `ParcelItem` and the status/type unions are re-exported from
- * `@dropx/db/entities` rather than restated, so the admin cannot drift from
+ * `@dropx/db` rather than restated, so the admin cannot drift from
  * the API's domain model. The remaining types describe envelopes the API adds
  * around those entities: the `{ nodes, meta }` list contract, the tracking
  * projection, and the staff identity from `/auth/me`.
  */
 import { z } from "zod"
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/db/entities"
+import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/db"
 import type {
   CustomerStatus,
   CustomerType,
@@ -23,8 +23,8 @@ import type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
-} from "@dropx/db/entities"
-import type { Id, Page, PageMeta } from "@dropx/db/port"
+} from "@dropx/db"
+import type { Id, Page, PageMeta } from "@dropx/db"
 
 export type {
   HubRef,
@@ -177,7 +177,7 @@ export type DeliveryQuote = {
 /*
  * Reference reads, mirroring the three `admin.reference.*` response schemas.
  *
- * Named `*Option`, not `*Ref`, on purpose. `@dropx/db/entities` already exports a
+ * Named `*Option`, not `*Ref`, on purpose. `@dropx/db` already exports a
  * `HubRef` and it is a different thing: that one is the `{ code, name, district }`
  * join embedded in a parcel detail, and it carries no `id` — a picker option has
  * to, because its whole job is to be selected and sent back as a foreign key. The

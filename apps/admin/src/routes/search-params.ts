@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { PARCEL_STATUSES, PAYMENT_TYPES } from "@dropx/db/entities"
+import { PARCEL_STATUSES, PAYMENT_TYPES } from "@dropx/db"
 
 import { DEFAULT_PARCELS_SEARCH, PARCEL_SORT_COLUMNS } from "@/lib/parcels"
 import type { ParcelListSearch } from "@/lib/parcels"
