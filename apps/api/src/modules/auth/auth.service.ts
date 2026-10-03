@@ -1,8 +1,10 @@
 import { createHash, randomInt, randomUUID } from "node:crypto"
 
+import bcrypt from "bcryptjs"
+
 import { TABLES, getDatabase, toId, type Id } from "@dropx/db"
 
-import { ERROR_CODES, DomainError, fromDatabaseError, verifyPassword } from "../../core"
+import { ERROR_CODES, DomainError, fromDatabaseError } from "../../core"
 import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
 import { pushEmailJob } from "../../shared/email/queue"
@@ -99,8 +101,8 @@ export async function loginWithPassword(
   // Verify even when the user is missing so the response time does not reveal
   // which emails exist.
   const passwordMatches = user
-    ? await verifyPassword(input.password, user.password_hash)
-    : await verifyPassword(input.password, "scrypt$16384$8$1$aaaa$bbbb")
+    ? await bcrypt.compare(input.password, user.password_hash)
+    : await bcrypt.compare(input.password, "$2a$10$abcdefghijklmnopqrstuuVf9xK0hX0hX0hX0hX0hX0hX0hX0hX0hX0")
 
   if (!user || !passwordMatches) {
     throw new DomainError(ERROR_CODES.INVALID_CREDENTIALS, "Email or password is incorrect")

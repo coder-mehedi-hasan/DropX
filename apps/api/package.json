@@ -12,7 +12,6 @@
     "clean": "rm -rf node_modules .turbo dist",
     "seed": "TZ=UTC bun --env-file=../../.env run ./scripts/seed.ts",
     "bootstrap-admin": "TZ=UTC bun --env-file=../../.env run ./scripts/bootstrap-admin.ts",
-    "smoke": "TZ=UTC API_LOG_LEVEL=silent DATABASE_URL=mysql://smoke:smoke@127.0.0.1:3306/dropx_smoke bun run ./scripts/smoke.ts",
     "check:read-paths": "TZ=UTC API_LOG_LEVEL=silent bun --env-file=../../.env run ./scripts/check-read-paths.ts",
     "migrate": "bun run --cwd ../../packages/db migrate"
   },
@@ -21,6 +20,7 @@
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",
     "@types/nodemailer": "^8.0.2",
+    "bcryptjs": "^3.0.3",
     "hono": "^4.13.9",
     "mjml": "^5.4.1",
     "nodemailer": "^10.0.12",
@@ -28,6 +28,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.3",
     "typescript": "^7.0.2"

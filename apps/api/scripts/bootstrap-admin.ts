@@ -23,7 +23,7 @@ import {
   type Id,
 } from "@dropx/db"
 
-import { hashPassword } from "../src/core/crypto/password"
+import bcrypt from "bcryptjs"
 import { DEFAULT_ROLE_GRANTS } from "../src/shared/auth/permissions"
 
 const db = createDatabaseWith(resolveDatabaseConfig())
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
 
   // scrypt before the transaction: it is deliberately slow, and holding a
   // connection open across it would needlessly narrow the pool.
-  const passwordHash = await hashPassword(password)
+  const passwordHash = await bcrypt.hash(password, 10)
 
   const userId = await db.transaction(async (tx) => {
     const inserted = await tx.execute(

@@ -15,7 +15,7 @@ import tracking from "./tracking/tracking.routes"
  * This is the only place a feature module gets registered. Because
  * `defineOperation` is what populates the policy catalog, a module missing from
  * this list also means its operations are unregistered — which `assertPolicyCatalog`
- * and the route smoke test will surface, rather than failing silently open.
+ * will surface, rather than failing silently open.
  *
  * A *surface* (`admin`) is registered the same way as a hand-written module: it
  * exports one composed router, and `mountSurface` has already registered and
