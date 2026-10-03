@@ -26,6 +26,7 @@
     "db:migrate": "bun run --cwd apps/api migrate",
     "db:reset": "bun run --cwd apps/api migrate --reset",
     "db:seed": "bun run --cwd apps/api seed",
+    "db:seed:demo": "bun run --cwd apps/api seed:demo",
     "db:bootstrap-admin": "bun run --cwd apps/api bootstrap-admin",
     "clean": "bun run --filter \"./apps/*\" clean"
   },

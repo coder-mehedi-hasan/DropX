@@ -4,6 +4,7 @@ import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
 
 import type { Scope } from "../../shared/auth/auth-context"
+import type { CustomerStatus } from "../../db/models"
 import type {
   ListBranchesQuery,
   ListHubsQuery,
@@ -68,7 +69,11 @@ function pickerParams(query: {
   return { ...params, limit: Math.min(params.limit, PICKER_MAX_LIMIT) }
 }
 
-export async function listHubs(c: Context<AppEnv>, scope: Scope, query: ListHubsQuery): Promise<Page<HubRef>> {
+export async function listHubs(
+  c: Context<AppEnv>,
+  scope: Scope,
+  query: ListHubsQuery,
+): Promise<Page<HubRef>> {
   const params = pickerParams(query)
 
   const { nodes, totalCount } = await listHubRefs(c.get("db")!, scope, params, {
@@ -85,12 +90,16 @@ export async function listZones(c: Context<AppEnv>, query: ListZonesQuery): Prom
 
   const { nodes, totalCount } = await listZoneRefs(c.get("db")!, params, {
     search: params.search,
+    status: "ACTIVE",
   })
 
   return buildPage(nodes, totalCount, params)
 }
 
-export async function listBranches(c: Context<AppEnv>, query: ListBranchesQuery): Promise<Page<BranchRef>> {
+export async function listBranches(
+  c: Context<AppEnv>,
+  query: ListBranchesQuery,
+): Promise<Page<BranchRef>> {
   const params = pickerParams(query)
 
   const { nodes, totalCount } = await listBranchRefs(c.get("db")!, params, {
@@ -100,11 +109,16 @@ export async function listBranches(c: Context<AppEnv>, query: ListBranchesQuery)
   return buildPage(nodes, totalCount, params)
 }
 
-export async function searchCustomers(c: Context<AppEnv>, query: SearchCustomersQuery): Promise<Page<CustomerRef>> {
+export async function searchCustomers(
+  c: Context<AppEnv>,
+  query: SearchCustomersQuery,
+  status?: CustomerStatus,
+): Promise<Page<CustomerRef>> {
   const params = pickerParams(query)
 
   const { nodes, totalCount } = await searchCustomerRefs(c.get("db")!, params, {
     search: params.search,
+    status,
   })
 
   return buildPage(nodes, totalCount, params)

@@ -1,4 +1,11 @@
-import type { CustomerStatus, CustomerType, HubStatus, HubType, ListParams, RecordStatus } from "@/db/models"
+import type {
+  CustomerStatus,
+  CustomerType,
+  HubStatus,
+  HubType,
+  ListParams,
+  RecordStatus,
+} from "@/db/models"
 import type { Scope } from "@/shared/auth/auth-context"
 import type { Pool, RowDataPacket } from "mysql2/promise"
 
@@ -124,15 +131,23 @@ export async function listBranchRefs(
 
   const countSql = `SELECT COUNT(*) AS count FROM branches${where ? " " + where : ""}`
   const sortColumn =
-    params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+    params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
+      ? params.sortBy
+      : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, b.name ASC, b.id ASC`
     : `b.name ASC, b.id ASC`
 
-  const pageSql =
-    `SELECT ${BRANCH_COLUMNS} FROM branches AS b${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${BRANCH_COLUMNS} FROM branches AS b${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
 
-  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeBranchRef)
+  return pageOf(
+    db,
+    pageSql,
+    [...whereParams, params.limit, params.offset],
+    countSql,
+    whereParams,
+    decodeBranchRef,
+  )
 }
 
 export type ListHubRefsFilter = {
@@ -176,20 +191,29 @@ export async function listHubRefs(
 
   const countSql = `SELECT COUNT(*) AS count FROM hubs${where ? " " + where : ""}`
   const sortColumn =
-    params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+    params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
+      ? params.sortBy
+      : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, h.name ASC, h.id ASC`
     : `h.name ASC, h.id ASC`
 
   const pageSql = `SELECT ${HUB_COLUMNS} FROM hubs AS h${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
 
-  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeHubRef)
+  return pageOf(
+    db,
+    pageSql,
+    [...whereParams, params.limit, params.offset],
+    countSql,
+    whereParams,
+    decodeHubRef,
+  )
 }
 
 export async function listZoneRefs(
   db: Pool,
   params: ListParams,
-  filter: { search?: string | undefined },
+  filter: { search?: string | undefined; status?: RecordStatus | undefined },
 ): Promise<{ nodes: ZoneRef[]; totalCount: number }> {
   const clauses: Clause[] = []
   if (filter.search) {
@@ -199,19 +223,29 @@ export async function listZoneRefs(
       params: [like, like],
     })
   }
+  if (filter.status) clauses.push({ text: "z.status = ?", params: [filter.status] })
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
   const countSql = `SELECT COUNT(*) AS count FROM zones${where ? " " + where : ""}`
   const sortColumn =
-    params.sortBy && (ZONE_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+    params.sortBy && (ZONE_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
+      ? params.sortBy
+      : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, z.name ASC, z.id ASC`
     : `z.name ASC, z.id ASC`
 
   const pageSql = `SELECT ${ZONE_COLUMNS} FROM zones AS z${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
 
-  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeZoneRef)
+  return pageOf(
+    db,
+    pageSql,
+    [...whereParams, params.limit, params.offset],
+    countSql,
+    whereParams,
+    decodeZoneRef,
+  )
 }
 
 function decodeZoneRef(row: unknown): ZoneRef {
@@ -227,7 +261,7 @@ function decodeZoneRef(row: unknown): ZoneRef {
 export async function searchCustomerRefs(
   db: Pool,
   params: ListParams,
-  filter: { search?: string | undefined },
+  filter: { search?: string | undefined; status?: CustomerStatus | undefined },
 ): Promise<{ nodes: CustomerRef[]; totalCount: number }> {
   const clauses: Clause[] = []
   if (filter.search) {
@@ -237,19 +271,29 @@ export async function searchCustomerRefs(
       params: [like, like, like],
     })
   }
+  if (filter.status) clauses.push({ text: "c.status = ?", params: [filter.status] })
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
   const countSql = `SELECT COUNT(*) AS count FROM customers${where ? " " + where : ""}`
   const sortColumn =
-    params.sortBy && (CUSTOMER_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
+    params.sortBy && (CUSTOMER_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
+      ? params.sortBy
+      : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, c.name ASC, c.phone ASC, c.created_at ASC, c.id ASC`
     : `c.name ASC, c.phone ASC, c.created_at ASC, c.id ASC`
 
   const pageSql = `SELECT ${CUSTOMER_COLUMNS} FROM customers AS c${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
 
-  return pageOf(db, pageSql, [...whereParams, params.limit, params.offset], countSql, whereParams, decodeCustomerRef)
+  return pageOf(
+    db,
+    pageSql,
+    [...whereParams, params.limit, params.offset],
+    countSql,
+    whereParams,
+    decodeCustomerRef,
+  )
 }
 
 function decodeCustomerRef(row: unknown): CustomerRef {

@@ -1,8 +1,9 @@
 import { ERROR_CODES, DomainError } from "../../core"
 import { response } from "../../core/http"
-import { isCustomer } from "../../shared/auth/auth-context"
+import { isCustomer, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
 import * as parcels from "../parcels/parcels.service"
+import * as reference from "../reference/reference.service"
 import type { CUSTOMER_SURFACE } from "./registry"
 
 /**
@@ -19,6 +20,21 @@ import type { CUSTOMER_SURFACE } from "./registry"
  * gives `auth.actor.customerId` a type that is not `null | undefined`.
  */
 export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
+  reference: {
+    listHubs: async (c) =>
+      c.json(
+        response.success(
+          await reference.listHubs(c, scopeFromAuth(c.get("auth")), {
+            ...c.req.valid("query"),
+            status: "ACTIVE",
+          }),
+        ),
+      ),
+    listZones: async (c) =>
+      c.json(response.success(await reference.listZones(c, c.req.valid("query")))),
+    searchRecipients: async (c) =>
+      c.json(response.success(await reference.searchCustomers(c, c.req.valid("query"), "ACTIVE"))),
+  },
   parcels: {
     list: async (c) => {
       const auth = c.get("auth")
