@@ -1,6 +1,5 @@
 import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 
-
 /**
  * Persistence for `auth`.
  *
