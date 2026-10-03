@@ -31,7 +31,15 @@ import {
   Skeleton,
   Textarea,
 } from "@dropx/ui"
-import { PlusIcon, ReceiptIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  PlusIcon,
+  ReceiptIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
 import { useFieldArray, useForm } from "react-hook-form"
@@ -42,11 +50,12 @@ import { ReferenceSelect } from "@/components/reference-select"
 import { isApiError } from "@/lib/api-client"
 import { formatMoney } from "@/lib/format"
 import { useCreateParcel, useFeeQuote, useHubs, useRecipients, useZones } from "@/lib/queries"
-import { REFERENCE_ENDPOINTS } from "@/lib/reference-data"
+import { REFERENCE_ENDPOINTS, type ReferenceOption } from "@/lib/reference-data"
 import {
   PARCEL_TYPES,
   PAYMENT_TYPES,
   type CreateParcelRequest,
+  type DeliveryQuote,
   type PaymentType,
   type QuoteRequest,
 } from "@/lib/types"
@@ -144,6 +153,21 @@ const bookParcelSchema = z
 
 type BookParcelValues = z.infer<typeof bookParcelSchema>
 
+const STEPS = [
+  { title: "Receiver", description: "Who gets it" },
+  { title: "Route", description: "Where it travels" },
+  { title: "Parcel", description: "Size and weight" },
+  { title: "Payment", description: "How it is paid" },
+  { title: "Review", description: "Check and book" },
+] as const
+
+const STEP_FIELDS = [
+  ["receiverCustomerId", "receiverName", "receiverPhone"],
+  ["originHubId", "destinationHubId", "originZoneId", "destinationZoneId"],
+  ["parcelType", "weight", "length", "width", "height"],
+  ["paymentType", "codAmount", "items"],
+] as const
+
 const EMPTY_ITEM = { name: "", description: "", quantity: "1", unitPrice: "0" } as const
 
 /** A dimension the sender left blank is absent from the body, not zero. */
@@ -183,6 +207,7 @@ function toCreateRequest(values: BookParcelValues): CreateParcelRequest {
 
 export function BookParcel() {
   const router = useRouter()
+  const [step, setStep] = React.useState(1)
 
   const form = useForm<BookParcelValues>({
     resolver: zodResolver(bookParcelSchema),
@@ -260,6 +285,17 @@ export function BookParcel() {
   const referenceDataReady =
     hubOptions.length > 0 && zoneOptions.length > 0 && recipientOptions.length > 0
 
+  async function goNext() {
+    setServerError(null)
+    const valid = await form.trigger(STEP_FIELDS[step - 1])
+    if (valid) setStep((current) => Math.min(STEPS.length, current + 1))
+  }
+
+  function goBack() {
+    setServerError(null)
+    setStep((current) => Math.max(1, current - 1))
+  }
+
   async function onSubmit(values: BookParcelValues) {
     setServerError(null)
 
@@ -288,8 +324,7 @@ export function BookParcel() {
       <div className="grid gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Book a parcel</h1>
         <p className="text-muted-foreground text-sm">
-          You are the sender. The delivery fee is quoted as you fill this in and confirmed by DropX
-          when the parcel is created.
+          A few quick steps. You will see the delivery fee before you confirm.
         </p>
       </div>
 
@@ -299,8 +334,8 @@ export function BookParcel() {
           <AlertTitle>Booking is not available yet</AlertTitle>
           <AlertDescription>
             <p>
-              The API does not expose the reference lists this form needs, so a parcel cannot be
-              routed safely. Each picker below names the endpoint that should back it.
+              Booking needs at least one active hub, pricing zone, and recipient customer. Ask DropX
+              operations to configure the missing reference data, then try again.
             </p>
             <ul className="mt-2 grid gap-1 text-xs">
               <li>
@@ -319,283 +354,134 @@ export function BookParcel() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
+          <nav aria-label="Booking progress" className="grid gap-3 sm:grid-cols-5">
+            {STEPS.map((item, index) => {
+              const number = index + 1
+              const active = number === step
+              const complete = number < step
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  className="group flex items-center gap-2 text-left sm:block"
+                  onClick={() => number < step && setStep(number)}
+                  disabled={number >= step}
+                  aria-current={active ? "step" : undefined}
+                >
+                  <span
+                    className={
+                      complete || active
+                        ? "bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                        : "bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                    }
+                  >
+                    {complete ? <CheckIcon className="size-4" aria-hidden /> : number}
+                  </span>
+                  <span className="grid gap-0.5 sm:mt-2">
+                    <span
+                      className={active ? "text-sm font-semibold" : "text-muted-foreground text-sm"}
+                    >
+                      {item.title}
+                    </span>
+                    <span className="text-muted-foreground hidden text-xs sm:block">
+                      {item.description}
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+
           <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
             <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Receiver</CardTitle>
-                  <CardDescription>
-                    Who the parcel is going to, and how the rider will reach them.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <FormField
-                    control={form.control}
-                    name="receiverCustomerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Receiving customer</FormLabel>
-                        <ReferenceSelect
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          options={recipientOptions}
-                          source="recipients"
-                          placeholder="Pick a saved recipient"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-2">
+              {step === 1 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Receiver</CardTitle>
+                    <CardDescription>
+                      Who the parcel is going to, and how the rider will reach them.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
                     <FormField
                       control={form.control}
-                      name="receiverName"
+                      name="receiverCustomerId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Receiver name</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Karim Uddin" autoComplete="off" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="receiverPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Receiver phone</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="01712345678"
-                              inputMode="tel"
-                              autoComplete="off"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Route</CardTitle>
-                  <CardDescription>
-                    Where we collect from and where it is delivered to. Pricing follows the
-                    destination zone.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="originHubId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Origin hub</FormLabel>
-                        <ReferenceSelect
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          options={hubOptions}
-                          source="hubs"
-                          placeholder="Pick the collection hub"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="destinationHubId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Destination hub</FormLabel>
-                        <ReferenceSelect
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          options={hubOptions}
-                          source="hubs"
-                          placeholder="Pick the delivery hub"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="originZoneId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Origin zone</FormLabel>
-                        <ReferenceSelect
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          options={zoneOptions}
-                          source="zones"
-                          placeholder="Pick the origin zone"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="destinationZoneId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Destination zone</FormLabel>
-                        <ReferenceSelect
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          options={zoneOptions}
-                          source="zones"
-                          placeholder="Pick the destination zone"
-                        />
-                        <FormDescription>
-                          The delivery fee is calculated from this zone.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Parcel</CardTitle>
-                  <CardDescription>
-                    Weight decides the fee, so it has to be accurate.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="parcelType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Parcel type</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {PARCEL_TYPES.map((value) => (
-                                <SelectItem key={value} value={value}>
-                                  {value}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="weight"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Weight (kg)</FormLabel>
-                          <FormControl>
-                            <Input {...field} inputMode="decimal" placeholder="2.5" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <FormField
-                      control={form.control}
-                      name="length"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Length (cm)</FormLabel>
-                          <FormControl>
-                            <Input {...field} inputMode="decimal" placeholder="Optional" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="width"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Width (cm)</FormLabel>
-                          <FormControl>
-                            <Input {...field} inputMode="decimal" placeholder="Optional" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="height"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Height (cm)</FormLabel>
-                          <FormControl>
-                            <Input {...field} inputMode="decimal" placeholder="Optional" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment</CardTitle>
-                  <CardDescription>
-                    Prepaid is charged up front. Cash on delivery is collected by the rider from the
-                    receiver.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="paymentType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Payment type</FormLabel>
-                          <Select
+                          <FormLabel>Receiving customer</FormLabel>
+                          <ReferenceSelect
                             value={field.value}
-                            onValueChange={(value) => field.onChange(value as PaymentType)}
-                          >
+                            onValueChange={field.onChange}
+                            options={recipientOptions}
+                            source="recipients"
+                            placeholder="Pick a saved recipient"
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="receiverName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Receiver name</FormLabel>
                             <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
+                              <Input {...field} placeholder="Karim Uddin" autoComplete="off" />
                             </FormControl>
-                            <SelectContent>
-                              {PAYMENT_TYPES.map((value) => (
-                                <SelectItem key={value} value={value}>
-                                  {value === "PREPAID" ? "Prepaid" : "Cash on delivery"}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="receiverPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Receiver phone</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="01712345678"
+                                inputMode="tel"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {step === 2 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Route</CardTitle>
+                    <CardDescription>
+                      Where we collect from and where it is delivered to. Pricing follows the
+                      destination zone.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="originHubId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Origin hub</FormLabel>
+                          <ReferenceSelect
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            options={hubOptions}
+                            source="hubs"
+                            placeholder="Pick the collection hub"
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -603,142 +489,350 @@ export function BookParcel() {
 
                     <FormField
                       control={form.control}
-                      name="codAmount"
+                      name="destinationHubId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Amount to collect (BDT)</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              inputMode="decimal"
-                              disabled={paymentType !== "COD"}
-                              placeholder={
-                                paymentType === "COD" ? "0" : "Prepaid — nothing to collect"
-                              }
-                            />
-                          </FormControl>
+                          <FormLabel>Destination hub</FormLabel>
+                          <ReferenceSelect
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            options={hubOptions}
+                            source="hubs"
+                            placeholder="Pick the delivery hub"
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="originZoneId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Origin zone</FormLabel>
+                          <ReferenceSelect
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            options={zoneOptions}
+                            source="zones"
+                            placeholder="Pick the origin zone"
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="destinationZoneId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Destination zone</FormLabel>
+                          <ReferenceSelect
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            options={zoneOptions}
+                            source="zones"
+                            placeholder="Pick the destination zone"
+                          />
                           <FormDescription>
-                            Leave at 0 if the receiver pays nothing.
+                            The delivery fee is calculated from this zone.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ) : null}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Items</CardTitle>
-                  <CardDescription>
-                    Optional, and not priced for shipping — it helps the receiver check the parcel.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  {items.fields.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      No items listed. You can add them if the receiver will be checking the
-                      contents.
-                    </p>
-                  ) : null}
-
-                  {items.fields.map((field, index) => (
-                    <div key={field.id} className="grid gap-3 rounded-lg border p-4">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary">Item {index + 1}</Badge>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => items.remove(index)}
-                        >
-                          <Trash2Icon aria-hidden />
-                          Remove
-                        </Button>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Name</FormLabel>
+              {step === 3 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Parcel</CardTitle>
+                    <CardDescription>
+                      Weight decides the fee, so it has to be accurate.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="parcelType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Parcel type</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
                               <FormControl>
-                                <Input {...field} placeholder="Cotton shirt" />
+                                <SelectTrigger className="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
                               </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                              <SelectContent>
+                                {PARCEL_TYPES.map((value) => (
+                                  <SelectItem key={value} value={value}>
+                                    {value}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Quantity</FormLabel>
-                              <FormControl>
-                                <QuantityStepper
-                                  value={Number(field.value)}
-                                  min={1}
-                                  max={9999}
-                                  onValueChange={(next) => field.onChange(String(next))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.unitPrice`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unit price (BDT)</FormLabel>
-                              <FormControl>
-                                <Input {...field} inputMode="decimal" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.description`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Description</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} rows={2} placeholder="Optional" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="weight"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Weight (kg)</FormLabel>
+                            <FormControl>
+                              <Input {...field} inputMode="decimal" placeholder="2.5" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                  ))}
 
-                  <div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => items.append({ ...EMPTY_ITEM })}
-                      disabled={items.fields.length >= 50}
-                    >
-                      <PlusIcon aria-hidden />
-                      Add an item
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <FormField
+                        control={form.control}
+                        name="length"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Length (cm)</FormLabel>
+                            <FormControl>
+                              <Input {...field} inputMode="decimal" placeholder="Optional" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="width"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Width (cm)</FormLabel>
+                            <FormControl>
+                              <Input {...field} inputMode="decimal" placeholder="Optional" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="height"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Height (cm)</FormLabel>
+                            <FormControl>
+                              <Input {...field} inputMode="decimal" placeholder="Optional" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {step === 4 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payment</CardTitle>
+                    <CardDescription>
+                      Prepaid is charged up front. Cash on delivery is collected by the rider from
+                      the receiver.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="paymentType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Payment type</FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={(value) => field.onChange(value as PaymentType)}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {PAYMENT_TYPES.map((value) => (
+                                  <SelectItem key={value} value={value}>
+                                    {value === "PREPAID" ? "Prepaid" : "Cash on delivery"}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="codAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Amount to collect (BDT)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                inputMode="decimal"
+                                disabled={paymentType !== "COD"}
+                                placeholder={
+                                  paymentType === "COD" ? "0" : "Prepaid — nothing to collect"
+                                }
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave at 0 if the receiver pays nothing.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {step === 4 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Items</CardTitle>
+                    <CardDescription>
+                      Optional, and not priced for shipping — it helps the receiver check the
+                      parcel.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    {items.fields.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        No items listed. You can add them if the receiver will be checking the
+                        contents.
+                      </p>
+                    ) : null}
+
+                    {items.fields.map((field, index) => (
+                      <div key={field.id} className="grid gap-3 rounded-lg border p-4">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="secondary">Item {index + 1}</Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => items.remove(index)}
+                          >
+                            <Trash2Icon aria-hidden />
+                            Remove
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Name</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Cotton shirt" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Quantity</FormLabel>
+                                <FormControl>
+                                  <QuantityStepper
+                                    value={Number(field.value)}
+                                    min={1}
+                                    max={9999}
+                                    onValueChange={(next) => field.onChange(String(next))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.unitPrice`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Unit price (BDT)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} inputMode="decimal" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.description`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} rows={2} placeholder="Optional" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => items.append({ ...EMPTY_ITEM })}
+                        disabled={items.fields.length >= 50}
+                      >
+                        <PlusIcon aria-hidden />
+                        Add an item
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {step === 5 ? (
+                <ReviewCard
+                  values={form.getValues()}
+                  hubOptions={hubOptions}
+                  zoneOptions={zoneOptions}
+                  recipientOptions={recipientOptions}
+                  quote={quote.data}
+                />
+              ) : null}
             </div>
 
             <div className="grid h-fit gap-4 lg:sticky lg:top-24">
@@ -815,13 +909,35 @@ export function BookParcel() {
                 </Alert>
               ) : null}
 
-              <LoadingButton
-                type="submit"
-                loading={createParcel.isPending}
-                disabled={!referenceDataReady}
-              >
-                {createParcel.isPending ? "Booking…" : "Book this parcel"}
-              </LoadingButton>
+              <div className="flex gap-3">
+                {step > 1 ? (
+                  <Button type="button" variant="outline" onClick={goBack} className="flex-1">
+                    <ArrowLeftIcon aria-hidden />
+                    Back
+                  </Button>
+                ) : null}
+                {step < STEPS.length ? (
+                  <Button
+                    type="button"
+                    onClick={() => void goNext()}
+                    className="flex-1"
+                    disabled={!referenceDataReady}
+                  >
+                    Continue
+                    <ArrowRightIcon aria-hidden />
+                  </Button>
+                ) : (
+                  <LoadingButton
+                    type="submit"
+                    loading={createParcel.isPending}
+                    disabled={!referenceDataReady}
+                    className="flex-1"
+                  >
+                    {createParcel.isPending ? "Booking…" : "Confirm and book"}
+                    <CheckIcon aria-hidden />
+                  </LoadingButton>
+                )}
+              </div>
 
               {!referenceDataReady ? (
                 <p className="text-muted-foreground text-xs">
@@ -841,6 +957,97 @@ function QuoteRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-4">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="tabular-nums">{value}</dd>
+    </div>
+  )
+}
+
+function ReviewCard({
+  values,
+  hubOptions,
+  zoneOptions,
+  recipientOptions,
+  quote,
+}: {
+  values: BookParcelValues
+  hubOptions: ReferenceOption[]
+  zoneOptions: ReferenceOption[]
+  recipientOptions: ReferenceOption[]
+  quote: DeliveryQuote | undefined
+}) {
+  const labelFor = (options: ReferenceOption[], id: string) =>
+    options.find((option) => option.id === id)?.label ?? id
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Review your booking</CardTitle>
+        <CardDescription>
+          Everything look right? You can go back to make changes before booking.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-5">
+        <ReviewGroup title="Receiver">
+          <ReviewRow
+            label="Customer"
+            value={labelFor(recipientOptions, values.receiverCustomerId)}
+          />
+          <ReviewRow label="Name" value={values.receiverName} />
+          <ReviewRow label="Phone" value={values.receiverPhone} />
+        </ReviewGroup>
+        <ReviewGroup title="Route">
+          <ReviewRow label="From" value={labelFor(hubOptions, values.originHubId)} />
+          <ReviewRow label="To" value={labelFor(hubOptions, values.destinationHubId)} />
+          <ReviewRow
+            label="Zones"
+            value={`${labelFor(zoneOptions, values.originZoneId)} → ${labelFor(zoneOptions, values.destinationZoneId)}`}
+          />
+        </ReviewGroup>
+        <ReviewGroup title="Parcel and payment">
+          <ReviewRow label="Details" value={`${values.parcelType} · ${values.weight} kg`} />
+          <ReviewRow
+            label="Payment"
+            value={
+              values.paymentType === "COD"
+                ? `Cash on delivery · ${formatMoney(Number(values.codAmount))}`
+                : "Prepaid"
+            }
+          />
+          <ReviewRow
+            label="Items"
+            value={
+              values.items.length === 0
+                ? "None listed"
+                : `${values.items.length} item${values.items.length === 1 ? "" : "s"}`
+            }
+          />
+        </ReviewGroup>
+        {quote ? (
+          <div className="bg-primary/8 flex items-center justify-between rounded-xl px-4 py-3">
+            <span className="text-sm font-medium">Estimated delivery fee</span>
+            <span className="text-lg font-bold tabular-nums">
+              {formatMoney(quote.total, quote.currency)}
+            </span>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ReviewGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-2">
+      <h3 className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">{title}</h3>
+      <div className="bg-muted/35 grid gap-2 rounded-xl p-3">{children}</div>
+    </div>
+  )
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
     </div>
   )
 }

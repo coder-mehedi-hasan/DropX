@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
-      "@dropx/db/*": ["../api/src/db/models"]
+      "@dropx/db": ["../api/src/db/models"]
     }
   },
   "include": ["src"]

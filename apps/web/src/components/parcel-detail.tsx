@@ -20,15 +20,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  parcelStatusLabel,
 } from "@dropx/ui"
 import { ArrowLeftIcon, PackageOpenIcon, TriangleAlertIcon } from "lucide-react"
 import Link from "next/link"
-import * as React from "react"
 
 import { EventTimeline } from "@/components/event-timeline"
 import { isApiError } from "@/lib/api-client"
 import { formatDateTime, formatDimensions, formatMoney, formatWeight } from "@/lib/format"
 import { useMyParcel, useTracking } from "@/lib/queries"
+import type { Parcel } from "@/lib/types"
 
 /**
  * A customer's own parcel.
@@ -88,8 +89,11 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
     <div className="grid gap-6">
       <BackLink />
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="grid gap-1">
+      <div className="bg-primary/8 flex flex-wrap items-start justify-between gap-5 rounded-3xl px-5 py-6 sm:px-7">
+        <div className="grid gap-2">
+          <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
+            Parcel details
+          </p>
           <h1 className="font-mono text-2xl font-semibold tracking-tight">
             {parcel.trackingNumber}
           </h1>
@@ -98,7 +102,12 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
             {formatDateTime(parcel.updatedAt)}
           </p>
         </div>
-        <StatusBadge status={parcel.status} />
+        <div className="grid justify-items-start gap-2 sm:justify-items-end">
+          <StatusBadge status={parcel.status} />
+          <p className="text-muted-foreground max-w-xs text-left text-xs sm:text-right">
+            {statusMessage(parcel.status)}
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -257,6 +266,31 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dd className="text-sm font-medium">{value}</dd>
     </div>
   )
+}
+
+function statusMessage(status: Parcel["status"]): string {
+  switch (status) {
+    case "CREATED":
+      return "Your booking is confirmed. DropX will arrange the next handover soon."
+    case "PICKED_UP":
+      return "The parcel is with DropX and moving into the hub network."
+    case "IN_TRANSIT":
+      return "The parcel is travelling between hubs."
+    case "AT_HUB":
+      return "The parcel has arrived at a hub and is being processed."
+    case "OUT_FOR_DELIVERY":
+      return "A rider is taking the parcel to the receiver today."
+    case "DELIVERED":
+      return "The parcel has been delivered successfully."
+    case "FAILED":
+      return "A delivery attempt needs attention. Check the latest tracking event."
+    case "CANCELLED":
+      return "This parcel has been cancelled."
+    case "RETURNED":
+      return "This parcel is on its way back to the sender."
+    default:
+      return `Current status: ${parcelStatusLabel(status)}.`
+  }
 }
 
 function DetailSkeleton() {

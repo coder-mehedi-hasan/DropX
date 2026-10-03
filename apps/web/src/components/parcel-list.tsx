@@ -126,8 +126,14 @@ export function ParcelList() {
 
   return (
     <div className="grid gap-4">
-      <Card>
-        <CardContent className="grid gap-3 sm:grid-cols-[1fr_auto]">
+      <Card className="bg-card/60 border-0 shadow-sm">
+        <CardContent className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="grid gap-1">
+            <p className="text-sm font-semibold">Find a parcel</p>
+            <p className="text-muted-foreground text-xs">
+              Search by tracking number or narrow by status.
+            </p>
+          </div>
           <div className="relative">
             <SearchIcon
               className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -173,7 +179,7 @@ export function ParcelList() {
       ) : null}
 
       <Card>
-        <CardContent>
+        <CardContent className="p-3 sm:p-5">
           {query.isPending ? <ListSkeleton /> : null}
 
           {!query.isPending && parcels.length === 0 && !errorMessage ? (

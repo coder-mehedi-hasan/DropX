@@ -1,5 +1,13 @@
 import { defineSurface } from "../../shared/auth/surface"
 import {
+  customerRefResponseSchema,
+  hubRefResponseSchema,
+  listHubsQuerySchema,
+  listZonesQuerySchema,
+  searchCustomersQuerySchema,
+  zoneRefResponseSchema,
+} from "../reference/reference.dto"
+import {
   listParcelsQuerySchema,
   parcelIdParamSchema,
   parcelResponseSchema,
@@ -41,6 +49,39 @@ export const CUSTOMER_SURFACE = defineSurface({
     403: "The customer session is not ACTIVE (OTP not verified).",
   },
   features: {
+    reference: {
+      tag: "customer-reference",
+      tagDescription: "Bookable hubs, pricing zones, and recipient customers.",
+      operations: {
+        listHubs: {
+          method: "GET",
+          path: "/reference/hubs",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List bookable hubs",
+          successDescription: "A page of active hubs.",
+          query: listHubsQuerySchema,
+          listNodes: hubRefResponseSchema,
+        },
+        listZones: {
+          method: "GET",
+          path: "/reference/zones",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List bookable zones",
+          successDescription: "A page of active pricing zones.",
+          query: listZonesQuerySchema,
+          listNodes: zoneRefResponseSchema,
+        },
+        searchRecipients: {
+          method: "GET",
+          path: "/reference/recipients",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Search recipient customers",
+          successDescription: "A page of active recipient customers.",
+          query: searchCustomersQuerySchema,
+          listNodes: customerRefResponseSchema,
+        },
+      },
+    },
     parcels: {
       tag: "parcels",
       operations: {
