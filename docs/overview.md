@@ -160,4 +160,4 @@ Full matrix: [`rbac.md`](./rbac.md).
     validation are the same object rather than two descriptions that can drift
   - `apps/api/src/openapi/coverage.ts` fails the boot unless every policy-catalog
     operation is documented and every documented operation is enforced
-  - Verify with `bun run --cwd apps/api smoke`, which asserts both directions
+  - Both directions are asserted at boot by `apps/api/src/openapi/coverage.ts`

@@ -66,7 +66,6 @@ docs/brand-guidelines.md                 # written brand contract and handoff ch
 | `bun run db:migrate`                      | Apply `migrate.sql` (idempotent)                                        |
 | `bun run db:reset`                        | Drop every table, then reapply                                          |
 | `bun run db:seed`                         | Seed roles + their default permission grants                            |
-| `bun run --cwd apps/api smoke`            | Boot the app; assert the policy catalog **and** OpenAPI coverage        |
 | `bun run --cwd apps/api check:read-paths` | Run every read query against the real schema (needs `db:migrate` first) |
 
 Server-side config (`DATABASE_URL`, `APP_SECRET`, `API_*`, `BOOTSTRAP_*`) lives in
@@ -76,13 +75,13 @@ directory they run in. Each frontend loads its own URL from its own `.env`
 `apps/admin/.env.example` and `apps/riders/.env.example`. Local overrides go in
 `.env.local` per app (gitignored).
 
-`smoke` needs no database — it asserts policy and auth wiring. `check:read-paths` is the complement: it executes every SELECT against a migrated database, which is how a query referencing a column that does not exist gets caught. An empty database is enough, since a bad column throws while a valid one simply returns no rows. Run both after touching SQL.
+`check:read-paths` executes every SELECT against a migrated database, which is how a query referencing a column that does not exist gets caught. An empty database is enough, since a bad column throws while a valid one simply returns no rows. Run it after touching SQL.
 
 ### API conventions
 
 - Business routes are versioned under `/api/v1`. `/health` and `/health/ready` are also served unversioned for probes.
 - Lists return `{ nodes, meta }`. Errors return `{ error: { code, message, details? } }`; `DomainError.code` survives to the client, and driver messages never do.
-- **Every route declares its operation** through `defineOperation` in `apps/api/src/shared/auth/policy.ts`, which registers it in the catalog _and_ enforces it. A route that is missing from the catalog fails the `smoke` check rather than failing open.
+- **Every route declares its operation** through `defineOperation` in `apps/api/src/shared/auth/policy.ts`, which registers it in the catalog _and_ enforces it. A route that is missing from the catalog fails `assertPolicyCatalog()` at boot rather than failing open.
 - Modules are registered in one place: `apps/api/src/modules/index.ts`.
 
 ### Adding an operation — declare it once
@@ -120,15 +119,15 @@ export const ADMIN_SURFACE = defineSurface({
 
 Three rules make this safe:
 
-- **Registry and handlers must be a bijection.** A registry entry with no handler, or a handler with no registry entry, throws at boot naming both orphans. `smoke` exercises this.
+- **Registry and handlers must be a bijection.** A registry entry with no handler, or a handler with no registry entry, throws at boot naming both orphans.
 - **`response` XOR `listNodes`.** A plain body, or a `{ nodes, meta }` page of that schema — not both, not neither.
 - **Error precedence is operation → surface → built-in.** A surface-level `errors` block corrects the generic 401/403 text for every operation in it, which the customer surface needs: its 403 means "session not ACTIVE (OTP unverified)", not "missing a permission" — a customer holds no permission keys. An operation's own `errors` still wins.
 
-A tag belongs to the document, not to a surface, and one feature can span two — `parcels` is staff and self-service. `buildSurfaceTags(ADMIN_SURFACE, CUSTOMER_SURFACE)` therefore takes every surface and emits one entry per distinct name, with an explicit `tagDescription` beating the derived default regardless of argument order. OpenAPI requires tag names to be unique; `smoke` asserts that, and that no tag is declared-but-unused or used-but-undeclared.
+A tag belongs to the document, not to a surface, and one feature can span two — `parcels` is staff and self-service. `buildSurfaceTags(ADMIN_SURFACE, CUSTOMER_SURFACE)` therefore takes every surface and emits one entry per distinct name, with an explicit `tagDescription` beating the derived default regardless of argument order. OpenAPI requires tag names to be unique, and `assertOpenApiCoverage()` asserts that no tag is declared-but-unused or used-but-undeclared.
 
 Mount the **relative** `path`; `registerModules` prefixes `basePath` when it calls `app.route()`. `defineOperation` and the spec get the absolute one. The registry derives both, so you only ever write the relative path.
 
-**2. By hand (`auth`, `jobs`, `tracking`, `pricing`, `health`)** — still three things, checked against each other at boot. Skipping any one fails `smoke`:
+**2. By hand (`auth`, `jobs`, `tracking`, `pricing`, `health`)** — still three things, checked against each other at boot. Skipping any one fails `assertOpenApiCoverage()`:
 
 1. **Route + policy** — `defineOperation(...)` in the module's `*.routes.ts`.
 2. **DTOs** — request schemas _and_ response schemas in the module's `*.dto.ts`. Both live there because the published contract and the runtime validation must be the same object; a hand-written response body is a second source of truth that drifts.

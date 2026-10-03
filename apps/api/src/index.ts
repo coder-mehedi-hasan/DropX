@@ -1,80 +1,62 @@
-import { closeDatabase, getDatabase } from "@dropx/db"
+import { Hono } from "hono"
+import { cors } from "hono/cors"
+import { prettyJSON } from "hono/pretty-json"
+import { secureHeaders } from "hono/secure-headers"
 
-import { createApp } from "./app"
 import { getConfig } from "./config"
-import { runEmailWorker } from "./shared/email/worker"
+import { notFound, onError } from "./shared/errors/handler"
+import { requestContext } from "./shared/http/context"
+import { attachAuth } from "./shared/auth/middleware"
+import { assertPolicyCatalog, getPolicyCatalog } from "./shared/auth/policy"
+import { assertOpenApiCoverage } from "./openapi/coverage"
+import { openApiRouter } from "./openapi"
+import { registerModules } from "./modules"
+import { response } from "./core/http"
+import type { AppEnv } from "./types/env"
 
-/**
- * Process entry point.
- *
- * Bun serves the exported `fetch`, so there is no node adapter in the path.
- * The preflight `ping` fails fast with a clear message rather than surfacing a
- * connection error on the first request.
- */
 const config = getConfig()
-const app = createApp()
 
-/**
- * `bun --watch` re-evaluates this module on every save, so module state cannot
- * own the socket. The live server and the one-time signal wiring hang off
- * `globalThis`, and a reload stops the previous server before binding the new
- * one — without that the second `Bun.serve` dies with EADDRINUSE on save.
- *
- * There is deliberately no default export carrying `fetch`: Bun's reload path
- * auto-serves a default export of its own, which would race the explicit server
- * below for the same port. Callers that want the app itself import `createApp`.
- */
-type Runtime = {
-  server?: ReturnType<typeof Bun.serve>
-  listenersBound?: boolean
-  emailWorkerStarted?: boolean
+const app = new Hono<AppEnv>()
+
+app.onError(onError)
+app.notFound(notFound)
+
+app.use("*", requestContext)
+app.use("*", secureHeaders(config.isProduction ? { strictTransportSecurity: true } : {}))
+app.use(
+  "*",
+  cors({
+    origin: (origin) => (origin && config.corsOrigins.includes(origin) ? origin : null),
+    allowHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    exposeHeaders: ["X-Request-Id"],
+    credentials: false,
+    maxAge: 600,
+  }),
+)
+app.use("*", prettyJSON({ space: config.isProduction ? 0 : 2 }))
+app.use("*", attachAuth)
+
+app.route("/", openApiRouter)
+
+app.get("/", (c) =>
+  c.json(
+    response.success({
+      service: "dropx-api",
+      version: "0.0.0",
+      docs: { openapi: "/openapi.json", swagger: "/docs" },
+    }),
+  ),
+)
+
+registerModules(app)
+
+assertPolicyCatalog()
+assertOpenApiCoverage()
+
+if (!config.isProduction) {
+  console.info(`[api] operations registered: ${getPolicyCatalog().size}`)
+  console.info("[api] openapi: /openapi.json  docs: /docs")
 }
 
-const globalScope = globalThis as typeof globalThis & { __dropxApi?: Runtime }
-const runtime: Runtime = (globalScope.__dropxApi ??= {})
-
-runtime.server?.stop(true)
-
-try {
-  await getDatabase().ping()
-} catch (error) {
-  console.error("[api] cannot reach the database — check DATABASE_URL", error)
-  process.exit(1)
-}
-
-const server = Bun.serve({
-  port: config.port,
-  fetch: app.fetch,
-  // Parcel events, proof uploads and OTP requests all have small bodies; the
-  // ceiling stops a single request from pinning memory.
-  maxRequestBodySize: 2 * 1024 * 1024,
-  idleTimeout: 30,
-})
-
-runtime.server = server
-
-console.info(`[api] listening on http://localhost:${server.port} (${config.env})`)
-
-if (!runtime.emailWorkerStarted) {
-  runtime.emailWorkerStarted = true
-  void runEmailWorker().catch((error) => {
-    runtime.emailWorkerStarted = false
-    console.error("[api] email worker stopped unexpectedly", error)
-    process.exit(1)
-  })
-}
-
-if (!runtime.listenersBound) {
-  runtime.listenersBound = true
-  process.on("SIGINT", () => void shutdown("SIGINT"))
-  process.on("SIGTERM", () => void shutdown("SIGTERM"))
-}
-
-async function shutdown(signal: string): Promise<void> {
-  console.info(`[api] ${signal} received, shutting down`)
-  await runtime.server?.stop(true)
-  await closeDatabase()
-  process.exit(0)
-}
-
-export { app, server }
+export default app

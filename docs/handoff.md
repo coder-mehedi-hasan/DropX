@@ -21,7 +21,6 @@
 
 ### Verified (all green)
 - `bun run typecheck` — 6 workspaces
-- `bun run --cwd apps/api smoke` — 34 operations, 0 failures
 - `bun run --cwd apps/api check:read-paths` — 64/64
 - `bun run build` — 4 apps
 - `bun run lint` — at the repo's pre-existing baseline, no new failures
@@ -33,7 +32,7 @@
 - **`useConfirmation`** — built, unused. Correctly so: no delete operation exists in the admin UI yet; the cancel flow is a reason form, not a confirm.
 - **`BRANCH_MANAGER`'s `zones.view` grant** — code-only. `DEFAULT_ROLE_GRANTS` in `apps/api/src/shared/auth/permissions.ts` has it; the seeded role rows need the normal seed/deployment path. `bun run db:seed` is idempotent (`INSERT IGNORE` + orphan detection) but writes to the database — needs approval.
 - **No browser E2E.** Builds and typechecks prove nothing about sheet rendering, picker selection, or role-based 403s.
-- **Empty test layer.** `smoke` and `check:read-paths` catch drift; no business logic is covered.
+- **Empty test layer.** The boot-time policy/OpenAPI assertions and `check:read-paths` catch drift; no business logic is covered.
 - **External API consumer unknown** — the `/api/v1` vs `/api/v2` question remains open.
 
 ---
@@ -47,7 +46,6 @@ bun run build          # production build of every app
 bun run lint           # Prettier check
 bun run db:migrate     # apply migrate.sql (idempotent)
 bun run db:seed        # seed roles + permission grants
-bun run --cwd apps/api smoke              # policy catalog + OpenAPI coverage
 bun run --cwd apps/api check:read-paths   # every SELECT against the real schema
 ```
 

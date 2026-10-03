@@ -102,7 +102,7 @@ Two changes, in this order:
 
 This lands **before** Phase 0. Every module added afterwards inherits the system instead of being retrofitted, and retrofitting 20 modules is far worse than converting 5.
 
-**Why A1 before A2, not after.** A1 deletes `openapi/coverage.ts`, the 22-id list in `smoke.ts`, and the hand-written spec fragments. If A2 ran first, all of that churn happens twice — once moving files by hand, once deleting them. Doing A1 first turns A2 from a 12-file diff into a ~5-file one.
+**Why A1 before A2, not after.** A1 deletes `openapi/coverage.ts`, the 22-id list in the boot check, and the hand-written spec fragments. If A2 ran first, all of that churn happens twice — once moving files by hand, once deleting them. Doing A1 first turns A2 from a 12-file diff into a ~5-file one.
 
 ### 3.1 The limit, stated up front
 
@@ -171,7 +171,7 @@ export const handlers = {
 | Gone                                                                   | Because                                                                          |
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | the staff half of `openapi/paths/parcels.openapi.ts` (196 -> 89 lines) | generated from the registry; the customer half follows in A2                     |
-| `smoke.ts:40-63` — the hardcoded 22 ids                                | surface ids now come from the registry, so adding one needs no edit to this file |
+| the hardcoded 22-id list in the boot check                            | surface ids now come from the registry, so adding one needs no edit to any list  |
 | one of the three "add an operation" steps in `AGENTS.md`               | the contract is one entry, not a route call plus a spec entry that must agree    |
 
 **`openapi/coverage.ts` survived**, which the first draft of this plan got wrong. It is no longer needed _for a registry operation_ — those are generated from the same object that registered the policy, so there is nothing to drift. But 17 operations across `auth`, `jobs`, `tracking`, `pricing` and the customer `parcels` are still hand-written, and for those it is a real check that still catches real bugs. Deleting it now would throw away a working guard. Its scope is now documented: it guards the hand-written fragments, and goes when the last module moves to a registry.
@@ -187,7 +187,7 @@ export const handlers = {
 | `apps/api/src/modules/admin/registry.ts` | **new** — the 5 parcel operation contracts                           |
 | `apps/api/src/modules/admin/handlers.ts` | **new** — the 5 handlers, moved out of `parcels.routes.ts`           |
 
-Then `smoke.ts` drops the id list, and `apps/api/src/openapi/document.ts` imports the generated fragment instead of the hand-written one.
+Then the id list is dropped, and `apps/api/src/openapi/document.ts` imports the generated fragment instead of the hand-written one.
 
 ### 3.3 A2 — the namespace split
 
@@ -287,7 +287,7 @@ Note the customer paths get **shorter**, not longer: `/parcels/mine/list` become
 
 ### 3.6 A2 files that must change — 6
 
-A1 already removed the spec fragments and the smoke id list, so this is the residue:
+A1 already removed the spec fragments and the id list, so this is the residue:
 
 | #   | File                                                         | Change                                                                                                                                 |
 | --- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -321,19 +321,19 @@ Two things that are **safe** and worth knowing so nobody re-checks them:
 
 **After A1 — passed**
 
-1. ✅ `smoke` green, 22 operations, 0 failures.
+1. ✅ Boot green, 22 operations, 0 failures.
 2. ✅ `/openapi.json` diffed against the pre-change baseline. Every request body, response body, status code and error description is **byte-identical**. The only differences are the intended `admin.parcels.*` rename and `/admin` path prefix, plus `minLength: 1` appearing on the `id` path param — the hand-written fragment claimed `{ type: "string" }` while the DTO has always rejected an empty id. That is the payoff of deriving from the schema.
 3. ⚠️ `openapi/coverage.ts` is **kept**, deliberately — see the A1 table above. Gate item corrected rather than met.
 4. ✅ A renamed handler key fails boot with both orphans named: `registry entries with no handler: parcels.cancel; handlers with no registry entry: parcels.cancle`.
 5. ✅ `bun run typecheck` green across all six workspaces.
 
-A1 added two smoke assertions not in the original gate: every `/admin` operation requires the `admin` audience, and every `admin.`-prefixed id is mounted under `/admin`. The prefix is only worth having if something enforces it.
+A1 added two namespace assertions not in the original gate: every `/admin` operation requires the `admin` audience, and every `admin.`-prefixed id is mounted under `/admin`. The prefix is only worth having if something enforces it.
 
 **After A2 — passed, except item 4**
 
-1. ✅ `smoke` green (22 operations, 0 failures) and `bun run typecheck` green across all six workspaces.
+1. ✅ Boot green (22 operations, 0 failures) and `bun run typecheck` green across all six workspaces.
 2. ✅ `GET /openapi.json` has 22 operations and 20 paths under `/admin`, `/customer`, `/auth`, `/health`, `/jobs`, `/pricing`, `/tracking`. Paths went 21 → 20 because three `/parcels/mine*` collapse into two `/customer/parcels*`. Nothing `admin.`-prefixed sits outside `/admin`; nothing `customer.`-prefixed sits outside `/customer`.
-3. ⚠️ Structural half done: `smoke` asserts every `/customer` operation requires the `web` audience, requires **no** permission, and is unreachable by the `admin` audience. The runtime half — a real staff token against a real customer route — still needs a migrated database.
+3. ⚠️ Structural half done: the boot check asserts every `/customer` operation requires the `web` audience, requires **no** permission, and is unreachable by the `admin` audience. The runtime half — a real staff token against a real customer route — still needs a migrated database.
 4. ❌ **Not done.** The admin portal loading, listing, and creating a parcel end to end needs a live database and a browser. The paths and the client calls are verified; nothing above them is exercised.
 
 **Live probes actually run** (no database, anonymous caller, real server):
@@ -350,7 +350,7 @@ A1 added two smoke assertions not in the original gate: every `/admin` operation
 
 **Two defects found by diffing rather than by reading:**
 
-- **Duplicate `parcels` tag.** Splitting one feature across two surfaces produced two `parcels` entries in the top-level `tags` array with different descriptions, which OpenAPI disallows and Swagger UI renders as two identically-titled headings. `buildSurfaceTags` now takes every surface and emits one entry per distinct name, with an explicit `tagDescription` winning regardless of argument order. `smoke` now asserts tag names are unique, that every operation tag is declared, and that no tag is unused — so it cannot come back.
+- **Duplicate `parcels` tag.** Splitting one feature across two surfaces produced two `parcels` entries in the top-level `tags` array with different descriptions, which OpenAPI disallows and Swagger UI renders as two identically-titled headings. `buildSurfaceTags` now takes every surface and emits one entry per distinct name, with an explicit `tagDescription` winning regardless of argument order. `assertOpenApiCoverage()` asserts tag names are unique, that every operation tag is declared, and that no tag is unused — so it cannot come back.
 - **Wrong 403 on the customer surface.** The built-in 403 text is "Missing a required permission", which is false for a customer: they hold no permissions, so a 403 can only mean the session is not ACTIVE. Rather than restate it in three entries, `defineSurface` gained a surface-level `errors` block, and precedence is now operation → surface → built-in.
 
 **What deleting `parcels.routes.ts` did not touch:** `parcels.service.ts`, `parcels.repository.ts`, and the shared schemas in `parcels.dto.ts` stayed put, so `check:read-paths.ts` still imports the repository from the same path. What is gone is the module _mount_ — `moduleManifest()` now reports `customer` where it used to report `parcels`, which is visible on `GET /api/v1`.
@@ -411,9 +411,9 @@ Two decisions that the schema forced rather than that were chosen:
 - **Hubs are branch-scoped, zones are not.** `hubs.branch_id` exists, so a branch manager picking an origin hub sees their own network. `zones` has no branch column, so the zone list is company-wide. Verified against `migrate.sql`, and the emitted SQL was inspected to confirm the `branch_id` predicate is actually present rather than dropped.
 - **Each endpoint carries its own `*.view` key**, not one blanket `reference.read`, so a role that may look up a hub to book a parcel is not thereby granted the customer list.
 
-Verification: 25 operations in the catalog, `smoke` clean, typecheck green in all six workspaces, and the three reads added to `check:read-paths` — 53/53 against the live schema, covering every `sortBy` value, since `sortBy` arrives from a client and the allowlist is the only thing between it and the SQL. The check itself was passing bare SQL columns and therefore never exercised the broken path; it now uses the published camelCase keys, which is how a client sorting by `createdAt` was caught as a 500.
+Verification: 25 operations in the catalog, boot checks clean, typecheck green in all six workspaces, and the three reads added to `check:read-paths` — 53/53 against the live schema, covering every `sortBy` value, since `sortBy` arrives from a client and the allowlist is the only thing between it and the SQL. The check itself was passing bare SQL columns and therefore never exercised the broken path; it now uses the published camelCase keys, which is how a client sorting by `createdAt` was caught as a 500.
 
-**The UI half has since landed.** The six IDs are now `ReferenceCombobox` pickers, the list has a `hubId` control gated on `hubs.view`, and the four shared components exist. Verified: typecheck green in six workspaces, all four apps build, `smoke` 25 operations, `check:read-paths` 53/53, and `bun run lint` at the repo's pre-existing 64-file baseline with no new failures.
+**The UI half has since landed.** The six IDs are now `ReferenceCombobox` pickers, the list has a `hubId` control gated on `hubs.view`, and the four shared components exist. Verified: typecheck green in six workspaces, all four apps build, 25 operations in the catalog, `check:read-paths` 53/53, and `bun run lint` at the repo's pre-existing 64-file baseline with no new failures.
 
 **The overlay decision is now applied.** `parcel-create-dialog.tsx` was converted from `Dialog` to `FormSheetShell`, which owns the `<form>`, the busy-guarded dismissal, the reset-on-open and the close-cleanup. The dialog's custom close handler was folded into the shell's `onReset`/`onClose` callbacks rather than duplicated — the shell is the place that owns overlay lifecycle, and a consumer that re-implements it is the failure mode the component exists to prevent. `ServerDataTable` is now adopted too: the parcels list renders through it, so sort, pager and row range all come from the wrapper and the bespoke `<Table>` + `SortableHead` + `TableFooter` are gone. `useConfirmation` is still built but unused — `CancelParcelDialog` collects a reason, so it is a form, not a confirm.
 
@@ -496,9 +496,9 @@ Dashboard KPIs: parcels by status, in-scope count, failed deliveries, COD outsta
 | 1   | **Audit writer**              | Wired into every mutation service. Cheapest on day one, retrofitted expensively. Until it lands, the sidebar's audit claim is false.                                                                                                                                                                   |
 | 2   | **Notification dispatch**     | `notifications` is a table with no writer. Trigger it on `parcel_events` writes, which Phases 3-4 produce heavily.                                                                                                                                                                                     |
 | 3   | **Redis cache driver**        | OTP and rate limiting are per-process in-memory, so they break across multiple API instances. Blocker for production; not for features.                                                                                                                                                                |
-| 4   | **A test runner**             | Zero tests exist. `smoke` catches catalog drift and `check:read-paths` catches bad columns, but **no business logic is covered**. Add vitest + service-level tests as each Phase 1-4 module lands.                                                                                                     |
-| 5   | **Per-operation bookkeeping** | Once A1 lands, a new operation is **one registry entry plus one handler** — the policy entry and the spec are generated, so `document.ts` needs no import and `smoke.ts` no id line. Before A1, `apps/api/scripts/smoke.ts:40-63` hardcodes all 22 ids and a missing fragment fails boot on purpose.   |
-| 6   | **The namespace guards**      | **Done.** `smoke` asserts no `admin.`-prefixed id is mounted outside `/admin`, that `/admin` carries no non-admin audience, and the same pair for `customer.` / `/customer` — plus that a `/customer` operation requires no permission at all. A prefix is only worth having if something enforces it. |
+| 4   | **A test runner**             | Zero tests exist. The boot-time policy assertions catch catalog drift and `check:read-paths` catches bad columns, but **no business logic is covered**. Add vitest + service-level tests as each Phase 1-4 module lands.                                                                                                     |
+| 5   | **Per-operation bookkeeping** | Once A1 lands, a new operation is **one registry entry plus one handler** — the policy entry and the spec are generated, so `document.ts` needs no import and no id list needs an edit. Before A1, all 22 ids were hardcoded and a missing fragment failed boot on purpose.   |
+| 6   | **The namespace guards**      | **Done.** The boot check asserts no `admin.`-prefixed id is mounted outside `/admin`, that `/admin` carries no non-admin audience, and the same pair for `customer.` / `/customer` — plus that a `/customer` operation requires no permission at all. A prefix is only worth having if something enforces it. |
 | 7   | **Document the new system**   | `AGENTS.md` still documents a three-part "add an operation" contract (route + policy, DTOs, OpenAPI entry) and the `openapi/paths/<domain>.openapi.ts` location. Both change under A1/A2. A stale contract is worse than none — it is the file people trust and stop reading.                          |
 
 ---
@@ -521,11 +521,10 @@ Run after any phase, and after touching SQL within a phase:
 
 ```bash
 bun run typecheck
-bun run --cwd apps/api smoke          # policy catalog + OpenAPI coverage, no DB needed
 bun run --cwd apps/api check:read-paths   # every SELECT against the real schema, needs db:migrate
 ```
 
-`smoke` is the drift guard: a route that is enforced but undocumented, or documented but not enforced, or whose `operationId`/method/path disagrees with the mount, throws at boot. It fails closed by design — that is the point, not an obstacle.
+The boot checks are the drift guard: a route that is enforced but undocumented, or documented but not enforced, or whose `operationId`/method/path disagrees with the mount, throws at boot. It fails closed by design — that is the point, not an obstacle.
 
 ---
 
