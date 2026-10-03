@@ -1,7 +1,7 @@
 import { getDatabase, type ParcelTracking } from "@dropx/db"
 
 import { ERROR_CODES, DomainError } from "../../core"
-import { getCache } from "../../shared/cache"
+import { getRedisClient } from "../../shared/redis/client"
 import { decodeEventRow, decodeTrackingRow, trackingRepository } from "./tracking.repository"
 
 /**
@@ -26,8 +26,11 @@ export async function trackParcel(
   callerKey: string,
 ): Promise<ParcelTracking> {
   const db = getDatabase()
+  const redis = await getRedisClient()
   const counterKey = bucketKey(callerKey, trackingNumber)
-  const attempts = await getCache().increment(counterKey, RATE_WINDOW_SECONDS)
+  const attempts = await redis.incr(counterKey)
+
+  if (attempts === 1) await redis.expire(counterKey, RATE_WINDOW_SECONDS)
 
   if (attempts > RATE_LIMIT) {
     throw new DomainError(

@@ -8,7 +8,7 @@ import { ERROR_CODES, DomainError, fromDatabaseError } from "../../core"
 import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
 import { pushEmailJob } from "../../shared/email/queue"
-import { getCache } from "../../shared/cache"
+import { getRedisClient } from "../../shared/redis/client"
 import { emit } from "../../shared/events/bus"
 import type { OtpRequestInput, OtpVerifyInput, StaffLoginInput } from "./auth.dto"
 import { authRepository } from "./auth.repository"
@@ -91,6 +91,11 @@ function splitIdentifier(identifier: string): { phone: string | null; email: str
     : { phone: normalisePhone(identifier), email: null }
 }
 
+/** Lowercased email, or a digits-only phone — whichever the customer typed. */
+function normaliseIdentifier(identifier: string): string {
+  return isEmail(identifier) ? identifier.toLowerCase() : normalisePhone(identifier)
+}
+
 export async function loginWithPassword(
   input: StaffLoginInput,
   audience: Extract<Audience, "admin" | "riders">,
@@ -98,13 +103,7 @@ export async function loginWithPassword(
   const db = getDatabase()
   const user = await authRepository.findUserByEmail(db, input.email)
 
-  // Verify even when the user is missing so the response time does not reveal
-  // which emails exist.
-  const passwordMatches = user
-    ? await bcrypt.compare(input.password, user.password_hash)
-    : await bcrypt.compare(input.password, "$2a$10$abcdefghijklmnopqrstuuVf9xK0hX0hX0hX0hX0hX0hX0hX0hX0hX0")
-
-  if (!user || !passwordMatches) {
+  if (!user || !(await bcrypt.compare(input.password, user.password_hash))) {
     throw new DomainError(ERROR_CODES.INVALID_CREDENTIALS, "Email or password is incorrect")
   }
 
@@ -175,12 +174,10 @@ export type OtpRequestResult = {
 
 export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResult> {
   const db = getDatabase()
-  const cache = getCache()
-  const identifier = isEmail(input.identifier)
-    ? input.identifier.toLowerCase()
-    : normalisePhone(input.identifier)
+  const redis = await getRedisClient()
+  const identifier = normaliseIdentifier(input.identifier)
 
-  const cooldown = await cache.ttl(otpResendKey(identifier))
+  const cooldown = await redis.ttl(otpResendKey(identifier))
   if (cooldown !== null && cooldown > 0) {
     throw new DomainError(
       ERROR_CODES.RATE_LIMITED,
@@ -217,22 +214,22 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
   }
 
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0")
-  await cache.set(otpKey(identifier), code, OTP_TTL_SECONDS)
-  await cache.set(otpAttemptsKey(identifier), "0", OTP_TTL_SECONDS)
-  await cache.set(otpResendKey(identifier), "1", OTP_RESEND_COOLDOWN_SECONDS)
+  await redis.setEx(otpKey(identifier), OTP_TTL_SECONDS, code)
+  await redis.setEx(otpAttemptsKey(identifier), OTP_TTL_SECONDS, "0")
+  await redis.setEx(otpResendKey(identifier), OTP_RESEND_COOLDOWN_SECONDS, "1")
 
   // An email identifier can only go by email, and a customer who has an address
   // on file gets that rather than an SMS — the placeholder phone is not a
   // deliverable destination for anyone.
-  const channel: "SMS" | "EMAIL" = customer.email ? "EMAIL" : "SMS"
-  const destination = channel === "EMAIL" ? customer.email! : customer.phone
+  const byEmail = customer.email !== null
+  const destination = customer.email ?? customer.phone
 
-  // A real deployment hands `code` to the SMS/email provider here. The code
-  // itself is only ever written to the cache, never to MySQL.
-  sendOtpCode(channel, destination, code)
+  // A real deployment hands `code` to the SMS provider here. The code itself is
+  // only ever written to the cache, never to MySQL.
+  void sendOtpCode(byEmail, destination, code)
 
   return {
-    channel,
+    channel: byEmail ? "EMAIL" : "SMS",
     destination,
     expiresInSeconds: OTP_TTL_SECONDS,
     isNewCustomer,
@@ -241,23 +238,21 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
 
 export async function verifyOtp(input: OtpVerifyInput): Promise<CustomerSessionResult> {
   const db = getDatabase()
-  const cache = getCache()
-  const identifier = isEmail(input.identifier)
-    ? input.identifier.toLowerCase()
-    : normalisePhone(input.identifier)
+  const redis = await getRedisClient()
+  const identifier = normaliseIdentifier(input.identifier)
 
   const key = otpKey(identifier)
-  const stored = await cache.get(key)
+  const stored = await redis.get(key)
 
   if (!stored) {
     throw new DomainError(ERROR_CODES.OTP_EXPIRED, "That code has expired. Request a new one.")
   }
 
-  const attempts = Number((await cache.get(otpAttemptsKey(identifier))) ?? "0") + 1
-  await cache.set(otpAttemptsKey(identifier), String(attempts), OTP_TTL_SECONDS)
+  const attempts = Number((await redis.get(otpAttemptsKey(identifier))) ?? "0") + 1
+  await redis.setEx(otpAttemptsKey(identifier), OTP_TTL_SECONDS, String(attempts))
 
   if (attempts > OTP_MAX_ATTEMPTS) {
-    await cache.delete(key)
+    await redis.del(key)
     throw new DomainError(ERROR_CODES.RATE_LIMITED, "Too many attempts. Request a new code.")
   }
 
@@ -265,8 +260,8 @@ export async function verifyOtp(input: OtpVerifyInput): Promise<CustomerSessionR
     throw new DomainError(ERROR_CODES.OTP_INVALID, "That code is not correct")
   }
 
-  await cache.delete(key)
-  await cache.delete(otpAttemptsKey(identifier))
+  await redis.del(key)
+  await redis.del(otpAttemptsKey(identifier))
 
   const customer = await authRepository.findCustomerByIdentifier(db, identifier)
   if (!customer) {
@@ -308,35 +303,22 @@ export async function updateCustomerName(customerId: Id, name: string): Promise<
 }
 
 /**
- * Delivery seam. Wire to bKash/SMS gateway/email in the notification module;
- * for now the code is only written to the cache.
+ * Delivery seam. Wire the SMS branch to a gateway; email already goes through
+ * MJML rendering and the job queue, so the request never waits on SMTP.
  *
- * Email is rendered through MJML so the markup stays responsive across
- * clients without hand-writing HTML. The job is pushed to a Redis queue and
- * drained by a background worker; the request handler never waits on SMTP.
- *
- * Fire-and-forget: the code is already in the cache by the time this runs, so
- * a provider outage must not roll back an OTP that the customer can still
- * verify. Failures are logged and swallowed, matching the events bus.
+ * Fire-and-forget: the code is already in the cache by the time this runs, so a
+ * provider outage must not roll back an OTP the customer can still verify.
  */
-async function sendOtpCode(
-  channel: "SMS" | "EMAIL",
-  destination: string,
-  code: string,
-): Promise<void> {
-  if (channel === "SMS") {
+async function sendOtpCode(byEmail: boolean, destination: string, code: string): Promise<void> {
+  if (!byEmail) {
     console.info(`[otp/sms] ${destination} <- ${code}`)
     return
   }
 
-  try {
-    await pushEmailJob({
-      to: destination,
-      template: "otp-code",
-      context: { code },
-      subject: "Your DropX verification code",
-    })
-  } catch (error) {
-    console.error(`[otp/email] failed to queue job for ${destination}`, error)
-  }
+  await pushEmailJob({
+    to: destination,
+    template: "otp-code",
+    context: { code },
+    subject: "Your DropX verification code",
+  })
 }
