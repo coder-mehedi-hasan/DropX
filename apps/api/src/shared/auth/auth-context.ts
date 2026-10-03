@@ -1,4 +1,4 @@
-import type { Id } from "@dropx/db"
+import type { Id } from "../../db/models"
 
 /**
  * Who is calling.

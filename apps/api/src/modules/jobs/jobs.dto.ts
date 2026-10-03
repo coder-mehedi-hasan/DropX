@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { DELIVERY_STATUSES } from "@dropx/db"
+import { DELIVERY_STATUSES } from "../../db/models"
 
 /**
  * Boundary DTOs for the rider app.

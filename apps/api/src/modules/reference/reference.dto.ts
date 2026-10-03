@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { CUSTOMER_STATUSES, CUSTOMER_TYPES, HUB_STATUSES, HUB_TYPES } from "@dropx/db"
+import { CUSTOMER_STATUSES, CUSTOMER_TYPES, HUB_STATUSES, HUB_TYPES } from "../../db/models"
 
 /**
  * Reference DTOs.

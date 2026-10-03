@@ -1,11 +1,4 @@
-import {
-  buildPage,
-  normalizeListParams,
-  type Executor,
-  type ListParams,
-  type Page,
-  type QueryBuilder,
-} from "@dropx/db"
+import { normalizeListParams, type ListParams, type Page } from "../../db/models"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
 import { response } from "./responses"
 
@@ -29,28 +22,8 @@ export function parseListQuery(input: ListQueryInput): ListParams {
 }
 
 /**
- * Runs a count and a page window concurrently against the same filters.
- *
- * The builder must already carry its allowlisted ordering and filters; this
- * function only adds the window, so a list endpoint cannot accidentally ship an
- * unbounded query.
+ * Success response for a paginated list: `{ nodes, meta }`.
  */
-export async function runPaginated<T>(
-  db: Executor,
-  builder: QueryBuilder,
-  params: ListParams,
-): Promise<Page<T>> {
-  const countQuery = builder.buildCount()
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
-
-  const [count, rows] = await Promise.all([
-    db.count(countQuery.sql, countQuery.params),
-    db.query<T>(pageQuery.sql, pageQuery.params),
-  ])
-
-  return buildPage(rows.rows, count, params)
-}
-
 export function okPage<T>(page: Page<T>, status: ContentfulStatusCode = 200): Response {
   return Response.json(response.success(page, status), { status })
 }

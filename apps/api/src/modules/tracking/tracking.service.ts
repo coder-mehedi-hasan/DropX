@@ -1,8 +1,9 @@
-import { getDatabase, type ParcelTracking } from "@dropx/db"
+import { type ParcelTracking } from "../../db/models"
 
 import { ERROR_CODES, DomainError } from "../../core"
-import { getRedisClient } from "../../shared/redis/client"
 import { decodeEventRow, decodeTrackingRow, trackingRepository } from "./tracking.repository"
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
 
 /**
  * Public tracking.
@@ -21,12 +22,13 @@ function bucketKey(callerKey: string, trackingNumber: string): string {
 }
 
 export async function trackParcel(
+  c: Context<AppEnv>,
   trackingNumber: string,
   /** Usually the client IP; falls back to a fixed bucket behind a proxy. */
   callerKey: string,
 ): Promise<ParcelTracking> {
-  const db = getDatabase()
-  const redis = await getRedisClient()
+  const db = c.get("db")!
+  const redis = c.get("redis")!
   const counterKey = bucketKey(callerKey, trackingNumber)
   const attempts = await redis.incr(counterKey)
 
@@ -49,8 +51,18 @@ export async function trackParcel(
 
   const events = await trackingRepository.findEvents(db, row.id)
 
+  const decoded = decodeTrackingRow(row)
   return {
-    ...decodeTrackingRow(row),
+    trackingNumber: decoded.trackingNumber,
+    status: decoded.status,
+    parcelType: decoded.parcelType,
+    paymentType: decoded.paymentType,
+    codAmount: decoded.codAmount,
+    weight: decoded.weight,
+    deliveredAt: decoded.deliveredAt,
+    originHub: decoded.originHub,
+    destinationHub: decoded.destinationHub,
+    currentHub: decoded.currentHub,
     events: events.map(decodeEventRow),
   }
 }

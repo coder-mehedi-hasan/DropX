@@ -32,7 +32,7 @@ router.get(
     if (!isRider(auth)) {
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     }
-    return c.json(response.success(await listJobs(auth.actor.riderId, c.req.valid("query"))))
+    return c.json(response.success(await listJobs(c, auth.actor.riderId, c.req.valid("query"))))
   },
 )
 
@@ -48,7 +48,7 @@ router.get(
     if (!isRider(auth)) {
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     }
-    return c.json(response.success(await getJob(auth.actor.riderId, c.req.param("id"))))
+    return c.json(response.success(await getJob(c, auth.actor.riderId, c.req.param("id"))))
   },
 )
 
@@ -66,7 +66,7 @@ router.patch(
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     }
 
-    const job = await reportOutcome({
+    const job = await reportOutcome(c, {
       riderId: auth.actor.riderId,
       riderUserId: auth.actor.userId,
       parcelId: c.req.param("id"),

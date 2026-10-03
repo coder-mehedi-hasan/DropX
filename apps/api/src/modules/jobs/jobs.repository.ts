@@ -1,18 +1,6 @@
-import {
-  QueryBuilder,
-  TABLES,
-  toId,
-  toStringOrNull,
-  type Delivery,
-  type DeliveryStatus,
-  type Executor,
-  type Id,
-  type ListParams,
-  type Parcel,
-  type ParcelItem,
-} from "@dropx/db"
-
-import { decodeItem, type ParcelItemRow } from "../parcels/parcels.repository"
+import type { Delivery, DeliveryStatus, ListParams, Parcel, ParcelItem } from "@/db/models"
+import { decodeItem, type ParcelItemRow } from "@/modules/parcels/parcels.repository"
+import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 
 /**
  * Rider-scoped persistence.
@@ -44,7 +32,7 @@ type JobRow = {
 
 export type Job = {
   delivery: {
-    id: Id
+    id: string
     attemptNo: number
     status: DeliveryStatus
     address: string
@@ -55,7 +43,7 @@ export type Job = {
     deliveredAt: Date | null
   }
   parcel: {
-    id: Id
+    id: string
     trackingNumber: string
     status: Parcel["status"]
     weight: number
@@ -73,104 +61,121 @@ const JOB_COLUMNS = `
   p.cod_amount, p.payment_type, p.created_at
 `
 
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (match) => `\\${match}`)
+}
+
 function toDate(value: string | null): Date | null {
   return value === null ? null : new Date(`${value.replace(" ", "T")}Z`)
 }
 
-export function decodeJob(row: JobRow): Job {
+export function decodeJob(row: unknown): Job {
+  const r = row as JobRow
   return {
     delivery: {
-      id: toId(row.delivery_id, "deliveryId"),
-      attemptNo: row.attempt_no,
-      status: row.delivery_status,
-      address: row.delivery_address,
-      failureReason: toStringOrNull(row.failure_reason),
-      recipientName: toStringOrNull(row.recipient_name),
-      recipientPhone: toStringOrNull(row.recipient_phone),
-      outForDeliveryAt: toDate(row.out_for_delivery_at),
-      deliveredAt: toDate(row.delivered_at),
+      id: String(r.delivery_id),
+      attemptNo: r.attempt_no,
+      status: r.delivery_status,
+      address: r.delivery_address,
+      failureReason: toStringOrNull(r.failure_reason),
+      recipientName: toStringOrNull(r.recipient_name),
+      recipientPhone: toStringOrNull(r.recipient_phone),
+      outForDeliveryAt: toDate(r.out_for_delivery_at),
+      deliveredAt: toDate(r.delivered_at),
     },
     parcel: {
-      id: toId(row.parcel_id, "parcelId"),
-      trackingNumber: row.tracking_number,
-      status: row.parcel_status,
-      weight: Number(row.weight),
-      codAmount: Number(row.cod_amount),
-      paymentType: row.payment_type,
-      createdAt: toDate(row.created_at) ?? new Date(0),
+      id: String(r.parcel_id),
+      trackingNumber: r.tracking_number,
+      status: r.parcel_status,
+      weight: Number(r.weight),
+      codAmount: Number(r.cod_amount),
+      paymentType: r.payment_type,
+      createdAt: toDate(r.created_at) ?? new Date(0),
     },
   }
 }
 
+export function toStringOrNull(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value)
+}
+
 /** The rider's own deliveries for one status, newest first. */
+async function pageJobRows<T>(
+  db: Pool | Connection,
+  sql: string,
+  params: unknown[],
+  countSql: string,
+  countParams: unknown[],
+  decode: (row: unknown) => T,
+): Promise<{ nodes: T[]; totalCount: number }> {
+  const [countRows] = await db.query<RowDataPacket[]>(countSql, countParams)
+  const [rows] = await db.query<RowDataPacket[]>(sql, params)
+  const countRow = countRows[0]
+  const totalCount = countRow?.count == null ? 0 : Number(countRow.count)
+  return { nodes: rows.map((row) => decode(row as JobRow)), totalCount }
+}
+
 export async function listJobsForRider(
-  db: Executor,
-  riderId: Id,
+  db: Pool | Connection,
+  riderId: string,
   params: ListParams,
   status: DeliveryStatus | undefined,
   search: string | undefined,
 ): Promise<{ nodes: Job[]; totalCount: number }> {
-  const builder = new QueryBuilder()
-    .select(JOB_COLUMNS)
-    .from(TABLES.deliveries, "d")
-    .innerJoin(TABLES.parcels, "p.id = d.parcel_id", "p")
-    .where("d.rider_id = ?", riderId)
-    // A falsy condition is skipped by the builder; binding an absent filter as
-    // NULL would emit `d.status = NULL` and silently return no rows at all.
-    .where(status ? "d.status = ?" : false, status)
-
-  if (search) {
-    builder.whereSearch(search, ["p.tracking_number", "d.recipient_name", "d.recipient_phone"])
+  const clauses: { sql: string; params: unknown[] }[] = [
+    { sql: "d.rider_id = ?", params: [riderId] },
+  ]
+  if (status) {
+    clauses.push({ sql: "d.status = ?", params: [status] })
   }
+  if (search) {
+    const like = `%${escapeLike(search)}%`
+    clauses.push({
+      sql: `(${["p.tracking_number", "d.recipient_name", "d.recipient_phone"].map(
+        (c) => `${c} LIKE ?`,
+      ).join(" OR ")})`,
+      params: [like, like, like],
+    })
+  }
+  const where = clauses.length ? `WHERE (${clauses.map((c) => c.sql).join(") AND (")})` : ""
+  const whereParams = clauses.flatMap((c) => c.params)
 
-  // `attempt_no DESC` keeps the newest attempt first when a parcel has been
-  // retried, so a failed job does not linger above its replacement.
-  builder.orderBy([
-    { column: "d.attempt_no", direction: "desc" },
-    { column: "d.id", direction: "desc" },
-  ])
+  const countSql =
+    `SELECT COUNT(*) AS count FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""}`
+  const pageSql =
+    `SELECT ${JOB_COLUMNS} FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""} ORDER BY d.attempt_no DESC, d.id DESC LIMIT ? OFFSET ?`
 
-  const countQuery = builder.buildCount()
-  const pageQuery = builder.limit(params.limit).offset(params.offset).build()
-
-  const [totalCount, rows] = await Promise.all([
-    db.count(countQuery.sql, countQuery.params),
-    db.query<JobRow>(pageQuery.sql, pageQuery.params),
-  ])
-
-  return { nodes: rows.rows.map(decodeJob), totalCount }
+  return pageJobRows(
+    db,
+    pageSql,
+    [...whereParams, params.limit, params.offset],
+    countSql,
+    whereParams,
+    decodeJob,
+  )
 }
 
 export async function findJobForRider(
-  db: Executor,
-  riderId: Id,
-  parcelId: Id,
+  db: Pool | Connection,
+  riderId: string,
+  parcelId: string,
 ): Promise<Job | null> {
-  // The rider may hold several attempts on one parcel; the latest wins, and the
-  // historical ones stay visible on the parcel timeline in the admin.
-  const row = await db.queryOne<JobRow>(
-    `SELECT ${JOB_COLUMNS}
-       FROM ${TABLES.deliveries} d
-       JOIN ${TABLES.parcels} p ON p.id = d.parcel_id
-      WHERE d.rider_id = ? AND d.parcel_id = ?
-      ORDER BY d.attempt_no DESC
-      LIMIT 1`,
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${JOB_COLUMNS} FROM deliveries AS d JOIN parcels AS p ON p.id = d.parcel_id WHERE d.rider_id = ? AND d.parcel_id = ? ORDER BY d.attempt_no DESC LIMIT 1`,
     [riderId, parcelId],
   )
-
-  return row ? decodeJob(row) : null
+  return rows[0] ? decodeJob(rows[0] as JobRow) : null
 }
 
-export async function listJobItems(db: Executor, parcelId: Id): Promise<ParcelItem[]> {
-  const rows = await db.query<ParcelItemRow>(
+export async function listJobItems(db: Pool | Connection, parcelId: string): Promise<ParcelItem[]> {
+  const [rows] = await db.query<RowDataPacket[]>(
     `SELECT id, parcel_id, name, description, quantity, unit_price, total_price, created_at
-       FROM ${TABLES.parcelItems}
+       FROM parcel_items
       WHERE parcel_id = ?
       ORDER BY id`,
     [parcelId],
   )
-
-  return rows.rows.map((row) => decodeItem(row))
+  return (rows as ParcelItemRow[]).map(decodeItem)
 }
 
 type UpdateJobRow = {
@@ -183,14 +188,14 @@ type UpdateJobRow = {
 
 /** The open attempt for this rider — `FOR UPDATE` so two devices cannot both claim it. */
 export async function findOpenAttemptForUpdate(
-  db: Executor,
-  riderId: Id,
-  parcelId: Id,
+  db: Pool | Connection,
+  riderId: string,
+  parcelId: string,
 ): Promise<UpdateJobRow | null> {
-  return db.queryOne<UpdateJobRow>(
+  const [rows] = await db.query<RowDataPacket[]>(
     `SELECT d.id, d.attempt_no, d.status, d.parcel_id, p.status AS status_before
-       FROM ${TABLES.deliveries} d
-       JOIN ${TABLES.parcels} p ON p.id = d.parcel_id
+       FROM deliveries AS d
+       JOIN parcels AS p ON p.id = d.parcel_id
       WHERE d.rider_id = ? AND d.parcel_id = ?
         AND d.status IN ('ASSIGNED', 'OUT_FOR_DELIVERY')
       ORDER BY d.attempt_no DESC
@@ -198,6 +203,7 @@ export async function findOpenAttemptForUpdate(
       FOR UPDATE`,
     [riderId, parcelId],
   )
+  return rows[0] as UpdateJobRow | null
 }
 
 /**
@@ -208,14 +214,14 @@ export async function findOpenAttemptForUpdate(
  * retry: the previous attempt is released rather than overwritten.
  */
 export async function closeAttempt(
-  db: Executor,
-  deliveryId: Id,
+  db: Pool | Connection,
+  deliveryId: string,
   attemptNo: number,
   status: DeliveryStatus,
   reason: string | null,
 ): Promise<void> {
-  await db.execute(
-    `UPDATE ${TABLES.deliveries}
+  await db.execute<OkPacket>(
+    `UPDATE deliveries
         SET status = ?,
             failure_reason = COALESCE(?, failure_reason),
             out_for_delivery_at = CASE WHEN ? = 'OUT_FOR_DELIVERY' THEN NOW() ELSE out_for_delivery_at END,

@@ -1,17 +1,18 @@
 import { createHash, randomInt, randomUUID } from "node:crypto"
 
 import bcrypt from "bcryptjs"
-
-import { TABLES, getDatabase, toId, type Id } from "@dropx/db"
+import mysql from "mysql2/promise"
 
 import { ERROR_CODES, DomainError, fromDatabaseError } from "../../core"
 import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
 import { pushEmailJob } from "../../shared/email/queue"
-import { getRedisClient } from "../../shared/redis/client"
 import { emit } from "../../shared/events/bus"
 import type { OtpRequestInput, OtpVerifyInput, StaffLoginInput } from "./auth.dto"
 import { authRepository } from "./auth.repository"
+import type { Context } from "hono"
+import type { AppEnv } from "../../types/env"
+import type { Id } from "../../db/models"
 
 /**
  * Authentication rules.
@@ -97,11 +98,11 @@ function normaliseIdentifier(identifier: string): string {
 }
 
 export async function loginWithPassword(
+  c: Context<AppEnv>,
   input: StaffLoginInput,
   audience: Extract<Audience, "admin" | "riders">,
 ): Promise<LoginResult> {
-  const db = getDatabase()
-  const user = await authRepository.findUserByEmail(db, input.email)
+  const user = await authRepository.findUserByEmail(c.get("db")!, input.email)
 
   if (!user || !(await bcrypt.compare(input.password, user.password_hash))) {
     throw new DomainError(ERROR_CODES.INVALID_CREDENTIALS, "Email or password is incorrect")
@@ -117,7 +118,7 @@ export async function loginWithPassword(
   }
 
   if (audience === "riders") {
-    const rider = await authRepository.findRiderByUserId(db, toId(user.id))
+    const rider = await authRepository.findRiderByUserId(c.get("db")!, user.id)
     if (!rider) {
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This account is not a rider")
     }
@@ -126,12 +127,12 @@ export async function loginWithPassword(
   const sessionId = randomUUID()
   const tokens = await issueTokenPair({ subject: user.id, audience, sessionId })
 
-  await authRepository.touchLastLogin(db, toId(user.id))
+  await authRepository.touchLastLogin(c.get("db")!, user.id)
 
   return {
     ...tokens,
     account: {
-      id: toId(user.id),
+      id: String(user.id),
       kind: audience === "riders" ? "rider" : "staff",
       name: user.name,
       email: user.email,
@@ -140,21 +141,25 @@ export async function loginWithPassword(
   }
 }
 
-export async function refreshSession(refreshToken: string, audience: Audience): Promise<TokenPair> {
-  const db = getDatabase()
+export async function refreshSession(
+  c: Context<AppEnv>,
+  refreshToken: string,
+  audience: Audience,
+): Promise<TokenPair> {
   const payload = await verifyToken(refreshToken, "refresh", audience)
 
   // The subject must still be an active account before a new access token is minted.
   if (audience === "web") {
-    const customer = await authRepository.findCustomerById(db, toId(payload.sub))
+    const customer = await authRepository.findCustomerById(c.get("db")!, payload.sub)
     if (!customer) {
       throw new DomainError(ERROR_CODES.TOKEN_INVALID, "This account no longer exists")
     }
   } else {
-    const user = await db.queryOne<{ id: string; status: string }>(
-      `SELECT id, status FROM ${TABLES.users} WHERE id = ? LIMIT 1`,
+    const [rows] = await c.get("db")!.query<mysql.RowDataPacket[]>(
+      `SELECT id, status FROM users WHERE id = ? LIMIT 1`,
       [payload.sub],
     )
+    const user = rows[0] as { id: string; status: string } | undefined
     if (!user || user.status !== "ACTIVE") {
       throw new DomainError(ERROR_CODES.INVALID_CREDENTIALS, "This account is not active")
     }
@@ -172,9 +177,11 @@ export type OtpRequestResult = {
   isNewCustomer: boolean
 }
 
-export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResult> {
-  const db = getDatabase()
-  const redis = await getRedisClient()
+export async function requestOtp(
+  c: Context<AppEnv>,
+  input: OtpRequestInput,
+): Promise<OtpRequestResult> {
+  const redis = c.get("redis")!
   const identifier = normaliseIdentifier(input.identifier)
 
   const cooldown = await redis.ttl(otpResendKey(identifier))
@@ -185,7 +192,7 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
     )
   }
 
-  let customer = await authRepository.findCustomerByIdentifier(db, identifier)
+  let customer = await authRepository.findCustomerByIdentifier(c.get("db")!, identifier)
   const isNewCustomer = customer === null
 
   if (!customer && !input.acceptSignup) {
@@ -199,7 +206,7 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
     // Placeholder name — the customer supplies it after verifying.
     const { phone, email } = splitIdentifier(identifier)
     try {
-      customer = await authRepository.createTempCustomer(db, {
+      customer = await authRepository.createTempCustomer(c.get("db")!, {
         name: "New customer",
         phone: phone ?? pendingPhone(identifier),
         email,
@@ -207,7 +214,7 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
     } catch (error) {
       // Lost a race with a concurrent request: re-read and continue.
       const domainError = fromDatabaseError(error, "This phone number or email")
-      const existing = await authRepository.findCustomerByIdentifier(db, identifier)
+      const existing = await authRepository.findCustomerByIdentifier(c.get("db")!, identifier)
       if (!existing) throw domainError
       customer = existing
     }
@@ -236,9 +243,11 @@ export async function requestOtp(input: OtpRequestInput): Promise<OtpRequestResu
   }
 }
 
-export async function verifyOtp(input: OtpVerifyInput): Promise<CustomerSessionResult> {
-  const db = getDatabase()
-  const redis = await getRedisClient()
+export async function verifyOtp(
+  c: Context<AppEnv>,
+  input: OtpVerifyInput,
+): Promise<CustomerSessionResult> {
+  const redis = c.get("redis")!
   const identifier = normaliseIdentifier(input.identifier)
 
   const key = otpKey(identifier)
@@ -263,14 +272,14 @@ export async function verifyOtp(input: OtpVerifyInput): Promise<CustomerSessionR
   await redis.del(key)
   await redis.del(otpAttemptsKey(identifier))
 
-  const customer = await authRepository.findCustomerByIdentifier(db, identifier)
+  const customer = await authRepository.findCustomerByIdentifier(c.get("db")!, identifier)
   if (!customer) {
     throw new DomainError(ERROR_CODES.OTP_INVALID, "That code is not correct")
   }
 
-  const customerId = toId(customer.id)
+  const customerId = String(customer.id)
   const activated =
-    customer.status === "ACTIVE" ? customer : await authRepository.activateCustomer(db, customerId)
+    customer.status === "ACTIVE" ? customer : await authRepository.activateCustomer(c.get("db")!, customerId)
 
   if (activated.status !== "ACTIVE") {
     throw new DomainError(ERROR_CODES.CUSTOMER_NOT_ACTIVE, "Your account is not active yet")
@@ -297,8 +306,12 @@ export async function verifyOtp(input: OtpVerifyInput): Promise<CustomerSessionR
   }
 }
 
-export async function updateCustomerName(customerId: Id, name: string): Promise<{ name: string }> {
-  await authRepository.upsertCustomerName(getDatabase(), customerId, name)
+export async function updateCustomerName(
+  c: Context<AppEnv>,
+  customerId: Id,
+  name: string,
+): Promise<{ name: string }> {
+  await authRepository.upsertCustomerName(c.get("db")!, customerId, name)
   return { name }
 }
 

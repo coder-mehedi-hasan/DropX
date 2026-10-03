@@ -1,17 +1,5 @@
-import {
-  TABLES,
-  toDate,
-  toDecimal,
-  toId,
-  toNullableDecimal,
-  toStringOrNull,
-  type Database,
-  type HubRef,
-  type ParcelEventType,
-  type ParcelStatus,
-  type ParcelType,
-  type PaymentType,
-} from "@dropx/db"
+import type { Pool, RowDataPacket } from "mysql2/promise"
+import type { HubRef, ParcelEventType, ParcelStatus, ParcelType, PaymentType } from "@/db/models.ts"
 
 /**
  * Read-only queries for public tracking.
@@ -51,34 +39,62 @@ type EventRow = {
 const TRACKING_SELECT = `
   SELECT p.id, p.tracking_number, p.parcel_type, p.payment_type, p.status,
          p.weight, p.cod_amount,
-         (SELECT MAX(d.delivered_at) FROM ${TABLES.deliveries} d WHERE d.parcel_id = p.id AND d.status = 'DELIVERED') AS delivered_at,
+         (SELECT MAX(d.delivered_at) FROM deliveries d WHERE d.parcel_id = p.id AND d.status = 'DELIVERED') AS delivered_at,
          origin.code AS origin_code, origin.name AS origin_name, origin.district AS origin_district,
          dest.code  AS destination_code, dest.name AS destination_name, dest.district AS destination_district,
          current.code AS current_code, current.name AS current_name, current.district AS current_district
-    FROM ${TABLES.parcels} p
-    JOIN ${TABLES.hubs} origin ON origin.id = p.origin_hub_id
-    JOIN ${TABLES.hubs} dest   ON dest.id   = p.destination_hub_id
-    LEFT JOIN ${TABLES.hubs} current ON current.id = p.current_hub_id
+    FROM parcels p
+    JOIN hubs origin ON origin.id = p.origin_hub_id
+    JOIN hubs dest   ON dest.id   = p.destination_hub_id
+    LEFT JOIN hubs current ON current.id = p.current_hub_id
 `
 
+
+
+function toDate(value: unknown): Date | null {
+  if (value === null || value === undefined) return null
+  if (value instanceof Date) return value
+  if (typeof value === "number") return new Date(value)
+  if (typeof value === "string") {
+    const normalised = value.includes("T") ? value : value.replace(" ", "T")
+    const parsed = new Date(normalised.endsWith("Z") ? normalised : `${normalised}Z`)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+  return null
+}
+
+function toDecimal(value: unknown, fallback = 0): number {
+  if (typeof value === "number") return value
+  if (typeof value === "bigint") return Number(value)
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+  return fallback
+}
+
+function toStringOrNull(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value)
+}
 export const trackingRepository = {
-  async findByTrackingNumber(db: Database, trackingNumber: string): Promise<TrackingRow | null> {
-    return db.queryOne<TrackingRow>(`${TRACKING_SELECT} WHERE p.tracking_number = ? LIMIT 1`, [
+  async findByTrackingNumber(db: Pool, trackingNumber: string): Promise<TrackingRow | null> {
+    const [rows] = await db.query<RowDataPacket[]>(`${TRACKING_SELECT} WHERE p.tracking_number = ? LIMIT 1`, [
       trackingNumber,
     ])
+    return rows[0] as TrackingRow | null
   },
 
-  async findEvents(db: Database, parcelId: string): Promise<EventRow[]> {
-    const result = await db.query<EventRow>(
+  async findEvents(db: Pool, parcelId: string): Promise<EventRow[]> {
+    const [rows] = await db.query<RowDataPacket[]>(
       `SELECT e.event_type, e.description, e.created_at, h.name AS hub_name
-         FROM ${TABLES.parcelEvents} e
-         LEFT JOIN ${TABLES.hubs} h ON h.id = e.hub_id
+         FROM parcel_events e
+         LEFT JOIN hubs h ON h.id = e.hub_id
         WHERE e.parcel_id = ?
         ORDER BY e.created_at DESC, e.id DESC
         LIMIT 100`,
       [parcelId],
     )
-    return result.rows
+    return rows as EventRow[]
   },
 }
 
@@ -95,7 +111,7 @@ export function toHubRef(
 
 export function decodeTrackingRow(row: TrackingRow) {
   return {
-    parcelId: toId(row.id),
+    parcelId: String(row.id),
     trackingNumber: row.tracking_number,
     status: row.status,
     parcelType: row.parcel_type,
@@ -117,5 +133,3 @@ export function decodeEventRow(row: EventRow) {
     createdAt: toDate(row.created_at) ?? new Date(0),
   }
 }
-
-export { toNullableDecimal }

@@ -23,7 +23,7 @@ router.get(
   validateQuery(quoteSchema),
   async (c) => {
     const input = c.req.valid("query")
-    const quote = await quoteDeliveryFee({
+    const quote = await quoteDeliveryFee(c, {
       originZoneId: input.originZoneId,
       destinationZoneId: input.destinationZoneId,
       weightKg: input.weightKg,

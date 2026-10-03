@@ -15,7 +15,6 @@
       "name": "@dropx/admin",
       "version": "0.0.0",
       "dependencies": {
-        "@dropx/db": "workspace:*",
         "@dropx/ui": "workspace:*",
         "@hookform/resolvers": "^5.2.2",
         "@tanstack/react-query": "^5.90.2",
@@ -42,7 +41,6 @@
       "name": "@dropx/api",
       "version": "0.0.0",
       "dependencies": {
-        "@dropx/db": "workspace:*",
         "@hono/swagger-ui": "^0.6.1",
         "@hono/zod-validator": "^0.9.1",
         "@types/nodemailer": "^8.0.2",
@@ -51,6 +49,7 @@
         "hono": "^4.13.9",
         "ioredis": "^6.0.0",
         "mjml": "^5.4.1",
+        "mysql2": "^3.24.5",
         "nodemailer": "^10.0.12",
         "redis": "^6.2.1",
         "zod": "^4.6.5",
@@ -110,17 +109,6 @@
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
         "tailwindcss": "^4.3.3",
-        "typescript": "^7.0.2",
-      },
-    },
-    "packages/db": {
-      "name": "@dropx/db",
-      "version": "0.0.0",
-      "dependencies": {
-        "mysql2": "^3.24.4",
-      },
-      "devDependencies": {
-        "@types/node": "^26.6.3",
         "typescript": "^7.0.2",
       },
     },
@@ -213,8 +201,6 @@
     "@dropx/admin": ["@dropx/admin@workspace:apps/admin"],
 
     "@dropx/api": ["@dropx/api@workspace:apps/api"],
-
-    "@dropx/db": ["@dropx/db@workspace:packages/db"],
 
     "@dropx/riders": ["@dropx/riders@workspace:apps/riders"],
 
@@ -896,7 +882,7 @@
 
     "msgpackr-extract": ["msgpackr-extract@3.0.4", "", { "dependencies": { "node-gyp-build-optional-packages": "5.2.2" }, "optionalDependencies": { "@msgpackr-extract/msgpackr-extract-darwin-arm64": "3.0.4", "@msgpackr-extract/msgpackr-extract-darwin-x64": "3.0.4", "@msgpackr-extract/msgpackr-extract-linux-arm": "3.0.4", "@msgpackr-extract/msgpackr-extract-linux-arm64": "3.0.4", "@msgpackr-extract/msgpackr-extract-linux-x64": "3.0.4", "@msgpackr-extract/msgpackr-extract-win32-x64": "3.0.4" }, "bin": { "download-msgpackr-prebuilds": "bin/download-prebuilds.js" } }, "sha512-4kmO/MdyUIkLIvTPr8VHLil4AtoKIoniWPIEk5+CDy0xnWC84azhSFmuJ7PxZdsYtiP5kEeQsORAVIeMgxT+Hw=="],
 
-    "mysql2": ["mysql2@3.24.4", "", { "dependencies": { "aws-ssl-profiles": "^1.1.2", "generate-function": "^2.3.1", "iconv-lite": "^0.7.3", "long": "^5.3.2", "lru.min": "^1.1.4", "named-placeholders": "^1.1.6", "sql-escaper": "^1.5.1" }, "peerDependencies": { "@types/node": ">= 8" } }, "sha512-A2olluVlj0mvgyIRRISMEzXc51m+21mRtcMVjJyIpt2GG98+XrC9m9HzsqcMsX2LcnfccJvY5NB22g8fENBnOA=="],
+    "mysql2": ["mysql2@3.24.5", "", { "dependencies": { "aws-ssl-profiles": "^1.1.2", "generate-function": "^2.3.1", "iconv-lite": "^0.7.3", "long": "^5.3.2", "lru.min": "^1.1.4", "named-placeholders": "^1.1.6", "sql-escaper": "^1.5.1" }, "peerDependencies": { "@types/node": ">= 8" } }, "sha512-X6Ujsr2QSkkLpkQGjxzpKRAPn9nu4axpR63ntBzquFVEvPOArgbUQ1sJjFKI7hnaYtiVZxa17Z7q18KSubW0IQ=="],
 
     "named-placeholders": ["named-placeholders@1.1.6", "", { "dependencies": { "lru.min": "^1.1.0" } }, "sha512-Tz09sEL2EEuv5fFowm419c1+a/jSMiBjI9gHxVLrVdbUkkNUUfjsVYs9pVZu5oCon/kmRh9TfLEObFtkVxmY0w=="],
 

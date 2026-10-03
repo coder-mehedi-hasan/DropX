@@ -21,7 +21,7 @@ router.post(
   ),
   validateJson(staffLoginSchema),
   async (c) => {
-    const result = await authService.loginWithPassword(c.req.valid("json"), "admin")
+    const result = await authService.loginWithPassword(c, c.req.valid("json"), "admin")
     return c.json(response.success(result))
   },
 )
@@ -34,7 +34,7 @@ router.post(
   ),
   validateJson(staffLoginSchema),
   async (c) => {
-    const result = await authService.loginWithPassword(c.req.valid("json"), "riders")
+    const result = await authService.loginWithPassword(c, c.req.valid("json"), "riders")
     return c.json(response.success(result))
   },
 )
@@ -58,7 +58,7 @@ router.post(
       })
     }
 
-    const tokens = await authService.refreshSession(c.req.valid("json").refreshToken, audience)
+    const tokens = await authService.refreshSession(c, c.req.valid("json").refreshToken, audience)
     return c.json(response.success(tokens))
   },
 )
@@ -71,7 +71,7 @@ router.post(
   ),
   validateJson(otpRequestSchema),
   async (c) => {
-    const result = await authService.requestOtp(c.req.valid("json"))
+    const result = await authService.requestOtp(c, c.req.valid("json"))
     // 202: the code is on its way; nothing else about the account is revealed.
     return c.json(response.success(result, 202), 202)
   },
@@ -85,7 +85,7 @@ router.post(
   ),
   validateJson(otpVerifySchema),
   async (c) => {
-    const result = await authService.verifyOtp(c.req.valid("json"))
+    const result = await authService.verifyOtp(c, c.req.valid("json"))
     return c.json(response.success(result))
   },
 )
@@ -95,33 +95,39 @@ router.get("/me", defineOperation({ id: "auth.me" }, { method: "GET", path: "/au
 
   switch (actor.kind) {
     case "staff":
-      return c.json(response.success({
-        kind: "staff" as const,
-        audience,
-        id: actor.userId,
-        email: actor.email,
-        roles: actor.roles,
-        permissions: [...actor.permissions],
-        branchId: actor.branchId,
-        hubIds: actor.hubIds,
-      }))
+      return c.json(
+        response.success({
+          kind: "staff" as const,
+          audience,
+          id: actor.userId,
+          email: actor.email,
+          roles: actor.roles,
+          permissions: [...actor.permissions],
+          branchId: actor.branchId,
+          hubIds: actor.hubIds,
+        }),
+      )
     case "rider":
-      return c.json(response.success({
-        kind: "rider" as const,
-        audience,
-        id: actor.userId,
-        riderId: actor.riderId,
-        hubId: actor.hubId,
-        email: actor.email,
-        permissions: [...actor.permissions],
-      }))
+      return c.json(
+        response.success({
+          kind: "rider" as const,
+          audience,
+          id: actor.userId,
+          riderId: actor.riderId,
+          hubId: actor.hubId,
+          email: actor.email,
+          permissions: [...actor.permissions],
+        }),
+      )
     case "customer":
-      return c.json(response.success({
-        kind: "customer" as const,
-        audience,
-        id: actor.customerId,
-        status: actor.status,
-      }))
+      return c.json(
+        response.success({
+          kind: "customer" as const,
+          audience,
+          id: actor.customerId,
+          status: actor.status,
+        }),
+      )
     case "public":
       throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
   }

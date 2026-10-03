@@ -1,5 +1,3 @@
-import { getDatabase } from "@dropx/db"
-
 import { ERROR_CODES, DomainError } from "../../core/errors"
 import type { AuthContext, Audience } from "./auth-context"
 import { loadCustomerActor, loadRiderActor, loadStaffActor } from "./actor-loader"
@@ -31,14 +29,13 @@ export const attachAuth = createMiddleware<AppEnv>(async (c, next) => {
   let actor: AuthContext["actor"]
 
   if (audience === "web") {
-    actor = await loadCustomerActor(getDatabase(), payload.sub)
+    actor = await loadCustomerActor(c.get("db")!, payload.sub)
   } else {
-    const db = getDatabase()
-    const staff = await loadStaffActor(db, payload.sub)
+    const staff = await loadStaffActor(c.get("db")!, payload.sub)
     if (staff) {
       actor = staff
     } else {
-      const rider = await loadRiderActor(db, payload.sub)
+      const rider = await loadRiderActor(c.get("db")!, payload.sub)
       if (!rider) {
         throw new DomainError(
           ERROR_CODES.TOKEN_INVALID,
