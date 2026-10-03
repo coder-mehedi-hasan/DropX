@@ -12,6 +12,9 @@ import { assertOpenApiCoverage } from "./openapi/coverage"
 import { openApiRouter } from "./openapi"
 import { registerModules } from "./modules"
 import { response } from "./core/http"
+import { processEmailJob } from "./shared/email/processor"
+import { EMAIL_QUEUE } from "./shared/email/queue"
+import { registerJobProcessor } from "./shared/queue"
 import type { AppEnv } from "./types/env"
 
 const config = getConfig()
@@ -59,4 +62,7 @@ if (!config.isProduction) {
   console.info("[api] openapi: /openapi.json  docs: /docs")
 }
 
-export default app
+// Starts a job processor for every queue. One line per queue.
+registerJobProcessor(EMAIL_QUEUE, processEmailJob)
+
+export default { port: config.port, fetch: app.fetch }
