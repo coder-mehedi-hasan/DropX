@@ -11,8 +11,8 @@
  * source directly, the same way they consume `@dropx/ui`.
  *
  * ids are `string` (BIGINT UNSIGNED never loses precision), decimals are `number`,
- * and timestamps are `Date` — raw driver rows are converted in repositories before
- * they get here.
+ * and timestamps are ISO `string`s — the repositories call `.toISOString()`
+ * themselves, so the declared type matches the bytes on the wire.
  *
  * Adding a status to a tuple here is therefore a compile error in every app that
  * has not handled it, which is the entire point: the parcel status list used to be
@@ -79,7 +79,15 @@ export type Role = EntityBase &
     description: Nullable<string>
   }
 
-export const ROLE_NAMES = ["ADMIN", "BRANCH_MANAGER", "HUB_OPERATOR", "DISPATCHER", "SUPPORT", "FINANCE", "RIDER"] as const
+export const ROLE_NAMES = [
+  "ADMIN",
+  "BRANCH_MANAGER",
+  "HUB_OPERATOR",
+  "DISPATCHER",
+  "SUPPORT",
+  "FINANCE",
+  "RIDER",
+] as const
 export type KnownRoleName = (typeof ROLE_NAMES)[number]
 export type RoleName = KnownRoleName
 
@@ -178,8 +186,8 @@ export type Customer = EntityBase &
     email: Nullable<string>
     type: CustomerType
     status: CustomerStatus
-    consentAcceptedAt: Nullable<Date>
-    activatedAt: Nullable<Date>
+    consentAcceptedAt: Nullable<string>
+    activatedAt: Nullable<string>
   }
 
 export type CustomerAddress = EntityBase &
@@ -443,7 +451,14 @@ export type ParcelTracking = {
 // Operations (pickups / transfers / deliveries / proofs)
 // ---------------------------------------------------------------------------
 
-export const PICKUP_STATUSES = ["REQUESTED", "ASSIGNED", "IN_PROGRESS", "PICKED_UP", "FAILED", "CANCELLED"] as const
+export const PICKUP_STATUSES = [
+  "REQUESTED",
+  "ASSIGNED",
+  "IN_PROGRESS",
+  "PICKED_UP",
+  "FAILED",
+  "CANCELLED",
+] as const
 export type PickupStatus = (typeof PICKUP_STATUSES)[number]
 
 export type Pickup = EntityBase &
@@ -452,13 +467,19 @@ export type Pickup = EntityBase &
     requestedBy: Nullable<Id>
     assignedRiderId: Nullable<Id>
     pickupAddress: string
-    scheduledAt: Nullable<Date>
-    pickedUpAt: Nullable<Date>
+    scheduledAt: Nullable<string>
+    pickedUpAt: Nullable<string>
     status: PickupStatus
     failureReason: Nullable<string>
   }
 
-export const TRANSFER_STATUSES = ["PLANNED", "LOADING", "IN_TRANSIT", "ARRIVED", "CANCELLED"] as const
+export const TRANSFER_STATUSES = [
+  "PLANNED",
+  "LOADING",
+  "IN_TRANSIT",
+  "ARRIVED",
+  "CANCELLED",
+] as const
 export type TransferStatus = (typeof TRANSFER_STATUSES)[number]
 
 export type Transfer = EntityBase &
@@ -470,18 +491,25 @@ export type Transfer = EntityBase &
     vehicleId: Nullable<Id>
     driverId: Nullable<Id>
     status: TransferStatus
-    departedAt: Nullable<Date>
-    arrivedAt: Nullable<Date>
+    departedAt: Nullable<string>
+    arrivedAt: Nullable<string>
   }
 
 export type TransferParcel = {
   transferId: Id
   parcelId: Id
-  loadedAt: Nullable<Date>
-  unloadedAt: Nullable<Date>
+  loadedAt: Nullable<string>
+  unloadedAt: Nullable<string>
 }
 
-export const DELIVERY_STATUSES = ["ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED", "CANCELLED", "RETURNED"] as const
+export const DELIVERY_STATUSES = [
+  "ASSIGNED",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+  "FAILED",
+  "CANCELLED",
+  "RETURNED",
+] as const
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]
 
 export const CLOSED_DELIVERY_STATUSES = ["DELIVERED", "FAILED", "CANCELLED", "RETURNED"] as const
@@ -494,9 +522,9 @@ export type Delivery = EntityBase &
     riderId: Id
     attemptNo: number
     deliveryAddress: string
-    assignedAt: Nullable<Date>
-    outForDeliveryAt: Nullable<Date>
-    deliveredAt: Nullable<Date>
+    assignedAt: Nullable<string>
+    outForDeliveryAt: Nullable<string>
+    deliveredAt: Nullable<string>
     status: DeliveryStatus
     failureReason: Nullable<string>
     recipientName: Nullable<string>
@@ -512,8 +540,50 @@ export type DeliveryProof = EntityBase &
     type: ProofType
     value: Nullable<string>
     fileUrl: Nullable<string>
-    verifiedAt: Nullable<Date>
+    verifiedAt: Nullable<string>
   }
+
+/**
+ * One unit of work for a rider: the attempt they are acting on, plus the parcel
+ * it moves. This is the `/rider/jobs` projection, not a stored row.
+ *
+ * `delivery.status` and `parcel.status` are deliberately both present and
+ * deliberately different — the attempt is the rider's leg and only the rider
+ * moves it, while the parcel status is what the customer is told and the API
+ * moves it in the same transaction — so a screen that shows one of them as "the"
+ * status is misleading.
+ */
+export type Job = {
+  /**
+   * The rider's leg of the work. Spelled out rather than picked from `Delivery`,
+   * because the projection renames `deliveryAddress` to `address` — the parcel is
+   * the thing being delivered, so the address is the address.
+   */
+  delivery: {
+    id: Id
+    attemptNo: number
+    status: DeliveryStatus
+    address: string
+    failureReason: Nullable<string>
+    recipientName: Nullable<string>
+    recipientPhone: Nullable<string>
+    outForDeliveryAt: Nullable<string>
+    deliveredAt: Nullable<string>
+  }
+  /**
+   * A narrow slice of the parcel projection, so a rider job carries no hub, zone
+   * or customer id that a rider has no use for on the road.
+   */
+  parcel: Pick<
+    Parcel,
+    "id" | "trackingNumber" | "status" | "weight" | "codAmount" | "paymentType" | "createdAt"
+  >
+}
+
+/** The read and status-update responses, which add the declared contents. */
+export type JobDetail = Job & {
+  items: ParcelItem[]
+}
 
 // ---------------------------------------------------------------------------
 // Money (payments / settlements)
@@ -535,7 +605,7 @@ export type Payment = EntityBase &
     amount: number
     method: PaymentMethod
     status: PaymentState
-    paidAt: Nullable<Date>
+    paidAt: Nullable<string>
   }
 
 export const SETTLEMENT_STATUSES = ["PENDING", "PROCESSING", "PAID", "FAILED"] as const
@@ -551,7 +621,7 @@ export type Settlement = EntityBase &
     otherCharges: number
     netAmount: number
     status: SettlementStatus
-    paidAt: Nullable<Date>
+    paidAt: Nullable<string>
   }
 
 export type SettlementPeriod = {
@@ -579,7 +649,7 @@ export type Notification = EntityBase &
     recipient: string
     message: string
     status: NotificationStatus
-    sentAt: Nullable<Date>
+    sentAt: Nullable<string>
   }
 
 export const TICKET_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const

@@ -3,6 +3,8 @@ import {
   canTransitionParcel,
   normalizeListParams,
   type Id,
+  type Job,
+  type JobDetail,
   type Page,
 } from "../../db/models"
 
@@ -19,7 +21,6 @@ import {
   findOpenAttemptForUpdate,
   listJobItems,
   listJobsForRider,
-  type Job,
 } from "./jobs.repository"
 
 /**
@@ -32,8 +33,6 @@ import {
  * still-`OUT_FOR_DELIVERY` parcel is the exact inconsistency this prevents.
  */
 
-export type JobDetail = Job & { items: Awaited<ReturnType<typeof listJobItems>> }
-
 const PARCEL_STATUS_FOR_OUTCOME = {
   OUT_FOR_DELIVERY: "OUT_FOR_DELIVERY",
   DELIVERED: "DELIVERED",
@@ -41,7 +40,11 @@ const PARCEL_STATUS_FOR_OUTCOME = {
   RETURNED: "RETURNED",
 } as const
 
-export async function listJobs(c: Context<AppEnv>, riderId: Id, query: ListJobsQuery): Promise<Page<Job>> {
+export async function listJobs(
+  c: Context<AppEnv>,
+  riderId: Id,
+  query: ListJobsQuery,
+): Promise<Page<Job>> {
   const params = normalizeListParams({ page: query.page, limit: query.limit })
 
   const { nodes, totalCount } = await listJobsForRider(
@@ -71,7 +74,10 @@ export type ReportOutcomeCommand = {
   input: UpdateJobStatusInput
 }
 
-export async function reportOutcome(c: Context<AppEnv>, command: ReportOutcomeCommand): Promise<JobDetail> {
+export async function reportOutcome(
+  c: Context<AppEnv>,
+  command: ReportOutcomeCommand,
+): Promise<JobDetail> {
   const { riderId, parcelId, input } = command
   const nextStatus = PARCEL_STATUS_FOR_OUTCOME[input.status]
 
