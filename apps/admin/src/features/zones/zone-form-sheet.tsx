@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   AppToast,
   BoundFormField,
+  FormInputSlug,
   FormItem,
   FormLabel,
   FormMessage,
@@ -109,15 +110,11 @@ export function ZoneFormSheet({
               </FormItem>
             )}
           />
-          <BoundFormField
+          <FormInputSlug
             name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code</FormLabel>
-                <Input placeholder="DHK-METRO" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
+            inheritFrom="name"
+            label="Code"
+            placeholder="DHK-METRO"
           />
           <BoundFormField
             name="description"

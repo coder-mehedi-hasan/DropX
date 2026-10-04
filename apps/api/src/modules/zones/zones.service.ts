@@ -39,7 +39,7 @@ export async function createZone(
   input: {
     name: string
     code: string
-    description?: string
+    description?: string | null
     status: Zone["status"]
   },
 ): Promise<Zone> {

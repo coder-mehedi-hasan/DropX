@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   AppToast,
   BoundFormField,
+  FormInputSlug,
   FormItem,
   FormLabel,
   FormMessage,
@@ -103,15 +104,11 @@ export function BranchFormSheet({
               </FormItem>
             )}
           />
-          <BoundFormField
+          <FormInputSlug
             name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code</FormLabel>
-                <Input placeholder="DHAKA-NORTH" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
+            inheritFrom="name"
+            label="Code"
+            placeholder="DHAKA-NORTH"
           />
           <BoundFormField
             name="phone"

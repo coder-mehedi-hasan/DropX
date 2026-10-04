@@ -24,7 +24,7 @@ export const createZoneSchema = z.object({
   code: code.refine((value) => /^[A-Z0-9-]+$/.test(value), {
     message: "Use uppercase letters, numbers and hyphens only",
   }),
-  description: z.string().trim().max(255).optional(),
+  description: z.string().trim().max(255).nullish(),
   status: z.enum(ZONE_STATUSES).default("ACTIVE"),
 })
 
