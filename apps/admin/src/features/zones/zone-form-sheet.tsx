@@ -110,12 +110,7 @@ export function ZoneFormSheet({
               </FormItem>
             )}
           />
-          <FormInputSlug
-            name="code"
-            inheritFrom="name"
-            label="Code"
-            placeholder="DHK-METRO"
-          />
+          <FormInputSlug name="code" inheritFrom="name" label="Code" placeholder="DHK-METRO" />
           <BoundFormField
             name="description"
             render={({ field }) => (

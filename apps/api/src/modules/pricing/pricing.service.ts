@@ -89,7 +89,10 @@ export async function quoteDeliveryFee(c: Context<AppEnv>, input: QuoteInput): P
   }
 }
 
-async function findMatchingRule(c: Context<AppEnv>, input: QuoteInput): Promise<PricingRuleRow | null> {
+export async function findMatchingRule(
+  c: Context<AppEnv>,
+  input: QuoteInput,
+): Promise<PricingRuleRow | null> {
   const [rows] = await c.get("db")!.query<PricingRuleRow[]>(
     `SELECT id, min_weight, max_weight, base_price, price_per_kg,
              cod_percentage, cod_fixed_fee, express_fee

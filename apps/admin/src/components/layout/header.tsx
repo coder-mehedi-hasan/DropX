@@ -57,7 +57,7 @@ export function Header() {
                 to={item.to}
                 search={item.search}
                 onClick={() => setMobileNavOpen(false)}
-                className="hover:bg-accent hover:text-accent-foreground flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors duration-150 ease-brand"
+                className="hover:bg-accent hover:text-accent-foreground ease-brand flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors duration-150"
               >
                 <item.icon className="size-4 shrink-0" aria-hidden />
                 {item.label}

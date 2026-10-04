@@ -104,12 +104,7 @@ export function BranchFormSheet({
               </FormItem>
             )}
           />
-          <FormInputSlug
-            name="code"
-            inheritFrom="name"
-            label="Code"
-            placeholder="DHAKA-NORTH"
-          />
+          <FormInputSlug name="code" inheritFrom="name" label="Code" placeholder="DHAKA-NORTH" />
           <BoundFormField
             name="phone"
             render={({ field }) => (

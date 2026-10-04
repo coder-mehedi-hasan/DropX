@@ -1,5 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { Building2, Car, Globe, LayoutDashboard, PackageSearch, Truck, Warehouse } from "lucide-react"
+import {
+  Building2,
+  Car,
+  Globe,
+  LayoutDashboard,
+  Package,
+  PackageSearch,
+  Truck,
+  Warehouse,
+} from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { DropXLogo, cn } from "@dropx/ui"
 
@@ -7,14 +16,31 @@ import { useAuth } from "@/lib/auth"
 import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH, DEFAULT_PARCELS_SEARCH } from "@/lib/parcels"
 import { DEFAULT_VEHICLES_SEARCH_PARAMS } from "@/routes/vehicles-search-params"
 import { DEFAULT_ZONES_SEARCH_PARAMS } from "@/routes/zones-search-params"
+import { DEFAULT_PRICING_RULES_SEARCH_PARAMS } from "@/routes/pricing-rules-search-params"
 import type { BranchesSearch, HubsSearch, ParcelListSearch } from "@/lib/parcels"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
+import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
-  to: "/" | "/parcels" | "/tracking" | "/branches" | "/hubs" | "/zones" | "/vehicles"
-  search?: ParcelListSearch | BranchesSearch | HubsSearch | ZonesSearch | VehiclesSearch | undefined
+  to:
+    | "/"
+    | "/parcels"
+    | "/tracking"
+    | "/branches"
+    | "/hubs"
+    | "/zones"
+    | "/vehicles"
+    | "/pricing-rules"
+  search?:
+    | ParcelListSearch
+    | BranchesSearch
+    | HubsSearch
+    | ZonesSearch
+    | VehiclesSearch
+    | PricingRulesSearch
+    | undefined
   icon: LucideIcon
   permission: PermissionKey | null
 }
@@ -57,6 +83,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Car,
     permission: "vehicles.view",
   },
+  {
+    label: "Pricing Rules",
+    to: "/pricing-rules",
+    search: DEFAULT_PRICING_RULES_SEARCH_PARAMS,
+    icon: Package,
+    permission: "pricing.view",
+  },
 ]
 
 export function Sidebar() {
@@ -95,17 +128,14 @@ export function Sidebar() {
                * a status a dispatcher reads at a glance.
                */
               className={cn(
-                "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150 ease-brand",
+                "ease-brand relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150",
                 active
-                  ? "bg-primary/12 text-foreground font-semibold before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-primary"
+                  ? "bg-primary/12 text-foreground before:bg-primary font-semibold before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
               aria-current={active ? "page" : undefined}
             >
-              <item.icon
-                className={cn("size-4 shrink-0", active && "text-primary")}
-                aria-hidden
-              />
+              <item.icon className={cn("size-4 shrink-0", active && "text-primary")} aria-hidden />
               {item.label}
             </Link>
           )
