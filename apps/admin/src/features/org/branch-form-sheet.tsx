@@ -12,7 +12,7 @@ import {
   SelectValue,
   Textarea,
 } from "@dropx/ui"
-import { OrgFormShell } from "./org-form-shell"
+import { FormSheet } from "@/components/form-sheet"
 import { createBranchSchema, type CreateBranchBody, type Branch } from "@/lib/types"
 
 /** The create form's schema. It is the same shape the API validates, so a
@@ -51,7 +51,7 @@ export function BranchFormSheet({
   }
 
   return (
-    <OrgFormShell
+    <FormSheet
       schema={schema}
       open={open}
       onOpenChange={onOpenChange}

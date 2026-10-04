@@ -22,14 +22,14 @@ if (!DATABASE_URL) {
 
 const pool = mysql.createPool(DATABASE_URL)
 
+/**
+ * Hono keeps request variables in a private map that `c.get`/`c.set` are the
+ * only accessors for. Defining a `db` property on the instance does not populate
+ * it, so every repository's `c.get("db")` came back `undefined` and the whole
+ * run failed identically — which is indistinguishable from the check passing.
+ */
 const ctx = new Context(new Request("http://localhost/"), {} as any) as any
-Object.defineProperty(ctx, "db", {
-  get() {
-    return pool
-  },
-  enumerable: true,
-  configurable: true,
-})
+ctx.set("db", pool)
 
 
 type Case = {
@@ -47,6 +47,8 @@ const actors = await import("../src/shared/auth/actor-loader")
 const pricing = await import("../src/modules/pricing/pricing.service")
 const reference = await import("../src/modules/reference/reference.repository")
 const org = await import("../src/modules/org/org.repository")
+const zones = await import("../src/modules/zones/zones.repository")
+const vehicles = await import("../src/modules/vehicles/vehicles.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -72,31 +74,31 @@ const parcelSortByKey = {
 cases.push(
   {
     name: "tracking.findByTrackingNumber",
-    run: () => track.trackingRepository.findByTrackingNumber(ctx, "DX-TEST-0001"),
+    run: () => track.trackingRepository.findByTrackingNumber(pool, "DX-TEST-0001"),
   },
-  { name: "tracking.findEvents", run: () => track.trackingRepository.findEvents(ctx, "1") },
+  { name: "tracking.findEvents", run: () => track.trackingRepository.findEvents(pool, "1") },
 
   {
     name: "jobs.listJobsForRider",
-    run: () => jobs.listJobsForRider(ctx, "1", listParams, undefined, undefined),
+    run: () => jobs.listJobsForRider(pool, "1", listParams, undefined, undefined),
   },
   {
     name: "jobs.listJobsForRider(status)",
-    run: () => jobs.listJobsForRider(ctx, "1", listParams, "ASSIGNED", undefined),
+    run: () => jobs.listJobsForRider(pool, "1", listParams, "ASSIGNED", undefined),
   },
-  { name: "jobs.findJobForRider", run: () => jobs.findJobForRider(ctx, "1", "1") },
-  { name: "jobs.listJobItems", run: () => jobs.listJobItems(ctx, "1") },
-  { name: "jobs.findOpenAttemptForUpdate", run: () => jobs.findOpenAttemptForUpdate(ctx, "1", "1") },
+  { name: "jobs.findJobForRider", run: () => jobs.findJobForRider(pool, "1", "1") },
+  { name: "jobs.listJobItems", run: () => jobs.listJobItems(pool, "1") },
+  { name: "jobs.findOpenAttemptForUpdate", run: () => jobs.findOpenAttemptForUpdate(pool, "1", "1") },
 
   {
     name: "parcels.listParcels",
-    run: () => parcels.listParcels(ctx, scope, listParams, {}, parcelSortByKey),
+    run: () => parcels.listParcels(pool, scope, listParams, {}, parcelSortByKey),
   },
   {
     name: "parcels.listParcels(filtered)",
     run: () =>
       parcels.listParcels(
-        ctx,
+        pool,
         scope,
         { ...listParams, sortBy: "createdAt" },
         { status: "CREATED", search: "DX", hubId: "1", paymentType: "COD" },
@@ -105,93 +107,93 @@ cases.push(
   },
   ...(["createdAt", "updatedAt", "trackingNumber", "status", "weight"] as const).map((sortBy) => ({
     name: `parcels.listParcels(sortBy=${sortBy})`,
-    run: () => parcels.listParcels(ctx, scope, { ...listParams, sortBy }, {}, parcelSortByKey),
+    run: () => parcels.listParcels(pool, scope, { ...listParams, sortBy }, {}, parcelSortByKey),
   })),
-  { name: "parcels.findParcelById", run: () => parcels.findParcelById(ctx, scope, "1") },
+  { name: "parcels.findParcelById", run: () => parcels.findParcelById(pool, scope, "1") },
   {
     name: "parcels.findParcelByTrackingNumber",
-    run: () => parcels.findParcelByTrackingNumber(ctx, "DX-TEST-0001"),
+    run: () => parcels.findParcelByTrackingNumber(pool, "DX-TEST-0001"),
   },
   {
     name: "parcels.listParcelsForCustomer",
-    run: () => parcels.listParcelsForCustomer(ctx, "1", listParams, {}, parcelSortByKey),
+    run: () => parcels.listParcelsForCustomer(pool, "1", listParams, {}, parcelSortByKey),
   },
   ...(["createdAt", "updatedAt", "trackingNumber", "status", "weight"] as const).map((sortBy) => ({
     name: `parcels.listParcelsForCustomer(sortBy=${sortBy})`,
     run: () =>
-      parcels.listParcelsForCustomer(ctx, "1", { ...listParams, sortBy }, {}, parcelSortByKey),
+      parcels.listParcelsForCustomer(pool, "1", { ...listParams, sortBy }, {}, parcelSortByKey),
   })),
-  { name: "parcels.findParcelForCustomer", run: () => parcels.findParcelForCustomer(ctx, "1", "1") },
-  { name: "parcels.listParcelItems", run: () => parcels.listParcelItems(ctx, "1") },
+  { name: "parcels.findParcelForCustomer", run: () => parcels.findParcelForCustomer(pool, "1", "1") },
+  { name: "parcels.listParcelItems", run: () => parcels.listParcelItems(pool, "1") },
 
   {
     name: "auth.findUserByEmail",
-    run: () => auth.authRepository.findUserByEmail(ctx, "nobody@example.com"),
+    run: () => auth.authRepository.findUserByEmail(pool, "nobody@example.com"),
   },
-  { name: "auth.findRiderByUserId", run: () => auth.authRepository.findRiderByUserId(ctx, "1") },
+  { name: "auth.findRiderByUserId", run: () => auth.authRepository.findRiderByUserId(pool, "1") },
   {
     name: "auth.findCustomerByIdentifier",
-    run: () => auth.authRepository.findCustomerByIdentifier(ctx, "nobody@example.com"),
+    run: () => auth.authRepository.findCustomerByIdentifier(pool, "nobody@example.com"),
   },
-  { name: "auth.findCustomerById", run: () => auth.authRepository.findCustomerById(ctx, "1") },
+  { name: "auth.findCustomerById", run: () => auth.authRepository.findCustomerById(pool, "1") },
 
-  { name: "actor.loadStaffActor", run: () => actors.loadStaffActor(ctx, "1") },
-  { name: "actor.loadRiderActor", run: () => actors.loadRiderActor(ctx, "1") },
-  { name: "actor.loadCustomerActor", run: () => actors.loadCustomerActor(ctx, "1") },
+  { name: "actor.loadStaffActor", run: () => actors.loadStaffActor(pool, "1") },
+  { name: "actor.loadRiderActor", run: () => actors.loadRiderActor(pool, "1") },
+  { name: "actor.loadCustomerActor", run: () => actors.loadCustomerActor(pool, "1") },
 
   // Reference reads. Every sort key is exercised, because `sortBy` arrives from
   // a client and the allowlist is the only thing standing between it and the SQL
   // — a column that exists in the schema but not in the allowlist must fail, and
   // one in the allowlist but not the schema must fail here.
-  { name: "reference.listHubRefs", run: () => reference.listHubRefs(ctx, scope, listParams, {}) },
+  { name: "reference.listHubRefs", run: () => reference.listHubRefs(pool, scope, listParams, {}) },
   {
     name: "reference.listHubRefs(search)",
-    run: () => reference.listHubRefs(ctx, scope, listParams, { search: "a" }),
+    run: () => reference.listHubRefs(pool, scope, listParams, { search: "a" }),
   },
   {
     name: "reference.listHubRefs(type)",
-    run: () => reference.listHubRefs(ctx, scope, listParams, { type: "ORIGIN" }),
+    run: () => reference.listHubRefs(pool, scope, listParams, { type: "ORIGIN" }),
   },
   {
     name: "reference.listHubRefs(status)",
-    run: () => reference.listHubRefs(ctx, scope, listParams, { status: "ACTIVE" }),
+    run: () => reference.listHubRefs(pool, scope, listParams, { status: "ACTIVE" }),
   },
   {
     name: "reference.listHubRefs(branch-scoped)",
     run: () =>
-      reference.listHubRefs(ctx, { ...scope, isCompanyWide: false, branchId: "1" }, listParams, {}),
+      reference.listHubRefs(pool, { ...scope, isCompanyWide: false, branchId: "1" }, listParams, {}),
   },
   {
     name: "reference.listHubRefs(hub-scoped)",
     run: () =>
-      reference.listHubRefs(ctx, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
+      reference.listHubRefs(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
   },
-  { name: "reference.listZoneRefs", run: () => reference.listZoneRefs(ctx, listParams, {}) },
+  { name: "reference.listZoneRefs", run: () => reference.listZoneRefs(pool, listParams, {}) },
   {
     name: "reference.listZoneRefs(search)",
-    run: () => reference.listZoneRefs(ctx, listParams, { search: "a" }),
+    run: () => reference.listZoneRefs(pool, listParams, { search: "a" }),
   },
   {
     name: "reference.searchCustomerRefs",
-    run: () => reference.searchCustomerRefs(ctx, listParams, {}),
+    run: () => reference.searchCustomerRefs(pool, listParams, {}),
   },
   {
     name: "reference.searchCustomerRefs(search)",
-    run: () => reference.searchCustomerRefs(ctx, listParams, { search: "a" }),
+    run: () => reference.searchCustomerRefs(pool, listParams, { search: "a" }),
   },
 
   // Each sort key, so a rename in the schema or the allowlist is caught here.
   ...(["name", "code", "type", "status"] as const).map((sortBy) => ({
     name: `reference.listHubRefs(sortBy=${sortBy})`,
-    run: () => reference.listHubRefs(ctx, scope, { ...listParams, sortBy }, {}),
+    run: () => reference.listHubRefs(pool, scope, { ...listParams, sortBy }, {}),
   })),
   ...(["name", "code", "status"] as const).map((sortBy) => ({
     name: `reference.listZoneRefs(sortBy=${sortBy})`,
-    run: () => reference.listZoneRefs(ctx, { ...listParams, sortBy }, {}),
+    run: () => reference.listZoneRefs(pool, { ...listParams, sortBy }, {}),
   })),
   ...(["name", "phone", "createdAt"] as const).map((sortBy) => ({
     name: `reference.searchCustomerRefs(sortBy=${sortBy})`,
-    run: () => reference.searchCustomerRefs(ctx, { ...listParams, sortBy }, {}),
+    run: () => reference.searchCustomerRefs(pool, { ...listParams, sortBy }, {}),
   })),
 
   {
@@ -225,14 +227,14 @@ cases.push(
   ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
     name: `org.listBranches(sortBy=${sortBy})`,
     run: () =>
-      org.selectBranches(ctx, { ...listParams, sortBy }, { status: undefined, search: undefined }),
+      org.selectBranches(pool, { ...listParams, sortBy }, { status: undefined, search: undefined }),
   })),
-  { name: "org.selectBranch", run: () => org.selectBranch(ctx, "1") },
+  { name: "org.selectBranch", run: () => org.selectBranch(pool, "1") },
   ...(["name", "code", "type", "status", "createdAt"] as const).map((sortBy) => ({
     name: `org.listHubs(sortBy=${sortBy})`,
     run: () =>
       org.selectHubs(
-        ctx,
+        pool,
         { ...listParams, sortBy },
         {
           branchId: undefined,
@@ -242,7 +244,49 @@ cases.push(
         },
       ),
   })),
-  { name: "org.selectHub", run: () => org.selectHub(ctx, "1") },
+  { name: "org.selectHub", run: () => org.selectHub(pool, "1") },
+
+  // --- Network: zones --------------------------------------------------------
+  //
+  // The filters are exercised too, not just the unfiltered list: each filter
+  // adds a clause, and a clause naming a column the FROM clause did not alias is
+  // a 500 that an unfiltered run never sees.
+  { name: "zones.selectZones", run: () => zones.selectZones(pool, listParams, {}) },
+  {
+    name: "zones.selectZones(status)",
+    run: () => zones.selectZones(pool, listParams, { status: "ACTIVE" }),
+  },
+  {
+    name: "zones.selectZones(search)",
+    run: () => zones.selectZones(pool, listParams, { search: "100%" }),
+  },
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `zones.selectZones(sortBy=${sortBy})`,
+    run: () => zones.selectZones(pool, { ...listParams, sortBy }, {}),
+  })),
+  { name: "zones.selectZone", run: () => zones.selectZone(pool, "1") },
+
+  // --- Fleet: vehicles ------------------------------------------------------
+  { name: "vehicles.selectVehicles", run: () => vehicles.selectVehicles(pool, listParams, {}) },
+  {
+    name: "vehicles.selectVehicles(status)",
+    run: () => vehicles.selectVehicles(pool, listParams, { status: "AVAILABLE" }),
+  },
+  {
+    name: "vehicles.selectVehicles(type)",
+    run: () => vehicles.selectVehicles(pool, listParams, { type: "VAN" }),
+  },
+  {
+    name: "vehicles.selectVehicles(search)",
+    run: () => vehicles.selectVehicles(pool, listParams, { search: "DHK-1234" }),
+  },
+  ...(["registrationNumber", "type", "status", "capacityKg", "createdAt"] as const).map(
+    (sortBy) => ({
+      name: `vehicles.selectVehicles(sortBy=${sortBy})`,
+      run: () => vehicles.selectVehicles(pool, { ...listParams, sortBy }, {}),
+    }),
+  ),
+  { name: "vehicles.selectVehicle", run: () => vehicles.selectVehicle(pool, "1") },
 )
 
 let failures = 0

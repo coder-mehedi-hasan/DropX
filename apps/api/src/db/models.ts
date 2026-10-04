@@ -191,7 +191,13 @@ export type CustomerWithAddresses = Customer & {
 // Network (zones / routes / pricing)
 // ---------------------------------------------------------------------------
 
-export type RecordStatus = "ACTIVE" | "INACTIVE"
+export const RECORD_STATUSES = ["ACTIVE", "INACTIVE"] as const
+export type RecordStatus = (typeof RECORD_STATUSES)[number]
+
+/** Alias kept for readability at the zones call sites, where the bare name
+ *  `RecordStatus` says nothing about which table it belongs to. */
+export const ZONE_STATUSES = RECORD_STATUSES
+export type ZoneStatus = RecordStatus
 
 export type Zone = EntityBase &
   Timestamped & {

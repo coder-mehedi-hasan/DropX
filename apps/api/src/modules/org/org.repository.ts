@@ -1,5 +1,6 @@
 import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import type { Branch, Hub, HubWithBranch, ListParams } from "@/db/models"
+import { buildAssignments } from "@/db/updates"
 
 /**
  * Persistence for `branches` and `hubs`.
@@ -25,6 +26,31 @@ const HUB_COLUMNS = `
 
 const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status", "b.created_at"] as const
 const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status", "h.created_at"] as const
+
+const BRANCH_PATCH_COLUMNS = {
+  name: "name",
+  code: "code",
+  phone: "phone",
+  address: "address",
+  city: "city",
+  district: "district",
+  latitude: "latitude",
+  longitude: "longitude",
+  status: "status",
+} as const
+
+const HUB_PATCH_COLUMNS = {
+  branchId: "branch_id",
+  name: "name",
+  code: "code",
+  type: "type",
+  address: "address",
+  district: "district",
+  latitude: "latitude",
+  longitude: "longitude",
+  capacity: "capacity",
+  status: "status",
+} as const
 
 function branchRow(row: Record<string, unknown>): Branch {
   return {
@@ -126,7 +152,7 @@ export async function selectBranches(
   }
   const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
 
-  const countSql = `SELECT COUNT(*) AS count FROM branches${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM branches AS b${where ? " " + where : ""}`
   const sortColumn =
     params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
   const orderByClause = sortColumn
@@ -180,15 +206,7 @@ export async function patchBranch(
   branchId: string,
   patch: Partial<Omit<Branch, "id" | "createdAt" | "updatedAt">>,
 ): Promise<Branch | null> {
-  const assignments: string[] = []
-  const params = []
-
-  for (const [key, value] of Object.entries(patch)) {
-    if (value !== undefined) {
-      assignments.push(`${key} = ?`)
-      params.push(value)
-    }
-  }
+  const { assignments, params } = buildAssignments(patch, BRANCH_PATCH_COLUMNS)
 
   if (assignments.length === 0) return selectBranch(db, branchId)
 
@@ -233,7 +251,7 @@ export async function selectHubs(
   }
   const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
 
-  const countSql = `SELECT COUNT(*) AS count FROM hubs${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM hubs AS h${where ? " " + where : ""}`
   const sortColumn =
     params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
   const orderByClause = sortColumn
@@ -282,15 +300,7 @@ export async function patchHub(
   hubId: string,
   patch: Partial<Omit<Hub, "id" | "createdAt" | "updatedAt">>,
 ): Promise<HubWithBranch | null> {
-  const assignments: string[] = []
-  const params = []
-
-  for (const [key, value] of Object.entries(patch)) {
-    if (value !== undefined) {
-      assignments.push(`${key} = ?`)
-      params.push(value)
-    }
-  }
+  const { assignments, params } = buildAssignments(patch, HUB_PATCH_COLUMNS)
 
   if (assignments.length === 0) return selectHub(db, hubId)
 

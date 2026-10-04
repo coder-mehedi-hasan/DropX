@@ -76,10 +76,17 @@ function placeholders(count: number): string {
 
 type Clause = { text: string; params: unknown[] }
 
+/**
+ * Joins conditions into a single parenthesised expression — **not** a `WHERE`
+ * clause. A scope clause is one of several conditions a caller combines, so
+ * baking `WHERE` in here produced `WHERE (WHERE (h.branch_id = ?))` for any
+ * scoped caller, which is a syntax error rather than a wrong result. Callers
+ * prefix the keyword.
+ */
 function combineClauses(clauses: Clause[]): Clause {
   if (clauses.length === 0) return { text: "", params: [] }
   return {
-    text: `WHERE (${clauses.map((c) => c.text).join(") AND (")})`,
+    text: `(${clauses.map((c) => c.text).join(") AND (")})`,
     params: clauses.flatMap((c) => c.params),
   }
 }
@@ -129,7 +136,7 @@ export async function listBranchRefs(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM branches${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM branches AS b${where ? " " + where : ""}`
   const sortColumn =
     params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
       ? params.sortBy

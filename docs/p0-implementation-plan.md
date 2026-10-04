@@ -18,6 +18,16 @@ Batch 9: Delivery Proof             (deps: deliveries)
 
 ## Batch 1 — Zones + Vehicles
 
+**Status: done.** 9 operations registered (`admin.zones.*` ×4, `admin.vehicles.*` ×5, the fifth being
+`POST /admin/vehicles/{id}/deactivate`). Two deviations from the file table below, both following the
+codebase rather than the sketch:
+
+- Routes are not per-file. `apps/admin/src/routes/app-routes.tsx` declares every route and
+  `apps/admin/src/router.tsx` lists them in one hand-assembled tree, so adding a screen means adding a
+  lazy component + route there and one line in the tree — not a new route file.
+- List state lives in `routes/<feature>-search-params.ts` (schema, defaults, exported type), which is
+  what `useQueryParams` and `resolveRedirect` both consume.
+
 ### Zones CRUD (4 ops: list, read, create, update)
 
 | File | Action |

@@ -1,5 +1,17 @@
+import { z } from "zod"
+import {
+  DEFAULT_BRANCHES_SEARCH,
+  DEFAULT_HUBS_SEARCH,
+  branchesSearchSchema,
+  hubsSearchSchema,
+} from "@/routes/org-search-params"
 import { DEFAULT_PARCELS_SEARCH } from "./parcels"
 import { parcelsSearchSchema } from "@/routes/search-params"
+import { DEFAULT_VEHICLES_SEARCH_PARAMS, vehiclesSearchSchema } from "@/routes/vehicles-search-params"
+import { DEFAULT_ZONES_SEARCH_PARAMS, zonesSearchSchema } from "@/routes/zones-search-params"
+import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
+import type { VehiclesSearch } from "@/routes/vehicles-search-params"
+import type { ZonesSearch } from "@/routes/zones-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -8,13 +20,21 @@ import { parcelsSearchSchema } from "@/routes/search-params"
  * route id — an arbitrary `redirect` string from the URL cannot be handed to it
  * unchecked. Resolving the path here keeps the login screen's "return me where I
  * was" behaviour without either a cast or an open-redirect: a path that is not
- * one of these three falls back to the dashboard.
+ * one of these falls back to the dashboard.
+ *
+ * Every list screen is listed here, because a redirect that silently drops a
+ * user on the dashboard instead of the page they asked for is indistinguishable
+ * from the redirect not working at all.
  */
 export type AdminDestination =
   | { to: "/" }
   | { to: "/parcels"; search: ReturnType<typeof resolveParcelSearch> }
   | { to: "/parcels/$parcelId"; params: { parcelId: string } }
   | { to: "/tracking"; search: { tracking: string } }
+  | { to: "/branches"; search: BranchesSearch }
+  | { to: "/hubs"; search: HubsSearch }
+  | { to: "/zones"; search: ZonesSearch }
+  | { to: "/vehicles"; search: VehiclesSearch }
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -43,6 +63,38 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       : { to: "/tracking", search: { tracking: "" } }
   }
 
+  if (path === "/branches") {
+    return {
+      to: "/branches",
+      search: resolveListSearch(branchesSearchSchema, DEFAULT_BRANCHES_SEARCH, url.searchParams),
+    }
+  }
+
+  if (path === "/hubs") {
+    return {
+      to: "/hubs",
+      search: resolveListSearch(hubsSearchSchema, DEFAULT_HUBS_SEARCH, url.searchParams),
+    }
+  }
+
+  if (path === "/zones") {
+    return {
+      to: "/zones",
+      search: resolveListSearch(zonesSearchSchema, DEFAULT_ZONES_SEARCH_PARAMS, url.searchParams),
+    }
+  }
+
+  if (path === "/vehicles") {
+    return {
+      to: "/vehicles",
+      search: resolveListSearch(
+        vehiclesSearchSchema,
+        DEFAULT_VEHICLES_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
+  }
+
   return { to: "/" }
 }
 
@@ -61,4 +113,19 @@ function resolveParcelSearch(params: URLSearchParams) {
 
   if (!parsed.success) return DEFAULT_PARCELS_SEARCH
   return parsed.data
+}
+
+/**
+ * Shared resolver for the list screens that keep their state in the URL.
+ *
+ * The schemas `.catch` every field, so a hand-edited or stale link degrades to
+ * that screen's defaults rather than being rejected outright.
+ */
+function resolveListSearch<T extends z.ZodType>(
+  schema: T,
+  fallback: z.infer<T>,
+  params: URLSearchParams,
+): z.infer<T> {
+  const parsed = schema.safeParse(Object.fromEntries(params))
+  return parsed.success ? parsed.data : fallback
 }

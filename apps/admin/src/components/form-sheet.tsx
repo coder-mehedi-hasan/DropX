@@ -6,11 +6,12 @@ import { Form, FormErrorSummary, FormSheetShell, ServerFormError, useServerError
 import { ServerError } from "@/components/server-error"
 
 /**
- * Shared shell for every `org` create/edit overlay.
+ * Shared shell for every admin create/edit sheet.
  *
- * Branches and hubs differ in their extra fields (a hub carries a branch
- * picker and a type union; a branch carries phone and city), so the shell owns
- * everything they share and asks the caller to render the differing fields:
+ * Features differ only in their fields (a hub carries a branch picker and a type
+ * union; a zone carries a description; a vehicle carries a registration number
+ * and a capacity), so the shell owns everything they share and asks the caller to
+ * render the differing fields:
  *
  * - the `<form>` and the scroll region (`FormSheetShell` provides it)
  * - `useServerErrors` — server errors map onto fields and the banner holds
@@ -24,15 +25,17 @@ import { ServerError } from "@/components/server-error"
  * error never reaches the endpoint and a server error never reaches a field
  * that does not exist.
  *
- * No generic. The schema is passed as a value and `zodResolver` infers the
- * value type from it — a generic constrained to `FieldValues` is not enough,
- * because `zodResolver`'s overloads expect a `Zod3Type`/`Zod4Type`, and a bare
- * `z.ZodType` infers `unknown`, which react-hook-form refuses. The parcel
- * create dialog gets the same behaviour by naming its value type explicitly;
- * here the shell is generic over the schema's *value*, which is the same thing
- * said one level up.
+ * No generic over the value type. The schema is passed as a value and
+ * `zodResolver` infers the value type from it — a generic constrained to
+ * `FieldValues` is not enough, because `zodResolver`'s overloads expect a
+ * `Zod3Type`/`Zod4Type`, and a bare `z.ZodType` infers `unknown`, which
+ * react-hook-form refuses. The parcel create dialog gets the same behaviour by
+ * naming its value type explicitly; here the shell is generic over the schema's
+ * *value*, which is the same thing said one level up. Callers therefore cast
+ * their own `handleSubmit` to `(values: Record<string, unknown>) => Promise<unknown>`,
+ * which is the one assertion this component cannot do on their behalf.
  */
-export function OrgFormShell({
+export function FormSheet({
   schema,
   open,
   onOpenChange,

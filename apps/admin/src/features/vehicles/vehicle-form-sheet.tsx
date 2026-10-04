@@ -1,0 +1,178 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { z } from "zod"
+import {
+  AppToast,
+  BoundFormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@dropx/ui"
+import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/db"
+import { FormSheet } from "@/components/form-sheet"
+import { createVehicle, updateVehicle } from "@/lib/endpoints"
+import {
+  createVehicleSchema,
+  type CreateVehicleBody,
+  type UpdateVehicleBody,
+  type Vehicle,
+} from "@/lib/types"
+
+/** The form's schema. It is the same shape the API validates, so a field added
+ *  here is a field the endpoint rejects — the two cannot drift. */
+const schema = createVehicleSchema
+
+const BLANK: z.infer<typeof schema> = {
+  registrationNumber: "",
+  type: "VAN",
+  capacityKg: 500,
+  status: "AVAILABLE",
+}
+
+const TYPE_LABELS: Record<(typeof VEHICLE_TYPES)[number], string> = {
+  BIKE: "Bike",
+  VAN: "Van",
+  TRUCK: "Truck",
+  COVERED_VAN: "Covered van",
+}
+
+const STATUS_LABELS: Record<(typeof VEHICLE_STATUSES)[number], string> = {
+  AVAILABLE: "Available",
+  IN_USE: "In use",
+  MAINTENANCE: "Maintenance",
+  INACTIVE: "Inactive",
+}
+
+/**
+ * One sheet for both directions. `vehicle` absent means create; present means
+ * edit, and the shell resets to the record's values on open — which is why the
+ * defaults are derived per render instead of being a module constant.
+ */
+export function VehicleFormSheet({
+  open,
+  onOpenChange,
+  vehicle,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  vehicle?: Vehicle | null
+}) {
+  const queryClient = useQueryClient()
+
+  const defaults: z.infer<typeof schema> = vehicle
+    ? {
+        registrationNumber: vehicle.registrationNumber,
+        type: vehicle.type,
+        capacityKg: vehicle.capacityKg,
+        status: vehicle.status,
+      }
+    : BLANK
+
+  const mutation = useMutation({
+    mutationFn: (body: CreateVehicleBody | UpdateVehicleBody) =>
+      vehicle ? updateVehicle(vehicle.id, body) : createVehicle(body as CreateVehicleBody),
+    onSuccess: (saved) => {
+      AppToast.success(
+        vehicle
+          ? `${saved.registrationNumber} updated`
+          : `${saved.registrationNumber} added to the fleet`,
+      )
+      void queryClient.invalidateQueries({ queryKey: ["vehicles"] })
+      onOpenChange(false)
+    },
+  })
+
+  return (
+    <FormSheet
+      schema={schema}
+      open={open}
+      onOpenChange={onOpenChange}
+      title={vehicle ? "Edit vehicle" : "New vehicle"}
+      description="Register a vehicle for hub-to-hub transfers."
+      submitLabel={vehicle ? "Save vehicle" : "Create vehicle"}
+      busy={mutation.isPending}
+      defaults={defaults}
+      fieldLabels={{
+        registrationNumber: "Registration number",
+        type: "Type",
+        capacityKg: "Capacity (kg)",
+        status: "Status",
+      }}
+      onSubmit={async (values) => {
+        mutation.mutate(values as CreateVehicleBody)
+      }}
+      error={null}
+      renderFields={() => (
+        <>
+          <BoundFormField
+            name="registrationNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Registration number</FormLabel>
+                <Input placeholder="DHK-1234" {...field} />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <BoundFormField
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VEHICLE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {TYPE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <BoundFormField
+            name="capacityKg"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Capacity (kg)</FormLabel>
+                <Input type="number" step="any" min={0} {...field} />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <BoundFormField
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VEHICLE_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
+      )}
+    />
+  )
+}
