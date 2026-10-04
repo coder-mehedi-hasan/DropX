@@ -83,7 +83,13 @@ export function ZoneFormSheet({
       }}
       onSubmit={async (values) => {
         const typed = values as z.infer<typeof schema>
-        mutation.mutate({
+        // `mutateAsync`, awaited — not `mutate`. The shell owns the error banner and
+        // only learns there is an error because this handler rejects: it wraps the
+        // call in `try/catch` and hands the rejection to `useServerErrors`. `mutate`
+        // returns before the request settles and never rejects, so a 409 "A zone with
+        // that code already exists" would be discarded silently — the sheet would sit
+        // there looking unsaved with no explanation.
+        await mutation.mutateAsync({
           ...typed,
           // An emptied textarea means "no description", not the empty string,
           // which the column stores as a value rather than as absence.

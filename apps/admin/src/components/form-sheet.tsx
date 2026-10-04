@@ -1,4 +1,4 @@
-import type * as React from "react"
+import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -34,6 +34,15 @@ import { ServerError } from "@/components/server-error"
  * *value*, which is the same thing said one level up. Callers therefore cast
  * their own `handleSubmit` to `(values: Record<string, unknown>) => Promise<unknown>`,
  * which is the one assertion this component cannot do on their behalf.
+ *
+ * **`onSubmit` must reject when the save fails.** This shell has no `onError` of
+ * its own to give: it learns about a failure the only way it can — by catching a
+ * rejection from `onSubmit` and handing it to `useServerErrors`. A caller that
+ * reaches for `mutation.mutate` instead of `await mutation.mutateAsync` hands back
+ * a promise that resolves the instant the request is dispatched, so the banner
+ * never appears and a 409 is discarded while the sheet sits there looking unsaved.
+ * That is the whole reason `parcel-create-dialog` wires `onError: capture` itself
+ * and this contract is stated here rather than left to be rediscovered.
  */
 export function FormSheet({
   schema,
@@ -67,10 +76,31 @@ export function FormSheet({
     defaultValues: defaults,
   })
 
-  const { error: serverError, capture, clear } = useServerErrors(form.setError as never)
+  // A `details[].field` the form does not have is dropped rather than passed to
+  // `setError`, which throws on an unknown path. Deriving the field names from the
+  // schema means the guard cannot fall out of step with the form: a caller cannot
+  // add a field and forget this, because there is nothing to keep in sync.
+  const knownFields = React.useMemo(
+    () => (schema instanceof z.ZodObject ? new Set(Object.keys(schema.shape)) : undefined),
+    [schema],
+  )
+  const isKnownField = React.useCallback(
+    (field: string) => (knownFields ? knownFields.has(field) : true),
+    [knownFields],
+  )
+
+  const {
+    error: serverError,
+    capture,
+    clear,
+  } = useServerErrors(form.setError as never, isKnownField)
 
   async function handleSubmit(values: Record<string, unknown>) {
     try {
+      // Clear first, so the banner and the fields it is mapped onto describe the
+      // attempt in flight rather than the one before it. Without this a stale
+      // "code already exists" sits on screen through the retry that is fixing it.
+      clear()
       await onSubmit(values)
     } catch (e) {
       capture(e as never)

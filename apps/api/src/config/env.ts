@@ -48,6 +48,13 @@ const schema = z.object({
   MAIL_USER: z.string().optional(),
   MAIL_PASSWORD: z.string().optional(),
   MAIL_BRAND_ASSET_URL: z.string().url().optional(),
+
+  /**
+   * Shared secret for `POST /admin/bootstrap`, the one-shot route that creates the
+   * first administrator. Unset means the route refuses every request — a deploy
+   * that forgot to set it is closed, not open. Compared in constant time.
+   */
+  BOOTSTRAP_TOKEN: z.string().min(16).optional(),
 })
 
 export type AppConfig = {
@@ -65,6 +72,7 @@ export type AppConfig = {
     audiences: string[]
   }
   redis: { url: string }
+  bootstrap: { token?: string }
   mail: {
     from: string
     host?: string
@@ -120,6 +128,7 @@ function load(env: Record<string, string | undefined>): AppConfig {
       audiences: csv(value.TOKEN_AUDIENCES),
     },
     redis: { url: value.REDIS_URL },
+    bootstrap: { token: value.BOOTSTRAP_TOKEN },
     mail: {
       from: value.MAIL_FROM,
       host: value.MAIL_HOST,

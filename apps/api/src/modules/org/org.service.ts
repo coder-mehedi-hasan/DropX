@@ -1,4 +1,4 @@
-import { buildPage, normalizeListParams, type ListParams, type Page } from "../../db/models"
+import { buildPage, normalizeListParams, type Page } from "../../db/models"
 
 import type { Branch, HubWithBranch } from "../../db/models"
 
@@ -29,22 +29,6 @@ import { DomainError, fromDatabaseError, notFound } from "../../core"
  * to show ("pick a branch") rather than a 500.
  */
 
-function toListParams(query: {
-  page?: number
-  limit?: number
-  sortBy?: string
-  sort?: "asc" | "desc"
-  search?: string
-}): ListParams {
-  return normalizeListParams({
-    page: query.page,
-    limit: query.limit,
-    sortBy: query.sortBy,
-    sort: query.sort,
-    search: query.search,
-  })
-}
-
 export async function listBranches(c: Context<AppEnv>, query: {
   page?: number
   limit?: number
@@ -53,7 +37,7 @@ export async function listBranches(c: Context<AppEnv>, query: {
   status?: string
   search?: string
 }): Promise<Page<Branch>> {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectBranches(c.get("db")!, params, {
     status: query.status as Branch["status"] | undefined,
     search: query.search,
@@ -114,7 +98,7 @@ export async function listHubs(c: Context<AppEnv>, query: {
   status?: string
   search?: string
 }): Promise<Page<HubWithBranch>> {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectHubs(c.get("db")!, params, {
     branchId: query.branchId,
     type: query.type as HubWithBranch["type"] | undefined,

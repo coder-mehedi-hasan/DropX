@@ -9,6 +9,7 @@ import {
   CardHeader,
   EmptyState,
   ServerDataTable,
+  useFormSheetState,
   type DataTableColumn,
 } from "@dropx/ui"
 import { ZONE_STATUSES } from "@dropx/db"
@@ -29,7 +30,10 @@ export function ZonesListPage({ search }: { search: ZonesSearch }) {
   const { hasPermission } = useAuth()
   const canManage = hasPermission("zones.manage")
 
-  const [sheetOpen, setSheetOpen] = useState(false)
+  // `useFormSheetState` rather than a bare `useState` pair: it owns the open flag
+  // and hands back the remount key that makes the sheet forget the previous
+  // record. The record itself is held here because the row already is the object.
+  const sheet = useFormSheetState<string>()
   const [editing, setEditing] = useState<Zone | null>(null)
 
   const where = usePaginatedListWhere(search)
@@ -123,7 +127,7 @@ export function ZonesListPage({ search }: { search: ZonesSearch }) {
                   aria-label={`Edit ${zone.name}`}
                   onClick={() => {
                     setEditing(zone)
-                    setSheetOpen(true)
+                    sheet.openFor(zone.id)
                   }}
                 >
                   <Pencil />
@@ -134,7 +138,9 @@ export function ZonesListPage({ search }: { search: ZonesSearch }) {
           ]
         : []),
     ],
-    [canManage],
+    // `sheet` itself is a new object each render; the callbacks are memoised, so they
+    // are what belongs here.
+    [canManage, sheet.openFor],
   )
 
   return (
@@ -148,7 +154,7 @@ export function ZonesListPage({ search }: { search: ZonesSearch }) {
             <Button
               onClick={() => {
                 setEditing(null)
-                setSheetOpen(true)
+                sheet.openNew()
               }}
             >
               <Plus />
@@ -213,7 +219,7 @@ export function ZonesListPage({ search }: { search: ZonesSearch }) {
                     <Button
                       onClick={() => {
                         setEditing(null)
-                        setSheetOpen(true)
+                        sheet.openNew()
                       }}
                     >
                       <Plus />
@@ -232,7 +238,12 @@ export function ZonesListPage({ search }: { search: ZonesSearch }) {
         </CardContent>
       </Card>
 
-      <ZoneFormSheet open={sheetOpen} onOpenChange={setSheetOpen} zone={editing} />
+      <ZoneFormSheet
+        key={sheet.key}
+        open={sheet.open}
+        onOpenChange={sheet.onOpenChange}
+        zone={editing}
+      />
     </div>
   )
 }

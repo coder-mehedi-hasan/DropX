@@ -67,12 +67,25 @@ docs/brand-guidelines.md                 # written brand contract and handoff ch
 | `bun run db:seed`                         | Seed roles + their default permission grants                            |
 | `bun run --cwd apps/api check:read-paths` | Run every read query against the real schema (needs `db:migrate` first) |
 
-Server-side config (`DATABASE_URL`, `APP_SECRET`, `API_*`, `BOOTSTRAP_*`) lives in
-`.env` at the repo root; the API and the scripts read it from there whatever
-directory they run in. Each frontend loads its own URL from its own `.env`
-(Next/Vite auto-load from the app directory) — see `apps/web/.env.example`,
-`apps/admin/.env.example` and `apps/riders/.env.example`. Local overrides go in
-`.env.local` per app (gitignored).
+Every app loads its own config from its own `.env`, auto-loaded from the app
+directory — no script passes `--env-file`. Server-side config (`DATABASE_URL`,
+`REDIS_URL`, `MAIL_*`, `API_*`, `BOOTSTRAP_TOKEN`) therefore lives in
+`apps/api/.env`; each frontend loads its own API URL the same way. See
+`apps/web/.env.example`, `apps/admin/.env.example`, `apps/riders/.env.example`
+and `apps/api/.env.example`. Local overrides go in `.env.local` per app
+(gitignored).
+
+### First administrator
+
+Nothing else in the codebase writes a `users` row, so a fresh database has no way
+in. It is created over HTTP by `POST /api/v1/admin/bootstrap` — easiest from
+`/docs` — with `{ token, name, email, password }`. There is no script. Two
+independent locks: the body `token` must equal `BOOTSTRAP_TOKEN` (unset means
+every call is refused, so a deploy that forgot it is closed), and the route
+refuses once any account holds the `ADMIN` role, which makes it permanently dead
+after first use. The one-shot test runs inside the transaction under a row lock
+on the `ADMIN` role, so concurrent calls cannot both win. Roles must be seeded
+first (`bun run db:seed`) — the role grant is what makes the account an admin.
 
 `check:read-paths` executes every SELECT against a migrated database, which is how a query referencing a column that does not exist gets caught. An empty database is enough, since a bad column throws while a valid one simply returns no rows. Run it after touching SQL.
 

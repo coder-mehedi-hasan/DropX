@@ -264,6 +264,23 @@ cases.push(
     name: `zones.selectZones(sortBy=${sortBy})`,
     run: () => zones.selectZones(pool, { ...listParams, sortBy }, {}),
   })),
+  // A filter and a sort in the same query. Neither alone is enough: the filter is
+  // what puts an aliased column in the count query's WHERE, and the sort is what
+  // puts an aliased column in ORDER BY, so running them separately leaves the exact
+  // query a user produces by typing in the search box *and* clicking a column header
+  // unexercised.
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `zones.selectZones(status+search+sortBy=${sortBy})`,
+    run: () =>
+      zones.selectZones(
+        pool,
+        { ...listParams, sortBy, sort: "desc" as const },
+        {
+          status: "ACTIVE",
+          search: "100%",
+        },
+      ),
+  })),
   { name: "zones.selectZone", run: () => zones.selectZone(pool, "1") },
 
   // --- Fleet: vehicles ------------------------------------------------------
@@ -284,6 +301,22 @@ cases.push(
     (sortBy) => ({
       name: `vehicles.selectVehicles(sortBy=${sortBy})`,
       run: () => vehicles.selectVehicles(pool, { ...listParams, sortBy }, {}),
+    }),
+  ),
+  // Filter + sort together — see the zones note above for why neither alone suffices.
+  ...(["registrationNumber", "type", "status", "capacityKg", "createdAt"] as const).map(
+    (sortBy) => ({
+      name: `vehicles.selectVehicles(type+status+search+sortBy=${sortBy})`,
+      run: () =>
+        vehicles.selectVehicles(
+          pool,
+          { ...listParams, sortBy, sort: "desc" as const },
+          {
+            type: "VAN",
+            status: "AVAILABLE",
+            search: "DHK-1234",
+          },
+        ),
     }),
   ),
   { name: "vehicles.selectVehicle", run: () => vehicles.selectVehicle(pool, "1") },

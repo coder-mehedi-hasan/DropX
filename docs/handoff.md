@@ -90,7 +90,7 @@ bun run db:seed        # seed roles + permission grants — writes
 bun run --cwd apps/api check:read-paths   # every SELECT against the real schema
 ```
 
-`check:read-paths` runs read-only against the live remote database (Aiven Cloud, configured in the repo-root `.env`). It does not need `db:migrate` for the queries as written, but the schema must already be applied. Start the API with `bun --env-file=../../.env run src/index.ts` from `apps/api` to exercise boot assertions or curl `/openapi.json`.
+`check:read-paths` runs read-only against the live remote database (Aiven Cloud, configured in `apps/api/.env`). It does not need `db:migrate` for the queries as written, but the schema must already be applied. Start the API with `bun run src/index.ts` from `apps/api` to exercise boot assertions or curl `/openapi.json`.
 
 ---
 

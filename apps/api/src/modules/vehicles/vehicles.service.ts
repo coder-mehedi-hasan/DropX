@@ -1,4 +1,4 @@
-import { buildPage, normalizeListParams, type ListParams, type Page } from "../../db/models"
+import { buildPage, normalizeListParams, type Page } from "../../db/models"
 
 import type { Vehicle } from "../../db/models"
 
@@ -8,22 +8,6 @@ import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
 
 import { DomainError, fromDatabaseError, invalidTransition, notFound } from "../../core"
-
-function toListParams(query: {
-  page?: number
-  limit?: number
-  sortBy?: string
-  sort?: "asc" | "desc"
-  search?: string
-}): ListParams {
-  return normalizeListParams({
-    page: query.page,
-    limit: query.limit,
-    sortBy: query.sortBy,
-    sort: query.sort,
-    search: query.search,
-  })
-}
 
 export async function listVehicles(
   c: Context<AppEnv>,
@@ -37,7 +21,7 @@ export async function listVehicles(
     search?: string
   },
 ): Promise<Page<Vehicle>> {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectVehicles(c.get("db")!, params, {
     type: query.type as Vehicle["type"] | undefined,
     status: query.status as Vehicle["status"] | undefined,

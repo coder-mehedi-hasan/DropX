@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { ZONE_STATUSES } from "@dropx/db"
 
 const DEFAULT_ZONES_SEARCH = {
   page: 1,
@@ -15,7 +16,7 @@ export const zonesSearchSchema = z.object({
   sortBy: z.enum(["name", "code", "status", "createdAt"]).catch(DEFAULT_ZONES_SEARCH.sortBy),
   sort: z.enum(["asc", "desc"]).catch(DEFAULT_ZONES_SEARCH.sort),
   search: z.string().catch(DEFAULT_ZONES_SEARCH.search),
-  status: z.enum(["ACTIVE", "INACTIVE"]).or(z.literal("")).optional(),
+  status: z.enum(ZONE_STATUSES).or(z.literal("")).optional(),
 })
 
 export type ZonesSearch = {
@@ -24,7 +25,7 @@ export type ZonesSearch = {
   sortBy: "name" | "code" | "status" | "createdAt"
   sort: "asc" | "desc"
   search: string
-  status?: "ACTIVE" | "INACTIVE" | "" | undefined
+  status?: (typeof ZONE_STATUSES)[number] | "" | undefined
 }
 
 export const DEFAULT_ZONES_SEARCH_PARAMS: ZonesSearch = {

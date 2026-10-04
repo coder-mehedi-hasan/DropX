@@ -1,4 +1,4 @@
-import { buildPage, normalizeListParams, type ListParams, type Page } from "../../db/models"
+import { buildPage, normalizeListParams, type Page } from "../../db/models"
 
 import type { Zone } from "../../db/models"
 
@@ -8,22 +8,6 @@ import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
 
 import { DomainError, fromDatabaseError, notFound } from "../../core"
-
-function toListParams(query: {
-  page?: number
-  limit?: number
-  sortBy?: string
-  sort?: "asc" | "desc"
-  search?: string
-}): ListParams {
-  return normalizeListParams({
-    page: query.page,
-    limit: query.limit,
-    sortBy: query.sortBy,
-    sort: query.sort,
-    search: query.search,
-  })
-}
 
 export async function listZones(
   c: Context<AppEnv>,
@@ -36,7 +20,7 @@ export async function listZones(
     search?: string
   },
 ): Promise<Page<Zone>> {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectZones(c.get("db")!, params, {
     status: query.status as Zone["status"] | undefined,
     search: query.search,

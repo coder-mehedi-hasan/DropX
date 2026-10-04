@@ -9,7 +9,6 @@ import {
   canTransitionParcel,
   normalizeListParams,
   type Id,
-  type ListParams,
   type Page,
   type Parcel,
 } from "../../db/models"
@@ -56,16 +55,6 @@ export function generateTrackingNumber(now = new Date()): string {
 
 const COMPANY_WIDE: Scope = { userId: "", branchId: null, hubIds: [], isCompanyWide: true }
 
-function toListParams(query: ListParcelsQuery): ListParams {
-  return normalizeListParams({
-    page: query.page,
-    limit: query.limit,
-    sortBy: query.sortBy,
-    sort: query.sort,
-    search: query.search,
-  })
-}
-
 export type ParcelListFilter = {
   status?: ListParcelsQuery["status"]
   hubId?: string | undefined
@@ -84,7 +73,7 @@ export async function listParcelsForStaff(
   query: ListParcelsQuery,
   searchFields: readonly string[],
 ): Promise<Page<Parcel>> {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
 
   const { nodes, totalCount } = await listParcels(
     c.get("db")!,
@@ -103,7 +92,7 @@ export async function listParcelsForCustomerPortal(
   query: ListParcelsQuery,
   searchFields: readonly string[],
 ): Promise<Page<Parcel>> {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
 
   const { nodes, totalCount } = await listParcelsForCustomer(
     c.get("db")!,

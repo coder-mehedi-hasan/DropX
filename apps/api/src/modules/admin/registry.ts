@@ -45,6 +45,7 @@ import {
   parcelWithItemsResponseSchema,
   updateParcelStatusSchema,
 } from "../parcels/parcels.dto"
+import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
 
 /**
  * The admin surface — the whole contract for every staff operation.
@@ -327,6 +328,34 @@ export const ADMIN_SURFACE = defineSurface({
       },
     },
 
+    bootstrap: {
+      tag: "bootstrap",
+      tagDescription:
+        "First-run setup. One unauthenticated route that creates the initial administrator, closed by a shared token and by itself once an admin exists.",
+      operations: {
+        create: {
+          method: "POST",
+          path: "/bootstrap",
+          // Public by necessity: this is the only way to create the first account, so
+          // there is no admin to authenticate as yet. Safety lives in the handler —
+          // a constant-time `BOOTSTRAP_TOKEN` comparison plus a one-shot refusal once
+          // any account holds the ADMIN role — and not in this flag.
+          policy: { public: true },
+          summary: "Create the first administrator",
+          successDescription: "The administrator that was created.",
+          description:
+            "One-shot. Requires the server's `BOOTSTRAP_TOKEN` in the body, and refuses once any account already holds the ADMIN role — so after first use this route is permanently closed and every later staff account is created from the authenticated admin app. The one-shot test runs under a row lock, so concurrent calls cannot both win. Roles must already be seeded (`bun run db:seed`), since the role grant is what makes the account an administrator.",
+          body: bootstrapAdminSchema,
+          response: bootstrapAdminResponseSchema,
+          errors: {
+            401: "The token does not match `BOOTSTRAP_TOKEN`.",
+            403: "`BOOTSTRAP_TOKEN` is not configured, so bootstrap is disabled.",
+            409: "An administrator already exists, no roles are seeded, or the email is taken.",
+          },
+        },
+      },
+    },
+
     zones: {
       tag: "zones",
       tagDescription:
@@ -424,7 +453,10 @@ export const ADMIN_SURFACE = defineSurface({
           paramDescriptions: { id: "Vehicle id." },
           body: updateVehicleBody,
           response: vehicleResponse,
-          errors: { 404: "No such vehicle.", 409: "A vehicle with that registration number already exists." },
+          errors: {
+            404: "No such vehicle.",
+            409: "A vehicle with that registration number already exists.",
+          },
         },
         deactivate: {
           method: "POST",

@@ -16,6 +16,7 @@ import {
 import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/db"
 import { FormSheet } from "@/components/form-sheet"
 import { createVehicle, updateVehicle } from "@/lib/endpoints"
+import { VEHICLE_STATUS_LABELS, VEHICLE_TYPE_LABELS } from "./labels"
 import {
   createVehicleSchema,
   type CreateVehicleBody,
@@ -32,20 +33,6 @@ const BLANK: z.infer<typeof schema> = {
   type: "VAN",
   capacityKg: 500,
   status: "AVAILABLE",
-}
-
-const TYPE_LABELS: Record<(typeof VEHICLE_TYPES)[number], string> = {
-  BIKE: "Bike",
-  VAN: "Van",
-  TRUCK: "Truck",
-  COVERED_VAN: "Covered van",
-}
-
-const STATUS_LABELS: Record<(typeof VEHICLE_STATUSES)[number], string> = {
-  AVAILABLE: "Available",
-  IN_USE: "In use",
-  MAINTENANCE: "Maintenance",
-  INACTIVE: "Inactive",
 }
 
 /**
@@ -104,7 +91,9 @@ export function VehicleFormSheet({
         status: "Status",
       }}
       onSubmit={async (values) => {
-        mutation.mutate(values as CreateVehicleBody)
+        // Awaited `mutateAsync`, not `mutate` — see the zone sheet. The shell only
+        // learns a save failed because this handler rejects.
+        await mutation.mutateAsync(values as CreateVehicleBody)
       }}
       error={null}
       renderFields={() => (
@@ -131,7 +120,7 @@ export function VehicleFormSheet({
                   <SelectContent>
                     {VEHICLE_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {TYPE_LABELS[type]}
+                        {VEHICLE_TYPE_LABELS[type]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -162,7 +151,7 @@ export function VehicleFormSheet({
                   <SelectContent>
                     {VEHICLE_STATUSES.map((status) => (
                       <SelectItem key={status} value={status}>
-                        {STATUS_LABELS[status]}
+                        {VEHICLE_STATUS_LABELS[status]}
                       </SelectItem>
                     ))}
                   </SelectContent>

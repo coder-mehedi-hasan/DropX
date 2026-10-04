@@ -8,6 +8,7 @@ import * as org from "../org/org.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
 import * as vehicles from "../vehicles/vehicles.service"
+import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
 /**
@@ -165,6 +166,13 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     updateHub: async (c) => {
       const hub = await org.updateHub(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(hub))
+    },
+  },
+
+  bootstrap: {
+    create: async (c) => {
+      const admin = await bootstrap.bootstrapAdmin(c, c.req.valid("json"))
+      return c.json(response.success(admin), 201)
     },
   },
 

@@ -35,22 +35,6 @@ import {
  * `Executor`.
  */
 
-function toListParams(query: {
-  page?: number | undefined
-  limit?: number | undefined
-  sortBy?: string | undefined
-  sort?: "asc" | "desc" | undefined
-  search?: string | undefined
-}): ListParams {
-  return normalizeListParams({
-    page: query.page,
-    limit: query.limit,
-    sortBy: query.sortBy,
-    sort: query.sort,
-    search: query.search,
-  })
-}
-
 /**
  * A picker is a dropdown, not a report. The default page of 500 is far more than
  * any combobox shows, and an unbounded limit on an endpoint the UI calls on
@@ -65,7 +49,7 @@ function pickerParams(query: {
   sort?: "asc" | "desc" | undefined
   search?: string | undefined
 }): ListParams {
-  const params = toListParams(query)
+  const params = normalizeListParams(query)
   return { ...params, limit: Math.min(params.limit, PICKER_MAX_LIMIT) }
 }
 
