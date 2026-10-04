@@ -174,7 +174,14 @@ export const createHubSchema = z.object({
 
 export const createZoneSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  code: z.string().trim().min(1).max(50),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .refine((value) => /^[A-Z0-9-]+$/.test(value), {
+      message: "Use uppercase letters, numbers and hyphens only",
+    }),
   description: z.string().trim().max(255).optional(),
   status: z.enum(ZONE_STATUSES).default("ACTIVE"),
 })

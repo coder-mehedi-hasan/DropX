@@ -1,4 +1,15 @@
+import type { PoolOptions } from "mysql2"
+import * as mysqlCore from "mysql2"
 import mysql from "mysql2/promise"
+
+/**
+ * mysql2's typings declare `ConnectionConfig` as an interface, so the class it
+ * ships at runtime cannot be imported as a value. Reaching it through a cast is
+ * what lets the pool keep mysql2's own URL parser instead of hand-rolling one.
+ */
+const { ConnectionConfig } = mysqlCore as unknown as {
+  ConnectionConfig: { parseUrl(url: string): PoolOptions }
+}
 
 /**
  * The only database the API talks to.
@@ -20,7 +31,12 @@ export function createPool(): mysql.Pool {
     )
   }
 
-  return mysql.createPool(DATABASE_URL)
+  // Every timestamp column is DATETIME, which carries no zone of its own, so
+  // mysql2 has to assume one when it builds a Date. Left unset it assumes
+  // `'local'` — the machine's TZ — which silently shifts every timestamp by
+  // that offset. `'Z'` reads them as UTC, matching the server's CURRENT_TIMESTAMP.
+  // Set here rather than via TZ=UTC in package.json so no script can omit it.
+  return mysql.createPool({ ...ConnectionConfig.parseUrl(DATABASE_URL), timezone: "Z" })
 }
 
 export const pool = createPool()

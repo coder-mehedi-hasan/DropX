@@ -1,5 +1,7 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import {
+  AppToast,
   BoundFormField,
   FormItem,
   FormLabel,
@@ -13,7 +15,8 @@ import {
   Textarea,
 } from "@dropx/ui"
 import { FormSheet } from "@/components/form-sheet"
-import { createBranchSchema, type CreateBranchBody, type Branch } from "@/lib/types"
+import { createBranch } from "@/lib/endpoints"
+import { createBranchSchema, type CreateBranchBody } from "@/lib/types"
 
 /** The create form's schema. It is the same shape the API validates, so a
  *  field added here is a field the endpoint rejects — the two cannot drift. */
@@ -34,21 +37,20 @@ const DEFAULT_VALUES: z.infer<typeof schema> = {
 export function BranchFormSheet({
   open,
   onOpenChange,
-  onSubmit,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (body: CreateBranchBody) => Promise<Branch>
 }) {
-  async function handleSubmit(values: z.infer<typeof schema>) {
-    return onSubmit({
-      ...values,
-      phone: values.phone?.trim() || null,
-      address: values.address?.trim() || null,
-      city: values.city?.trim() || null,
-      district: values.district?.trim() || null,
-    } as CreateBranchBody)
-  }
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (body: CreateBranchBody) => createBranch(body),
+    onSuccess: (saved) => {
+      AppToast.success(`${saved.name} created`)
+      void queryClient.invalidateQueries({ queryKey: ["branches"] })
+      onOpenChange(false)
+    },
+  })
 
   return (
     <FormSheet
@@ -58,7 +60,7 @@ export function BranchFormSheet({
       title="New branch"
       description="A regional office. Code is the company-wide slug used in URLs."
       submitLabel="Create branch"
-      busy={false}
+      busy={mutation.isPending}
       defaults={DEFAULT_VALUES}
       fieldLabels={{
         name: "Name",
@@ -71,7 +73,23 @@ export function BranchFormSheet({
         longitude: "Longitude",
         status: "Status",
       }}
-      onSubmit={handleSubmit as (values: Record<string, unknown>) => Promise<unknown>}
+      onSubmit={async (values) => {
+        const typed = values as z.infer<typeof schema>
+        // `mutateAsync`, awaited — not `mutate`. The shell owns the error banner and
+        // only learns there is an error because this handler rejects: it wraps the
+        // call in `try/catch` and hands the rejection to `useServerErrors`. `mutate`
+        // returns before the request settles and never rejects, so a 409 for a
+        // duplicate branch code would be discarded silently.
+        await mutation.mutateAsync({
+          ...typed,
+          // An emptied text input means "not supplied", which the columns store as
+          // NULL rather than as an empty string.
+          phone: typed.phone?.trim() || null,
+          address: typed.address?.trim() || null,
+          city: typed.city?.trim() || null,
+          district: typed.district?.trim() || null,
+        } as CreateBranchBody)
+      }}
       error={null}
       renderFields={() => (
         <>

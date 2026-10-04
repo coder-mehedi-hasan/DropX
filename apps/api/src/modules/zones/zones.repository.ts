@@ -1,5 +1,14 @@
 import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import type { ListParams, Zone } from "@/db/models"
+import {
+  escapeLike,
+  orderByClauseOf,
+  pageOf,
+  sortColumnOf,
+  toStringOrNull,
+  toUtcDate,
+  whereClause,
+} from "@/db/sql"
 import { buildAssignments } from "@/db/updates"
 
 const ZONE_COLUMNS = `
@@ -7,6 +16,8 @@ const ZONE_COLUMNS = `
 `
 
 const ZONE_SORT_COLUMNS = ["z.name", "z.code", "z.status", "z.created_at"] as const
+const ZONE_TIEBREAK = "z.name ASC, z.id ASC"
+const ZONE_SEARCH_COLUMNS = ["z.name", "z.code", "z.description"]
 
 const ZONE_PATCH_COLUMNS = {
   name: "name",
@@ -22,32 +33,9 @@ function zoneRow(row: Record<string, unknown>): Zone {
     code: String(row.code),
     description: toStringOrNull(row.description),
     status: row.status as Zone["status"],
-    createdAt: row.created_at as Date,
-    updatedAt: row.updated_at as Date,
+    createdAt: toUtcDate(row.created_at as string | Date),
+    updatedAt: toUtcDate(row.updated_at as string | Date),
   }
-}
-
-function toStringOrNull(value: unknown): string | null {
-  return value === null || value === undefined ? null : String(value)
-}
-
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (match) => `\\${match}`)
-}
-
-async function pageOf<T>(
-  db: Pool,
-  sql: string,
-  params: unknown[],
-  countSql: string,
-  countParams: unknown[],
-  decode: (row: Record<string, unknown>) => T,
-): Promise<{ nodes: T[]; totalCount: number }> {
-  const [countRows] = await db.query<RowDataPacket[]>(countSql, countParams)
-  const [rows] = await db.query<RowDataPacket[]>(sql, params)
-  const countRow = countRows[0]
-  const totalCount = countRow?.count == null ? 0 : Number(countRow.count)
-  return { nodes: rows.map(decode), totalCount }
 }
 
 export type ListZonesFilter = {
@@ -60,35 +48,32 @@ export async function selectZones(
   params: ListParams,
   filter: ListZonesFilter,
 ): Promise<{ nodes: Zone[]; totalCount: number }> {
-  const paramsAcc = []
+  const filterParams: unknown[] = []
   const clauses: string[] = []
 
   if (filter.status) {
     clauses.push("z.status = ?")
-    paramsAcc.push(filter.status)
+    filterParams.push(filter.status)
   }
   if (filter.search) {
     const like = `%${escapeLike(filter.search)}%`
-    clauses.push(
-      `(${["z.name", "z.code", "z.description"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
-    )
-    paramsAcc.push(like, like, like)
+    clauses.push(`(${ZONE_SEARCH_COLUMNS.map((c) => `${c} LIKE ?`).join(" OR ")})`)
+    for (const _ of ZONE_SEARCH_COLUMNS) filterParams.push(like)
   }
-  const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
+  const where = whereClause(clauses)
+  const orderBy = orderByClauseOf(
+    sortColumnOf(params, ZONE_SORT_COLUMNS),
+    params.sort,
+    ZONE_TIEBREAK,
+  )
 
-  const countSql = `SELECT COUNT(*) AS count FROM zones AS z${where ? " " + where : ""}`
-  const sortColumn =
-    params.sortBy && (ZONE_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
-      ? params.sortBy
-      : undefined
-  const orderByClause = sortColumn
-    ? `${sortColumn} ${params.sort.toUpperCase()}, z.name ASC, z.id ASC`
-    : `z.name ASC, z.id ASC`
-
-  const pageSql = `SELECT ${ZONE_COLUMNS} FROM zones AS z ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
-  const pageParams = [...paramsAcc, params.limit, params.offset]
-
-  return pageOf(db, pageSql, pageParams, countSql, paramsAcc, zoneRow)
+  return pageOf(db, {
+    pageSql: `SELECT ${ZONE_COLUMNS} FROM zones AS z ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    countSql: `SELECT COUNT(*) AS count FROM zones AS z${where ? " " + where : ""}`,
+    filterParams,
+    params,
+    decode: zoneRow,
+  })
 }
 
 export async function selectZone(db: Pool, zoneId: string): Promise<Zone | null> {
@@ -103,9 +88,13 @@ export async function insertZone(
   db: Pool,
   record: Omit<Zone, "id" | "createdAt" | "updatedAt">,
 ): Promise<string> {
-  const params = [record.name, record.code, record.description, record.status]
   const sql = `INSERT INTO zones (name, code, description, status) VALUES (?, ?, ?, ?)`
-  const [result] = await db.execute<OkPacket>(sql, params)
+  const [result] = await db.execute<OkPacket>(sql, [
+    record.name,
+    record.code,
+    record.description,
+    record.status,
+  ])
   if (!result.insertId) throw new Error("Zone insert returned no id")
   return String(result.insertId)
 }

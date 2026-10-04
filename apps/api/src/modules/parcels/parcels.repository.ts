@@ -1,6 +1,14 @@
 import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import { PARCEL_STATUSES } from "@/db/models"
-import type { ListParams, Parcel, ParcelItem, ParcelStatus, ParcelType, PaymentType } from "@/db/models"
+import type {
+  ListParams,
+  Parcel,
+  ParcelItem,
+  ParcelStatus,
+  ParcelType,
+  PaymentType,
+} from "@/db/models"
+import { toDecimal, toUtcDate } from "@/db/sql"
 import type { Scope } from "@/shared/auth/auth-context"
 
 /**
@@ -59,7 +67,10 @@ export function applyScope(scope: Scope): Clause {
   if (scope.isCompanyWide) return combineClauses(clauses)
   if (scope.branchId) clauses.push({ text: "scope_hub.branch_id = ?", params: [scope.branchId] })
   if (scope.hubIds.length > 0) {
-    clauses.push({ text: `scope_hub.id IN (${placeholders(scope.hubIds.length)})`, params: scope.hubIds })
+    clauses.push({
+      text: `scope_hub.id IN (${placeholders(scope.hubIds.length)})`,
+      params: scope.hubIds,
+    })
   }
   return combineClauses(clauses)
 }
@@ -119,8 +130,7 @@ export async function listParcels(
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql =
-    `SELECT ${SELECT_COLUMNS} FROM parcels AS p ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)
@@ -177,7 +187,10 @@ export async function listParcelsForCustomer(
   sortColumnByKey: Readonly<Record<string, string>>,
 ): Promise<{ nodes: Parcel[]; totalCount: number }> {
   const clauses: Clause[] = [
-    { text: "(p.sender_customer_id = ? OR p.receiver_customer_id = ?)", params: [customerId, customerId] },
+    {
+      text: "(p.sender_customer_id = ? OR p.receiver_customer_id = ?)",
+      params: [customerId, customerId],
+    },
   ]
   const filterClause = applyFilters(filter)
   if (filterClause.params.length) clauses.push(filterClause)
@@ -190,8 +203,7 @@ export async function listParcelsForCustomer(
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql =
-    `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)
@@ -216,7 +228,10 @@ type CreateParcelRecord = {
   status: ParcelStatus
 }
 
-export async function insertParcel(db: Pool | Connection, record: CreateParcelRecord): Promise<string> {
+export async function insertParcel(
+  db: Pool | Connection,
+  record: CreateParcelRecord,
+): Promise<string> {
   const fields: string[] = []
   const params: (string | number | null)[] = []
   const push = (field: string, value: string | number | null | undefined) => {
@@ -255,7 +270,13 @@ export async function insertParcelItems(
 ): Promise<void> {
   for (const item of items) {
     const fields: string[] = ["parcel_id", "name", "quantity", "unit_price", "total_price"]
-    const params = [parcelId, item.name, item.quantity, item.unitPrice, Math.round(item.unitPrice * item.quantity * 100) / 100]
+    const params = [
+      parcelId,
+      item.name,
+      item.quantity,
+      item.unitPrice,
+      Math.round(item.unitPrice * item.quantity * 100) / 100,
+    ]
     if (item.description !== undefined) {
       fields.push("description")
       params.push(item.description)
@@ -330,7 +351,10 @@ export async function insertParcelEvent(
   await db.execute<OkPacket>(sql, params)
 }
 
-export async function listParcelItems(db: Pool | Connection, parcelId: string): Promise<ParcelItem[]> {
+export async function listParcelItems(
+  db: Pool | Connection,
+  parcelId: string,
+): Promise<ParcelItem[]> {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT id, parcel_id, name, description, quantity, unit_price, total_price, created_at
        FROM parcel_items
@@ -376,28 +400,6 @@ export type ParcelItemRow = {
 
 function toNullableId(value: unknown): string | null {
   return value === null || value === undefined ? null : String(value)
-}
-
-/**
- * mysql2 hands back a `Date` for a DATETIME unless the pool asks for
- * `dateStrings`, so a decoder cannot assume a `"YYYY-MM-DD HH:MM:SS"` string and
- * call `.replace` on it. Both shapes are accepted; a `Date` is already the right
- * instant because the API runs with `TZ=UTC` (see the package scripts), which is
- * what the old string form was compensating for by appending `Z`.
- */
-function toUtcDate(value: string | Date): Date {
-  if (value instanceof Date) return value
-  return new Date(`${value.replace(" ", "T")}Z`)
-}
-
-function toDecimal(value: unknown, fallback = 0): number {
-  if (typeof value === "number") return value
-  if (typeof value === "bigint") return Number(value)
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : fallback
-  }
-  return fallback
 }
 
 function toStringOrNull(value: unknown): string | null {

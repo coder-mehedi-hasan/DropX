@@ -1,5 +1,14 @@
 import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import type { ListParams, Vehicle } from "@/db/models"
+import {
+  escapeLike,
+  orderByClauseOf,
+  pageOf,
+  sortColumnOf,
+  toDecimal,
+  toUtcDate,
+  whereClause,
+} from "@/db/sql"
 import { buildAssignments } from "@/db/updates"
 
 const VEHICLE_COLUMNS = `
@@ -13,6 +22,8 @@ const VEHICLE_SORT_COLUMNS = [
   "v.capacity_kg",
   "v.created_at",
 ] as const
+const VEHICLE_TIEBREAK = "v.registration_number ASC, v.id ASC"
+const VEHICLE_SEARCH_COLUMNS = ["v.registration_number"]
 
 const VEHICLE_PATCH_COLUMNS = {
   registrationNumber: "registration_number",
@@ -28,38 +39,9 @@ function vehicleRow(row: Record<string, unknown>): Vehicle {
     type: row.type as Vehicle["type"],
     capacityKg: toDecimal(row.capacity_kg),
     status: row.status as Vehicle["status"],
-    createdAt: row.created_at as Date,
-    updatedAt: row.updated_at as Date,
+    createdAt: toUtcDate(row.created_at as string | Date),
+    updatedAt: toUtcDate(row.updated_at as string | Date),
   }
-}
-
-function toDecimal(value: unknown, fallback = 0): number {
-  if (typeof value === "number") return value
-  if (typeof value === "bigint") return Number(value)
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : fallback
-  }
-  return fallback
-}
-
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (match) => `\\${match}`)
-}
-
-async function pageOf<T>(
-  db: Pool,
-  sql: string,
-  params: unknown[],
-  countSql: string,
-  countParams: unknown[],
-  decode: (row: Record<string, unknown>) => T,
-): Promise<{ nodes: T[]; totalCount: number }> {
-  const [countRows] = await db.query<RowDataPacket[]>(countSql, countParams)
-  const [rows] = await db.query<RowDataPacket[]>(sql, params)
-  const countRow = countRows[0]
-  const totalCount = countRow?.count == null ? 0 : Number(countRow.count)
-  return { nodes: rows.map(decode), totalCount }
 }
 
 export type ListVehiclesFilter = {
@@ -73,37 +55,36 @@ export async function selectVehicles(
   params: ListParams,
   filter: ListVehiclesFilter,
 ): Promise<{ nodes: Vehicle[]; totalCount: number }> {
-  const paramsAcc = []
+  const filterParams: unknown[] = []
   const clauses: string[] = []
 
   if (filter.type) {
     clauses.push("v.type = ?")
-    paramsAcc.push(filter.type)
+    filterParams.push(filter.type)
   }
   if (filter.status) {
     clauses.push("v.status = ?")
-    paramsAcc.push(filter.status)
+    filterParams.push(filter.status)
   }
   if (filter.search) {
     const like = `%${escapeLike(filter.search)}%`
-    clauses.push(`(${["v.registration_number"].map((c) => `${c} LIKE ?`).join(" OR ")})`)
-    paramsAcc.push(like)
+    clauses.push(`(${VEHICLE_SEARCH_COLUMNS.map((c) => `${c} LIKE ?`).join(" OR ")})`)
+    for (const _ of VEHICLE_SEARCH_COLUMNS) filterParams.push(like)
   }
-  const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
+  const where = whereClause(clauses)
+  const orderBy = orderByClauseOf(
+    sortColumnOf(params, VEHICLE_SORT_COLUMNS),
+    params.sort,
+    VEHICLE_TIEBREAK,
+  )
 
-  const countSql = `SELECT COUNT(*) AS count FROM vehicles AS v${where ? " " + where : ""}`
-  const sortColumn =
-    params.sortBy && (VEHICLE_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
-      ? params.sortBy
-      : undefined
-  const orderByClause = sortColumn
-    ? `${sortColumn} ${params.sort.toUpperCase()}, v.registration_number ASC, v.id ASC`
-    : `v.registration_number ASC, v.id ASC`
-
-  const pageSql = `SELECT ${VEHICLE_COLUMNS} FROM vehicles AS v ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
-  const pageParams = [...paramsAcc, params.limit, params.offset]
-
-  return pageOf(db, pageSql, pageParams, countSql, paramsAcc, vehicleRow)
+  return pageOf(db, {
+    pageSql: `SELECT ${VEHICLE_COLUMNS} FROM vehicles AS v ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    countSql: `SELECT COUNT(*) AS count FROM vehicles AS v${where ? " " + where : ""}`,
+    filterParams,
+    params,
+    decode: vehicleRow,
+  })
 }
 
 export async function selectVehicle(db: Pool, vehicleId: string): Promise<Vehicle | null> {
@@ -118,9 +99,13 @@ export async function insertVehicle(
   db: Pool,
   record: Omit<Vehicle, "id" | "createdAt" | "updatedAt">,
 ): Promise<string> {
-  const params = [record.registrationNumber, record.type, record.capacityKg, record.status]
   const sql = `INSERT INTO vehicles (registration_number, type, capacity_kg, status) VALUES (?, ?, ?, ?)`
-  const [result] = await db.execute<OkPacket>(sql, params)
+  const [result] = await db.execute<OkPacket>(sql, [
+    record.registrationNumber,
+    record.type,
+    record.capacityKg,
+    record.status,
+  ])
   if (!result.insertId) throw new Error("Vehicle insert returned no id")
   return String(result.insertId)
 }

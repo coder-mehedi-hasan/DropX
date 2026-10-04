@@ -11,9 +11,9 @@ import {
   EmptyState,
   ServerDataTable,
   useConfirmation,
+  useFormSheetState,
   type DataTableColumn,
 } from "@dropx/ui"
-import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/db"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
@@ -24,6 +24,12 @@ import { type Vehicle } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import { VehicleFormSheet } from "./vehicle-form-sheet"
+import {
+  VEHICLE_STATUS_LABELS,
+  VEHICLE_TYPE_LABELS,
+  vehicleStatusOptions,
+  vehicleTypeOptions,
+} from "./labels"
 
 const VEHICLE_SORT_COLUMNS = [
   "registrationNumber",
@@ -44,7 +50,9 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
   const { hasPermission } = useAuth()
   const canManage = hasPermission("vehicles.manage")
 
-  const [sheetOpen, setSheetOpen] = useState(false)
+  // See the zones page: `useFormSheetState` owns the open flag and supplies the
+  // remount key, so editing vehicle A then vehicle B cannot leave A's values behind.
+  const sheet = useFormSheetState<string>()
   const [editing, setEditing] = useState<Vehicle | null>(null)
   const { confirm, confirmationDialog } = useConfirmation()
 
@@ -70,12 +78,19 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
   const [, patch] = useQueryParams<VehiclesSearch>("/vehicles", search)
 
   const queryClient = useQueryClient()
+  // The endpoint rejects a vehicle that is already inactive with a 409 precisely so
+  // a double-click surfaces. A mutation with no `onError` would swallow that and the
+  // button would look broken, so the failure is held here and rendered as a banner —
+  // not a toast, which disappears before it can be read.
+  const [actionError, setActionError] = useState<unknown>(null)
   const deactivate = useMutation({
     mutationFn: deactivateVehicle,
+    onMutate: () => setActionError(null),
     onSuccess: (vehicle) => {
       AppToast.success(`${vehicle.registrationNumber} deactivated`)
       void queryClient.invalidateQueries({ queryKey: ["vehicles"] })
     },
+    onError: (error) => setActionError(error),
   })
 
   async function askDeactivate(vehicle: Vehicle) {
@@ -117,7 +132,7 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
       {
         id: "type",
         header: "Type",
-        cell: (vehicle) => <Badge variant="secondary">{vehicle.type}</Badge>,
+        cell: (vehicle) => <Badge variant="secondary">{VEHICLE_TYPE_LABELS[vehicle.type]}</Badge>,
         value: (vehicle) => vehicle.type,
       },
       {
@@ -130,7 +145,11 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
       {
         id: "status",
         header: "Status",
-        cell: (vehicle) => <Badge variant={STATUS_VARIANT[vehicle.status]}>{vehicle.status}</Badge>,
+        cell: (vehicle) => (
+          <Badge variant={STATUS_VARIANT[vehicle.status]}>
+            {VEHICLE_STATUS_LABELS[vehicle.status]}
+          </Badge>
+        ),
         value: (vehicle) => vehicle.status,
       },
       {
@@ -155,7 +174,7 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
                     aria-label={`Edit ${vehicle.registrationNumber}`}
                     onClick={() => {
                       setEditing(vehicle)
-                      setSheetOpen(true)
+                      sheet.openFor(vehicle.id)
                     }}
                   >
                     <Pencil />
@@ -180,7 +199,8 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
           ]
         : []),
     ],
-    [canManage, confirm],
+    // See the zones page: depend on the memoised callbacks, not on `sheet` itself.
+    [canManage, confirm, sheet.openFor],
   )
 
   return (
@@ -194,7 +214,7 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
             <Button
               onClick={() => {
                 setEditing(null)
-                setSheetOpen(true)
+                sheet.openNew()
               }}
             >
               <Plus />
@@ -208,6 +228,12 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
         error={query.isError ? query.error : null}
         title="Unable to load vehicles"
         onDismiss={() => void query.refetch()}
+      />
+
+      <ServerError
+        error={actionError}
+        title="Could not deactivate the vehicle"
+        onDismiss={() => setActionError(null)}
       />
 
       <Card className="gap-0 py-0">
@@ -227,7 +253,7 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
               allLabel="All types"
               value={search.type ?? ""}
               onChange={(value) => patch({ type: value || undefined })}
-              options={VEHICLE_TYPES.map((type) => ({ value: type, label: type }))}
+              options={vehicleTypeOptions()}
             />
             <ListFilterSelect
               className="w-40"
@@ -235,10 +261,7 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
               allLabel="All statuses"
               value={search.status ?? ""}
               onChange={(value) => patch({ status: value || undefined })}
-              options={VEHICLE_STATUSES.map((status) => ({
-                value: status,
-                label: status,
-              }))}
+              options={vehicleStatusOptions()}
             />
           </div>
         </CardHeader>
@@ -267,7 +290,7 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
                     <Button
                       onClick={() => {
                         setEditing(null)
-                        setSheetOpen(true)
+                        sheet.openNew()
                       }}
                     >
                       <Plus />
@@ -286,7 +309,12 @@ export function VehiclesListPage({ search }: { search: VehiclesSearch }) {
         </CardContent>
       </Card>
 
-      <VehicleFormSheet open={sheetOpen} onOpenChange={setSheetOpen} vehicle={editing} />
+      <VehicleFormSheet
+        key={sheet.key}
+        open={sheet.open}
+        onOpenChange={sheet.onOpenChange}
+        vehicle={editing}
+      />
       {confirmationDialog}
     </div>
   )
