@@ -22,7 +22,7 @@ export const securitySchemes: Record<string, unknown> = {
 }
 
 export const schemas: Record<string, SchemaObject> = {
-  // Emitted by `buildPage` in @dropx/db; documented once so every list reuses it.
+  // Emitted by `buildPage` in @dropx/types; documented once so every list reuses it.
   PageMeta: {
     type: "object",
     required: ["totalCount", "currentPage", "totalPages", "hasNextPage", "hasPreviousPage"],

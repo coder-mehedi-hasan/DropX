@@ -14,7 +14,7 @@ import {
   SelectValue,
   Textarea,
 } from "@dropx/ui"
-import { ZONE_STATUSES } from "@dropx/db"
+import { ZONE_STATUSES } from "@dropx/types"
 import { FormSheet } from "@/components/form-sheet"
 import { createZone, updateZone } from "@/lib/endpoints"
 import { createZoneSchema, type CreateZoneBody, type UpdateZoneBody, type Zone } from "@/lib/types"

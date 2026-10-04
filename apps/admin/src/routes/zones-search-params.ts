@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ZONE_STATUSES } from "@dropx/db"
+import { ZONE_STATUSES } from "@dropx/types"
 
 const DEFAULT_ZONES_SEARCH = {
   page: 1,

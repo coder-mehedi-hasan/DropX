@@ -1,118 +1,35 @@
 /**
  * The DropX API's wire contract, as this app consumes it.
  *
- * Hand-written rather than imported from `@dropx/db` so the portal does not
- * depend on a Bun/mysql2 package, and so the transport reality stays visible:
- * the API serialises every `Date` to an ISO string, so timestamps are `string`
- * here, not `Date`.
+ * The entity shapes, status vocabularies and the list envelope come from
+ * `@dropx/types` — the single source of truth shared with the API and the rider
+ * app. Web-only shapes (parcel tracking, quoting, OTP/session, errors) are
+ * declared below and are the only hand-written types in this file.
  */
 
-export type CustomerStatus = "TEMP" | "ACTIVE"
+import type {
+  CustomerStatus,
+  ParcelStatus,
+  ParcelType,
+  PaymentType,
+  HubRef,
+  ParcelEventSummary,
+} from "@dropx/types"
 
-export type ParcelStatus =
-  | "CREATED"
-  | "PICKED_UP"
-  | "IN_TRANSIT"
-  | "AT_HUB"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED"
-  | "FAILED"
-  | "CANCELLED"
-  | "RETURNED"
+export { PARCEL_STATUSES, PARCEL_TYPES, PAYMENT_TYPES } from "@dropx/types"
 
-export const PARCEL_STATUSES: readonly ParcelStatus[] = [
-  "CREATED",
-  "PICKED_UP",
-  "IN_TRANSIT",
-  "AT_HUB",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "FAILED",
-  "CANCELLED",
-  "RETURNED",
-]
-
-export type ParcelType = "DOCUMENT" | "PACKAGE" | "FRAGILE" | "OTHER"
-
-export const PARCEL_TYPES: readonly ParcelType[] = ["DOCUMENT", "PACKAGE", "FRAGILE", "OTHER"]
-
-export type PaymentType = "PREPAID" | "COD"
-
-export const PAYMENT_TYPES: readonly PaymentType[] = ["PREPAID", "COD"]
-
-export type ParcelEventType =
-  | "CREATED"
-  | "PICKED_UP"
-  | "ARRIVED_HUB"
-  | "DEPARTED_HUB"
-  | "LOADED"
-  | "UNLOADED"
-  | "ASSIGNED_RIDER"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED"
-  | "FAILED"
-  | "RETURNED"
-
-export type Parcel = {
-  id: string
-  createdAt: string
-  updatedAt: string
-  trackingNumber: string
-  senderCustomerId: string
-  receiverCustomerId: string
-  originHubId: string
-  destinationHubId: string
-  currentHubId: string | null
-  destinationZoneId: string
-  weight: number
-  length: number | null
-  width: number | null
-  height: number | null
-  parcelType: ParcelType
-  paymentType: PaymentType
-  codAmount: number
-  deliveryFee: number
-  status: ParcelStatus
-}
-
-export type ParcelItem = {
-  id: string
-  createdAt: string
-  parcelId: string
-  name: string
-  description: string | null
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-}
-
-export type ParcelWithItems = Parcel & { items: ParcelItem[] }
-
-export type PageMeta = {
-  totalCount: number
-  currentPage: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
-
-export type Page<T> = {
-  nodes: T[]
-  meta: PageMeta
-}
-
-export type HubRef = {
-  code: string
-  name: string
-  district: string | null
-}
-
-export type ParcelEventSummary = {
-  eventType: ParcelEventType
-  description: string | null
-  location: string | null
-  createdAt: string
-}
+export type {
+  CustomerStatus,
+  ParcelStatus,
+  ParcelType,
+  PaymentType,
+  ParcelEventType,
+  Parcel,
+  ParcelWithItems,
+  Page,
+  HubRef,
+  ParcelEventSummary,
+} from "@dropx/types"
 
 export type ParcelTracking = {
   /** Not in the declared `ParcelTracking` projection, but the decoder emits it. */

@@ -1,82 +1,19 @@
 /**
- * Domain types the API returns, mirrored from `packages/db` so the rider app
- * has no dependency on a database package. `apps/api` decodes rows into exactly
- * these shapes (`Id` is a string, decimals are numbers, and a `Date` reaches the
- * browser as an ISO string).
+ * Domain types the API returns. The shared shapes (statuses, entities,
+ * pagination) come from `@dropx/types` — the single source of truth the API
+ * writes to and every other app reads from, so the parcel status list can be
+ * extended in one place and break the build everywhere that has not handled it.
+ * Rider-only shapes (Job, JobDetail) are declared below.
  */
 
-export const PARCEL_STATUSES = [
-  "CREATED",
-  "PICKED_UP",
-  "IN_TRANSIT",
-  "AT_HUB",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "FAILED",
-  "CANCELLED",
-  "RETURNED",
-] as const
+import type {
+  Parcel,
+  ParcelItem,
+  DeliveryStatus,
+} from "@dropx/types"
 
-export type ParcelStatus = (typeof PARCEL_STATUSES)[number]
 
-export const PARCEL_TYPES = ["DOCUMENT", "PACKAGE", "FRAGILE", "OTHER"] as const
-
-export type ParcelType = (typeof PARCEL_TYPES)[number]
-
-export const PAYMENT_TYPES = ["PREPAID", "COD"] as const
-
-export type PaymentType = (typeof PAYMENT_TYPES)[number]
-
-/**
- * The status of one delivery attempt.
- *
- * Not the same vocabulary as `PARCEL_STATUSES`: a parcel has no `ASSIGNED` row,
- * because assignment belongs to a rider's attempt rather than to the parcel the
- * customer is tracking.
- */
-export const DELIVERY_STATUSES = [
-  "ASSIGNED",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "FAILED",
-  "CANCELLED",
-  "RETURNED",
-] as const
-
-export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]
-
-export type Parcel = {
-  id: string
-  trackingNumber: string
-  senderCustomerId: string
-  receiverCustomerId: string
-  originHubId: string
-  destinationHubId: string
-  currentHubId: string | null
-  destinationZoneId: string
-  weight: number
-  length: number | null
-  width: number | null
-  height: number | null
-  parcelType: ParcelType
-  paymentType: PaymentType
-  codAmount: number
-  deliveryFee: number
-  status: ParcelStatus
-  createdAt: string
-  updatedAt: string
-}
-
-export type ParcelItem = {
-  id: string
-  parcelId: string
-  name: string
-  description: string | null
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-  createdAt: string
-}
+export type { DeliveryStatus, PageMeta, Page } from "@dropx/types"
 
 /**
  * One unit of work for a rider: the attempt they are acting on, plus the parcel
@@ -115,16 +52,3 @@ export type JobDetail = Job & {
   items: ParcelItem[]
 }
 
-export type PageMeta = {
-  totalCount: number
-  currentPage: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
-
-/** The one list envelope in DropX — never a bare array. */
-export type Page<T> = {
-  nodes: T[]
-  meta: PageMeta
-}

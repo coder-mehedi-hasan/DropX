@@ -33,8 +33,8 @@ function zoneRow(row: Record<string, unknown>): Zone {
     code: String(row.code),
     description: toStringOrNull(row.description),
     status: row.status as Zone["status"],
-    createdAt: toUtcDate(row.created_at as string | Date),
-    updatedAt: toUtcDate(row.updated_at as string | Date),
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
   }
 }
 

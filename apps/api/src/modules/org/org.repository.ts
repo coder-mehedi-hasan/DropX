@@ -77,8 +77,8 @@ function branchRow(row: Record<string, unknown>): Branch {
     latitude: toDecimal(row.latitude),
     longitude: toDecimal(row.longitude),
     status: row.status as Branch["status"],
-    createdAt: toUtcDate(row.created_at as string | Date),
-    updatedAt: toUtcDate(row.updated_at as string | Date),
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
   }
 }
 
@@ -95,8 +95,8 @@ function hubRow(row: Record<string, unknown>): HubWithBranch {
     longitude: toDecimal(row.longitude),
     capacity: toNullableDecimal(row.capacity),
     status: row.status as Hub["status"],
-    createdAt: toUtcDate(row.created_at as string | Date),
-    updatedAt: toUtcDate(row.updated_at as string | Date),
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
     branchName: String(row.branch_name),
     branchCode: String(row.branch_code),
   }

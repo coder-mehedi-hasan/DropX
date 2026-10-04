@@ -118,7 +118,7 @@ export function decodeTrackingRow(row: TrackingRow) {
     paymentType: row.payment_type,
     weight: toDecimal(row.weight),
     codAmount: toDecimal(row.cod_amount),
-    deliveredAt: toDate(row.delivered_at),
+    deliveredAt: toDate(row.delivered_at)?.toISOString() ?? null,
     originHub: toHubRef(row.origin_code, row.origin_name, row.origin_district)!,
     destinationHub: toHubRef(row.destination_code, row.destination_name, row.destination_district)!,
     currentHub: toHubRef(row.current_code, row.current_name, row.current_district),
@@ -130,6 +130,6 @@ export function decodeEventRow(row: EventRow) {
     eventType: row.event_type,
     description: toStringOrNull(row.description),
     location: toStringOrNull(row.hub_name),
-    createdAt: toDate(row.created_at) ?? new Date(0),
+    createdAt: toDate(row.created_at)?.toISOString() ?? "",
   }
 }

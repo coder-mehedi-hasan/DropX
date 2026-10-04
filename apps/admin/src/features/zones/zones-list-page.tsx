@@ -12,7 +12,7 @@ import {
   useFormSheetState,
   type DataTableColumn,
 } from "@dropx/ui"
-import { ZONE_STATUSES } from "@dropx/db"
+import { ZONE_STATUSES } from "@dropx/types"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"

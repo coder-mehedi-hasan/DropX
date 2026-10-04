@@ -39,8 +39,8 @@ export type Job = {
     failureReason: string | null
     recipientName: string | null
     recipientPhone: string | null
-    outForDeliveryAt: Date | null
-    deliveredAt: Date | null
+    outForDeliveryAt: string | null
+    deliveredAt: string | null
   }
   parcel: {
     id: string
@@ -49,7 +49,7 @@ export type Job = {
     weight: number
     codAmount: number
     paymentType: Parcel["paymentType"]
-    createdAt: Date
+    createdAt: string
   }
 }
 
@@ -80,8 +80,8 @@ export function decodeJob(row: unknown): Job {
       failureReason: toStringOrNull(r.failure_reason),
       recipientName: toStringOrNull(r.recipient_name),
       recipientPhone: toStringOrNull(r.recipient_phone),
-      outForDeliveryAt: toDate(r.out_for_delivery_at),
-      deliveredAt: toDate(r.delivered_at),
+      outForDeliveryAt: toDate(r.out_for_delivery_at)?.toISOString() ?? null,
+      deliveredAt: toDate(r.delivered_at)?.toISOString() ?? null,
     },
     parcel: {
       id: String(r.parcel_id),
@@ -90,7 +90,7 @@ export function decodeJob(row: unknown): Job {
       weight: Number(r.weight),
       codAmount: Number(r.cod_amount),
       paymentType: r.payment_type,
-      createdAt: toDate(r.created_at) ?? new Date(0),
+      createdAt: toDate(r.created_at)?.toISOString() ?? "",
     },
   }
 }

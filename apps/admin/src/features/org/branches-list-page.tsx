@@ -11,7 +11,7 @@ import {
   ServerDataTable,
   type DataTableColumn,
 } from "@dropx/ui"
-import { BRANCH_STATUSES } from "@dropx/db"
+import { BRANCH_STATUSES } from "@dropx/types"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"

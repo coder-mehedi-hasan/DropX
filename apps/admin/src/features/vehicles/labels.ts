@@ -1,4 +1,4 @@
-import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/db"
+import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/types"
 
 /**
  * Display names for the vehicle enums.
