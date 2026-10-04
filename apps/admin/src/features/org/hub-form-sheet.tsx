@@ -123,12 +123,7 @@ export function HubFormSheet({
               </FormItem>
             )}
           />
-          <FormInputSlug
-            name="code"
-            inheritFrom="name"
-            label="Code"
-            placeholder="DHAKA-SORT"
-          />
+          <FormInputSlug name="code" inheritFrom="name" label="Code" placeholder="DHAKA-SORT" />
           <BoundFormField
             name="type"
             render={({ field }) => (

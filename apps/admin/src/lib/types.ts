@@ -8,8 +8,14 @@
  * projection, and the staff identity from `/auth/me`.
  */
 import { z } from "zod"
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES, VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/types"
-import { ZONE_STATUSES } from "@dropx/types"
+import {
+  BRANCH_STATUSES,
+  HUB_STATUSES,
+  HUB_TYPES,
+  VEHICLE_STATUSES,
+  VEHICLE_TYPES,
+} from "@dropx/types"
+import { ZONE_STATUSES, RECORD_STATUSES } from "@dropx/types"
 import type {
   CustomerStatus,
   CustomerType,
@@ -24,6 +30,8 @@ import type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  PricingRule,
+  RecordStatus,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -44,6 +52,8 @@ export type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  PricingRule,
+  RecordStatus,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -134,6 +144,9 @@ export type UpdateHubBody = Partial<CreateHubBody>
 export type CreateZoneBody = Omit<Zone, "id" | "createdAt" | "updatedAt">
 export type UpdateZoneBody = Partial<CreateZoneBody>
 
+export type CreatePricingRuleBody = Omit<PricingRule, "id" | "createdAt" | "updatedAt">
+export type UpdatePricingRuleBody = Partial<CreatePricingRuleBody>
+
 export type CreateVehicleBody = Omit<Vehicle, "id" | "createdAt" | "updatedAt">
 export type UpdateVehicleBody = Partial<CreateVehicleBody>
 
@@ -191,6 +204,20 @@ export const createVehicleSchema = z.object({
   type: z.enum(VEHICLE_TYPES),
   capacityKg: z.coerce.number().min(0).max(100_000),
   status: z.enum(VEHICLE_STATUSES).default("AVAILABLE"),
+})
+
+export const createPricingRuleSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  originZoneId: z.string().trim().min(1),
+  destinationZoneId: z.string().trim().min(1),
+  minWeight: z.coerce.number().nonnegative().max(9999),
+  maxWeight: z.coerce.number().nonnegative().max(9999).nullish(),
+  basePrice: z.coerce.number().nonnegative().max(999999),
+  pricePerKg: z.coerce.number().nonnegative().max(999999),
+  codPercentage: z.coerce.number().nonnegative().max(100),
+  codFixedFee: z.coerce.number().nonnegative().max(999999),
+  expressFee: z.coerce.number().nonnegative().max(999999),
+  status: z.enum(RECORD_STATUSES).default("ACTIVE"),
 })
 
 export type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number }

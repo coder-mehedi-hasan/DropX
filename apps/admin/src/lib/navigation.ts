@@ -7,11 +7,19 @@ import {
 } from "@/routes/org-search-params"
 import { DEFAULT_PARCELS_SEARCH } from "./parcels"
 import { parcelsSearchSchema } from "@/routes/search-params"
-import { DEFAULT_VEHICLES_SEARCH_PARAMS, vehiclesSearchSchema } from "@/routes/vehicles-search-params"
+import {
+  DEFAULT_VEHICLES_SEARCH_PARAMS,
+  vehiclesSearchSchema,
+} from "@/routes/vehicles-search-params"
 import { DEFAULT_ZONES_SEARCH_PARAMS, zonesSearchSchema } from "@/routes/zones-search-params"
+import {
+  DEFAULT_PRICING_RULES_SEARCH_PARAMS,
+  pricingRulesSearchSchema,
+} from "@/routes/pricing-rules-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
+import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -35,6 +43,7 @@ export type AdminDestination =
   | { to: "/hubs"; search: HubsSearch }
   | { to: "/zones"; search: ZonesSearch }
   | { to: "/vehicles"; search: VehiclesSearch }
+  | { to: "/pricing-rules"; search: PricingRulesSearch }
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -90,6 +99,17 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       search: resolveListSearch(
         vehiclesSearchSchema,
         DEFAULT_VEHICLES_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
+  }
+
+  if (path === "/pricing-rules") {
+    return {
+      to: "/pricing-rules",
+      search: resolveListSearch(
+        pricingRulesSearchSchema,
+        DEFAULT_PRICING_RULES_SEARCH_PARAMS,
         url.searchParams,
       ),
     }

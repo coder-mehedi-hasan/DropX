@@ -31,7 +31,6 @@ const pool = mysql.createPool(DATABASE_URL)
 const ctx = new Context(new Request("http://localhost/"), {} as any) as any
 ctx.set("db", pool)
 
-
 type Case = {
   name: string
   run: () => Promise<unknown>
@@ -49,6 +48,7 @@ const reference = await import("../src/modules/reference/reference.repository")
 const org = await import("../src/modules/org/org.repository")
 const zones = await import("../src/modules/zones/zones.repository")
 const vehicles = await import("../src/modules/vehicles/vehicles.repository")
+const pricingRules = await import("../src/modules/pricing/pricing-rules.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -88,7 +88,10 @@ cases.push(
   },
   { name: "jobs.findJobForRider", run: () => jobs.findJobForRider(pool, "1", "1") },
   { name: "jobs.listJobItems", run: () => jobs.listJobItems(pool, "1") },
-  { name: "jobs.findOpenAttemptForUpdate", run: () => jobs.findOpenAttemptForUpdate(pool, "1", "1") },
+  {
+    name: "jobs.findOpenAttemptForUpdate",
+    run: () => jobs.findOpenAttemptForUpdate(pool, "1", "1"),
+  },
 
   {
     name: "parcels.listParcels",
@@ -123,7 +126,10 @@ cases.push(
     run: () =>
       parcels.listParcelsForCustomer(pool, "1", { ...listParams, sortBy }, {}, parcelSortByKey),
   })),
-  { name: "parcels.findParcelForCustomer", run: () => parcels.findParcelForCustomer(pool, "1", "1") },
+  {
+    name: "parcels.findParcelForCustomer",
+    run: () => parcels.findParcelForCustomer(pool, "1", "1"),
+  },
   { name: "parcels.listParcelItems", run: () => parcels.listParcelItems(pool, "1") },
 
   {
@@ -161,12 +167,22 @@ cases.push(
   {
     name: "reference.listHubRefs(branch-scoped)",
     run: () =>
-      reference.listHubRefs(pool, { ...scope, isCompanyWide: false, branchId: "1" }, listParams, {}),
+      reference.listHubRefs(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        listParams,
+        {},
+      ),
   },
   {
     name: "reference.listHubRefs(hub-scoped)",
     run: () =>
-      reference.listHubRefs(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
+      reference.listHubRefs(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        listParams,
+        {},
+      ),
   },
   { name: "reference.listZoneRefs", run: () => reference.listZoneRefs(pool, listParams, {}) },
   {
@@ -320,6 +336,27 @@ cases.push(
     }),
   ),
   { name: "vehicles.selectVehicle", run: () => vehicles.selectVehicle(pool, "1") },
+
+  // --- Pricing rules ---------------------------------------------------------
+  {
+    name: "pricingRules.selectPricingRules",
+    run: () => pricingRules.selectPricingRules(pool, listParams, {}),
+  },
+  {
+    name: "pricingRules.selectPricingRules(status)",
+    run: () => pricingRules.selectPricingRules(pool, listParams, { status: "ACTIVE" }),
+  },
+  {
+    name: "pricingRules.selectPricingRules(search)",
+    run: () => pricingRules.selectPricingRules(pool, listParams, { search: "DHAKA" }),
+  },
+  ...(["name", "originZone", "destinationZone", "minWeight", "createdAt"] as const).map(
+    (sortBy) => ({
+      name: `pricingRules.selectPricingRules(sortBy=${sortBy})`,
+      run: () => pricingRules.selectPricingRules(pool, { ...listParams, sortBy }, {}),
+    }),
+  ),
+  { name: "pricingRules.selectPricingRule", run: () => pricingRules.selectPricingRule(pool, "1") },
 )
 
 let failures = 0

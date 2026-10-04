@@ -29,6 +29,9 @@ import type {
   HubOption,
   LoginResult,
   ParcelTracking,
+  PricingRule,
+  CreatePricingRuleBody,
+  UpdatePricingRuleBody,
   ReferenceListParams,
   StaffIdentity,
   UpdateBranchBody,
@@ -41,6 +44,7 @@ import type {
 } from "./types"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
+import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -236,6 +240,26 @@ export function deactivateVehicle(vehicleId: string) {
   return api.post<Vehicle>(`/admin/vehicles/${vehicleId}/deactivate`)
 }
 
+export function listPricingRules(params: PricingRulesSearch) {
+  return api.get<Page<PricingRule>>("/pricing/rules", { query: pricingRuleQuery(params) })
+}
+
+export function getPricingRule(pricingRuleId: string, signal?: AbortSignal) {
+  return api.get<PricingRule>(`/pricing/rules/${pricingRuleId}`, signal ? { signal } : undefined)
+}
+
+export function createPricingRule(body: CreatePricingRuleBody) {
+  return api.post<PricingRule>("/pricing/rules", body)
+}
+
+export function updatePricingRule(pricingRuleId: string, body: UpdatePricingRuleBody) {
+  return api.patch<PricingRule>(`/pricing/rules/${pricingRuleId}`, body)
+}
+
+export function deletePricingRule(pricingRuleId: string) {
+  return api.delete<void>(`/pricing/rules/${pricingRuleId}`)
+}
+
 function orgQuery(params: {
   page: number
   limit: number
@@ -259,6 +283,24 @@ function orgQuery(params: {
 }
 
 function zoneQuery(params: {
+  page: number
+  limit: number
+  sortBy: string
+  sort: "asc" | "desc"
+  search: string
+  status?: string
+}) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+  }
+}
+
+function pricingRuleQuery(params: {
   page: number
   limit: number
   sortBy: string

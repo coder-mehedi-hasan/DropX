@@ -8,6 +8,7 @@ import { branchesSearchSchema, hubsSearchSchema } from "./org-search-params"
 import { loginSearchSchema, parcelsSearchSchema, trackingSearchSchema } from "./search-params"
 import { vehiclesSearchSchema } from "./vehicles-search-params"
 import { zonesSearchSchema } from "./zones-search-params"
+import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
 
 /**
  * Feature screens are split out of the entry chunk on purpose: signing in should
@@ -46,6 +47,10 @@ const ZonesListPage = lazyRouteComponent(
 const VehiclesListPage = lazyRouteComponent(
   () => import("@/features/vehicles/vehicles-list-page"),
   "VehiclesListPage",
+)
+const PricingRulesListPage = lazyRouteComponent(
+  () => import("@/features/pricing/pricing-rules-list-page"),
+  "PricingRulesListPage",
 )
 
 export const loginRoute = createRoute({
@@ -119,6 +124,13 @@ export const vehiclesRoute = createRoute({
   component: VehiclesListPageRoute,
 })
 
+export const pricingRulesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/pricing-rules",
+  validateSearch: pricingRulesSearchSchema,
+  component: PricingRulesListPageRoute,
+})
+
 /**
  * These wrappers exist so the permission key that guards a screen sits directly
  * above that screen's route, instead of being buried inside a page component
@@ -183,6 +195,15 @@ function VehiclesListPageRoute() {
   return (
     <RequirePermission permission="vehicles.view">
       <VehiclesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function PricingRulesListPageRoute() {
+  const search = pricingRulesRoute.useSearch()
+  return (
+    <RequirePermission permission="pricing.view">
+      <PricingRulesListPage search={search} />
     </RequirePermission>
   )
 }
