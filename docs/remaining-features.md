@@ -14,9 +14,9 @@ Verified against codebase. Built = has real implementation. Missing = table/key 
 ## Network & Pricing
 > Priority - 0
 
-- [ ] **Zone management** — CRUD for geographic pricing areas (read-only reference endpoint exists)
+- [x] **Zone management** — CRUD for geographic pricing areas (read-only reference endpoint exists)
 - [ ] **Pricing rules CRUD** — create/update zone-pair and weight-band pricing (only `pricing.quote` read exists)
-- [ ] **Vehicle management** — register bikes/vans/trucks, capacity, availability tracking
+- [x] **Vehicle management** — register bikes/vans/trucks, capacity, availability tracking
 - [ ] **Route & stop management** — hub-to-hub routes with ordered stops, distance, ETA
 
 ## Fleet & Riders

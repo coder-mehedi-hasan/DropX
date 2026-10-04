@@ -21,6 +21,8 @@ import type {
   BranchOption,
   CreateBranchBody,
   CreateHubBody,
+  CreateVehicleBody,
+  CreateZoneBody,
   CustomerOption,
   DeliveryQuote,
   Hub,
@@ -31,8 +33,14 @@ import type {
   StaffIdentity,
   UpdateBranchBody,
   UpdateHubBody,
+  UpdateVehicleBody,
+  UpdateZoneBody,
+  Vehicle,
+  Zone,
   ZoneOption,
 } from "./types"
+import type { VehiclesSearch } from "@/routes/vehicles-search-params"
+import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -189,6 +197,45 @@ export function updateHub(hubId: string, body: UpdateHubBody) {
   return api.patch<Hub>(`/admin/hubs/${hubId}`, body)
 }
 
+export function listZones(params: ZonesSearch) {
+  return api.get<Page<Zone>>("/admin/zones", { query: zoneQuery(params) })
+}
+
+export function getZone(zoneId: string, signal?: AbortSignal) {
+  return api.get<Zone>(`/admin/zones/${zoneId}`, signal ? { signal } : undefined)
+}
+
+export function createZone(body: CreateZoneBody) {
+  return api.post<Zone>("/admin/zones", body)
+}
+
+export function updateZone(zoneId: string, body: UpdateZoneBody) {
+  return api.patch<Zone>(`/admin/zones/${zoneId}`, body)
+}
+
+export function listVehicles(params: VehiclesSearch) {
+  return api.get<Page<Vehicle>>("/admin/vehicles", { query: vehicleQuery(params) })
+}
+
+export function getVehicle(vehicleId: string, signal?: AbortSignal) {
+  return api.get<Vehicle>(`/admin/vehicles/${vehicleId}`, signal ? { signal } : undefined)
+}
+
+export function createVehicle(body: CreateVehicleBody) {
+  return api.post<Vehicle>("/admin/vehicles", body)
+}
+
+export function updateVehicle(vehicleId: string, body: UpdateVehicleBody) {
+  return api.patch<Vehicle>(`/admin/vehicles/${vehicleId}`, body)
+}
+
+/** Retires a vehicle from the fleet. The server owns the transition, so this
+ *  sends no status — `POST /deactivate` is the only way a vehicle goes
+ *  INACTIVE, and an already-inactive one comes back as 409. */
+export function deactivateVehicle(vehicleId: string) {
+  return api.post<Vehicle>(`/admin/vehicles/${vehicleId}/deactivate`)
+}
+
 function orgQuery(params: {
   page: number
   limit: number
@@ -208,5 +255,43 @@ function orgQuery(params: {
     ...(params.status ? { status: params.status } : {}),
     ...(params.type ? { type: params.type } : {}),
     ...(params.branchId ? { branchId: params.branchId } : {}),
+  }
+}
+
+function zoneQuery(params: {
+  page: number
+  limit: number
+  sortBy: string
+  sort: "asc" | "desc"
+  search: string
+  status?: string
+}) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+  }
+}
+
+function vehicleQuery(params: {
+  page: number
+  limit: number
+  sortBy: string
+  sort: "asc" | "desc"
+  search: string
+  type?: string
+  status?: string
+}) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.type ? { type: params.type } : {}),
+    ...(params.status ? { status: params.status } : {}),
   }
 }

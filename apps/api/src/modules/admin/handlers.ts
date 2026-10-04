@@ -6,6 +6,8 @@ import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import * as org from "../org/org.service"
 import * as reference from "../reference/reference.service"
+import * as zones from "../zones/zones.service"
+import * as vehicles from "../vehicles/vehicles.service"
 import type { ADMIN_SURFACE } from "./registry"
 
 /**
@@ -163,6 +165,55 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     updateHub: async (c) => {
       const hub = await org.updateHub(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(hub))
+    },
+  },
+
+  zones: {
+    list: async (c) => {
+      const page = await zones.listZones(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const zone = await zones.getZone(c, c.req.valid("param").id)
+      return c.json(response.success(zone))
+    },
+
+    create: async (c) => {
+      const zone = await zones.createZone(c, c.req.valid("json"))
+      return c.json(response.success(zone), 201)
+    },
+
+    update: async (c) => {
+      const zone = await zones.updateZone(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(zone))
+    },
+  },
+
+  vehicles: {
+    list: async (c) => {
+      const page = await vehicles.listVehicles(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const vehicle = await vehicles.getVehicle(c, c.req.valid("param").id)
+      return c.json(response.success(vehicle))
+    },
+
+    create: async (c) => {
+      const vehicle = await vehicles.createVehicle(c, c.req.valid("json"))
+      return c.json(response.success(vehicle), 201)
+    },
+
+    update: async (c) => {
+      const vehicle = await vehicles.updateVehicle(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(vehicle))
+    },
+
+    deactivate: async (c) => {
+      const vehicle = await vehicles.deactivateVehicle(c, c.req.valid("param").id)
+      return c.json(response.success(vehicle))
     },
   },
 }

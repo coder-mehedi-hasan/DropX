@@ -1,16 +1,20 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { Building2, LayoutDashboard, PackageSearch, Truck, Warehouse } from "lucide-react"
+import { Building2, Car, Globe, LayoutDashboard, PackageSearch, Truck, Warehouse } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { DropXLogo, cn } from "@dropx/ui"
 
 import { useAuth } from "@/lib/auth"
 import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH, DEFAULT_PARCELS_SEARCH } from "@/lib/parcels"
+import { DEFAULT_VEHICLES_SEARCH_PARAMS } from "@/routes/vehicles-search-params"
+import { DEFAULT_ZONES_SEARCH_PARAMS } from "@/routes/zones-search-params"
 import type { BranchesSearch, HubsSearch, ParcelListSearch } from "@/lib/parcels"
+import type { VehiclesSearch } from "@/routes/vehicles-search-params"
+import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
-  to: "/" | "/parcels" | "/tracking" | "/branches" | "/hubs"
-  search?: ParcelListSearch | BranchesSearch | HubsSearch | undefined
+  to: "/" | "/parcels" | "/tracking" | "/branches" | "/hubs" | "/zones" | "/vehicles"
+  search?: ParcelListSearch | BranchesSearch | HubsSearch | ZonesSearch | VehiclesSearch | undefined
   icon: LucideIcon
   permission: PermissionKey | null
 }
@@ -38,6 +42,20 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_HUBS_SEARCH,
     icon: Warehouse,
     permission: "hubs.view",
+  },
+  {
+    label: "Zones",
+    to: "/zones",
+    search: DEFAULT_ZONES_SEARCH_PARAMS,
+    icon: Globe,
+    permission: "zones.view",
+  },
+  {
+    label: "Vehicles",
+    to: "/vehicles",
+    search: DEFAULT_VEHICLES_SEARCH_PARAMS,
+    icon: Car,
+    permission: "vehicles.view",
   },
 ]
 

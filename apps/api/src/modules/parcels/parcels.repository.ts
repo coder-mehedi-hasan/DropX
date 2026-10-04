@@ -39,10 +39,17 @@ function placeholders(count: number): string {
 
 type Clause = { text: string; params: unknown[] }
 
+/**
+ * Joins conditions into a single parenthesised expression — **not** a `WHERE`
+ * clause. Scope and filters are combined with each other and with a search
+ * clause, so a `WHERE` baked in here was nested inside another `WHERE` and the
+ * query was a syntax error the moment two of them were present. Callers prefix
+ * the keyword.
+ */
 function combineClauses(clauses: Clause[]): Clause {
   if (clauses.length === 0) return { text: "", params: [] }
   return {
-    text: `WHERE (${clauses.map((c) => c.text).join(") AND (")})`,
+    text: `(${clauses.map((c) => c.text).join(") AND (")})`,
     params: clauses.flatMap((c) => c.params),
   }
 }
@@ -352,8 +359,8 @@ type ParcelRow = {
   cod_amount: string
   delivery_fee: string
   status: ParcelStatus
-  created_at: string
-  updated_at: string
+  created_at: string | Date
+  updated_at: string | Date
 }
 
 export type ParcelItemRow = {
@@ -364,11 +371,23 @@ export type ParcelItemRow = {
   quantity: string
   unit_price: string
   total_price: string
-  created_at: string
+  created_at: string | Date
 }
 
 function toNullableId(value: unknown): string | null {
   return value === null || value === undefined ? null : String(value)
+}
+
+/**
+ * mysql2 hands back a `Date` for a DATETIME unless the pool asks for
+ * `dateStrings`, so a decoder cannot assume a `"YYYY-MM-DD HH:MM:SS"` string and
+ * call `.replace` on it. Both shapes are accepted; a `Date` is already the right
+ * instant because the API runs with `TZ=UTC` (see the package scripts), which is
+ * what the old string form was compensating for by appending `Z`.
+ */
+function toUtcDate(value: string | Date): Date {
+  if (value instanceof Date) return value
+  return new Date(`${value.replace(" ", "T")}Z`)
 }
 
 function toDecimal(value: unknown, fallback = 0): number {
@@ -405,8 +424,8 @@ export function decodeParcel(row: unknown): Parcel {
     codAmount: toDecimal(r.cod_amount),
     deliveryFee: toDecimal(r.delivery_fee),
     status: r.status,
-    createdAt: new Date(`${r.created_at.replace(" ", "T")}Z`),
-    updatedAt: new Date(`${r.updated_at.replace(" ", "T")}Z`),
+    createdAt: toUtcDate(r.created_at),
+    updatedAt: toUtcDate(r.updated_at),
   }
 }
 
@@ -420,7 +439,7 @@ export function decodeItem(row: unknown): ParcelItem {
     quantity: Number(r.quantity),
     unitPrice: toDecimal(r.unit_price),
     totalPrice: toDecimal(r.total_price),
-    createdAt: new Date(`${r.created_at.replace(" ", "T")}Z`),
+    createdAt: toUtcDate(r.created_at),
   }
 }
 

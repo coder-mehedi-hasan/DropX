@@ -8,7 +8,8 @@
  * projection, and the staff identity from `/auth/me`.
  */
 import { z } from "zod"
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/db"
+import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES, VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/db"
+import { ZONE_STATUSES } from "@dropx/db"
 import type {
   CustomerStatus,
   CustomerType,
@@ -23,6 +24,10 @@ import type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  Vehicle,
+  VehicleStatus,
+  VehicleType,
+  Zone,
 } from "@dropx/db"
 import type { Id, Page, PageMeta } from "@dropx/db"
 
@@ -39,6 +44,10 @@ export type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  Vehicle,
+  VehicleStatus,
+  VehicleType,
+  Zone,
 }
 
 /** Alias for the one envelope the admin adds to the shared entity types. */
@@ -122,6 +131,12 @@ export type CreateHubBody = {
 }
 export type UpdateHubBody = Partial<CreateHubBody>
 
+export type CreateZoneBody = Omit<Zone, "id" | "createdAt" | "updatedAt">
+export type UpdateZoneBody = Partial<CreateZoneBody>
+
+export type CreateVehicleBody = Omit<Vehicle, "id" | "createdAt" | "updatedAt">
+export type UpdateVehicleBody = Partial<CreateVehicleBody>
+
 /**
  * Zod schemas for the create/update forms.
  *
@@ -155,6 +170,20 @@ export const createHubSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180).optional(),
   capacity: z.coerce.number().int().min(0).optional(),
   status: z.enum(HUB_STATUSES).default("ACTIVE"),
+})
+
+export const createZoneSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  code: z.string().trim().min(1).max(50),
+  description: z.string().trim().max(255).optional(),
+  status: z.enum(ZONE_STATUSES).default("ACTIVE"),
+})
+
+export const createVehicleSchema = z.object({
+  registrationNumber: z.string().trim().min(1).max(50),
+  type: z.enum(VEHICLE_TYPES),
+  capacityKg: z.coerce.number().min(0).max(100_000),
+  status: z.enum(VEHICLE_STATUSES).default("AVAILABLE"),
 })
 
 export type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number }

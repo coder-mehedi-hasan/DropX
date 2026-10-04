@@ -13,7 +13,7 @@ import {
   Textarea,
 } from "@dropx/ui"
 import { ReferenceCombobox } from "@/components/reference-combobox"
-import { OrgFormShell } from "./org-form-shell"
+import { FormSheet } from "@/components/form-sheet"
 import { createHubSchema, type CreateHubBody, type Hub } from "@/lib/types"
 
 /** Same reasoning as the branch form: the schema is the API's DTO, so the two
@@ -54,7 +54,7 @@ export function HubFormSheet({
   }
 
   return (
-    <OrgFormShell
+    <FormSheet
       schema={schema}
       open={open}
       onOpenChange={onOpenChange}

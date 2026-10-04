@@ -6,6 +6,8 @@ import { RequirePermission } from "@/lib/auth"
 import { rootRoute } from "./root"
 import { branchesSearchSchema, hubsSearchSchema } from "./org-search-params"
 import { loginSearchSchema, parcelsSearchSchema, trackingSearchSchema } from "./search-params"
+import { vehiclesSearchSchema } from "./vehicles-search-params"
+import { zonesSearchSchema } from "./zones-search-params"
 
 /**
  * Feature screens are split out of the entry chunk on purpose: signing in should
@@ -36,6 +38,14 @@ const BranchesListPage = lazyRouteComponent(
 const HubsListPage = lazyRouteComponent(
   () => import("@/features/org/hubs-list-page"),
   "HubsListPage",
+)
+const ZonesListPage = lazyRouteComponent(
+  () => import("@/features/zones/zones-list-page"),
+  "ZonesListPage",
+)
+const VehiclesListPage = lazyRouteComponent(
+  () => import("@/features/vehicles/vehicles-list-page"),
+  "VehiclesListPage",
 )
 
 export const loginRoute = createRoute({
@@ -95,6 +105,20 @@ export const hubsRoute = createRoute({
   component: HubsListPageRoute,
 })
 
+export const zonesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/zones",
+  validateSearch: zonesSearchSchema,
+  component: ZonesListPageRoute,
+})
+
+export const vehiclesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/vehicles",
+  validateSearch: vehiclesSearchSchema,
+  component: VehiclesListPageRoute,
+})
+
 /**
  * These wrappers exist so the permission key that guards a screen sits directly
  * above that screen's route, instead of being buried inside a page component
@@ -141,6 +165,24 @@ function HubsListPageRoute() {
   return (
     <RequirePermission permission="hubs.view">
       <HubsListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function ZonesListPageRoute() {
+  const search = zonesRoute.useSearch()
+  return (
+    <RequirePermission permission="zones.view">
+      <ZonesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function VehiclesListPageRoute() {
+  const search = vehiclesRoute.useSearch()
+  return (
+    <RequirePermission permission="vehicles.view">
+      <VehiclesListPage search={search} />
     </RequirePermission>
   )
 }
