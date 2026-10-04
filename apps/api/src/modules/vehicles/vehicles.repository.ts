@@ -39,8 +39,8 @@ function vehicleRow(row: Record<string, unknown>): Vehicle {
     type: row.type as Vehicle["type"],
     capacityKg: toDecimal(row.capacity_kg),
     status: row.status as Vehicle["status"],
-    createdAt: toUtcDate(row.created_at as string | Date),
-    updatedAt: toUtcDate(row.updated_at as string | Date),
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
   }
 }
 

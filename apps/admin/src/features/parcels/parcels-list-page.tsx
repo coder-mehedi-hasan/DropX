@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { PARCEL_STATUSES, PAYMENT_TYPES } from "@dropx/db"
+import { PARCEL_STATUSES, PAYMENT_TYPES } from "@dropx/types"
 import { Copy, MoreHorizontal, Package, Plus, Truck } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"

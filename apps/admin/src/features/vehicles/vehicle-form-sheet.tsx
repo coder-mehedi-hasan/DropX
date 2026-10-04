@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@dropx/ui"
-import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/db"
+import { VEHICLE_STATUSES, VEHICLE_TYPES } from "@dropx/types"
 import { FormSheet } from "@/components/form-sheet"
 import { createVehicle, updateVehicle } from "@/lib/endpoints"
 import { VEHICLE_STATUS_LABELS, VEHICLE_TYPE_LABELS } from "./labels"

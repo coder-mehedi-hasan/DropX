@@ -426,8 +426,8 @@ export function decodeParcel(row: unknown): Parcel {
     codAmount: toDecimal(r.cod_amount),
     deliveryFee: toDecimal(r.delivery_fee),
     status: r.status,
-    createdAt: toUtcDate(r.created_at),
-    updatedAt: toUtcDate(r.updated_at),
+    createdAt: toUtcDate(r.created_at).toISOString(),
+    updatedAt: toUtcDate(r.updated_at).toISOString(),
   }
 }
 
@@ -441,7 +441,7 @@ export function decodeItem(row: unknown): ParcelItem {
     quantity: Number(r.quantity),
     unitPrice: toDecimal(r.unit_price),
     totalPrice: toDecimal(r.total_price),
-    createdAt: toUtcDate(r.created_at),
+    createdAt: toUtcDate(r.created_at).toISOString(),
   }
 }
 

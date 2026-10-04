@@ -1,0 +1,17 @@
+{
+  "name": "@dropx/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DropX shared wire types — the entity shapes and status vocabularies every app reads and writes. Types and const tuples only; no build step.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf node_modules dist"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
