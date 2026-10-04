@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   AppToast,
   BoundFormField,
+  FormInputSlug,
   FormItem,
   FormLabel,
   FormMessage,
@@ -122,15 +123,11 @@ export function HubFormSheet({
               </FormItem>
             )}
           />
-          <BoundFormField
+          <FormInputSlug
             name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code</FormLabel>
-                <Input placeholder="DHAKA-SORT" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
+            inheritFrom="name"
+            label="Code"
+            placeholder="DHAKA-SORT"
           />
           <BoundFormField
             name="type"
