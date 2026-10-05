@@ -12,6 +12,7 @@ import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
 import { routesSearchSchema } from "./routes-search-params"
 import { ridersSearchSchema } from "./riders-search-params"
 import { riderLocationsSearchSchema } from "./rider-locations-search-params"
+import { riderApplicationsSearchSchema } from "./rider-applications-search-params"
 import { pickupsSearchSchema } from "./pickups-search-params"
 import { transfersSearchSchema } from "./transfers-search-params"
 import { deliveriesSearchSchema } from "./deliveries-search-params"
@@ -70,6 +71,10 @@ const RidersListPage = lazyRouteComponent(
 const RiderLocationsListPage = lazyRouteComponent(
   () => import("@/features/riders/rider-locations-list-page"),
   "RiderLocationsListPage",
+)
+const RiderApplicationsListPage = lazyRouteComponent(
+  () => import("@/features/riders/rider-applications-list-page"),
+  "RiderApplicationsListPage",
 )
 const PickupsListPage = lazyRouteComponent(
   () => import("@/features/pickups/pickups-list-page"),
@@ -185,6 +190,13 @@ export const riderLocationsRoute = createRoute({
   path: "/rider-locations",
   validateSearch: riderLocationsSearchSchema,
   component: RiderLocationsListPageRoute,
+})
+
+export const riderApplicationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/rider-applications",
+  validateSearch: riderApplicationsSearchSchema,
+  component: RiderApplicationsListPageRoute,
 })
 
 export const pickupsRoute = createRoute({
@@ -320,6 +332,15 @@ function RiderLocationsListPageRoute() {
   return (
     <RequirePermission permission="riders.view">
       <RiderLocationsListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function RiderApplicationsListPageRoute() {
+  const search = riderApplicationsRoute.useSearch()
+  return (
+    <RequirePermission permission="riders.view">
+      <RiderApplicationsListPage search={search} />
     </RequirePermission>
   )
 }

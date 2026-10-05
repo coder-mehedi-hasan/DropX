@@ -40,6 +40,7 @@ import type {
   ReferenceListParams,
   Pickup,
   Rider,
+  RiderApplication,
   RiderLocation,
   Route,
   RouteStop,
@@ -73,6 +74,7 @@ import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
+import type { RiderApplicationsSearch } from "@/routes/rider-applications-search-params"
 import type { PickupsSearch } from "@/routes/pickups-search-params"
 import type { TransfersSearch } from "@/routes/transfers-search-params"
 import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
@@ -310,6 +312,23 @@ export function updateRider(riderId: string, body: UpdateRiderBody) {
 
 export function setRiderStatus(riderId: string, status: Rider["status"]) {
   return api.post<Rider>(`/admin/riders/${riderId}/status`, { status })
+}
+
+export function listRiderApplications(params: RiderApplicationsSearch) {
+  return api.get<Page<RiderApplication>>("/admin/rider-applications", {
+    query: {
+      page: params.page,
+      limit: params.limit,
+      sortBy: params.sortBy,
+      sort: params.sort,
+      ...(params.search ? { search: params.search } : {}),
+      ...(params.status ? { status: params.status } : {}),
+    },
+  })
+}
+
+export function updateRiderApplicationStatus(id: string, status: RiderApplication["status"]) {
+  return api.patch<RiderApplication>(`/admin/rider-applications/${id}/status`, { status })
 }
 
 /**

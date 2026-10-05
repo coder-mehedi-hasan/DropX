@@ -33,6 +33,8 @@ import { DEFAULT_RIDERS_SEARCH_PARAMS } from "@/routes/riders-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
+import { DEFAULT_RIDER_APPLICATIONS_SEARCH } from "@/routes/rider-applications-search-params"
+import type { RiderApplicationsSearch } from "@/routes/rider-applications-search-params"
 import { DEFAULT_PICKUPS_SEARCH_PARAMS } from "@/routes/pickups-search-params"
 import type { PickupsSearch } from "@/routes/pickups-search-params"
 import { DEFAULT_TRANSFERS_SEARCH_PARAMS } from "@/routes/transfers-search-params"
@@ -56,6 +58,7 @@ export type NavItem = {
     | "/routes"
     | "/riders"
     | "/rider-locations"
+    | "/rider-applications"
     | "/pickups"
     | "/transfers"
     | "/deliveries"
@@ -70,6 +73,7 @@ export type NavItem = {
     | RoutesSearch
     | RidersSearch
     | RiderLocationsSearch
+    | RiderApplicationsSearch
     | PickupsSearch
     | TransfersSearch
     | DeliveriesSearch
@@ -143,6 +147,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: "/rider-locations",
     search: DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
     icon: MapPin,
+    permission: "riders.view",
+  },
+  {
+    label: "Rider Applications",
+    to: "/rider-applications",
+    search: DEFAULT_RIDER_APPLICATIONS_SEARCH,
+    icon: FileCheck,
     permission: "riders.view",
   },
   // After Parcels and before the fleet screens: a pickup is a parcel-side action,

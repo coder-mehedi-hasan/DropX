@@ -236,6 +236,23 @@ export type UpdateRiderBody = Partial<
   Omit<CreateRiderBody, "email" | "name" | "password" | "phone">
 >
 
+export type RiderApplicationStatus = "PENDING" | "REVIEWING" | "APPROVED" | "REJECTED"
+export type RiderApplication = {
+  id: Id
+  name: string
+  phone: string
+  email: string | null
+  district: string
+  vehicleType: "BICYCLE" | "MOTORCYCLE" | "CAR" | "VAN" | "OTHER"
+  licenseNumber: string | null
+  experienceYears: number | null
+  availability: string
+  notes: string | null
+  status: RiderApplicationStatus
+  createdAt: string
+  updatedAt: string
+}
+
 /**
  * A pickup is raised for a parcel, so `parcelId` is the only reference the form
  * asks for — a human knows the tracking number, not the row id. `requestedBy` is
