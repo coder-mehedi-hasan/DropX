@@ -6,6 +6,8 @@ import { isRider } from "../../shared/auth/auth-context"
 import { PERMISSIONS } from "../../shared/auth/permissions"
 import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
+import { reportLocationSchema } from "../riders/rider-locations.dto"
+import { recordRiderLocation } from "../riders/rider-locations.service"
 import { jobIdParamSchema, listJobsQuerySchema, updateJobStatusSchema } from "./jobs.dto"
 import { getJob, listJobs, reportOutcome } from "./jobs.service"
 
@@ -74,6 +76,37 @@ router.patch(
     })
 
     return c.json(response.success(job))
+  },
+)
+
+/**
+ * Location ping. Declared before `/:id` reads and `/:id/status` so a future
+ * `POST /jobs/:id/...` cannot shadow it.
+ *
+ * The rider is taken from the token and never from the body (see
+ * `reportLocationSchema`), and the gate is `rider.location.update` rather than a
+ * `jobs` key: pushing a position is not job work, so a permission review of the
+ * jobs surface does not accidentally imply it.
+ */
+router.post(
+  "/locations",
+  defineOperation(
+    {
+      id: "job.recordLocation",
+      audience: ["riders"],
+      permissions: [PERMISSIONS.RIDER_LOCATION_UPDATE],
+    },
+    { method: "POST", path: "/jobs/locations" },
+  ),
+  validateJson(reportLocationSchema),
+  async (c) => {
+    const auth = c.get("auth")
+    if (!isRider(auth)) {
+      throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
+    }
+    const fix = c.req.valid("json")
+    const location = await recordRiderLocation(c, auth.actor.riderId, fix)
+    return c.json(response.success(location), 201)
   },
 )
 

@@ -11,6 +11,7 @@ import { zonesSearchSchema } from "./zones-search-params"
 import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
 import { routesSearchSchema } from "./routes-search-params"
 import { ridersSearchSchema } from "./riders-search-params"
+import { riderLocationsSearchSchema } from "./rider-locations-search-params"
 
 /**
  * Feature screens are split out of the entry chunk on purpose: signing in should
@@ -61,6 +62,10 @@ const RoutesListPage = lazyRouteComponent(
 const RidersListPage = lazyRouteComponent(
   () => import("@/features/riders/riders-list-page"),
   "RidersListPage",
+)
+const RiderLocationsListPage = lazyRouteComponent(
+  () => import("@/features/riders/rider-locations-list-page"),
+  "RiderLocationsListPage",
 )
 
 export const loginRoute = createRoute({
@@ -155,6 +160,13 @@ export const ridersRoute = createRoute({
   component: RidersListPageRoute,
 })
 
+export const riderLocationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/rider-locations",
+  validateSearch: riderLocationsSearchSchema,
+  component: RiderLocationsListPageRoute,
+})
+
 /**
  * These wrappers exist so the permission key that guards a screen sits directly
  * above that screen's route, instead of being buried inside a page component
@@ -246,6 +258,20 @@ function RidersListPageRoute() {
   return (
     <RequirePermission permission="riders.view">
       <RidersListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+/**
+ * `riders.view`, not a new key: reading where a rider is is reading a rider, and
+ * a separate permission would only create a state where someone can see the
+ * roster but not the fleet's positions.
+ */
+function RiderLocationsListPageRoute() {
+  const search = riderLocationsRoute.useSearch()
+  return (
+    <RequirePermission permission="riders.view">
+      <RiderLocationsListPage search={search} />
     </RequirePermission>
   )
 }

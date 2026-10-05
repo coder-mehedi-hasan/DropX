@@ -7,6 +7,7 @@ import { AppHeader, AppShell } from "../../components/layout/app-shell"
 import { useAuth } from "../../lib/auth"
 import { RIDER_PERMISSIONS } from "../../lib/permissions"
 import { useJobList } from "./job-queries"
+import { LocationPushStatus, useLocationPush } from "./location-push"
 import { JobCard, JobCardSkeleton } from "./job-card"
 import {
   DEFAULT_JOB_STATUS_FILTER,
@@ -29,6 +30,10 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
   const navigate = useNavigate()
   const jobs = useJobList(filter)
   const canViewJobs = can(RIDER_PERMISSIONS.JOBS_VIEW)
+  // Dispatch watches the fleet while a rider works, so the push runs from the
+  // jobs screen — the one they keep open all shift — rather than from a setting
+  // nobody opens.
+  const location = useLocationPush()
 
   const setFilter = (next: string) => {
     void navigate({
@@ -117,6 +122,8 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
                 list
               </p>
             ) : null}
+
+            <LocationPushStatus state={location.state} canPush={location.canPush} />
           </>
         )}
       </main>

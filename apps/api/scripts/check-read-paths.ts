@@ -51,6 +51,7 @@ const vehicles = await import("../src/modules/vehicles/vehicles.repository")
 const pricingRules = await import("../src/modules/pricing/pricing-rules.repository")
 const routes = await import("../src/modules/routes/routes.repository")
 const riders = await import("../src/modules/riders/riders.repository")
+const riderLocations = await import("../src/modules/riders/rider-locations.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -401,6 +402,21 @@ cases.push(
   })),
   { name: "riders.selectRider", run: () => riders.selectRider(pool, "1") },
   { name: "riders.selectRiderByUserId", run: () => riders.selectRiderByUserId(pool, "1") },
+
+  // --- Rider locations ------------------------------------------------------
+  {
+    name: "riderLocations.selectRiderLocations",
+    run: () => riderLocations.selectRiderLocations(pool, listParams, {}),
+  },
+  {
+    name: "riderLocations.selectRiderLocations(riderId)",
+    run: () => riderLocations.selectRiderLocations(pool, listParams, { riderId: "1" }),
+  },
+  ...(["recordedAt"] as const).map((sortBy) => ({
+    name: `riderLocations.selectRiderLocations(sortBy=${sortBy})`,
+    run: () =>
+      riderLocations.selectRiderLocations(pool, { ...listParams, sortBy }, { riderId: "1" }),
+  })),
 )
 
 let failures = 0

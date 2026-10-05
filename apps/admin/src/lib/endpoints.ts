@@ -36,6 +36,7 @@ import type {
   UpdatePricingRuleBody,
   ReferenceListParams,
   Rider,
+  RiderLocation,
   Route,
   RouteStop,
   RouteStopInput,
@@ -55,6 +56,7 @@ import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
+import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -288,6 +290,22 @@ export function updateRider(riderId: string, body: UpdateRiderBody) {
 
 export function setRiderStatus(riderId: string, status: Rider["status"]) {
   return api.post<Rider>(`/admin/riders/${riderId}/status`, { status })
+}
+
+/**
+ * Read-only by design: fixes are pushed by the rider app, so dispatch reads the
+ * trail and never writes into it.
+ */
+export function listRiderLocations(params: RiderLocationsSearch) {
+  return api.get<Page<RiderLocation>>("/admin/rider-locations", {
+    query: {
+      page: params.page,
+      limit: params.limit,
+      sortBy: params.sortBy,
+      sort: params.sort,
+      ...(params.riderId ? { riderId: params.riderId } : {}),
+    },
+  })
 }
 
 export function listRoutes(params: RoutesSearch) {

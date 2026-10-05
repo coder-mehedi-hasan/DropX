@@ -2,20 +2,20 @@
 
 ## Status
 
-Verified against the running API on 2026-10-05: **65 operations registered**, all documented in
-`/openapi.json`. Batches 1–4 are built and gate-green; **batches 5–9 are not started**.
+Verified against the running API on 2026-10-05: **67 operations registered**, all documented in
+`/openapi.json`. Batches 1–5 are built and gate-green; **batches 6–9 are not started**.
 
 - [x] **Batch 1 — Zones + Vehicles** — 9 ops (`admin.zones.*` ×4, `admin.vehicles.*` ×5)
 - [x] **Batch 2 — Pricing Rules** — 6 ops (`admin.pricing.{list,read,create,update,delete,match}`)
 - [x] **Batch 3 — Routes + Stops** — 7 ops (`admin.routes.{list,read,create,update,delete,stopsList,stopsReplace}`)
 - [x] **Batch 4 — Rider Management** — 5 ops (`admin.riders.{list,read,create,update,setStatus}`)
-- [ ] **Batch 5 — Rider Location Tracking** — 0 of 2 ops. Not started. Unblocked: Batch 4 landed.
+- [x] **Batch 5 — Rider Location Tracking** — 2 ops (`admin.riderLocations.list`, `job.recordLocation`)
 - [ ] **Batch 6 — Pickup Operations** — 0 of 5 ops. Not started.
 - [ ] **Batch 7 — Transfer Operations** — 0 of 8 ops. Not started.
 - [ ] **Batch 8 — Delivery Management** — 0 of 5 ops. Not started.
 - [ ] **Batch 9 — Delivery Proof** — 0 of 4 ops. Not started.
 
-**Remaining: 5 batches, 24 ops, 9 admin screens.**
+**Remaining: 4 batches, 22 ops, 8 admin screens.**
 
 Rider-facing gaps, for contrast: the rider app (`apps/riders`) has only Jobs and Profile
 (`bottom-nav.tsx`), backed by 3 ops (`job.list`, `job.read`, `job.reportOutcome`). The two rider-app
@@ -171,19 +171,43 @@ Deviations from the file table, all following the codebase:
 
 ## Batch 5 — Rider Location Tracking (2 ops)
 
-**Status: NOT STARTED.** Blocked on Batch 4 (needs the riders it locates).
+**Status: done, at 2 ops.** `GET /admin/rider-locations` through the registry (read-only by
+design) and `POST /jobs/locations` on the rider surface.
 
-| File                                                        | Action                                |
-| ----------------------------------------------------------- | ------------------------------------- |
-| `apps/api/src/modules/riders/rider-locations.repository.ts` | **new**                               |
-| `apps/api/src/modules/riders/rider-locations.service.ts`    | **new**                               |
-| `apps/api/src/modules/admin/registry.ts`                    | **edit**                              |
-| `apps/api/src/modules/admin/handlers.ts`                    | **edit**                              |
-| `apps/api/src/modules/jobs/jobs.routes.ts`                  | **edit** — add `POST /jobs/locations` |
-| `apps/admin/src/features/riders/rider-locations-page.tsx`   | **new**                               |
-| `apps/admin/src/routes/rider-locations.tsx`                 | **new**                               |
-| `apps/riders/src/features/jobs/location-push.ts`            | **new**                               |
-| `apps/riders/src/lib/api.ts`                                | **edit**                              |
+Two deviations from the file table:
+
+- **The write lives on the rider surface, not the admin one.** A position is the rider's own to
+  report, so there is no admin write operation — dispatch reads the trail and never writes into it.
+  The rider id comes from the token, never from a body, so a rider cannot write into someone
+  else's trail.
+- **`recordedAt` is the device clock, bounded.** A phone with a wrong clock is common, so the
+  instant is accepted — but a fix dated more than 5 minutes ahead is rejected, otherwise one bad
+  clock pins a rider's "latest" position forever. A stale fix is still stored; it just cannot win.
+
+| File                                                             | Action                                |
+| ---------------------------------------------------------------- | ------------------------------------- |
+| `apps/api/src/modules/riders/rider-locations.repository.ts`      | **new**                               |
+| `apps/api/src/modules/riders/rider-locations.service.ts`         | **new**                               |
+| `apps/api/src/modules/riders/rider-locations.dto.ts`             | **new**                               |
+| `apps/api/src/modules/admin/registry.ts`                         | **edit**                              |
+| `apps/api/src/modules/admin/handlers.ts`                         | **edit**                              |
+| `apps/api/src/modules/jobs/jobs.routes.ts`                       | **edit** — add `POST /jobs/locations` |
+| `apps/api/src/openapi/paths/jobs.openapi.ts`                     | **edit** — the rider-surface fragment |
+| `apps/admin/src/features/riders/rider-locations-list-page.tsx`   | **new**                               |
+| `apps/admin/src/routes/rider-locations-search-params.ts`         | **new**                               |
+| `apps/riders/src/features/jobs/location-push.tsx`                | **new**                               |
+| `apps/admin/src/lib/endpoints.ts` / `types.ts` / `navigation.ts` | **edit**                              |
+| `apps/admin/src/routes/app-routes.tsx` / `router.tsx`            | **edit**                              |
+| `apps/admin/src/components/layout/sidebar.tsx`                   | **edit**                              |
+
+**The sort-column bug of §3.4 is not repeated here.** `rider-locations.repository.ts` uses a
+client-key → SQL-expression map instead of an array allowlist, so `recordedAt` actually sorts.
+Worth copying into zones, vehicles and routes as one standalone pass.
+
+The rider push is a 2-minute interval, deliberately slow: the trail is a log that dispatch reads at
+low resolution, and a rider app on mobile data should not spend battery writing rows nobody reads.
+A failed push is dropped rather than queued — a 20-minute-old fix presented as current is worse than
+no fix, because it looks live.
 
 ---
 
@@ -285,14 +309,14 @@ bun run lint
 | 2         | Pricing Rules    | 6           | 2                 | ~8            | done                  |
 | 3         | Routes + Stops   | 7           | 2                 | ~8            | done                  |
 | 4         | Rider Management | 5           | 2                 | ~8            | done                  |
-| 5         | Rider Locations  | 2           | 1                 | ~6            | **not started**       |
+| 5         | Rider Locations  | 2           | 1                 | ~7            | done                  |
 | 6         | Pickups          | 5           | 2                 | ~8            | **not started**       |
 | 7         | Transfers        | 8           | 3                 | ~10           | **not started**       |
 | 8         | Deliveries       | 5           | 2                 | ~8            | **not started**       |
 | 9         | Delivery Proofs  | 4           | 1                 | ~7            | **not started**       |
-| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **27 of 51 ops done** |
+| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **29 of 51 ops done** |
 
-Ops actually shipped: 9 + 6 + 7 + 5 = **27**, against 51 planned. The API registered **65**
+Ops actually shipped: 9 + 6 + 7 + 5 + 2 = **29**, against 51 planned. The API registered **67**
 operations at last boot; the other 38 predate the P0 plan (auth, health, tracking, parcels, jobs,
 customer).
 

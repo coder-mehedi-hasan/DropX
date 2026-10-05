@@ -24,6 +24,11 @@ import type { RidersSearch } from "@/routes/riders-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import { DEFAULT_ROUTES_SEARCH_PARAMS, routesSearchSchema } from "@/routes/routes-search-params"
 import { DEFAULT_RIDERS_SEARCH_PARAMS, ridersSearchSchema } from "@/routes/riders-search-params"
+import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
+import {
+  DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
+  riderLocationsSearchSchema,
+} from "@/routes/rider-locations-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -50,6 +55,7 @@ export type AdminDestination =
   | { to: "/pricing-rules"; search: PricingRulesSearch }
   | { to: "/routes"; search: RoutesSearch }
   | { to: "/riders"; search: RidersSearch }
+  | { to: "/rider-locations"; search: RiderLocationsSearch }
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -132,6 +138,17 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
     return {
       to: "/riders",
       search: resolveListSearch(ridersSearchSchema, DEFAULT_RIDERS_SEARCH_PARAMS, url.searchParams),
+    }
+  }
+
+  if (path === "/rider-locations") {
+    return {
+      to: "/rider-locations",
+      search: resolveListSearch(
+        riderLocationsSearchSchema,
+        DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
+        url.searchParams,
+      ),
     }
   }
 
