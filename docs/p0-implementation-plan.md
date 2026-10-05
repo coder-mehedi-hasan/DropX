@@ -2,8 +2,8 @@
 
 ## Status
 
-Verified against the running API on 2026-10-05: **72 operations registered**, all documented in
-`/openapi.json`. Batches 1–6 are built and gate-green; **batches 7–9 are not started**.
+Verified against the running API on 2026-10-05: **80 operations registered**, all documented in
+`/openapi.json`. Batches 1–7 are built and gate-green; **batches 8–9 are not started**.
 
 - [x] **Batch 1 — Zones + Vehicles** — 9 ops (`admin.zones.*` ×4, `admin.vehicles.*` ×5)
 - [x] **Batch 2 — Pricing Rules** — 6 ops (`admin.pricing.{list,read,create,update,delete,match}`)
@@ -11,11 +11,11 @@ Verified against the running API on 2026-10-05: **72 operations registered**, al
 - [x] **Batch 4 — Rider Management** — 5 ops (`admin.riders.{list,read,create,update,setStatus}`)
 - [x] **Batch 5 — Rider Location Tracking** — 2 ops (`admin.riderLocations.list`, `job.recordLocation`)
 - [x] **Batch 6 — Pickup Operations** — 5 ops (`admin.pickups.{list,read,create,assign,updateStatus}`)
-- [ ] **Batch 7 — Transfer Operations** — 0 of 8 ops. Not started.
+- [x] **Batch 7 — Transfer Operations** — 8 ops (`admin.transfers.{list,read,create,update,delete,updateStatus,manifestList,manifestReplace}`)
 - [ ] **Batch 8 — Delivery Management** — 0 of 5 ops. Not started.
 - [ ] **Batch 9 — Delivery Proof** — 0 of 4 ops. Not started.
 
-**Remaining: 3 batches, 17 ops, 6 admin screens.**
+**Remaining: 2 batches, 9 ops, 3 admin screens.**
 
 Rider-facing gaps, for contrast: the rider app (`apps/riders`) has only Jobs and Profile
 (`bottom-nav.tsx`), backed by 4 ops (`job.list`, `job.read`, `job.reportOutcome`, `job.recordLocation`).
@@ -282,8 +282,18 @@ exercised or nothing proves the guard works.
 
 ## Batch 7 — Transfer Operations (8 ops)
 
-**Status: NOT STARTED.** Dependencies met (hubs + routes + vehicles exist). Routes came from
-Batch 3, so this is the first real consumer of that batch.
+**Status: done.** 8 operations: list, read, create, update, delete, updateStatus, manifestList,
+manifestReplace — served at `/api/v1/admin/transfers`, built through the registry.
+
+Deviations from the plan's file table, all following the codebase:
+
+- **No `routes/transfers.tsx`.** Screen state lives in
+  `apps/admin/src/routes/transfers-search-params.ts`; the route is declared in `app-routes.tsx`
+  and listed in `router.tsx`, same as every other list screen.
+- **`transfer-status-sheet.tsx` + `transfer-status.ts` instead of a plan-listed third sheet.**
+  Create = `transfer-form-sheet`, manifest edit = `transfer-manifest-sheet`, every other
+  transition = `transfer-status-sheet` (the moves table comes from `TRANSFER_TRANSITIONS` in
+  `@dropx/types`, mirroring `PICKUP_TRANSITIONS`).
 
 | File                                                            | Action   |
 | --------------------------------------------------------------- | -------- |
@@ -360,12 +370,12 @@ bun run lint
 | 4         | Rider Management | 5           | 2                 | ~8            | done                  |
 | 5         | Rider Locations  | 2           | 1                 | ~7            | done                  |
 | 6         | Pickups          | 5           | 2                 | ~8            | done                  |
-| 7         | Transfers        | 8           | 3                 | ~10           | **not started**       |
+| 7         | Transfers        | 8           | 3                 | ~10           | done                  |
 | 8         | Deliveries       | 5           | 2                 | ~8            | **not started**       |
 | 9         | Delivery Proofs  | 4           | 1                 | ~7            | **not started**       |
-| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **34 of 51 ops done** |
+| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **42 of 51 ops done** |
 
-Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 = **34**, against 51 planned. The API registered **72**
+Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 + 8 = **42**, against 51 planned. The API registered **80**
 operations at last boot; the other 38 predate the P0 plan (auth, health, tracking, parcels, jobs,
 customer).
 

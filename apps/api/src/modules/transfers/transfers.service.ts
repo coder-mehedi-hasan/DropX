@@ -188,8 +188,10 @@ export async function updateTransfer(
 
     const patch: Parameters<typeof updateTransferRow>[3] = {}
 
-    if (input.fromHubId !== undefined) patch.fromHubId = await requireHub(tx, input.fromHubId, "origin hub")
-    if (input.toHubId !== undefined) patch.toHubId = await requireHub(tx, input.toHubId, "destination hub")
+    if (input.fromHubId !== undefined)
+      patch.fromHubId = await requireHub(tx, input.fromHubId, "origin hub")
+    if (input.toHubId !== undefined)
+      patch.toHubId = await requireHub(tx, input.toHubId, "destination hub")
     if (patch.fromHubId !== undefined && patch.fromHubId === (patch.toHubId ?? current.toHubId)) {
       throw new DomainError(
         ERROR_CODES.VALIDATION_FAILED,
@@ -197,7 +199,8 @@ export async function updateTransfer(
         { details: [{ field: "toHubId", message: "Pick a different hub" }] },
       )
     }
-    if (input.routeId !== undefined) patch.routeId = await optionalReference(tx, input.routeId, findRoute, "route")
+    if (input.routeId !== undefined)
+      patch.routeId = await optionalReference(tx, input.routeId, findRoute, "route")
     if (input.vehicleId !== undefined)
       patch.vehicleId = await optionalReference(tx, input.vehicleId, findVehicle, "vehicle")
     if (input.driverRef !== undefined) patch.driverId = await resolveDriver(tx, input.driverRef)
@@ -225,9 +228,13 @@ export async function updateTransferStatus(
   const reason = input.reason ?? null
 
   if (input.status === "CANCELLED" && !reason) {
-    throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "A reason is required to cancel a transfer", {
-      details: [{ field: "reason", message: "Say why it is not going" }],
-    })
+    throw new DomainError(
+      ERROR_CODES.VALIDATION_FAILED,
+      "A reason is required to cancel a transfer",
+      {
+        details: [{ field: "reason", message: "Say why it is not going" }],
+      },
+    )
   }
 
   const departed = await withTransaction(db, async (tx) => {
@@ -251,7 +258,12 @@ export async function updateTransferStatus(
       await replaceTransferManifest(tx, command.transferId, [])
     }
 
-    const affected = await updateTransferStatusRow(tx, command.scope, command.transferId, input.status)
+    const affected = await updateTransferStatusRow(
+      tx,
+      command.scope,
+      command.transferId,
+      input.status,
+    )
     if (affected === 0) throw notFound("No such transfer")
 
     // Departure: the parcels move with the truck.
@@ -299,7 +311,11 @@ export async function replaceManifest(
 
     // Past departure the manifest is a record of what was on the truck, not a
     // plan. Editing it would rewrite history the other hub has already seen.
-    if (current.status === "IN_TRANSIT" || current.status === "ARRIVED" || current.status === "CANCELLED") {
+    if (
+      current.status === "IN_TRANSIT" ||
+      current.status === "ARRIVED" ||
+      current.status === "CANCELLED"
+    ) {
       throw invalidState(
         `The manifest cannot be changed once a transfer is ${STATUS_LABEL[current.status]}.`,
       )
@@ -413,7 +429,9 @@ async function recordEvent(
       parcelId,
       eventType,
       userId: actorId,
-      description: reason ?? `${eventType === "DEPARTED_HUB" ? "Departed" : "Arrived"} on ${transfer.transferNumber}`,
+      description:
+        reason ??
+        `${eventType === "DEPARTED_HUB" ? "Departed" : "Arrived"} on ${transfer.transferNumber}`,
     })
   }
 }
@@ -439,7 +457,10 @@ async function optionalReference(
   throw notFound(`No such ${label}`)
 }
 
-async function resolveDriver(db: Connection, ref: string | null | undefined): Promise<string | null> {
+async function resolveDriver(
+  db: Connection,
+  ref: string | null | undefined,
+): Promise<string | null> {
   if (ref === null || ref === undefined || ref === "") return null
   const driverId = await findStaffByRef(db, ref)
   if (!driverId) throw notFound("No such staff member to drive this transfer")

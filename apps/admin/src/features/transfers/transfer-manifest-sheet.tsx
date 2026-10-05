@@ -107,9 +107,7 @@ export function TransferManifestSheet({
   }
 
   function remove(parcelId: string) {
-    mutation.mutate(
-      transfer!.parcels.filter((p) => p.parcelId !== parcelId).map((p) => p.parcelId),
-    )
+    mutation.mutate(transfer!.parcels.filter((p) => p.parcelId !== parcelId).map((p) => p.parcelId))
   }
 
   return (

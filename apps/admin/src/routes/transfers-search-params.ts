@@ -16,9 +16,9 @@ const DEFAULT_TRANSFERS_SEARCH = {
 export const transfersSearchSchema = z.object({
   page: z.coerce.number().int().min(1).catch(DEFAULT_TRANSFERS_SEARCH.page),
   limit: z.coerce.number().int().min(1).max(100).catch(DEFAULT_TRANSFERS_SEARCH.limit),
-  sortBy: z.enum(["departedAt", "arrivedAt", "status", "createdAt"]).catch(
-    DEFAULT_TRANSFERS_SEARCH.sortBy,
-  ),
+  sortBy: z
+    .enum(["departedAt", "arrivedAt", "status", "createdAt"])
+    .catch(DEFAULT_TRANSFERS_SEARCH.sortBy),
   sort: z.enum(["asc", "desc"]).catch(DEFAULT_TRANSFERS_SEARCH.sort),
   search: z.string().catch(DEFAULT_TRANSFERS_SEARCH.search),
   // `.optional()` rather than a `""` literal: clearing the filter writes

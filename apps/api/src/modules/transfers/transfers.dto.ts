@@ -1,10 +1,6 @@
 import { z } from "zod"
 
-import {
-  PARCEL_STATUSES,
-  TRANSFER_STATUSES,
-  type ParcelStatus,
-} from "../../db/models"
+import { PARCEL_STATUSES, TRANSFER_STATUSES, type ParcelStatus } from "../../db/models"
 
 const id = z.string().trim().min(1)
 
@@ -86,9 +82,12 @@ export type UpdateTransferStatusInput = z.infer<typeof updateTransferStatusSchem
  * add and remove in one body beats two operations that race each other.
  */
 export const replaceTransferManifestSchema = z.object({
-  parcelIds: z.array(id).max(500).refine((ids) => new Set(ids).size === ids.length, {
-    message: "The same parcel was listed twice",
-  }),
+  parcelIds: z
+    .array(id)
+    .max(500)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "The same parcel was listed twice",
+    }),
 })
 export type ReplaceTransferManifestInput = z.infer<typeof replaceTransferManifestSchema>
 
@@ -99,7 +98,9 @@ export type ReplaceTransferManifestInput = z.infer<typeof replaceTransferManifes
  */
 export const MANIFEST_PARCEL_STATUSES = ["PICKED_UP", "AT_HUB"] as const
 export type ManifestParcelStatus = (typeof MANIFEST_PARCEL_STATUSES)[number]
-export const MANIFEST_PARCEL_STATUS_SET: ReadonlySet<ParcelStatus> = new Set(MANIFEST_PARCEL_STATUSES)
+export const MANIFEST_PARCEL_STATUS_SET: ReadonlySet<ParcelStatus> = new Set(
+  MANIFEST_PARCEL_STATUSES,
+)
 
 /**
  * Both hub names and codes ride along with the ids.

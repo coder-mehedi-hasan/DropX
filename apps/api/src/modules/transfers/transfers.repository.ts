@@ -33,7 +33,8 @@ const TRANSFER_COLUMNS = `
 /** Both ends, for the read predicate and for the `hubId` list filter alike. */
 const TRANSFER_SCOPE_PREDICATE = "((t.from_hub_id = ?) OR (t.to_hub_id = ?))"
 
-const HUB_COLUMNS = "fh.name AS from_hub_name, fh.code AS from_hub_code, th.name AS to_hub_name, th.code AS to_hub_code"
+const HUB_COLUMNS =
+  "fh.name AS from_hub_name, fh.code AS from_hub_code, th.name AS to_hub_name, th.code AS to_hub_code"
 
 const TRANSFER_FROM = `transfers AS t
   LEFT JOIN hubs AS fh ON fh.id = t.from_hub_id
@@ -521,10 +522,7 @@ export async function replaceTransferManifest(
   const values = parcelIds.map(() => "(?, ?)").join(", ")
   const params: string[] = [transferId]
   for (const parcelId of parcelIds) params.push(parcelId)
-  await db.execute(
-    `INSERT INTO transfer_parcels (transfer_id, parcel_id) VALUES ${values}`,
-    params,
-  )
+  await db.execute(`INSERT INTO transfer_parcels (transfer_id, parcel_id) VALUES ${values}`, params)
 }
 
 /**
