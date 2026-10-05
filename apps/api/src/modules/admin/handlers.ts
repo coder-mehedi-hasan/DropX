@@ -7,6 +7,7 @@ import * as parcels from "../parcels/parcels.service"
 import * as org from "../org/org.service"
 import * as pickups from "../pickups/pickups.service"
 import * as deliveries from "../deliveries/deliveries.service"
+import * as deliveryProofs from "../deliveries/delivery-proofs.service"
 import * as transfers from "../transfers/transfers.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
@@ -313,6 +314,26 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
         input: c.req.valid("json"),
       })
       return c.json(response.success(pickup))
+    },
+  },
+
+  deliveryProofs: {
+    list: async (c) => {
+      const page = await deliveryProofs.listDeliveryProofs(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("query"),
+      )
+      return c.json(response.success(page))
+    },
+
+    verify: async (c) => {
+      const proof = await deliveryProofs.verifyDeliveryProof(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(proof))
     },
   },
 

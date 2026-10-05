@@ -609,8 +609,11 @@ export type Delivery = EntityBase &
 export const PROOF_TYPES = ["SIGNATURE", "PHOTO", "OTP", "IDENTITY"] as const
 export type ProofType = (typeof PROOF_TYPES)[number]
 
+// `Timestamped` is wrong for proofs: the table has no `updated_at` column — a
+// proof is written once and only `verified_at` can change. Mirroring
+// `parcel_items`' `EntityBase & CreatedAt` keeps the wire type honest.
 export type DeliveryProof = EntityBase &
-  Timestamped & {
+  CreatedAt & {
     deliveryId: Id
     type: ProofType
     value: Nullable<string>

@@ -5,6 +5,7 @@ import {
   Car,
   Globe,
   Handshake,
+  FileCheck,
   LayoutDashboard,
   MapPin,
   Package,
@@ -38,6 +39,8 @@ import { DEFAULT_TRANSFERS_SEARCH_PARAMS } from "@/routes/transfers-search-param
 import type { TransfersSearch } from "@/routes/transfers-search-params"
 import { DEFAULT_DELIVERIES_SEARCH_PARAMS } from "@/routes/deliveries-search-params"
 import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
+import { DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS } from "@/routes/delivery-proofs-search-params"
+import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -56,6 +59,7 @@ export type NavItem = {
     | "/pickups"
     | "/transfers"
     | "/deliveries"
+    | "/delivery-proofs"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -69,6 +73,7 @@ export type NavItem = {
     | PickupsSearch
     | TransfersSearch
     | DeliveriesSearch
+    | DeliveryProofsSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -164,6 +169,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: "/deliveries",
     search: DEFAULT_DELIVERIES_SEARCH_PARAMS,
     icon: Handshake,
+    permission: "deliveries.view",
+  },
+  // After Deliveries: what was recorded at the door.
+  {
+    label: "Delivery proofs",
+    to: "/delivery-proofs",
+    search: DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS,
+    icon: FileCheck,
     permission: "deliveries.view",
   },
 ]

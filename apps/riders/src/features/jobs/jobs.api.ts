@@ -100,3 +100,34 @@ export async function updateJobStatus(
     body: input,
   })
 }
+
+export type ProofType = "SIGNATURE" | "PHOTO" | "OTP" | "IDENTITY"
+
+export type JobProof = {
+  id: string
+  deliveryId: string
+  type: ProofType
+  value: string | null
+  fileUrl: string | null
+  verifiedAt: string | null
+  createdAt: string
+}
+
+export type SubmitProofInput = {
+  parcelId: string
+  type: ProofType
+  value?: string
+  fileUrl?: string
+}
+
+export async function fetchJobProofs(parcelId: string, signal?: AbortSignal): Promise<JobProof[]> {
+  return apiRequest<JobProof[]>(`/jobs/${parcelId}/proofs`, { auth: true, signal })
+}
+
+export async function submitJobProof(input: SubmitProofInput): Promise<JobProof> {
+  return apiRequest<JobProof>(`/jobs/proofs`, {
+    auth: true,
+    method: "POST",
+    body: input,
+  })
+}
