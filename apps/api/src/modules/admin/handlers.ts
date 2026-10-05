@@ -8,6 +8,7 @@ import * as org from "../org/org.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
 import * as vehicles from "../vehicles/vehicles.service"
+import * as riderLocations from "../riders/rider-locations.service"
 import * as riders from "../riders/riders.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
@@ -254,6 +255,13 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
         c.req.valid("json").status,
       )
       return c.json(response.success(rider))
+    },
+  },
+
+  riderLocations: {
+    list: async (c) => {
+      const page = await riderLocations.listRiderLocations(c, c.req.valid("query"))
+      return c.json(response.success(page))
     },
   },
 }

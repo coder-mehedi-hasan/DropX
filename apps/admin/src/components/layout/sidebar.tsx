@@ -5,6 +5,7 @@ import {
   Car,
   Globe,
   LayoutDashboard,
+  MapPin,
   Package,
   PackageSearch,
   Route,
@@ -27,6 +28,8 @@ import { DEFAULT_ROUTES_SEARCH_PARAMS } from "@/routes/routes-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import { DEFAULT_RIDERS_SEARCH_PARAMS } from "@/routes/riders-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
+import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
+import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -41,6 +44,7 @@ export type NavItem = {
     | "/pricing-rules"
     | "/routes"
     | "/riders"
+    | "/rider-locations"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -50,6 +54,7 @@ export type NavItem = {
     | PricingRulesSearch
     | RoutesSearch
     | RidersSearch
+    | RiderLocationsSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -112,6 +117,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: "/riders",
     search: DEFAULT_RIDERS_SEARCH_PARAMS,
     icon: Bike,
+    permission: "riders.view",
+  },
+  {
+    label: "Rider Locations",
+    to: "/rider-locations",
+    search: DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
+    icon: MapPin,
     permission: "riders.view",
   },
 ]

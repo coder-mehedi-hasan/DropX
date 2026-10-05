@@ -7,6 +7,10 @@ import {
   listJobsQuerySchema,
   updateJobStatusSchema,
 } from "../../modules/jobs/jobs.dto"
+import {
+  reportLocationSchema,
+  riderLocationResponseSchema,
+} from "../../modules/riders/rider-locations.dto"
 
 /**
  * `jobs` operations — the rider app's surface.
@@ -99,8 +103,33 @@ export const jobsPaths = {
       },
     },
   },
+  "/jobs/locations": {
+    post: {
+      operationId: "job.recordLocation",
+      summary: "Report where I am",
+      description:
+        "Appends a position fix to the signed-in rider's trail. The rider is taken from the token and never from the body. `recordedAt` is the device clock and is optional; a fix dated too far in the future is rejected so a wrong clock cannot pin a rider's position permanently.",
+      tags: ["rider-locations"],
+      security: bearerSecurity,
+      requestBody: { required: true, ...json(jsonSchemaOf(reportLocationSchema, "input")) },
+      responses: {
+        201: {
+          description: "Recorded.",
+          ...json(jsonSchemaOf(riderLocationResponseSchema, "output")),
+        },
+        401: unauth,
+        403: errorResponse("Wrong audience, or missing `rider.location.update`."),
+        404: errorResponse("The token's rider no longer exists."),
+        422: errorResponse("Validation failed — the instant is unparseable or in the future."),
+      },
+    },
+  },
 } as const
 
 export const jobsTags = [
   { name: "jobs", description: "Rider delivery jobs and outcome reporting." },
+  {
+    name: "rider-locations",
+    description: "Where riders are. Fixes are pushed by the rider app and read by dispatch.",
+  },
 ]

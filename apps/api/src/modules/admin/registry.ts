@@ -46,6 +46,10 @@ import {
   updateParcelStatusSchema,
 } from "../parcels/parcels.dto"
 import {
+  listRiderLocationsQuerySchema as listRiderLocationsQuery,
+  riderLocationResponseSchema as riderLocationResponse,
+} from "../riders/rider-locations.dto"
+import {
   createRiderSchema as createRiderBody,
   listRidersQuerySchema as listRidersQuery,
   riderIdParamSchema as riderIdParam,
@@ -555,6 +559,24 @@ export const ADMIN_SURFACE = defineSurface({
           body: setRiderStatusBody,
           response: riderResponse,
           errors: { 404: "No such rider." },
+        },
+      },
+    },
+    riderLocations: {
+      tag: "rider-locations",
+      tagDescription:
+        "Where riders are. Fixes are append-only, written only by the rider app's `POST /jobs/locations`, and read here.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/rider-locations",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "List rider location history",
+          description:
+            "Every rider's fixes, newest first. Pass `riderId` for one rider's trail. There is no write operation here on purpose: a position is the rider's own to report, so the admin surface is read-only over data the rider app pushed.",
+          successDescription: "A page of recorded locations.",
+          query: listRiderLocationsQuery,
+          listNodes: riderLocationResponse,
         },
       },
     },
