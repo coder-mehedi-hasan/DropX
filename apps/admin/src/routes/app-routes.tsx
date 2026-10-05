@@ -12,6 +12,7 @@ import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
 import { routesSearchSchema } from "./routes-search-params"
 import { ridersSearchSchema } from "./riders-search-params"
 import { riderLocationsSearchSchema } from "./rider-locations-search-params"
+import { pickupsSearchSchema } from "./pickups-search-params"
 
 /**
  * Feature screens are split out of the entry chunk on purpose: signing in should
@@ -66,6 +67,10 @@ const RidersListPage = lazyRouteComponent(
 const RiderLocationsListPage = lazyRouteComponent(
   () => import("@/features/riders/rider-locations-list-page"),
   "RiderLocationsListPage",
+)
+const PickupsListPage = lazyRouteComponent(
+  () => import("@/features/pickups/pickups-list-page"),
+  "PickupsListPage",
 )
 
 export const loginRoute = createRoute({
@@ -165,6 +170,13 @@ export const riderLocationsRoute = createRoute({
   path: "/rider-locations",
   validateSearch: riderLocationsSearchSchema,
   component: RiderLocationsListPageRoute,
+})
+
+export const pickupsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/pickups",
+  validateSearch: pickupsSearchSchema,
+  component: PickupsListPageRoute,
 })
 
 /**
@@ -272,6 +284,15 @@ function RiderLocationsListPageRoute() {
   return (
     <RequirePermission permission="riders.view">
       <RiderLocationsListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function PickupsListPageRoute() {
+  const search = pickupsRoute.useSearch()
+  return (
+    <RequirePermission permission="pickups.view">
+      <PickupsListPage search={search} />
     </RequirePermission>
   )
 }

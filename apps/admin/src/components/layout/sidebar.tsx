@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MapPin,
   Package,
+  PackageCheck,
   PackageSearch,
   Route,
   Truck,
@@ -30,6 +31,8 @@ import { DEFAULT_RIDERS_SEARCH_PARAMS } from "@/routes/riders-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
+import { DEFAULT_PICKUPS_SEARCH_PARAMS } from "@/routes/pickups-search-params"
+import type { PickupsSearch } from "@/routes/pickups-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -45,6 +48,7 @@ export type NavItem = {
     | "/routes"
     | "/riders"
     | "/rider-locations"
+    | "/pickups"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -55,6 +59,7 @@ export type NavItem = {
     | RoutesSearch
     | RidersSearch
     | RiderLocationsSearch
+    | PickupsSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -125,6 +130,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
     icon: MapPin,
     permission: "riders.view",
+  },
+  // After Parcels and before the fleet screens: a pickup is a parcel-side action,
+  // and the fleet is who performs it.
+  {
+    label: "Pickups",
+    to: "/pickups",
+    search: DEFAULT_PICKUPS_SEARCH_PARAMS,
+    icon: PackageCheck,
+    permission: "pickups.view",
   },
 ]
 

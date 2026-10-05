@@ -13,6 +13,7 @@ import {
   COMPENSATION_TYPES,
   HUB_STATUSES,
   HUB_TYPES,
+  PICKUP_STATUSES,
   RIDER_STATUSES,
   VEHICLE_STATUSES,
   VEHICLE_TYPES,
@@ -32,6 +33,8 @@ import type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  Pickup,
+  PickupStatus,
   PricingRule,
   RecordStatus,
   Rider,
@@ -60,6 +63,8 @@ export type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  Pickup,
+  PickupStatus,
   PricingRule,
   RecordStatus,
   Rider,
@@ -179,6 +184,27 @@ export type CreateRiderBody = {
 export type UpdateRiderBody = Partial<
   Omit<CreateRiderBody, "email" | "name" | "password" | "phone">
 >
+
+/**
+ * A pickup is raised for a parcel, so `parcelId` is the only reference the form
+ * asks for — a human knows the tracking number, not the row id. `requestedBy` is
+ * absent on purpose: it is the actor, set server-side.
+ */
+export type CreatePickupBody = {
+  parcelId: string
+  pickupAddress: string
+  scheduledAt?: string | null
+}
+
+export type AssignPickupBody = {
+  riderId: string
+  scheduledAt?: string | null
+}
+
+export type UpdatePickupStatusBody = {
+  status: PickupStatus
+  reason?: string | null
+}
 
 export type CreateRouteBody = Omit<Route, "id" | "createdAt" | "updatedAt">
 export type UpdateRouteBody = Partial<CreateRouteBody>
@@ -312,6 +338,44 @@ export const createRiderSchema = z.object({
 export const updateRiderSchema = createRiderSchema
   .omit({ email: true, name: true, password: true, phone: true })
   .partial()
+
+/**
+ * `parcelId` is typed as a string the human types, then handed to the API as-is.
+ * There is no parcel picker: a picker over every parcel would list tracking
+ * numbers and addresses, and the person raising a collection already has the
+ * tracking number in hand from the customer or the phone.
+ */
+export const createPickupSchema = z.object({
+  parcelId: z.string().trim().min(1, "Tracking number or parcel id is required").max(64),
+  pickupAddress: z.string().trim().min(1, "Where is the parcel being collected?").max(500),
+  scheduledAt: z.string().trim().optional(),
+})
+
+export const assignPickupSchema = z.object({
+  riderId: z.string().trim().min(1, "Pick a rider"),
+  scheduledAt: z.string().trim().optional(),
+})
+
+/**
+ * The reason is required by the *API* for `FAILED` and `CANCELLED`, and
+ * conditionally required rather than always optional, so it is refined here too
+ * to fail in the form instead of as a 422 after a round trip. `superRefine`
+ * rather than `refine` because the message belongs on the `reason` field.
+ */
+export const updatePickupStatusSchema = z
+  .object({
+    status: z.enum(PICKUP_STATUSES),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.status === "FAILED" || value.status === "CANCELLED") && !value.reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reason"],
+        message: "Say what happened",
+      })
+    }
+  })
 
 export type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number }
 

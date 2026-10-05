@@ -22,6 +22,8 @@ import type {
   CreateBranchBody,
   CreateHubBody,
   CreateVehicleBody,
+  AssignPickupBody,
+  CreatePickupBody,
   CreateRiderBody,
   CreateRouteBody,
   CreateZoneBody,
@@ -35,6 +37,7 @@ import type {
   CreatePricingRuleBody,
   UpdatePricingRuleBody,
   ReferenceListParams,
+  Pickup,
   Rider,
   RiderLocation,
   Route,
@@ -43,6 +46,7 @@ import type {
   StaffIdentity,
   UpdateBranchBody,
   UpdateHubBody,
+  UpdatePickupStatusBody,
   UpdateRiderBody,
   UpdateRouteBody,
   UpdateVehicleBody,
@@ -57,6 +61,7 @@ import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
+import type { PickupsSearch } from "@/routes/pickups-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -308,6 +313,38 @@ export function listRiderLocations(params: RiderLocationsSearch) {
   })
 }
 
+/**
+ * The rider roster narrowed for a picker. `listRiders` would do, but it sends the
+ * full list query the table screen uses; the picker asks for a page and a search
+ * term and nothing else, so the control cannot pull a thousand riders to show
+ * twenty-five of them.
+ */
+export function listRidersForPicker(
+  params: { page: number; limit: number; search?: string },
+  signal?: AbortSignal,
+) {
+  return api.get<Page<Rider>>("/admin/riders", {
+    query: params,
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function listPickups(params: PickupsSearch) {
+  return api.get<Page<Pickup>>("/admin/pickups", { query: pickupQuery(params) })
+}
+
+export function createPickup(body: CreatePickupBody) {
+  return api.post<Pickup>("/admin/pickups", body)
+}
+
+export function assignPickup(pickupId: string, body: AssignPickupBody) {
+  return api.post<Pickup>(`/admin/pickups/${pickupId}/assign`, body)
+}
+
+export function updatePickupStatus(pickupId: string, body: UpdatePickupStatusBody) {
+  return api.patch<Pickup>(`/admin/pickups/${pickupId}/status`, body)
+}
+
 export function listRoutes(params: RoutesSearch) {
   return api.get<Page<Route>>("/routes", { query: routeQuery(params) })
 }
@@ -403,6 +440,22 @@ function riderQuery(params: RidersSearch) {
     ...(params.search ? { search: params.search } : {}),
     ...(params.status ? { status: params.status } : {}),
     ...(params.compensationType ? { compensationType: params.compensationType } : {}),
+    ...(params.hubId ? { hubId: params.hubId } : {}),
+  }
+}
+
+function pickupQuery(params: PickupsSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    ...(params.riderId ? { riderId: params.riderId } : {}),
+    // Sent even though the hub is never a column here: the API scopes the list by
+    // the *parcel's* hub, so this is the one filter a dispatcher can narrow on
+    // without leaving the screen.
     ...(params.hubId ? { hubId: params.hubId } : {}),
   }
 }

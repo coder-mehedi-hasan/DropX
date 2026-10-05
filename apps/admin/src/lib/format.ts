@@ -50,6 +50,36 @@ export function formatDimensions(
   return `${formatNumber(length ?? 0)} × ${formatNumber(width ?? 0)} × ${formatNumber(height ?? 0)} cm`
 }
 
+/**
+ * A `datetime-local` input yields `"2026-10-05T14:30"` — wall-clock time with no
+ * zone — and the API's `z.iso.datetime()` wants an absolute instant. This is the
+ * one place that gap is bridged, and it is the browser's zone by definition: a
+ * dispatcher typing "14:30" means 14:30 where they are sitting.
+ *
+ * Returns `null` for an empty or unparseable value rather than an invalid date,
+ * because `new Date("")` is `Invalid Date` and `.toISOString()` on that throws.
+ */
+export function localDateTimeToIso(value: string | undefined | null): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  const date = new Date(trimmed)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+/**
+ * The reverse, for seeding a `datetime-local` input from a stored instant. The
+ * slice drops the `Z` and keeps local wall-clock, which is exactly what the input
+ * expects — formatting it through `toISOString` would shift the time by the
+ * browser's offset every time the sheet was opened.
+ */
+export function isoToLocalDateTime(value: string | null | undefined): string {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+
 export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   const first = parts[0]?.[0] ?? ""

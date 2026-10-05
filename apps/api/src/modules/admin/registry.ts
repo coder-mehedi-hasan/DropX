@@ -50,6 +50,14 @@ import {
   riderLocationResponseSchema as riderLocationResponse,
 } from "../riders/rider-locations.dto"
 import {
+  assignPickupSchema,
+  createPickupSchema,
+  listPickupsQuerySchema,
+  pickupIdParamSchema,
+  pickupResponseSchema,
+  updatePickupStatusSchema,
+} from "../pickups/pickups.dto"
+import {
   createRiderSchema as createRiderBody,
   listRidersQuerySchema as listRidersQuery,
   riderIdParamSchema as riderIdParam,
@@ -155,6 +163,103 @@ export const ADMIN_SURFACE = defineSurface({
           errors: {
             404: "No such parcel in scope.",
             409: "The parcel cannot be cancelled from its current status.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Pickups: collecting a parcel from a customer.
+     *
+     * A pickup has no hub of its own — it is a collection against one parcel, and
+     * the parcel is what carries geography — so every read and both writes are
+     * scoped through `COALESCE(parcels.current_hub_id, parcels.destination_hub_id)`.
+     * That is why the list filter takes `hubId`: it filters on the parcel's hub,
+     * which is the only hub a pickup has.
+     *
+     * `assign` is a separate operation from `updateStatus` on purpose, so
+     * `pickups.assign` can be granted to dispatch without also handing over the
+     * authority to fail, cancel, or re-status a pickup. It is a POST rather than a
+     * PATCH because the rider id is in the body: `PATCH /pickups/:id` would
+     * invite a client to think it could address the pickup itself.
+     */
+    pickups: {
+      tag: "pickups",
+      tagDescription:
+        "Collections: raising a pickup for a parcel, assigning a rider to it, and moving it through to collected.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/pickups",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_VIEW] },
+          summary: "List pickups",
+          successDescription: "A page of pickups.",
+          description:
+            "Branch/hub-scoped through the parcel each pickup belongs to. Ordering is limited to an allowlist of columns; an unknown `sortBy` is rejected rather than interpolated into SQL.",
+          query: listPickupsQuerySchema,
+          listNodes: pickupResponseSchema,
+        },
+        read: {
+          method: "GET",
+          path: "/pickups/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_VIEW] },
+          summary: "Read a pickup",
+          successDescription: "The pickup.",
+          params: pickupIdParamSchema,
+          paramDescriptions: { id: "Pickup id." },
+          response: pickupResponseSchema,
+          errors: { 404: "No such pickup in scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/pickups",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_MANAGE] },
+          summary: "Create a pickup",
+          successDescription: "Created.",
+          description:
+            "Raises a collection for a parcel. `parcelId` accepts either the parcel id or its tracking number — the only string a customer can read out over the phone. `requestedBy` is the authenticated actor and is never read from the body, and a parcel may have only one unfinished pickup at a time.",
+          body: createPickupSchema,
+          response: pickupResponseSchema,
+          successStatus: 201,
+          errors: {
+            404: "No such parcel in scope.",
+            409: "The parcel already has an unfinished pickup.",
+            422: "Validation failed, or the chosen status needs a reason.",
+          },
+        },
+        assign: {
+          method: "POST",
+          path: "/pickups/:id/assign",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_ASSIGN] },
+          summary: "Assign a rider to a pickup",
+          successDescription: "Assigned.",
+          description:
+            "Assigns a rider and moves the pickup to `ASSIGNED`. Reassigning is a two-step affair — move the pickup back to `REQUESTED` first — so an accidental second dispatch cannot silently replace a rider who was told to turn up.",
+          params: pickupIdParamSchema,
+          paramDescriptions: { id: "Pickup id." },
+          body: assignPickupSchema,
+          response: pickupResponseSchema,
+          errors: {
+            404: "No such pickup in scope, or no such rider.",
+            409: "The pickup cannot be assigned from its current status.",
+          },
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/pickups/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_MANAGE] },
+          summary: "Update pickup status",
+          successDescription: "Updated.",
+          description:
+            "Moves the pickup along its lifecycle. `PICKED_UP` also stamps `pickedUpAt` and moves the parcel to `PICKED_UP`, both in the same transaction.",
+          params: pickupIdParamSchema,
+          paramDescriptions: { id: "Pickup id." },
+          body: updatePickupStatusSchema,
+          response: pickupResponseSchema,
+          errors: {
+            404: "No such pickup in scope.",
+            409: "The requested status transition is not allowed from the current status.",
+            422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
           },
         },
       },
