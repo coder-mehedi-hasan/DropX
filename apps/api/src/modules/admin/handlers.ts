@@ -14,6 +14,7 @@ import * as zones from "../zones/zones.service"
 import * as vehicles from "../vehicles/vehicles.service"
 import * as riderLocations from "../riders/rider-locations.service"
 import * as riders from "../riders/riders.service"
+import * as riderApplications from "../rider-applications/rider-applications.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -266,6 +267,20 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     list: async (c) => {
       const page = await riderLocations.listRiderLocations(c, c.req.valid("query"))
       return c.json(response.success(page))
+    },
+  },
+  riderApplications: {
+    list: async (c) => {
+      const page = await riderApplications.listRiderApplications(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+    updateStatus: async (c) => {
+      const application = await riderApplications.updateRiderApplication(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json").status,
+      )
+      return c.json(response.success(application))
     },
   },
 

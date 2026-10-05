@@ -91,6 +91,12 @@ import {
   updateRiderSchema as updateRiderBody,
 } from "../riders/riders.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
+import {
+  listRiderApplicationsQuerySchema,
+  riderApplicationIdParamSchema,
+  riderApplicationResponseSchema,
+  updateRiderApplicationSchema,
+} from "../rider-applications/rider-applications.dto"
 
 /**
  * The admin surface — the whole contract for every staff operation.
@@ -999,6 +1005,33 @@ export const ADMIN_SURFACE = defineSurface({
           successDescription: "A page of recorded locations.",
           query: listRiderLocationsQuery,
           listNodes: riderLocationResponse,
+        },
+      },
+    },
+    riderApplications: {
+      tag: "rider applications",
+      tagDescription:
+        "Public applications from people interested in joining the DropX rider network.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/rider-applications",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "List rider applications",
+          successDescription: "A page of rider applications.",
+          query: listRiderApplicationsQuerySchema,
+          listNodes: riderApplicationResponseSchema,
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/rider-applications/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Update rider application status",
+          successDescription: "Application status updated.",
+          params: riderApplicationIdParamSchema,
+          body: updateRiderApplicationSchema,
+          response: riderApplicationResponseSchema,
+          errors: { 404: "No such rider application." },
         },
       },
     },
