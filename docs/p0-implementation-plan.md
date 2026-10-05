@@ -359,13 +359,13 @@ bun run lint
 | 3         | Routes + Stops   | 7           | 2                 | ~8            | done                  |
 | 4         | Rider Management | 5           | 2                 | ~8            | done                  |
 | 5         | Rider Locations  | 2           | 1                 | ~7            | done                  |
-| 6         | Pickups          | 5           | 2                 | ~8            | **not started**       |
+| 6         | Pickups          | 5           | 2                 | ~8            | done                  |
 | 7         | Transfers        | 8           | 3                 | ~10           | **not started**       |
 | 8         | Deliveries       | 5           | 2                 | ~8            | **not started**       |
 | 9         | Delivery Proofs  | 4           | 1                 | ~7            | **not started**       |
-| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **29 of 51 ops done** |
+| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **34 of 51 ops done** |
 
-Ops actually shipped: 9 + 6 + 7 + 5 + 2 = **29**, against 51 planned. The API registered **67**
+Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 = **34**, against 51 planned. The API registered **72**
 operations at last boot; the other 38 predate the P0 plan (auth, health, tracking, parcels, jobs,
 customer).
 

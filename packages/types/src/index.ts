@@ -506,6 +506,32 @@ export const TRANSFER_STATUSES = [
 ] as const
 export type TransferStatus = (typeof TRANSFER_STATUSES)[number]
 
+/**
+ * The transfer lifecycle, shaped like `PARCEL_TRANSITIONS` and `PICKUP_TRANSITIONS`
+ * for the same reason: the API enforces it and the admin's status control offers
+ * exactly these moves.
+ *
+ * Two edges carry more weight than they look:
+ *
+ * - **`LOADING → PLANNED`** exists so a transfer that was never filled can go back
+ *   to being a draft, with its manifest intact, instead of being cancelled.
+ * - **`IN_TRANSIT → ARRIVED` is the only way out.** The manifest is sealed from
+ *   departure, so a truck in transit can only be arrived or… nothing. There is no
+ *   "cancel a transfer that already left", because the parcels are on a vehicle
+ *   this system does not track.
+ */
+export const TRANSFER_TRANSITIONS: Readonly<Record<TransferStatus, readonly TransferStatus[]>> = {
+  PLANNED: ["LOADING", "CANCELLED"],
+  LOADING: ["IN_TRANSIT", "PLANNED", "CANCELLED"],
+  IN_TRANSIT: ["ARRIVED"],
+  ARRIVED: [],
+  CANCELLED: [],
+}
+
+export function canTransitionTransfer(from: TransferStatus, to: TransferStatus): boolean {
+  return TRANSFER_TRANSITIONS[from].includes(to)
+}
+
 export type Transfer = EntityBase &
   Timestamped & {
     transferNumber: string

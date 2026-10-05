@@ -58,6 +58,17 @@ import {
   updatePickupStatusSchema,
 } from "../pickups/pickups.dto"
 import {
+  createTransferSchema as createTransferBody,
+  listTransfersQuerySchema as listTransfersQuery,
+  replaceTransferManifestSchema as replaceTransferManifestBody,
+  transferIdParamSchema as transferIdParam,
+  transferParcelListSchema as transferParcelList,
+  transferListItemSchema as transferListItem,
+  transferWithManifestResponseSchema as transferWithManifestResponse,
+  updateTransferSchema as updateTransferBody,
+  updateTransferStatusSchema as updateTransferStatusBody,
+} from "../transfers/transfers.dto"
+import {
   createRiderSchema as createRiderBody,
   listRidersQuerySchema as listRidersQuery,
   riderIdParamSchema as riderIdParam,
@@ -260,6 +271,159 @@ export const ADMIN_SURFACE = defineSurface({
             404: "No such pickup in scope.",
             409: "The requested status transition is not allowed from the current status.",
             422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Transfers: moving parcels between two hubs.
+     *
+     * Two things here are unlike the rest of this surface, and both are forced by
+     * the domain rather than chosen:
+     *
+     * - **A transfer has two ends, so it is scoped by either.** `transfers.manage`
+     *   is checked against the origin hub alone — the hub that loads the truck is
+     *   the one that owns it — while every read matches `from_hub` **or** `to_hub`,
+     *   because a hub must see the transfer it is about to unload as well as the
+     *   one it is loading. `AND` would hide inbound trucks; the asymmetry is in
+     *   `transfers.repository.ts` and is the part to read before changing it.
+     * - **The manifest is sealed at departure.** `PUT /transfers/:id/parcels`
+     *   replaces the load list freely until the transfer is `IN_TRANSIT`, after
+     *   which the list is a record of what was on the truck. There is no
+     *   "cancel in transit" for the same reason: the parcels are on a vehicle this
+     *   system does not track.
+     *
+     * `delete` exists but only bites on an empty `PLANNED` transfer — a draft.
+     * Anything with a manifest is cancelled instead, so the record of what was
+     * loaded onto a truck is never destroyed.
+     */
+    transfers: {
+      tag: "transfers",
+      tagDescription:
+        "Hub-to-hub transfers: planning a run, loading its manifest, departing, and arriving.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/transfers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_VIEW] },
+          summary: "List transfers",
+          successDescription: "A page of transfers.",
+          description:
+            "Scoped by either hub, so a hub sees what it is loading and what is arriving. The `hubId` filter matches either end too. Ordering is limited to an allowlist of columns.",
+          query: listTransfersQuery,
+          listNodes: transferListItem,
+        },
+        read: {
+          method: "GET",
+          path: "/transfers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_VIEW] },
+          summary: "Read a transfer",
+          successDescription: "The transfer, with its manifest.",
+          description:
+            "One request for the whole screen: the transfer, both hub names, and every parcel on it with its load and unload timestamps.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          response: transferWithManifestResponse,
+          errors: { 404: "No such transfer in scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/transfers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Create a transfer",
+          successDescription: "Created.",
+          description:
+            "Plans a hub-to-hub run. `transferNumber` is generated server-side and never accepted from a client. `driverRef` is a **staff** member — rule 9 makes transfer drivers staff, not riders — matched by id or email, and it has to be an active account.",
+          body: createTransferBody,
+          response: transferWithManifestResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such hub, vehicle, route, or driver.",
+            422: "Validation failed — including origin and destination being the same hub.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/transfers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Update a transfer",
+          successDescription: "Updated.",
+          description:
+            "Hubs are editable only while `PLANNED`, because a manifest is validated against the origin hub and changing it afterwards would invalidate every row. Route, vehicle and driver stay editable until the truck departs.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          body: updateTransferBody,
+          response: transferWithManifestResponse,
+          errors: {
+            404: "No such transfer in scope, or a referenced record does not exist.",
+            409: "The transfer has departed or finished, so it cannot be edited.",
+            422: "Nothing to change.",
+          },
+        },
+        delete: {
+          method: "DELETE",
+          path: "/transfers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Delete a planned transfer",
+          successDescription: "Deleted.",
+          description:
+            "Removes a draft: a `PLANNED` transfer with an empty manifest. Anything further along is cancelled instead, so the record of what was loaded is never destroyed.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          successStatus: 204,
+          errors: {
+            404: "No such transfer in scope.",
+            409: "The transfer is not a draft, or has parcels on it. Cancel it instead.",
+          },
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/transfers/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Update transfer status",
+          successDescription: "Updated.",
+          description:
+            "Moves the transfer along its lifecycle. `IN_TRANSIT` requires a non-empty manifest, stamps `departedAt` and `loadedAt`, and moves every manifest parcel to `IN_TRANSIT`. `ARRIVED` stamps `arrivedAt` and `unloadedAt`, moves every manifest parcel to the destination hub and back to `AT_HUB`. Both write a parcel event per parcel, so the customer's timeline is intact.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          body: updateTransferStatusBody,
+          response: transferWithManifestResponse,
+          errors: {
+            404: "No such transfer in scope.",
+            409: "The requested transition is not allowed from the current status.",
+            422: "`CANCELLED` requires a reason; `IN_TRANSIT` requires a non-empty manifest.",
+          },
+        },
+        manifestList: {
+          method: "GET",
+          path: "/transfers/:id/parcels",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_VIEW] },
+          summary: "List a transfer's manifest",
+          successDescription: "The parcels on this transfer.",
+          description:
+            "The manifest alone, for the sheet that edits a load list without refetching the whole transfer. A bare array, not a page: the manifest is bounded at 500 parcels by `PUT`, so there is nothing to page through — the same shape `routes/:id/stops` returns.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          response: transferParcelList,
+          errors: { 404: "No such transfer in scope." },
+        },
+        manifestReplace: {
+          method: "PUT",
+          path: "/transfers/:id/parcels",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Replace a transfer's manifest",
+          successDescription: "The new manifest.",
+          description:
+            "Replaces the whole load list. Every parcel must be at the origin hub and be in a status that may legally depart — a parcel that is not is named in the 422 rather than quietly dropped. Rejected once the transfer is `IN_TRANSIT`, where the manifest is history.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          body: replaceTransferManifestBody,
+          response: transferParcelList,
+          errors: {
+            404: "No such transfer in scope.",
+            409: "The transfer has departed, arrived, or been cancelled, so its manifest is fixed.",
+            422: "One or more parcels are not at the origin hub, or are already moving.",
           },
         },
       },

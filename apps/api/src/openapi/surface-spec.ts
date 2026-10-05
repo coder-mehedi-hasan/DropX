@@ -30,10 +30,19 @@ function jsonBody(schema: SchemaObject) {
   return { content: { "application/json": { schema } } }
 }
 
-/** The success body, in the shape the registry declared it. */
-function successBody(operation: OperationContract): SchemaObject {
+/**
+ * The success body, in the shape the registry declared it — or `null` when it
+ * declared none.
+ *
+ * `null` is the case a `DELETE` needs. A 204 has no body, and by RFC 9110 it
+ * *must not* have one, so a registry delete cannot return `{"deleted": true}` to
+ * make the generator's job easy. This used to be a non-null assertion, which threw
+ * while building the spec rather than at a point where the mistake was obvious.
+ */
+function successBody(operation: OperationContract): SchemaObject | null {
   if (operation.listNodes) return pageSchema(jsonSchemaOf(operation.listNodes, "output"))
-  return jsonSchemaOf(operation.response!, "output")
+  if (!operation.response) return null
+  return jsonSchemaOf(operation.response, "output")
 }
 
 /** Query parameters, derived from the query schema so they cannot drift from it. */
@@ -74,10 +83,11 @@ function pathParameters(operation: SurfaceOperation) {
 function buildOperation(operation: SurfaceOperation) {
   const parameters = [...pathParameters(operation), ...queryParameters(operation)]
 
+  const success = successBody(operation)
   const responses: Record<string, unknown> = {
     [operation.successStatus]: {
       description: operation.successDescription ?? operation.summary,
-      ...jsonBody(successBody(operation)),
+      ...(success ? jsonBody(success) : {}),
     },
   }
 

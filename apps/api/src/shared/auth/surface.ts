@@ -182,17 +182,24 @@ function normalizeSurface(spec: SurfaceSpec): {
       }
       seen.set(id, `${feature}.${key}`)
 
+      const successStatus = operation.successStatus ?? 200
+
       const hasResponse = operation.response !== undefined
       const hasList = operation.listNodes !== undefined
-      if (hasResponse === hasList) {
+      // "Exactly one" is the rule, with one deliberate exception: a 204 carries no
+      // body, and by RFC 9110 it must not, so a `DELETE` cannot describe one. The
+      // status is what makes the absence intentional — loosening this to "at most
+      // one" would let a 200 with no declared body through, which is a contract
+      // nobody can implement.
+      const bodyless = successStatus === 204
+      if (hasResponse === hasList && !(bodyless && !hasResponse && !hasList)) {
         throw new Error(
           `Operation "${id}" must declare exactly one of \`response\` or \`listNodes\`, not ${
             hasResponse ? "both" : "neither"
-          }`,
+          }${bodyless ? " — a 204 is the only status that may declare neither" : ""}`,
         )
       }
 
-      const successStatus = operation.successStatus ?? 200
       const errors: Record<number, string> = {}
 
       // Precedence, highest first:
