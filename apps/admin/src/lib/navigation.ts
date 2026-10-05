@@ -36,6 +36,11 @@ import {
   transfersSearchSchema,
 } from "@/routes/transfers-search-params"
 import type { TransfersSearch } from "@/routes/transfers-search-params"
+import {
+  DEFAULT_DELIVERIES_SEARCH_PARAMS,
+  deliveriesSearchSchema,
+} from "@/routes/deliveries-search-params"
+import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -65,6 +70,7 @@ export type AdminDestination =
   | { to: "/rider-locations"; search: RiderLocationsSearch }
   | { to: "/pickups"; search: PickupsSearch }
   | { to: "/transfers"; search: TransfersSearch }
+  | { to: "/deliveries"; search: DeliveriesSearch }
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -167,6 +173,17 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       search: resolveListSearch(
         pickupsSearchSchema,
         DEFAULT_PICKUPS_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
+  }
+
+  if (path === "/deliveries") {
+    return {
+      to: "/deliveries",
+      search: resolveListSearch(
+        deliveriesSearchSchema,
+        DEFAULT_DELIVERIES_SEARCH_PARAMS,
         url.searchParams,
       ),
     }

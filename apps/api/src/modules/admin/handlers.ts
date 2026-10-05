@@ -6,6 +6,7 @@ import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import * as org from "../org/org.service"
 import * as pickups from "../pickups/pickups.service"
+import * as deliveries from "../deliveries/deliveries.service"
 import * as transfers from "../transfers/transfers.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
@@ -315,9 +316,65 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     },
   },
 
+  deliveries: {
+    list: async (c) => {
+      const page = await deliveries.listDeliveries(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("query"),
+      )
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const delivery = await deliveries.getDelivery(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(delivery))
+    },
+
+    create: async (c) => {
+      const auth = c.get("auth")
+      const delivery = await deliveries.createDelivery(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(delivery), 201)
+    },
+
+    reassign: async (c) => {
+      const auth = c.get("auth")
+      const delivery = await deliveries.reassignDelivery(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        deliveryId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(delivery))
+    },
+
+    updateStatus: async (c) => {
+      const auth = c.get("auth")
+      const delivery = await deliveries.updateDeliveryStatus(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        deliveryId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(delivery))
+    },
+  },
+
   transfers: {
     list: async (c) => {
-      const page = await transfers.listTransfers(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      const page = await transfers.listTransfers(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("query"),
+      )
       return c.json(response.success(page))
     },
 

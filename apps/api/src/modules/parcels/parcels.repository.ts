@@ -329,6 +329,44 @@ export async function updateParcelStatus(
   return result.affectedRows
 }
 
+/**
+ * Locks the parcel row a create-side operation will belong to, in scope.
+ *
+ * `reference` is matched against **either** the id or the tracking number. That is
+ * not leniency for its own sake: the id is never shown to a human anywhere, while
+ * the tracking number is the only string a customer can read out over the phone.
+ * Accepting a field that callers cannot possibly know would make the whole create
+ * path unusable.
+ *
+ * The lock exists to serialise concurrent creates rather than to read anything:
+ * two dispatchers raising work against the same parcel at the same moment would
+ * each pass an "is there already an open row?" check and both insert. Locking the
+ * shared parent row makes the second one wait, then see the first.
+ */
+export async function lockScopedParcelForUpdate(
+  db: Pool | Connection,
+  scope: Scope,
+  reference: string,
+): Promise<string | null> {
+  const clauses = ["(p.id = ? OR p.tracking_number = ?)"]
+  const params: unknown[] = [reference, reference]
+  const scoped = applyScope(scope)
+  if (scoped.params.length > 0) {
+    clauses.push(scoped.text)
+    params.push(...scoped.params)
+  }
+
+  // The `scope_hub` alias is what `applyScope` writes against, so this joins the
+  // same way the rest of this file does rather than restating the condition.
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT p.id FROM parcels AS p
+     LEFT JOIN hubs AS scope_hub ON scope_hub.id = COALESCE(p.current_hub_id, p.destination_hub_id)
+     WHERE ${clauses.join(" AND ")} LIMIT 1 FOR UPDATE`,
+    params,
+  )
+  return rows[0] ? String(rows[0].id) : null
+}
+
 export async function insertParcelEvent(
   db: Pool | Connection,
   input: {

@@ -18,6 +18,7 @@ import {
   routesRoute,
   trackingRoute,
   transfersRoute,
+  deliveriesRoute,
   vehiclesRoute,
   zonesRoute,
 } from "./routes/app-routes"
@@ -39,6 +40,7 @@ const routeTree = rootRoute.addChildren([
     riderLocationsRoute,
     pickupsRoute,
     transfersRoute,
+    deliveriesRoute,
     routesRoute,
   ]),
 ])

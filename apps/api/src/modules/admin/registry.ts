@@ -58,6 +58,14 @@ import {
   updatePickupStatusSchema,
 } from "../pickups/pickups.dto"
 import {
+  createDeliverySchema as createDeliveryBody,
+  deliveryIdParamSchema as deliveryIdParam,
+  deliveryResponseSchema as deliveryResponse,
+  listDeliveriesQuerySchema as listDeliveriesQuery,
+  reassignDeliverySchema as reassignDeliveryBody,
+  updateDeliveryStatusSchema as updateDeliveryStatusBody,
+} from "../deliveries/deliveries.dto"
+import {
   createTransferSchema as createTransferBody,
   listTransfersQuerySchema as listTransfersQuery,
   replaceTransferManifestSchema as replaceTransferManifestBody,
@@ -269,6 +277,106 @@ export const ADMIN_SURFACE = defineSurface({
           response: pickupResponseSchema,
           errors: {
             404: "No such pickup in scope.",
+            409: "The requested status transition is not allowed from the current status.",
+            422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Deliveries: the rider's last-mile attempts, created and overseen by
+     * dispatch.
+     *
+     * A delivery is the rider's leg of one parcel, and there is exactly one
+     * open attempt per parcel at a time — retries are new rows with the next
+     * `attempt_no`, never reopened ones. Reads and writes are scoped through
+     * `d.hub_id` (the attempt's own hub), while create additionally locks the
+     * parcel and takes its hub from the parcel row, so the address a dispatcher
+     * types can never land on the wrong hub.
+     *
+     * `create` is gated on `deliveries.assign` because raising an attempt *is*
+     * assigning a rider — there is no draft attempt without one. `reassign`
+     * shares that key: dispatch owns the rider on the attempt. `updateStatus`
+     * is `deliveries.manage`: the rider owns the outcome transitions in
+     * normal running, so the admin side is reserved for overrides and
+     * cancellations, and a cancellation releases the parcel back to its hub.
+     */
+    deliveries: {
+      tag: "deliveries",
+      tagDescription:
+        "Last-mile attempts: opening an attempt for a parcel, reassigning its rider, and overriding its status.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/deliveries",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_VIEW] },
+          summary: "List deliveries",
+          successDescription: "A page of deliveries.",
+          description:
+            "Scoped by the attempt's hub. Ordering is limited to an allowlist of columns; an unknown `sortBy` is rejected rather than interpolated into SQL.",
+          query: listDeliveriesQuery,
+          listNodes: deliveryResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/deliveries/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_VIEW] },
+          summary: "Read a delivery",
+          successDescription: "The delivery.",
+          params: deliveryIdParam,
+          paramDescriptions: { id: "Delivery id." },
+          response: deliveryResponse,
+          errors: { 404: "No such delivery in scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/deliveries",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_ASSIGN] },
+          summary: "Create a delivery attempt",
+          successDescription: "Created.",
+          description:
+            "Opens an attempt for a parcel: locks the parcel, checks there is no open attempt, and opens row `attempt_no + 1`. `parcelId` accepts either the parcel id or its tracking number — the only string a human has. The parcel must be `AT_HUB` or `FAILED`, and the rider must not be suspended. The hub is derived from the parcel, never taken from the body.",
+          body: createDeliveryBody,
+          response: deliveryResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such parcel in scope, or no such rider.",
+            409: "The parcel already has an open delivery attempt.",
+            422: "Validation failed, or the parcel is not in a dispatchable status.",
+          },
+        },
+        reassign: {
+          method: "PATCH",
+          path: "/deliveries/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_ASSIGN] },
+          summary: "Reassign a delivery attempt",
+          successDescription: "Reassigned.",
+          description:
+            "Swaps the rider on the same attempt. Only allowed while the attempt is still `ASSIGNED` — once it is out for delivery, a rider swap is a status event, not an edit.",
+          params: deliveryIdParam,
+          paramDescriptions: { id: "Delivery id." },
+          body: reassignDeliveryBody,
+          response: deliveryResponse,
+          errors: {
+            404: "No such delivery in scope, or no such rider.",
+            409: "Only an attempt that has not started can be reassigned.",
+          },
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/deliveries/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_MANAGE] },
+          summary: "Update delivery status",
+          successDescription: "Updated.",
+          description:
+            "Moves the attempt along its lifecycle, in the same transaction as the parcel: `DELIVERED`/`FAILED`/`RETURNED`/`OUT_FOR_DELIVERY` move the parcel to match, `CANCELLED` releases the parcel back to `AT_HUB`. The rider's own outcome reporting flows through the jobs endpoint, not this one.",
+          params: deliveryIdParam,
+          paramDescriptions: { id: "Delivery id." },
+          body: updateDeliveryStatusBody,
+          response: deliveryResponse,
+          errors: {
+            404: "No such delivery in scope.",
             409: "The requested status transition is not allowed from the current status.",
             422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
           },
