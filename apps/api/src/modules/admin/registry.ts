@@ -45,6 +45,14 @@ import {
   parcelWithItemsResponseSchema,
   updateParcelStatusSchema,
 } from "../parcels/parcels.dto"
+import {
+  createRiderSchema as createRiderBody,
+  listRidersQuerySchema as listRidersQuery,
+  riderIdParamSchema as riderIdParam,
+  riderResponseSchema as riderResponse,
+  setRiderStatusSchema as setRiderStatusBody,
+  updateRiderSchema as updateRiderBody,
+} from "../riders/riders.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
 
 /**
@@ -473,6 +481,80 @@ export const ADMIN_SURFACE = defineSurface({
             404: "No such vehicle.",
             409: "The vehicle is already inactive.",
           },
+        },
+      },
+    },
+
+    riders: {
+      tag: "riders",
+      tagDescription:
+        "Delivery riders. Each rider is a `users` account plus a `riders` row, so creating one also creates the login the rider app signs in with.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/riders",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "List riders",
+          successDescription: "A page of riders.",
+          query: listRidersQuery,
+          listNodes: riderResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/riders/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "Read a rider",
+          successDescription: "The rider.",
+          params: riderIdParam,
+          paramDescriptions: { id: "Rider id." },
+          response: riderResponse,
+          errors: { 404: "No such rider." },
+        },
+        create: {
+          method: "POST",
+          path: "/riders",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Create a rider",
+          description:
+            "Creates the rider's login account and their `riders` row in one transaction, because a rider is always both (rule 8) and neither half is useful alone.",
+          successDescription: "Created.",
+          body: createRiderBody,
+          response: riderResponse,
+          successStatus: 201,
+          errors: {
+            409: "That email is already registered, or the employee code is already in use.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/riders/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Update a rider",
+          successDescription: "Updated.",
+          description:
+            "Hub, employee code, licence, compensation and status only. The rider's email, name and password belong to their `users` account and are not editable here.",
+          params: riderIdParam,
+          paramDescriptions: { id: "Rider id." },
+          body: updateRiderBody,
+          response: riderResponse,
+          errors: {
+            404: "No such rider.",
+            409: "That employee code is already in use.",
+          },
+        },
+        setStatus: {
+          method: "POST",
+          path: "/riders/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Set a rider's availability",
+          description:
+            "Availability is its own operation because ops flips it constantly from the dispatch board, and because it has distinct transition rules from the rest of the rider record.",
+          successDescription: "Updated.",
+          params: riderIdParam,
+          paramDescriptions: { id: "Rider id." },
+          body: setRiderStatusBody,
+          response: riderResponse,
+          errors: { 404: "No such rider." },
         },
       },
     },

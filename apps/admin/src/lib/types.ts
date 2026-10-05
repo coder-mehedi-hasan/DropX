@@ -10,8 +10,10 @@
 import { z } from "zod"
 import {
   BRANCH_STATUSES,
+  COMPENSATION_TYPES,
   HUB_STATUSES,
   HUB_TYPES,
+  RIDER_STATUSES,
   VEHICLE_STATUSES,
   VEHICLE_TYPES,
 } from "@dropx/types"
@@ -32,6 +34,9 @@ import type {
   ParcelWithItems,
   PricingRule,
   RecordStatus,
+  Rider,
+  RiderStatus,
+  CompensationType,
   Route,
   RouteStop,
   Vehicle,
@@ -56,6 +61,9 @@ export type {
   ParcelWithItems,
   PricingRule,
   RecordStatus,
+  Rider,
+  RiderStatus,
+  CompensationType,
   Route,
   RouteStop,
   Vehicle,
@@ -153,6 +161,22 @@ export type UpdatePricingRuleBody = Partial<CreatePricingRuleBody>
 
 export type CreateVehicleBody = Omit<Vehicle, "id" | "createdAt" | "updatedAt">
 export type UpdateVehicleBody = Partial<CreateVehicleBody>
+
+export type CreateRiderBody = {
+  email: string
+  name: string
+  password: string
+  phone?: string | null
+  hubId: string
+  employeeCode: string
+  licenseNumber?: string | null
+  compensationType: CompensationType
+  status: RiderStatus
+}
+/** Account fields are deliberately absent — they belong to the `users` row. */
+export type UpdateRiderBody = Partial<
+  Omit<CreateRiderBody, "email" | "name" | "password" | "phone">
+>
 
 export type CreateRouteBody = Omit<Route, "id" | "createdAt" | "updatedAt">
 export type UpdateRouteBody = Partial<CreateRouteBody>
@@ -259,6 +283,33 @@ export const routeStopSchema = z.object({
   sequenceNo: z.coerce.number().int().min(1),
   estimatedArrivalMinutes: z.coerce.number().int().nonnegative().max(99_999).nullish(),
 })
+
+export const createRiderSchema = z.object({
+  email: z.string().trim().email("Enter a valid email").max(150),
+  name: z.string().trim().min(1, "Name is required").max(150),
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+  phone: z.string().trim().max(30).nullish(),
+  hubId: z.string().trim().min(1, "Pick a home hub"),
+  employeeCode: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .regex(/^[A-Z0-9-]+$/, "Use uppercase letters, numbers and hyphens only"),
+  licenseNumber: z.string().trim().max(100).nullish(),
+  compensationType: z.enum(COMPENSATION_TYPES).default("SALARIED"),
+  status: z.enum(RIDER_STATUSES).default("OFFLINE"),
+})
+
+/**
+ * The account half is not editable here, mirroring the API: an existing rider's
+ * email and password are a user edit, and two surfaces writing one row invites a
+ * drift bug. The password field is dropped, so the key is absent from the type
+ * and cannot be sent by mistake.
+ */
+export const updateRiderSchema = createRiderSchema
+  .omit({ email: true, name: true, password: true, phone: true })
+  .partial()
 
 export type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number }
 

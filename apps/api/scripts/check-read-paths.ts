@@ -50,6 +50,7 @@ const zones = await import("../src/modules/zones/zones.repository")
 const vehicles = await import("../src/modules/vehicles/vehicles.repository")
 const pricingRules = await import("../src/modules/pricing/pricing-rules.repository")
 const routes = await import("../src/modules/routes/routes.repository")
+const riders = await import("../src/modules/riders/riders.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -375,6 +376,31 @@ cases.push(
   })),
   { name: "routes.selectRoute", run: () => routes.selectRoute(pool, "1") },
   { name: "routes.selectStops", run: () => routes.selectStops(pool, "1") },
+
+  // --- Riders ---------------------------------------------------------------
+  { name: "riders.selectRiders", run: () => riders.selectRiders(pool, listParams, {}) },
+  {
+    name: "riders.selectRiders(status)",
+    run: () => riders.selectRiders(pool, listParams, { status: "AVAILABLE" }),
+  },
+  {
+    name: "riders.selectRiders(compensationType)",
+    run: () => riders.selectRiders(pool, listParams, { compensationType: "SALARIED" }),
+  },
+  {
+    name: "riders.selectRiders(hubId)",
+    run: () => riders.selectRiders(pool, listParams, { hubId: "1" }),
+  },
+  {
+    name: "riders.selectRiders(search)",
+    run: () => riders.selectRiders(pool, listParams, { search: "RIDER" }),
+  },
+  ...(["employeeCode", "status", "hubId", "createdAt"] as const).map((sortBy) => ({
+    name: `riders.selectRiders(sortBy=${sortBy})`,
+    run: () => riders.selectRiders(pool, { ...listParams, sortBy }, {}),
+  })),
+  { name: "riders.selectRider", run: () => riders.selectRider(pool, "1") },
+  { name: "riders.selectRiderByUserId", run: () => riders.selectRiderByUserId(pool, "1") },
 )
 
 let failures = 0
