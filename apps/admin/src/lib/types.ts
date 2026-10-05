@@ -32,6 +32,8 @@ import type {
   ParcelWithItems,
   PricingRule,
   RecordStatus,
+  Route,
+  RouteStop,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -54,6 +56,8 @@ export type {
   ParcelWithItems,
   PricingRule,
   RecordStatus,
+  Route,
+  RouteStop,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -150,6 +154,16 @@ export type UpdatePricingRuleBody = Partial<CreatePricingRuleBody>
 export type CreateVehicleBody = Omit<Vehicle, "id" | "createdAt" | "updatedAt">
 export type UpdateVehicleBody = Partial<CreateVehicleBody>
 
+export type CreateRouteBody = Omit<Route, "id" | "createdAt" | "updatedAt">
+export type UpdateRouteBody = Partial<CreateRouteBody>
+
+export type RouteStopInput = {
+  hubId: string
+  sequenceNo: number
+  estimatedArrivalMinutes?: number | null
+}
+export type ReplaceRouteStopsBody = { stops: RouteStopInput[] }
+
 /**
  * Zod schemas for the create/update forms.
  *
@@ -218,6 +232,32 @@ export const createPricingRuleSchema = z.object({
   codFixedFee: z.coerce.number().nonnegative().max(999999),
   expressFee: z.coerce.number().nonnegative().max(999999),
   status: z.enum(RECORD_STATUSES).default("ACTIVE"),
+})
+
+export const createRouteSchema = z
+  .object({
+    name: z.string().trim().min(1).max(150),
+    code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(50)
+      .regex(/^[A-Z0-9-]+$/, "Use uppercase letters, numbers and hyphens only"),
+    originHubId: z.string().trim().min(1),
+    destinationHubId: z.string().trim().min(1),
+    distanceKm: z.coerce.number().nonnegative().max(99_999).nullish(),
+    estimatedMinutes: z.coerce.number().int().nonnegative().max(99_999).nullish(),
+    status: z.enum(RECORD_STATUSES).default("ACTIVE"),
+  })
+  .refine((v) => v.originHubId !== v.destinationHubId, {
+    message: "Origin and destination hub must differ",
+    path: ["destinationHubId"],
+  })
+
+export const routeStopSchema = z.object({
+  hubId: z.string().trim().min(1),
+  sequenceNo: z.coerce.number().int().min(1),
+  estimatedArrivalMinutes: z.coerce.number().int().nonnegative().max(99_999).nullish(),
 })
 
 export type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number }

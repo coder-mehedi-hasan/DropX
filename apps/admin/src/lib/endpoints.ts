@@ -22,6 +22,7 @@ import type {
   CreateBranchBody,
   CreateHubBody,
   CreateVehicleBody,
+  CreateRouteBody,
   CreateZoneBody,
   CustomerOption,
   DeliveryQuote,
@@ -33,9 +34,13 @@ import type {
   CreatePricingRuleBody,
   UpdatePricingRuleBody,
   ReferenceListParams,
+  Route,
+  RouteStop,
+  RouteStopInput,
   StaffIdentity,
   UpdateBranchBody,
   UpdateHubBody,
+  UpdateRouteBody,
   UpdateVehicleBody,
   UpdateZoneBody,
   Vehicle,
@@ -45,6 +50,7 @@ import type {
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
+import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -260,6 +266,34 @@ export function deletePricingRule(pricingRuleId: string) {
   return api.delete<void>(`/pricing/rules/${pricingRuleId}`)
 }
 
+export function listRoutes(params: RoutesSearch) {
+  return api.get<Page<Route>>("/routes", { query: routeQuery(params) })
+}
+
+export function getRoute(routeId: string, signal?: AbortSignal) {
+  return api.get<Route>(`/routes/${routeId}`, signal ? { signal } : undefined)
+}
+
+export function createRoute(body: CreateRouteBody) {
+  return api.post<Route>("/routes", body)
+}
+
+export function updateRoute(routeId: string, body: UpdateRouteBody) {
+  return api.patch<Route>(`/routes/${routeId}`, body)
+}
+
+export function deleteRoute(routeId: string) {
+  return api.delete<void>(`/routes/${routeId}`)
+}
+
+export function listRouteStops(routeId: string, signal?: AbortSignal) {
+  return api.get<RouteStop[]>(`/routes/${routeId}/stops`, signal ? { signal } : undefined)
+}
+
+export function replaceRouteStops(routeId: string, stops: RouteStopInput[]) {
+  return api.put<RouteStop[]>(`/routes/${routeId}/stops`, { stops })
+}
+
 function orgQuery(params: {
   page: number
   limit: number
@@ -301,6 +335,24 @@ function zoneQuery(params: {
 }
 
 function pricingRuleQuery(params: {
+  page: number
+  limit: number
+  sortBy: string
+  sort: "asc" | "desc"
+  search: string
+  status?: string
+}) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+  }
+}
+
+function routeQuery(params: {
   page: number
   limit: number
   sortBy: string

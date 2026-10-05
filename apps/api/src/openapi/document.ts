@@ -9,6 +9,7 @@ import { authPaths, authTags } from "./paths/auth.openapi"
 import { healthPaths, healthTags } from "./paths/health.openapi"
 import { jobsPaths, jobsTags } from "./paths/jobs.openapi"
 import { pricingPaths, pricingTags } from "./paths/pricing.openapi"
+import { routesPaths, routesTags } from "./paths/routes.openapi"
 import { trackingPaths, trackingTags } from "./paths/tracking.openapi"
 import { buildSurfacePaths, buildSurfaceTags } from "./surface-spec"
 
@@ -36,6 +37,7 @@ const paths = {
   ...buildSurfacePaths(CUSTOMER_SURFACE),
   ...jobsPaths,
   ...pricingPaths,
+  ...routesPaths,
 } as const
 
 const tags = [
@@ -45,6 +47,7 @@ const tags = [
   ...buildSurfaceTags(ADMIN_SURFACE, CUSTOMER_SURFACE),
   ...jobsTags,
   ...pricingTags,
+  ...routesTags,
 ]
 
 /** Every operation declared in the path fragments, flattened for the coverage check. */
