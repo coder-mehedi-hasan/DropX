@@ -35,6 +35,7 @@ export const TABLES = {
   routes: "routes",
   routeStops: "route_stops",
   riders: "riders",
+  riderApplications: "rider_applications",
   riderLocations: "rider_locations",
   parcels: "parcels",
   parcelItems: "parcel_items",
@@ -85,7 +86,6 @@ export type ListParams = {
   search?: string | undefined
   offset: number
 }
-
 
 function toPositiveInt(value: unknown, fallback: number, max: number): number {
   const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10)

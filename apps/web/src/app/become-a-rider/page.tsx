@@ -1,0 +1,98 @@
+import type { Metadata } from "next"
+import { BanknoteIcon, Clock3Icon, MapPinIcon, ShieldCheckIcon, TruckIcon } from "lucide-react"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@dropx/ui"
+
+import { SiteFooter, SiteHeader } from "@/components/site-chrome"
+import { RiderApplicationForm } from "@/components/rider-application-form"
+
+export const metadata: Metadata = {
+  title: "Become a rider",
+  description: "Apply to deliver with DropX.",
+}
+
+const BENEFITS = [
+  {
+    icon: BanknoteIcon,
+    title: "Earn on every delivery",
+    body: "Choose a schedule that works for you and get paid for completed jobs.",
+  },
+  {
+    icon: MapPinIcon,
+    title: "Work in your area",
+    body: "Tell us where you ride so our team can match opportunities nearby.",
+  },
+  {
+    icon: Clock3Icon,
+    title: "Flexible routes",
+    body: "Build delivery work around your day, whether you ride part-time or full-time.",
+  },
+  {
+    icon: ShieldCheckIcon,
+    title: "Clear support",
+    body: "Get operational guidance and a clear workflow from pickup to proof of delivery.",
+  },
+]
+
+export default function BecomeARiderPage() {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <SiteHeader />
+      <main className="flex-1">
+        <section className="border-b bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_62%)] px-4 py-16 opacity-100 sm:py-24">
+          <div className="max-w-page mx-auto grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div className="grid gap-5">
+              <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
+                DropX rider network
+              </p>
+              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+                Ride with DropX. Keep Bangladesh moving.
+              </h1>
+              <p className="text-muted-foreground max-w-xl text-lg">
+                Join a delivery network built around reliable handovers, useful routes, and work
+                that fits your schedule.
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <TruckIcon className="text-primary size-5" aria-hidden /> Apply in a few minutes.
+                Our team will contact you after review.
+              </div>
+            </div>
+            <Card className="bg-background/95 shadow-xl">
+              <CardHeader>
+                <CardTitle>Tell us about yourself</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  We’ll use this information to review your application.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <RiderApplicationForm />
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+        <section className="max-w-page mx-auto grid gap-6 px-4 py-16">
+          <div>
+            <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
+              Why DropX
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight">
+              A rider experience that respects your time
+            </h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {BENEFITS.map((item) => (
+              <Card key={item.title} className="bg-card/70 border-0 shadow-sm">
+                <CardContent className="grid gap-3 p-5">
+                  <item.icon className="text-primary size-6" aria-hidden />
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-5">{item.body}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </div>
+  )
+}

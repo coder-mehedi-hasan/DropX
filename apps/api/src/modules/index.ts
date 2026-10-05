@@ -8,6 +8,7 @@ import health from "./health/health.routes"
 import jobs from "./jobs/jobs.routes"
 import pricing from "./pricing/pricing.routes"
 import routes from "./routes/routes.routes"
+import riderApplications from "./rider-applications/rider-applications.routes"
 import tracking from "./tracking/tracking.routes"
 
 /**
@@ -37,6 +38,7 @@ const modules: readonly FeatureModule[] = [
   { name: "jobs", basePath: "/jobs", router: jobs },
   { name: "pricing", basePath: "/pricing", router: pricing },
   { name: "routes", basePath: "/routes", router: routes },
+  { name: "rider-applications", basePath: "/rider-applications", router: riderApplications },
 ]
 
 export const MODULES: readonly FeatureModule[] = modules
