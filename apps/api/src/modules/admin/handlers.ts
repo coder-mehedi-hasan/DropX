@@ -282,6 +282,14 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
       )
       return c.json(response.success(application))
     },
+    approve: async (c) => {
+      const result = await riderApplications.approveRiderApplication(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(result))
+    },
   },
 
   pickups: {

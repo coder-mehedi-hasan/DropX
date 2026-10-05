@@ -253,6 +253,15 @@ export type RiderApplication = {
   updatedAt: string
 }
 
+export type ApproveRiderApplicationBody = {
+  email?: string
+  password: string
+  hubId: string
+  employeeCode: string
+  licenseNumber?: string
+  compensationType: CompensationType
+}
+
 /**
  * A pickup is raised for a parcel, so `parcelId` is the only reference the form
  * asks for — a human knows the tracking number, not the row id. `requestedBy` is
