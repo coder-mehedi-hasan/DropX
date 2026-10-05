@@ -461,6 +461,30 @@ export const PICKUP_STATUSES = [
 ] as const
 export type PickupStatus = (typeof PICKUP_STATUSES)[number]
 
+/**
+ * The pickup lifecycle, in the same shape and for the same reason as
+ * `PARCEL_TRANSITIONS`: the API enforces it, and the admin's status control needs
+ * to know which options to offer. One table means the dropdown cannot offer a move
+ * the server will reject, and adding a status without adding it here is a type
+ * error rather than a silently stuck transition.
+ *
+ * `PICKED_UP`, `CANCELLED` are terminal. `FAILED` is not — a failed collection is
+ * retried by moving it back to `ASSIGNED` with a different rider, or given up on
+ * with `CANCELLED`.
+ */
+export const PICKUP_TRANSITIONS: Readonly<Record<PickupStatus, readonly PickupStatus[]>> = {
+  REQUESTED: ["ASSIGNED", "CANCELLED"],
+  ASSIGNED: ["IN_PROGRESS", "FAILED", "CANCELLED"],
+  IN_PROGRESS: ["PICKED_UP", "FAILED", "CANCELLED"],
+  PICKED_UP: [],
+  FAILED: ["ASSIGNED", "CANCELLED"],
+  CANCELLED: [],
+}
+
+export function canTransitionPickup(from: PickupStatus, to: PickupStatus): boolean {
+  return PICKUP_TRANSITIONS[from].includes(to)
+}
+
 export type Pickup = EntityBase &
   Timestamped & {
     parcelId: Id

@@ -124,13 +124,19 @@ export async function listParcels(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${where ? " " + where : ""}`
+  // Both queries join `scope_hub`, because `applyScope` writes `scope_hub.branch_id`
+  // and `scope_hub.id`. Omitting the join here fails only for a *scoped* caller —
+  // a company-wide read emits no scope clause and never notices — so the parcel
+  // list 500s for every branch manager and hub-scoped dispatcher while working
+  // perfectly for an ADMIN. `check:read-paths` now runs this query scoped for
+  // exactly that reason.
+  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON}${where ? " " + where : ""}`
   const sortColumn = params.sortBy ? sortColumnByKey[params.sortBy] : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)

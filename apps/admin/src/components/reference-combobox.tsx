@@ -19,10 +19,11 @@ import {
 import {
   listBranchesForPicker,
   listHubsForPicker,
+  listRidersForPicker,
   listZonesForPicker,
   searchCustomersForPicker,
 } from "@/lib/endpoints"
-import type { BranchOption, CustomerOption, HubOption, ZoneOption } from "@/lib/types"
+import type { BranchOption, CustomerOption, HubOption, Rider, ZoneOption } from "@/lib/types"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 
 /**
@@ -43,7 +44,15 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
  * so the page size here is a display concern rather than a safety one.
  */
 
-export type PickerSource = "branches" | "hubs" | "zones" | "customers"
+/**
+ * `riders` is backed by the roster list rather than an `admin.reference.*`
+ * endpoint, and that is deliberate: a reference endpoint exists to feed a
+ * dropdown of things you *define* (hubs, zones), and riders are already a
+ * first-class list with its own screen, permissions and pagination. Re-adding a
+ * narrowed copy of it to the reference module would be a second source of truth
+ * for the same rows.
+ */
+export type PickerSource = "branches" | "hubs" | "zones" | "customers" | "riders"
 
 type Row = {
   id: string
@@ -97,6 +106,24 @@ function toCustomerRows(nodes: readonly CustomerOption[]): Row[] {
   }))
 }
 
+/**
+ * `GET /admin/riders` returns the `riders` row and not the joined `users` row, so
+ * there is no name to show — the employee code is the label. That is also what
+ * dispatch already calls riders by; the roster screen shows the same column first
+ * for the same reason.
+ *
+ * The status travels with the row because an offline rider is not worth assigning
+ * to, so the picker shows the difference without a second request.
+ */
+function toRiderRows(nodes: readonly Rider[]): Row[] {
+  return nodes.map((rider) => ({
+    id: rider.id,
+    label: rider.employeeCode,
+    hint: rider.licenseNumber ? `Licence ${rider.licenseNumber}` : null,
+    status: rider.status,
+  }))
+}
+
 function useReferenceRows(
   source: PickerSource,
   search: string,
@@ -132,33 +159,29 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
-  // Only the matching query is enabled, so the other three never hold data.
+  const riderList = useQuery({
+    queryKey: ["reference", "riders", params],
+    queryFn: ({ signal }) => listRidersForPicker(params, signal),
+    enabled: enabled && source === "riders",
+    staleTime: 60_000,
+  })
+
+  // Only the matching query is enabled, so the others never hold data.
   // Their pending flags are read anyway: an unused query is
   // `isFetching === false`, which is exactly the answer wanted for a source
   // that is not in play.
-  const isFetching =
-    source === "branches"
-      ? branches.isFetching
-      : source === "hubs"
-        ? hubs.isFetching
-        : source === "zones"
-          ? zones.isFetching
-          : customers.isFetching
-  const isError =
-    source === "branches"
-      ? branches.isError
-      : source === "hubs"
-        ? hubs.isError
-        : source === "zones"
-          ? zones.isError
-          : customers.isError
+  const sources = { branches, hubs, zones, customers, riderList }
+  const active = sources[source === "riders" ? "riderList" : source]
+  const isFetching = active.isFetching
+  const isError = active.isError
 
   const rows = React.useMemo(() => {
     if (source === "branches") return toBranchRows(branches.data?.nodes ?? [])
     if (source === "hubs") return toHubRows(hubs.data?.nodes ?? [])
     if (source === "zones") return toZoneRows(zones.data?.nodes ?? [])
+    if (source === "riders") return toRiderRows(riderList.data?.nodes ?? [])
     return toCustomerRows(customers.data?.nodes ?? [])
-  }, [source, branches.data, hubs.data, zones.data, customers.data])
+  }, [source, branches.data, hubs.data, zones.data, customers.data, riderList.data])
 
   return { rows, isFetching, isError }
 }

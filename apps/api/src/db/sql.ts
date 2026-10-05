@@ -9,7 +9,7 @@
  * behaviour — and a fix that reaches every table at once.
  */
 
-import type { Pool, RowDataPacket } from "mysql2/promise"
+import type { Connection, Pool, RowDataPacket } from "mysql2/promise"
 import type { ListParams } from "./models"
 
 /**
@@ -106,7 +106,7 @@ export function orderByClauseOf(
  * would bind to the wrong clause.
  */
 export async function pageOf<T>(
-  db: Pool,
+  db: Pool | Connection,
   options: {
     /** `SELECT <cols> FROM <table> [JOIN …] <where> ORDER BY … LIMIT ? OFFSET ?` */
     pageSql: string

@@ -2,25 +2,25 @@
 
 ## Status
 
-Verified against the running API on 2026-10-05: **67 operations registered**, all documented in
-`/openapi.json`. Batches 1–5 are built and gate-green; **batches 6–9 are not started**.
+Verified against the running API on 2026-10-05: **72 operations registered**, all documented in
+`/openapi.json`. Batches 1–6 are built and gate-green; **batches 7–9 are not started**.
 
 - [x] **Batch 1 — Zones + Vehicles** — 9 ops (`admin.zones.*` ×4, `admin.vehicles.*` ×5)
 - [x] **Batch 2 — Pricing Rules** — 6 ops (`admin.pricing.{list,read,create,update,delete,match}`)
 - [x] **Batch 3 — Routes + Stops** — 7 ops (`admin.routes.{list,read,create,update,delete,stopsList,stopsReplace}`)
 - [x] **Batch 4 — Rider Management** — 5 ops (`admin.riders.{list,read,create,update,setStatus}`)
 - [x] **Batch 5 — Rider Location Tracking** — 2 ops (`admin.riderLocations.list`, `job.recordLocation`)
-- [ ] **Batch 6 — Pickup Operations** — 0 of 5 ops. Not started.
+- [x] **Batch 6 — Pickup Operations** — 5 ops (`admin.pickups.{list,read,create,assign,updateStatus}`)
 - [ ] **Batch 7 — Transfer Operations** — 0 of 8 ops. Not started.
 - [ ] **Batch 8 — Delivery Management** — 0 of 5 ops. Not started.
 - [ ] **Batch 9 — Delivery Proof** — 0 of 4 ops. Not started.
 
-**Remaining: 4 batches, 22 ops, 8 admin screens.**
+**Remaining: 3 batches, 17 ops, 6 admin screens.**
 
 Rider-facing gaps, for contrast: the rider app (`apps/riders`) has only Jobs and Profile
-(`bottom-nav.tsx`), backed by 3 ops (`job.list`, `job.read`, `job.reportOutcome`). The two rider-app
-features still missing are Batch 5 (location push) and Batch 9 (proof submission) — rider
-_management_ is admin-side by design and does not belong in the rider app.
+(`bottom-nav.tsx`), backed by 4 ops (`job.list`, `job.read`, `job.reportOutcome`, `job.recordLocation`).
+The one rider-app feature still missing is Batch 9 (proof submission) — rider _management_ is
+admin-side by design and does not belong in the rider app.
 
 ## Registry vs hand-written routes
 
@@ -213,21 +213,70 @@ no fix, because it looks live.
 
 ## Batch 6 — Pickup Operations (5 ops)
 
-**Status: NOT STARTED.** Dependencies met (parcels + riders tables exist).
+**Status: done.** 5 operations registered as `admin.pickups.{list,read,create,assign,updateStatus}`.
 
-| File                                                      | Action   |
-| --------------------------------------------------------- | -------- |
-| `apps/api/src/modules/pickups/pickups.dto.ts`             | **new**  |
-| `apps/api/src/modules/pickups/pickups.repository.ts`      | **new**  |
-| `apps/api/src/modules/pickups/pickups.service.ts`         | **new**  |
-| `apps/api/src/modules/admin/registry.ts`                  | **edit** |
-| `apps/api/src/modules/admin/handlers.ts`                  | **edit** |
-| `apps/admin/src/features/pickups/pickups-list-page.tsx`   | **new**  |
-| `apps/admin/src/features/pickups/pickup-assign-sheet.tsx` | **new**  |
-| `apps/admin/src/routes/pickups.tsx`                       | **new**  |
-| `apps/admin/src/lib/endpoints.ts`                         | **edit** |
-| `apps/admin/src/lib/types.ts`                             | **edit** |
-| `apps/admin/src/lib/navigation.ts`                        | **edit** |
+| File                                                                              | Action                                                 |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `apps/api/src/modules/pickups/pickups.dto.ts`                                     | **new**                                                |
+| `apps/api/src/modules/pickups/pickups.repository.ts`                              | **new**                                                |
+| `apps/api/src/modules/pickups/pickups.service.ts`                                 | **new**                                                |
+| `packages/types/src/index.ts`                                                     | **edit** — `PICKUP_TRANSITIONS`, `canTransitionPickup` |
+| `apps/api/src/db/sql.ts`                                                          | **edit** — `pageOf` accepts `Pool \| Connection`       |
+| `apps/api/src/modules/parcels/parcels.repository.ts`                              | **edit** — bug fix, see below                          |
+| `apps/api/src/modules/admin/registry.ts`                                          | **edit**                                               |
+| `apps/api/src/modules/admin/handlers.ts`                                          | **edit**                                               |
+| `apps/api/scripts/check-read-paths.ts`                                            | **edit**                                               |
+| `apps/admin/src/features/pickups/pickups-list-page.tsx`                           | **new**                                                |
+| `apps/admin/src/features/pickups/pickup-form-sheet.tsx`                           | **new**                                                |
+| `apps/admin/src/features/pickups/pickup-assign-sheet.tsx`                         | **new**                                                |
+| `apps/admin/src/features/pickups/pickup-status-sheet.tsx`                         | **new**                                                |
+| `apps/admin/src/features/pickups/pickup-status.ts`                                | **new**                                                |
+| `apps/admin/src/routes/pickups-search-params.ts`                                  | **new**                                                |
+| `apps/admin/src/components/reference-combobox.tsx`                                | **edit** — added a `riders` source                     |
+| `apps/admin/src/lib/{endpoints,format,navigation,types}.ts`                       | **edit**                                               |
+| `apps/admin/src/{router.tsx,routes/app-routes.tsx,components/layout/sidebar.tsx}` | **edit**                                               |
+
+Deviations from the plan's file table, and why:
+
+- **`apps/admin/src/routes/pickups.tsx` was not created.** Every list screen in this app keeps its
+  search schema in `src/routes/<name>-search-params.ts` and its route in `app-routes.tsx`; a
+  route-per-file convention that exists in only one screen is a convention nobody follows.
+- **`PICKUP_TRANSITIONS` went into `@dropx/types`, not the service.** The status sheet offers exactly
+  the moves the table allows, so the table has to be shared. This mirrors `PARCEL_TRANSITIONS`, which
+  is already there for the same reason.
+- **Two extra sheets rather than one.** `pickup-form-sheet` (create), `pickup-assign-sheet` (assign)
+  and `pickup-status-sheet` (every other status) are separate because each posts a different body to a
+  different operation; one sheet branching on three shapes would be worse than three small ones.
+
+Decisions worth remembering:
+
+- **A pickup is scoped through its parcel**, not through a hub of its own: every read and both writes
+  join `parcels` and reuse `applyScope` from `parcels.repository.ts`. One definition of "which hub is
+  this parcel at" — a second one in this module would drift, and the scope check is what must not be
+  lenient.
+- **`parcelId` in the create body accepts an id _or_ a tracking number.** The row id is never shown to
+  a human, and the tracking number is the only string a customer can read out over the phone, so an
+  id-only field would make the whole create path unusable.
+- **One open pickup per parcel**, enforced by locking the parcel row (`SELECT … FOR UPDATE`) before
+  counting open pickups, so two concurrent creates cannot both pass the check.
+- **`PICKED_UP` also moves the parcel** to `PICKED_UP` and writes a `PICKED_UP` parcel event, in the
+  same transaction. A customer watching a parcel sit at `CREATED` while dispatch believes it was
+  collected is the failure this prevents.
+- **`pickups.assign` is a separate permission from `pickups.manage`**, so dispatch can be given the
+  authority to send a rider without also gaining the authority to fail or cancel a pickup.
+
+### Bug found and fixed while doing Batch 6
+
+`parcels.listParcels` built its `FROM` without the `scope_hub` join that `applyScope` writes
+`scope_hub.branch_id` / `scope_hub.id` against, so **every scoped parcel read failed** —
+`Unknown column 'scope_hub.branch_id' in 'where clause'`. It worked for an `ADMIN` (whose scope emits
+no clause at all) and 500'd for every branch manager and hub-scoped dispatcher.
+
+`check:read-paths` missed it because all its cases used a company-wide scope. Four scoped cases were
+added (`parcels.listParcels(branch-scoped)`, `(hub-scoped)`, `findParcelById(branch-scoped)`,
+`(hub-scoped)`), plus scoped cases for every pickup read. The lesson is now in the script's comments:
+a scope clause that names an unjoined alias fails _only_ for a scoped caller, so a scoped read must be
+exercised or nothing proves the guard works.
 
 ---
 

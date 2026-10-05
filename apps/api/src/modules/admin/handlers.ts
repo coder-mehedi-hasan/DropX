@@ -5,6 +5,7 @@ import type { SurfaceHandlers } from "../../shared/auth/surface"
 import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import * as org from "../org/org.service"
+import * as pickups from "../pickups/pickups.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
 import * as vehicles from "../vehicles/vehicles.service"
@@ -262,6 +263,54 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     list: async (c) => {
       const page = await riderLocations.listRiderLocations(c, c.req.valid("query"))
       return c.json(response.success(page))
+    },
+  },
+
+  pickups: {
+    list: async (c) => {
+      const page = await pickups.listPickups(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const pickup = await pickups.getPickup(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(pickup))
+    },
+
+    create: async (c) => {
+      const auth = c.get("auth")
+      const pickup = await pickups.createPickup(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(pickup), 201)
+    },
+
+    assign: async (c) => {
+      const auth = c.get("auth")
+      const pickup = await pickups.assignPickup(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        pickupId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(pickup))
+    },
+
+    updateStatus: async (c) => {
+      const auth = c.get("auth")
+      const pickup = await pickups.updatePickupStatus(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        pickupId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(pickup))
     },
   },
 }

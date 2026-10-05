@@ -52,6 +52,7 @@ const pricingRules = await import("../src/modules/pricing/pricing-rules.reposito
 const routes = await import("../src/modules/routes/routes.repository")
 const riders = await import("../src/modules/riders/riders.repository")
 const riderLocations = await import("../src/modules/riders/rider-locations.repository")
+const pickups = await import("../src/modules/pickups/pickups.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -115,7 +116,39 @@ cases.push(
     name: `parcels.listParcels(sortBy=${sortBy})`,
     run: () => parcels.listParcels(pool, scope, { ...listParams, sortBy }, {}, parcelSortByKey),
   })),
-  { name: "parcels.findParcelById", run: () => parcels.findParcelById(pool, scope, "1") },
+  {
+    // Scoped, because a scope clause that names an alias the FROM does not join
+    // fails *only* for a scoped caller. The company-wide case above passes either
+    // way, which is how this shipped broken for every branch manager.
+    name: "parcels.listParcels(branch-scoped)",
+    run: () =>
+      parcels.listParcels(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        listParams,
+        {},
+        parcelSortByKey,
+      ),
+  },
+  {
+    name: "parcels.listParcels(hub-scoped)",
+    run: () =>
+      parcels.listParcels(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        listParams,
+        { status: "CREATED" },
+        parcelSortByKey,
+      ),
+  },
+  {
+    name: "parcels.findParcelById(branch-scoped)",
+    run: () => parcels.findParcelById(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
+  },
+  {
+    name: "parcels.findParcelById(hub-scoped)",
+    run: () => parcels.findParcelById(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1"),
+  },
   {
     name: "parcels.findParcelByTrackingNumber",
     run: () => parcels.findParcelByTrackingNumber(pool, "DX-TEST-0001"),
@@ -417,6 +450,72 @@ cases.push(
     run: () =>
       riderLocations.selectRiderLocations(pool, { ...listParams, sortBy }, { riderId: "1" }),
   })),
+
+  // --- Pickups --------------------------------------------------------------
+  // Scoped variants are not optional here. A scope clause that references an
+  // alias the FROM clause does not join fails only for a *scoped* caller, so a
+  // company-wide read over an empty database proves nothing about the guard it
+  // was written to provide.
+  { name: "pickups.selectPickups", run: () => pickups.selectPickups(pool, scope, listParams, {}) },
+  {
+    name: "pickups.selectPickups(status)",
+    run: () => pickups.selectPickups(pool, scope, listParams, { status: "REQUESTED" }),
+  },
+  {
+    name: "pickups.selectPickups(riderId)",
+    run: () => pickups.selectPickups(pool, scope, listParams, { riderId: "1" }),
+  },
+  {
+    name: "pickups.selectPickups(hubId)",
+    run: () => pickups.selectPickups(pool, scope, listParams, { hubId: "1" }),
+  },
+  {
+    name: "pickups.selectPickups(search)",
+    run: () => pickups.selectPickups(pool, scope, listParams, { search: "a" }),
+  },
+  ...(["scheduledAt", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `pickups.selectPickups(sortBy=${sortBy})`,
+    run: () => pickups.selectPickups(pool, scope, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "pickups.selectPickups(branch-scoped)",
+    run: () =>
+      pickups.selectPickups(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        listParams,
+        {},
+      ),
+  },
+  {
+    name: "pickups.selectPickups(hub-scoped)",
+    run: () =>
+      pickups.selectPickups(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        listParams,
+        {},
+      ),
+  },
+  { name: "pickups.selectPickup", run: () => pickups.selectPickup(pool, scope, "1") },
+  {
+    name: "pickups.selectPickup(branch-scoped)",
+    run: () => pickups.selectPickup(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
+  },
+  {
+    name: "pickups.lockScopedParcelForUpdate",
+    run: () => pickups.lockScopedParcelForUpdate(pool, scope, "1"),
+  },
+  {
+    name: "pickups.lockScopedParcelForUpdate(hub-scoped)",
+    run: () =>
+      pickups.lockScopedParcelForUpdate(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        "1",
+      ),
+  },
+  { name: "pickups.countOpenPickups", run: () => pickups.countOpenPickups(pool, "1") },
 )
 
 let failures = 0
