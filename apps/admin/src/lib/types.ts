@@ -15,6 +15,7 @@ import {
   HUB_TYPES,
   PICKUP_STATUSES,
   RIDER_STATUSES,
+  TRANSFER_STATUSES,
   VEHICLE_STATUSES,
   VEHICLE_TYPES,
 } from "@dropx/types"
@@ -43,6 +44,11 @@ import type {
   CompensationType,
   Route,
   RouteStop,
+  Transfer,
+  TransferListItem,
+  TransferParcel,
+  TransferStatus,
+  TransferWithManifest,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -73,6 +79,11 @@ export type {
   CompensationType,
   Route,
   RouteStop,
+  Transfer,
+  TransferListItem,
+  TransferParcel,
+  TransferStatus,
+  TransferWithManifest,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -204,6 +215,36 @@ export type AssignPickupBody = {
 export type UpdatePickupStatusBody = {
   status: PickupStatus
   reason?: string | null
+}
+
+/**
+ * A transfer is raised between two hubs, so both ends are required — unlike a
+ * pickup, which inherits its hub from the parcel. `driverRef` is a **staff**
+ * member's id or email rather than a rider: rule 9 makes transfer drivers staff,
+ * and there is no staff directory endpoint to pick from, so the one string a
+ * dispatcher actually has is their email.
+ *
+ * `status` is absent on purpose. A new transfer is always `PLANNED`, and the
+ * API's create body defaults it; offering the other four would mean creating a
+ * transfer in a state no one can reach by the normal route.
+ */
+export type CreateTransferBody = {
+  fromHubId: string
+  toHubId: string
+  routeId?: string | null
+  vehicleId?: string | null
+  driverRef?: string | null
+}
+
+export type UpdateTransferBody = Partial<CreateTransferBody>
+
+export type UpdateTransferStatusBody = {
+  status: TransferStatus
+  reason?: string | null
+}
+
+export type ReplaceTransferManifestBody = {
+  parcelIds: string[]
 }
 
 export type CreateRouteBody = Omit<Route, "id" | "createdAt" | "updatedAt">
@@ -376,6 +417,56 @@ export const updatePickupStatusSchema = z
       })
     }
   })
+
+/**
+ * Both hubs are required, so neither is optional. `routeId`, `vehicleId` and
+ * `driverRef` are `nullish` rather than `optional` because clearing a reference
+ * is a legitimate edit — a transfer that loses its vehicle mid-plan is a new
+ * plan, not an edit that never happened.
+ */
+export const createTransferSchema = z.object({
+  fromHubId: z.string().trim().min(1, "Pick the origin hub"),
+  toHubId: z.string().trim().min(1, "Pick the destination hub"),
+  routeId: z.string().trim().min(1).nullish(),
+  vehicleId: z.string().trim().min(1).nullish(),
+  driverRef: z.string().trim().min(1).max(255).nullish(),
+})
+
+export const updateTransferSchema = z
+  .object({
+    fromHubId: z.string().trim().min(1).optional(),
+    toHubId: z.string().trim().min(1).optional(),
+    routeId: z.string().trim().min(1).nullish(),
+    vehicleId: z.string().trim().min(1).nullish(),
+    driverRef: z.string().trim().min(1).max(255).nullish(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: "Nothing to change",
+  })
+
+/**
+ * The reason is required by the *API* for `CANCELLED`, and conditionally
+ * required rather than always optional, so it is refined here too to fail in the
+ * form instead of as a 422 after a round trip.
+ */
+export const updateTransferStatusSchema = z
+  .object({
+    status: z.enum(TRANSFER_STATUSES),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.status === "CANCELLED" && !value.reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reason"],
+        message: "Say why it is not going",
+      })
+    }
+  })
+
+export const replaceTransferManifestSchema = z.object({
+  parcelIds: z.array(z.string().trim().min(1)).max(500),
+})
 
 export type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number }
 

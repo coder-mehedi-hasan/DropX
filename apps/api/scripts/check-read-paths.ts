@@ -53,6 +53,7 @@ const routes = await import("../src/modules/routes/routes.repository")
 const riders = await import("../src/modules/riders/riders.repository")
 const riderLocations = await import("../src/modules/riders/rider-locations.repository")
 const pickups = await import("../src/modules/pickups/pickups.repository")
+const transfers = await import("../src/modules/transfers/transfers.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -516,6 +517,101 @@ cases.push(
       ),
   },
   { name: "pickups.countOpenPickups", run: () => pickups.countOpenPickups(pool, "1") },
+  // ---- transfers ------------------------------------------------------------
+  //
+  // Both scope clauses are exercised here, because a transfer is visible from
+  // either end (`from_hub_id` OR `to_hub_id`) while a write is scoped to the
+  // origin alone. Each clause is built over the same joins the read query uses, so
+  // a scoped caller runs exactly the alias a company-wide caller never touches.
+  { name: "transfers.selectTransfers", run: () => transfers.selectTransfers(pool, scope, listParams, {}) },
+  {
+    name: "transfers.selectTransfers(status)",
+    run: () => transfers.selectTransfers(pool, scope, listParams, { status: "PLANNED" }),
+  },
+  {
+    name: "transfers.selectTransfers(hubId)",
+    run: () => transfers.selectTransfers(pool, scope, listParams, { hubId: "1" }),
+  },
+  {
+    name: "transfers.selectTransfers(vehicleId)",
+    run: () => transfers.selectTransfers(pool, scope, listParams, { vehicleId: "1" }),
+  },
+  {
+    name: "transfers.selectTransfers(driverId)",
+    run: () => transfers.selectTransfers(pool, scope, listParams, { driverId: "1" }),
+  },
+  {
+    name: "transfers.selectTransfers(search)",
+    run: () => transfers.selectTransfers(pool, scope, listParams, { search: "a" }),
+  },
+  ...(["departedAt", "arrivedAt", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `transfers.selectTransfers(sortBy=${sortBy})`,
+    run: () => transfers.selectTransfers(pool, scope, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "transfers.selectTransfers(branch-scoped)",
+    run: () =>
+      transfers.selectTransfers(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        listParams,
+        {},
+      ),
+  },
+  {
+    name: "transfers.selectTransfers(hub-scoped)",
+    run: () =>
+      transfers.selectTransfers(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
+  },
+  {
+    name: "transfers.selectTransfers(branch+hub-scoped)",
+    run: () =>
+      transfers.selectTransfers(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1", hubIds: ["1"] },
+        listParams,
+        {},
+      ),
+  },
+  {
+    name: "transfers.selectTransferWithParcels",
+    run: () => transfers.selectTransferWithParcels(pool, scope, "1"),
+  },
+  {
+    name: "transfers.selectTransferWithParcels(branch-scoped)",
+    run: () => transfers.selectTransferWithParcels(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
+  },
+  {
+    name: "transfers.selectTransferWithParcels(hub-scoped)",
+    run: () =>
+      transfers.selectTransferWithParcels(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1"),
+  },
+  {
+    name: "transfers.selectTransferWithParcels(for update)",
+    run: () => transfers.selectTransferWithParcels(pool, scope, "1", { forUpdate: true }),
+  },
+  {
+    name: "transfers.selectTransferWithParcels(for update, hub-scoped)",
+    run: () =>
+      transfers.selectTransferWithParcels(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1", {
+        forUpdate: true,
+      }),
+  },
+  { name: "transfers.selectTransferParcels", run: () => transfers.selectTransferParcels(pool, "1") },
+  { name: "transfers.selectManifestParcelIds", run: () => transfers.selectManifestParcelIds(pool, "1") },
+  { name: "transfers.countManifest", run: () => transfers.countManifest(pool, "1") },
+  {
+    name: "transfers.findManifestCandidates",
+    run: () => transfers.findManifestCandidates(pool, "1", ["1", "2"]),
+  },
+  {
+    name: "transfers.findManifestCandidates(empty)",
+    run: () => transfers.findManifestCandidates(pool, "1", []),
+  },
+  { name: "transfers.findStaffByRef(email)", run: () => transfers.findStaffByRef(pool, "nobody@example.com") },
+  { name: "transfers.findHub", run: () => transfers.findHub(pool, "1") },
+  { name: "transfers.findVehicle", run: () => transfers.findVehicle(pool, "1") },
+  { name: "transfers.findRoute", run: () => transfers.findRoute(pool, "1") },
 )
 
 let failures = 0

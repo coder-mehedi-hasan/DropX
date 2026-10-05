@@ -33,6 +33,8 @@ import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import { DEFAULT_PICKUPS_SEARCH_PARAMS } from "@/routes/pickups-search-params"
 import type { PickupsSearch } from "@/routes/pickups-search-params"
+import { DEFAULT_TRANSFERS_SEARCH_PARAMS } from "@/routes/transfers-search-params"
+import type { TransfersSearch } from "@/routes/transfers-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -49,6 +51,7 @@ export type NavItem = {
     | "/riders"
     | "/rider-locations"
     | "/pickups"
+    | "/transfers"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -60,6 +63,7 @@ export type NavItem = {
     | RidersSearch
     | RiderLocationsSearch
     | PickupsSearch
+    | TransfersSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -139,6 +143,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_PICKUPS_SEARCH_PARAMS,
     icon: PackageCheck,
     permission: "pickups.view",
+  },
+  // After Pickups: a transfer is the same work at a longer distance, and the two
+  // screens read alike.
+  {
+    label: "Transfers",
+    to: "/transfers",
+    search: DEFAULT_TRANSFERS_SEARCH_PARAMS,
+    icon: Truck,
+    permission: "transfers.view",
   },
 ]
 

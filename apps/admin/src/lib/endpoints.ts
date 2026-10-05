@@ -26,6 +26,7 @@ import type {
   CreatePickupBody,
   CreateRiderBody,
   CreateRouteBody,
+  CreateTransferBody,
   CreateZoneBody,
   CustomerOption,
   DeliveryQuote,
@@ -44,16 +45,22 @@ import type {
   RouteStop,
   RouteStopInput,
   StaffIdentity,
+  TransferListItem,
+  TransferParcel,
+  TransferWithManifest,
   UpdateBranchBody,
   UpdateHubBody,
   UpdatePickupStatusBody,
   UpdateRiderBody,
+  UpdateTransferBody,
+  UpdateTransferStatusBody,
   UpdateRouteBody,
   UpdateVehicleBody,
   UpdateZoneBody,
   Vehicle,
   Zone,
   ZoneOption,
+  ReplaceTransferManifestBody,
 } from "./types"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
@@ -62,6 +69,7 @@ import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import type { PickupsSearch } from "@/routes/pickups-search-params"
+import type { TransfersSearch } from "@/routes/transfers-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -345,6 +353,38 @@ export function updatePickupStatus(pickupId: string, body: UpdatePickupStatusBod
   return api.patch<Pickup>(`/admin/pickups/${pickupId}/status`, body)
 }
 
+export function listTransfers(params: TransfersSearch) {
+  return api.get<Page<TransferListItem>>("/admin/transfers", { query: transferQuery(params) })
+}
+
+export function getTransfer(transferId: string, signal?: AbortSignal) {
+  return api.get<TransferWithManifest>(`/admin/transfers/${transferId}`, signal ? { signal } : undefined)
+}
+
+export function createTransfer(body: CreateTransferBody) {
+  return api.post<TransferWithManifest>("/admin/transfers", body)
+}
+
+export function updateTransfer(transferId: string, body: UpdateTransferBody) {
+  return api.patch<TransferWithManifest>(`/admin/transfers/${transferId}`, body)
+}
+
+export function deleteTransfer(transferId: string) {
+  return api.delete(`/admin/transfers/${transferId}`)
+}
+
+export function updateTransferStatus(transferId: string, body: UpdateTransferStatusBody) {
+  return api.patch<TransferWithManifest>(`/admin/transfers/${transferId}/status`, body)
+}
+
+export function listTransferManifest(transferId: string, signal?: AbortSignal) {
+  return api.get<TransferParcel[]>(`/admin/transfers/${transferId}/parcels`, signal ? { signal } : undefined)
+}
+
+export function replaceTransferManifest(transferId: string, body: ReplaceTransferManifestBody) {
+  return api.put<TransferParcel[]>(`/admin/transfers/${transferId}/parcels`, body)
+}
+
 export function listRoutes(params: RoutesSearch) {
   return api.get<Page<Route>>("/routes", { query: routeQuery(params) })
 }
@@ -441,6 +481,23 @@ function riderQuery(params: RidersSearch) {
     ...(params.status ? { status: params.status } : {}),
     ...(params.compensationType ? { compensationType: params.compensationType } : {}),
     ...(params.hubId ? { hubId: params.hubId } : {}),
+  }
+}
+
+function transferQuery(params: TransfersSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    // Sent even though a transfer has two hubs: the API matches `hubId` against
+    // either end, so this is the one filter a dispatcher can narrow on without
+    // leaving the screen.
+    ...(params.hubId ? { hubId: params.hubId } : {}),
+    ...(params.vehicleId ? { vehicleId: params.vehicleId } : {}),
+    ...(params.driverId ? { driverId: params.driverId } : {}),
   }
 }
 

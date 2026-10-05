@@ -20,10 +20,20 @@ import {
   listBranchesForPicker,
   listHubsForPicker,
   listRidersForPicker,
+  listRoutes,
+  listVehicles,
   listZonesForPicker,
   searchCustomersForPicker,
 } from "@/lib/endpoints"
-import type { BranchOption, CustomerOption, HubOption, Rider, ZoneOption } from "@/lib/types"
+import type {
+  BranchOption,
+  CustomerOption,
+  HubOption,
+  Rider,
+  Route,
+  Vehicle,
+  ZoneOption,
+} from "@/lib/types"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 
 /**
@@ -52,7 +62,14 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
  * narrowed copy of it to the reference module would be a second source of truth
  * for the same rows.
  */
-export type PickerSource = "branches" | "hubs" | "zones" | "customers" | "riders"
+export type PickerSource =
+  | "branches"
+  | "hubs"
+  | "zones"
+  | "customers"
+  | "riders"
+  | "vehicles"
+  | "routes"
 
 type Row = {
   id: string
@@ -124,6 +141,34 @@ function toRiderRows(nodes: readonly Rider[]): Row[] {
   }))
 }
 
+/**
+ * `vehicles` and `routes` are backed by their own list endpoints rather than
+ * `admin.reference.*`, for the same reason `riders` is: both are first-class
+ * lists with their own screens, permissions and pagination. A narrowed copy in
+ * the reference module would be a second source of truth for the same rows.
+ *
+ * The status travels with the row because a vehicle in maintenance is not worth
+ * loading a truck onto, so the picker shows the difference without a second
+ * request.
+ */
+function toVehicleRows(nodes: readonly Vehicle[]): Row[] {
+  return nodes.map((vehicle) => ({
+    id: vehicle.id,
+    label: vehicle.registrationNumber,
+    hint: vehicle.type,
+    status: vehicle.status,
+  }))
+}
+
+function toRouteRows(nodes: readonly Route[]): Row[] {
+  return nodes.map((route) => ({
+    id: route.id,
+    label: route.name,
+    hint: route.code,
+    status: route.status,
+  }))
+}
+
 function useReferenceRows(
   source: PickerSource,
   search: string,
@@ -166,12 +211,47 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
+  const vehicleList = useQuery({
+    queryKey: ["reference", "vehicles", params],
+    queryFn: ({ signal }) =>
+      listVehicles({
+        page: params.page,
+        limit: params.limit,
+        search: params.search,
+        sortBy: "createdAt",
+        sort: "desc",
+      }),
+    enabled: enabled && source === "vehicles",
+    staleTime: 60_000,
+  })
+
+  const routeList = useQuery({
+    queryKey: ["reference", "routes", params],
+    queryFn: ({ signal }) =>
+      listRoutes({
+        page: params.page,
+        limit: params.limit,
+        search: params.search,
+        sortBy: "createdAt",
+        sort: "desc",
+      }),
+    enabled: enabled && source === "routes",
+    staleTime: 60_000,
+  })
+
   // Only the matching query is enabled, so the others never hold data.
   // Their pending flags are read anyway: an unused query is
   // `isFetching === false`, which is exactly the answer wanted for a source
   // that is not in play.
-  const sources = { branches, hubs, zones, customers, riderList }
-  const active = sources[source === "riders" ? "riderList" : source]
+  const sources = { branches, hubs, zones, customers, riderList, vehicleList, routeList }
+  const active =
+    source === "riders"
+      ? riderList
+      : source === "vehicles"
+        ? vehicleList
+        : source === "routes"
+          ? routeList
+          : sources[source]
   const isFetching = active.isFetching
   const isError = active.isError
 
@@ -180,8 +260,19 @@ function useReferenceRows(
     if (source === "hubs") return toHubRows(hubs.data?.nodes ?? [])
     if (source === "zones") return toZoneRows(zones.data?.nodes ?? [])
     if (source === "riders") return toRiderRows(riderList.data?.nodes ?? [])
+    if (source === "vehicles") return toVehicleRows(vehicleList.data?.nodes ?? [])
+    if (source === "routes") return toRouteRows(routeList.data?.nodes ?? [])
     return toCustomerRows(customers.data?.nodes ?? [])
-  }, [source, branches.data, hubs.data, zones.data, customers.data, riderList.data])
+  }, [
+    source,
+    branches.data,
+    hubs.data,
+    zones.data,
+    customers.data,
+    riderList.data,
+    vehicleList.data,
+    routeList.data,
+  ])
 
   return { rows, isFetching, isError }
 }

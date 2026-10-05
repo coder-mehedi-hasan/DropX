@@ -6,6 +6,7 @@ import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import * as org from "../org/org.service"
 import * as pickups from "../pickups/pickups.service"
+import * as transfers from "../transfers/transfers.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
 import * as vehicles from "../vehicles/vehicles.service"
@@ -311,6 +312,78 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
         input: c.req.valid("json"),
       })
       return c.json(response.success(pickup))
+    },
+  },
+
+  transfers: {
+    list: async (c) => {
+      const page = await transfers.listTransfers(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const transfer = await transfers.getTransfer(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(transfer))
+    },
+
+    create: async (c) => {
+      const transfer = await transfers.createTransfer(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(transfer), 201)
+    },
+
+    update: async (c) => {
+      const transfer = await transfers.updateTransfer(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        transferId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(transfer))
+    },
+
+    delete: async (c) => {
+      await transfers.deleteTransfer(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        transferId: c.req.valid("param").id,
+      })
+      // A 204 must not carry a body (RFC 9110), which is why the registry entry
+      // for `delete` declares no response schema.
+      return c.body(null, 204)
+    },
+
+    updateStatus: async (c) => {
+      const auth = c.get("auth")
+      const transfer = await transfers.updateTransferStatus(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        transferId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(transfer))
+    },
+
+    manifestList: async (c) => {
+      const manifest = await transfers.listTransferManifest(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(manifest))
+    },
+
+    manifestReplace: async (c) => {
+      const manifest = await transfers.replaceManifest(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        transferId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(manifest))
     },
   },
 }

@@ -22,6 +22,9 @@ export type DomainEventMap = {
   "parcel.delivered": { parcelId: Id; trackingNumber: string; deliveryId: Id }
   "parcel.failed": { parcelId: Id; trackingNumber: string; reason: string }
   "pickup.assigned": { pickupId: Id; riderId: Id }
+  "transfer.created": { transferId: Id; transferNumber: string }
+  "transfer.departed": { transferId: Id; fromHubId: Id }
+  "transfer.arrived": { transferId: Id; toHubId: Id }
   "delivery.assigned": { deliveryId: Id; riderId: Id; attemptNo: number }
   "customer.activated": { customerId: Id }
 }
