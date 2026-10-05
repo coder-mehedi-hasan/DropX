@@ -46,7 +46,7 @@ import type {
   RouteStopInput,
   StaffIdentity,
   TransferListItem,
-  TransferParcel,
+  TransferManifestParcel,
   TransferWithManifest,
   UpdateBranchBody,
   UpdateHubBody,
@@ -378,11 +378,11 @@ export function updateTransferStatus(transferId: string, body: UpdateTransferSta
 }
 
 export function listTransferManifest(transferId: string, signal?: AbortSignal) {
-  return api.get<TransferParcel[]>(`/admin/transfers/${transferId}/parcels`, signal ? { signal } : undefined)
+  return api.get<TransferManifestParcel[]>(`/admin/transfers/${transferId}/parcels`, signal ? { signal } : undefined)
 }
 
 export function replaceTransferManifest(transferId: string, body: ReplaceTransferManifestBody) {
-  return api.put<TransferParcel[]>(`/admin/transfers/${transferId}/parcels`, body)
+  return api.put<TransferManifestParcel[]>(`/admin/transfers/${transferId}/parcels`, body)
 }
 
 export function listRoutes(params: RoutesSearch) {

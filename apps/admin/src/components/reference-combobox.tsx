@@ -211,13 +211,18 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
+  // `listVehicles`/`listRoutes` take the full list query, so they get the sort
+  // keys their table screens sort by — `search` is `string | undefined` here and
+  // the two expect `string`, hence the `?? ""`. No signal is threaded: the list
+  // helpers do not accept one, and dropping the request's abort signal here would
+  // mean a superseded search still renders.
   const vehicleList = useQuery({
     queryKey: ["reference", "vehicles", params],
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       listVehicles({
         page: params.page,
         limit: params.limit,
-        search: params.search,
+        search: params.search ?? "",
         sortBy: "createdAt",
         sort: "desc",
       }),
@@ -227,11 +232,11 @@ function useReferenceRows(
 
   const routeList = useQuery({
     queryKey: ["reference", "routes", params],
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       listRoutes({
         page: params.page,
         limit: params.limit,
-        search: params.search,
+        search: params.search ?? "",
         sortBy: "createdAt",
         sort: "desc",
       }),

@@ -5,7 +5,12 @@ import { AppToast, BoundFormField, FormItem, FormLabel, FormMessage, Input } fro
 import { ReferenceCombobox } from "@/components/reference-combobox"
 import { FormSheet } from "@/components/form-sheet"
 import { createTransfer, updateTransfer } from "@/lib/endpoints"
-import { createTransferSchema, updateTransferSchema, type UpdateTransferBody } from "@/lib/types"
+import {
+  createTransferSchema,
+  updateTransferSchema,
+  type CreateTransferBody,
+  type UpdateTransferBody,
+} from "@/lib/types"
 import type { TransferWithManifest } from "@/lib/types"
 
 const BLANK: z.infer<typeof createTransferSchema> = {
@@ -48,7 +53,7 @@ export function TransferFormSheet({
 
   const mutation = useMutation({
     mutationFn: (body: UpdateTransferBody) =>
-      isEdit ? updateTransfer(transfer!.id, body) : createTransfer(body),
+      isEdit ? updateTransfer(transfer!.id, body) : createTransfer(body as CreateTransferBody),
     onSuccess: () => {
       AppToast.success(isEdit ? "Transfer updated" : "Transfer planned")
       void queryClient.invalidateQueries({ queryKey: ["transfers"] })

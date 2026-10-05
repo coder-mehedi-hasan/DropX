@@ -49,10 +49,7 @@ export function TransferStatusSheet({
   const nextStatuses: readonly TransferWithManifest["status"][] = transfer
     ? TRANSFER_TRANSITIONS[transfer.status]
     : []
-  // The reason is required when the *target* status is `CANCELLED`, which the
-  // schema's `superRefine` enforces. The label says so up front rather than
-  // after a 422.
-  const needsReason = firstStatus === "CANCELLED"
+  const firstStatus = nextStatuses[0]
 
   const mutation = useMutation({
     mutationFn: (body: UpdateTransferStatusBody) => updateTransferStatus(transfer!.id, body),
@@ -63,7 +60,6 @@ export function TransferStatusSheet({
     },
   })
 
-  const firstStatus = nextStatuses[0]
   if (!transfer || !firstStatus) return null
 
   const defaults: z.infer<typeof updateTransferStatusSchema> = { status: firstStatus, reason: "" }
