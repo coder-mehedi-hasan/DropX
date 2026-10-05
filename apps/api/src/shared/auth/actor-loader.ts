@@ -31,23 +31,27 @@ export async function loadStaffActor(db: Pool, userId: string): Promise<StaffAut
   }
 
   const [roles, permissions, hubs] = await Promise.all([
-    db.query<RowDataPacket[]>(
-      `SELECT r.name
+    db
+      .query<RowDataPacket[]>(
+        `SELECT r.name
          FROM user_roles ur
          JOIN roles r ON r.id = ur.role_id
         WHERE ur.user_id = ?`,
-      [userId],
-    ).then(([rows]) => rows),
-    db.query<RowDataPacket[]>(
-      `SELECT DISTINCT rp.permission_key
+        [userId],
+      )
+      .then(([rows]) => rows),
+    db
+      .query<RowDataPacket[]>(
+        `SELECT DISTINCT rp.permission_key
          FROM user_roles ur
          JOIN role_permissions rp ON rp.role_id = ur.role_id
         WHERE ur.user_id = ?`,
-      [userId],
-    ).then(([rows]) => rows),
-    db.query<RowDataPacket[]>(`SELECT hub_id FROM user_hubs WHERE user_id = ?`, [userId]).then(
-      ([rows]) => rows,
-    ),
+        [userId],
+      )
+      .then(([rows]) => rows),
+    db
+      .query<RowDataPacket[]>(`SELECT hub_id FROM user_hubs WHERE user_id = ?`, [userId])
+      .then(([rows]) => rows),
   ])
 
   return {
@@ -64,7 +68,7 @@ export async function loadStaffActor(db: Pool, userId: string): Promise<StaffAut
 export async function loadRiderActor(db: Pool, userId: string): Promise<RiderAuth | null> {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT r.id, r.hub_id, r.status AS rider_status,
-            u.email, u.branch_id, u.status AS user_status
+            u.email, u.branch_id, u.must_change_password, u.status AS user_status
        FROM riders r
        JOIN users u ON u.id = r.user_id
       WHERE r.user_id = ?
@@ -93,6 +97,7 @@ export async function loadRiderActor(db: Pool, userId: string): Promise<RiderAut
     riderId: String(row.id),
     hubId: String(row.hub_id),
     email: row.email,
+    mustChangePassword: Boolean(row.must_change_password),
     roles: ["RIDER"],
     permissions: new Set(permissions.map((entry) => entry.permission_key)),
     branchId: row.branch_id === null ? null : String(row.branch_id),

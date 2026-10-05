@@ -30,6 +30,7 @@ export type RiderAuth = {
   riderId: Id
   hubId: Id
   email: string
+  mustChangePassword: boolean
   roles: string[]
   permissions: ReadonlySet<string>
   branchId: Id | null

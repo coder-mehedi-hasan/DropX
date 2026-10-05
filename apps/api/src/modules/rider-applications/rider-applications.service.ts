@@ -97,7 +97,7 @@ export async function approveRiderApplication(
     let userId: string
     try {
       const [result] = await tx.execute<OkPacket>(
-        `INSERT INTO ${TABLES.users} (name, email, phone, password_hash, status) VALUES (?, ?, ?, ?, 'ACTIVE')`,
+        `INSERT INTO ${TABLES.users} (name, email, phone, password_hash, must_change_password, status) VALUES (?, ?, ?, ?, TRUE, 'ACTIVE')`,
         [application.name, email, application.phone, passwordHash],
       )
       if (!result.insertId) throw new Error("Failed to insert rider account")

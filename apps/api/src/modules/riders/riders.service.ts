@@ -68,8 +68,8 @@ export async function createRider(c: Context<AppEnv>, input: CreateRiderInput): 
     let userId: string
     try {
       const [result] = await tx.execute<OkPacket>(
-        `INSERT INTO ${TABLES.users} (name, email, phone, password_hash, status)
-         VALUES (?, ?, ?, ?, 'ACTIVE')`,
+        `INSERT INTO ${TABLES.users} (name, email, phone, password_hash, must_change_password, status)
+         VALUES (?, ?, ?, ?, TRUE, 'ACTIVE')`,
         [input.name, input.email, input.phone ?? null, passwordHash],
       )
       if (!result.insertId) throw new Error("Failed to insert the rider account")

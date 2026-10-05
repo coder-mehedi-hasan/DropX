@@ -10,6 +10,7 @@ import {
   otpRequestSchema,
   otpVerifySchema,
   tokenPairResponseSchema,
+  changePasswordSchema,
 } from "../../modules/auth/auth.dto"
 
 /**
@@ -147,6 +148,25 @@ export const authPaths = {
       responses: {
         200: { description: "Acknowledged.", ...json(jsonSchemaOf(okResponseSchema, "output")) },
         401: unauth,
+      },
+    },
+  },
+  "/auth/riders/password": {
+    post: {
+      operationId: "auth.changeRiderPassword",
+      summary: "Change a rider password",
+      description:
+        "Sets a rider's private password and clears the temporary-password requirement. This is the only rider operation allowed before the first password change.",
+      tags: ["auth"],
+      security: bearerSecurity,
+      requestBody: { required: true, ...json(jsonSchemaOf(changePasswordSchema, "input")) },
+      responses: {
+        200: {
+          description: "Password changed.",
+          ...json(jsonSchemaOf(okResponseSchema, "output")),
+        },
+        401: unauth,
+        422: errorResponse("The new password is invalid."),
       },
     },
   },
