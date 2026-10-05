@@ -6,6 +6,7 @@ const NAV = [
   { href: "/track", label: "Track" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#pricing", label: "Pricing" },
+  { href: "/become-a-rider", label: "Become a rider" },
 ] as const
 
 /**
@@ -61,6 +62,9 @@ export function SiteFooter() {
         <p className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <Link href="/track" className="hover:text-foreground">
             Track a parcel
+          </Link>
+          <Link href="/become-a-rider" className="hover:text-foreground">
+            Become a rider
           </Link>
           <Link href="/login" className="hover:text-foreground">
             Sign in

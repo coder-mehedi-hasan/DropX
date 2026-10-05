@@ -206,6 +206,24 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <section className="border-t">
+          <div className="max-w-page mx-auto grid gap-5 px-4 py-16 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div className="grid gap-2">
+              <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
+                Join the network
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight">Want to ride with DropX?</h2>
+              <p className="text-muted-foreground max-w-2xl">
+                Bring your vehicle, choose a schedule that works for you, and help deliver parcels
+                across Bangladesh.
+              </p>
+            </div>
+            <Button size="lg" asChild>
+              <Link href="/become-a-rider">Become a rider</Link>
+            </Button>
+          </div>
+        </section>
       </main>
 
       <SiteFooter />

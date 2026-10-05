@@ -30,6 +30,11 @@ Branches and hubs are **not** separate apps. Their staff use `apps/admin` with r
 
 Public **tracking** (by tracking number only) is available without login. **Booking / creating parcels as a customer** requires OTP login — no guest booking.
 
+The public website also exposes `/become-a-rider` for recruitment. Applications capture contact
+details, district, vehicle, availability, and experience in `rider_applications` with `PENDING`
+status. Submission does not create a rider account; staff review the application and then use the
+existing rider setup flow to assign a hub, employee code, password, and permissions.
+
 ---
 
 ## Login flows

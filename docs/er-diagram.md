@@ -142,6 +142,12 @@ erDiagram
         bigint id PK
         bigint rider_id FK
     }
+    rider_applications {
+        bigint id PK
+        varchar phone
+        enum vehicle_type
+        enum status
+    }
     parcels {
         bigint id PK
         varchar tracking_number UK

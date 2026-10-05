@@ -91,4 +91,27 @@ export const pricingApi = {
   },
 }
 
+export type RiderApplicationPayload = {
+  name: string
+  phone: string
+  email?: string
+  district: string
+  vehicleType: "BICYCLE" | "MOTORCYCLE" | "CAR" | "VAN" | "OTHER"
+  licenseNumber?: string
+  experienceYears?: number
+  availability: string
+  notes?: string
+  consent: true
+}
+
+export const riderApplicationsApi = {
+  submit(payload: RiderApplicationPayload): Promise<{ id: string; status: "PENDING" }> {
+    return apiRequest<{ id: string; status: "PENDING" }>("/rider-applications", {
+      method: "POST",
+      auth: false,
+      body: payload,
+    })
+  },
+}
+
 export type { OtpChannel, TokenPair }
