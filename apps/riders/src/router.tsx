@@ -7,6 +7,7 @@ import { jobDetailRoute } from "./routes/job-detail"
 import { jobsRoute } from "./routes/jobs"
 import { indexRoute, loginRoute } from "./routes/login"
 import { profileRoute } from "./routes/profile"
+import { changePasswordRoute } from "./routes/change-password"
 import { rootRoute } from "./routes/root"
 
 /**
@@ -25,7 +26,7 @@ import { rootRoute } from "./routes/root"
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
-  appLayoutRoute.addChildren([jobsRoute, jobDetailRoute, profileRoute]),
+  appLayoutRoute.addChildren([jobsRoute, jobDetailRoute, profileRoute, changePasswordRoute]),
 ])
 
 export const router = createRouter({

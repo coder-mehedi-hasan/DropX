@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import { Navigate } from "@tanstack/react-router"
+import { Navigate, useRouterState } from "@tanstack/react-router"
 
 import { ScreenPending } from "../components/feedback"
 import {
@@ -25,6 +25,7 @@ type LoginResponse = TokenPair & {
     name: string
     email: string
     roles: string[]
+    mustChangePassword: boolean
   }
 }
 
@@ -36,6 +37,7 @@ type RiderMeResponse = {
   hubId: string
   email: string
   permissions: string[]
+  mustChangePassword: boolean
 }
 
 export type RiderIdentity = {
@@ -45,6 +47,7 @@ export type RiderIdentity = {
   name: string
   email: string
   permissions: RiderPermission[]
+  mustChangePassword: boolean
 }
 
 type AuthStatus = "loading" | "authenticated" | "anonymous"
@@ -56,6 +59,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (input: LoginInput) => Promise<void>
+  changePassword: (newPassword: string) => Promise<void>
   logout: () => Promise<void>
   can: (permission: RiderPermission) => boolean
 }
@@ -75,6 +79,7 @@ async function loadIdentity(account: { name: string; email: string }): Promise<R
     name: account.name,
     email: me.email,
     permissions: me.permissions.filter((key): key is RiderPermission => RIDER_KEYS.has(key)),
+    mustChangePassword: me.mustChangePassword,
   }
 }
 
@@ -139,6 +144,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const changePassword = useCallback(async (newPassword: string) => {
+    await apiRequest<{ ok: true }>("/auth/riders/password", {
+      method: "POST",
+      body: { newPassword },
+      auth: true,
+    })
+    const session = getSession()
+    if (!session) return
+    const rider = await loadIdentity(session.account)
+    setState({ status: "authenticated", rider })
+  }, [])
+
   const logout = useCallback(async () => {
     try {
       await apiRequest<{ ok: boolean }>("/auth/logout", { method: "POST", auth: true })
@@ -156,8 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, login, logout, can }),
-    [state, login, logout, can],
+    () => ({ ...state, login, changePassword, logout, can }),
+    [state, login, changePassword, logout, can],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -181,9 +198,13 @@ export function usePermission(permission: RiderPermission): boolean {
  * the login screen and lose the job they had open.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { status } = useAuth()
+  const { status, rider } = useAuth()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   if (status === "loading") return <ScreenPending label="Checking your session" />
   if (status === "anonymous") return <Navigate to="/login" replace />
+  if (rider?.mustChangePassword && pathname !== "/change-password") {
+    return <Navigate to="/change-password" replace />
+  }
   return <>{children}</>
 }
