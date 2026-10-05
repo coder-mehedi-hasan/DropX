@@ -96,6 +96,8 @@ import {
   riderApplicationIdParamSchema,
   riderApplicationResponseSchema,
   updateRiderApplicationSchema,
+  approveRiderApplicationSchema,
+  approveRiderApplicationResponseSchema,
 } from "../rider-applications/rider-applications.dto"
 
 /**
@@ -1032,6 +1034,21 @@ export const ADMIN_SURFACE = defineSurface({
           body: updateRiderApplicationSchema,
           response: riderApplicationResponseSchema,
           errors: { 404: "No such rider application." },
+        },
+        approve: {
+          method: "POST",
+          path: "/rider-applications/:id/approve",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Approve a rider application",
+          description:
+            "Creates the rider login and operational rider record, then marks the application approved in one transaction.",
+          params: riderApplicationIdParamSchema,
+          body: approveRiderApplicationSchema,
+          response: approveRiderApplicationResponseSchema,
+          errors: {
+            404: "No such rider application.",
+            409: "The application is already approved, or the email/employee code is already in use.",
+          },
         },
       },
     },

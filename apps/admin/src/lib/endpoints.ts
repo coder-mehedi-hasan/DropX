@@ -41,6 +41,7 @@ import type {
   Pickup,
   Rider,
   RiderApplication,
+  ApproveRiderApplicationBody,
   RiderLocation,
   Route,
   RouteStop,
@@ -329,6 +330,13 @@ export function listRiderApplications(params: RiderApplicationsSearch) {
 
 export function updateRiderApplicationStatus(id: string, status: RiderApplication["status"]) {
   return api.patch<RiderApplication>(`/admin/rider-applications/${id}/status`, { status })
+}
+
+export function approveRiderApplication(id: string, body: ApproveRiderApplicationBody) {
+  return api.post<{ application: RiderApplication; riderId: string }>(
+    `/admin/rider-applications/${id}/approve`,
+    body,
+  )
 }
 
 /**

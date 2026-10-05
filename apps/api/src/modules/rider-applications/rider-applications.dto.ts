@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { COMPENSATION_TYPES } from "../../db/models"
+
 export const vehicleTypes = ["BICYCLE", "MOTORCYCLE", "CAR", "VAN", "OTHER"] as const
 export const riderApplicationStatuses = ["PENDING", "REVIEWING", "APPROVED", "REJECTED"] as const
 
@@ -15,8 +17,27 @@ export const listRiderApplicationsQuerySchema = z.object({
 })
 
 export const updateRiderApplicationSchema = z.object({
-  status: z.enum(riderApplicationStatuses),
+  status: z.enum(["PENDING", "REVIEWING", "REJECTED"]),
 })
+
+export const approveRiderApplicationSchema = z.object({
+  email: z.string().trim().email("Enter a rider login email").max(255).optional().or(z.literal("")),
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+  hubId: z.string().trim().min(1, "Select a home hub"),
+  employeeCode: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .refine(
+      (value) => /^[A-Z0-9-]+$/.test(value),
+      "Use uppercase letters, numbers and hyphens only",
+    ),
+  licenseNumber: z.string().trim().max(100).optional().or(z.literal("")),
+  compensationType: z.enum(COMPENSATION_TYPES).default("SALARIED"),
+})
+
+export type ApproveRiderApplicationInput = z.infer<typeof approveRiderApplicationSchema>
 
 export const riderApplicationSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name").max(150),
@@ -58,4 +79,9 @@ export const riderApplicationResponseSchema = z.object({
   status: z.enum(riderApplicationStatuses),
   createdAt: z.string(),
   updatedAt: z.string(),
+})
+
+export const approveRiderApplicationResponseSchema = z.object({
+  application: riderApplicationResponseSchema,
+  riderId: z.string(),
 })

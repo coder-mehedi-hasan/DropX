@@ -99,6 +99,18 @@ export async function patchRiderApplication(
   return rows[0] ? applicationRow(rows[0]) : null
 }
 
+export async function selectRiderApplication(
+  db: Pool | Connection,
+  id: string,
+  forUpdate = false,
+): Promise<RiderApplication | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${COLUMNS} FROM rider_applications WHERE id = ?${forUpdate ? " FOR UPDATE" : ""}`,
+    [id],
+  )
+  return rows[0] ? applicationRow(rows[0]) : null
+}
+
 export async function insertRiderApplication(
   db: Pool,
   input: RiderApplicationInput,

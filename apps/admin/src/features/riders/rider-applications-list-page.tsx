@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Check, ClipboardList, Eye, X } from "lucide-react"
+import { ClipboardList, Eye, X } from "lucide-react"
 import { useMemo, useState } from "react"
 import {
   AppToast,
@@ -27,6 +27,7 @@ import { listRiderApplications, updateRiderApplicationStatus } from "@/lib/endpo
 import type { RiderApplication, RiderApplicationStatus } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
 import type { RiderApplicationsSearch } from "@/routes/rider-applications-search-params"
+import { ApproveRiderApplicationSheet } from "./approve-rider-application-sheet"
 
 const SORT_COLUMNS = ["name", "district", "status", "createdAt"] as const
 const STATUS_LABEL: Record<RiderApplicationStatus, string> = {
@@ -49,6 +50,7 @@ export function RiderApplicationsListPage({ search }: { search: RiderApplication
   const { hasPermission } = useAuth()
   const canManage = hasPermission("riders.manage")
   const [selected, setSelected] = useState<RiderApplication | null>(null)
+  const [approving, setApproving] = useState<RiderApplication | null>(null)
   const [actionError, setActionError] = useState<unknown>(null)
   const queryClient = useQueryClient()
   const where = usePaginatedListWhere(search)
@@ -74,13 +76,13 @@ export function RiderApplicationsListPage({ search }: { search: RiderApplication
   const meta = query.data?.meta
   const serverMeta = meta
     ? {
-      page: meta.currentPage,
-      limit: search.limit,
-      totalCount: meta.totalCount,
-      totalPages: meta.totalPages,
-      hasNextPage: meta.hasNextPage,
-      hasPreviousPage: meta.hasPreviousPage,
-    }
+        page: meta.currentPage,
+        limit: search.limit,
+        totalCount: meta.totalCount,
+        totalPages: meta.totalPages,
+        hasNextPage: meta.hasNextPage,
+        hasPreviousPage: meta.hasPreviousPage,
+      }
     : undefined
   const columns = useMemo<DataTableColumn<RiderApplication>[]>(
     () => [
@@ -258,9 +260,9 @@ export function RiderApplicationsListPage({ search }: { search: RiderApplication
                     <Button
                       size="sm"
                       disabled={update.isPending || selected.status === "APPROVED"}
-                      onClick={() => update.mutate({ id: selected.id, status: "APPROVED" })}
+                      onClick={() => setApproving(selected)}
                     >
-                      <Check /> Approve
+                      Approve and create rider
                     </Button>
                     <Button
                       size="sm"
@@ -277,6 +279,12 @@ export function RiderApplicationsListPage({ search }: { search: RiderApplication
           ) : null}
         </DialogContent>
       </Dialog>
+      <ApproveRiderApplicationSheet
+        key={approving?.id ?? "none"}
+        application={approving}
+        open={Boolean(approving)}
+        onOpenChange={(open) => !open && setApproving(null)}
+      />
     </div>
   )
 }
