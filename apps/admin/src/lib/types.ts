@@ -11,6 +11,7 @@ import { z } from "zod"
 import {
   BRANCH_STATUSES,
   COMPENSATION_TYPES,
+  DELIVERY_STATUSES,
   HUB_STATUSES,
   HUB_TYPES,
   PICKUP_STATUSES,
@@ -42,6 +43,8 @@ import type {
   RiderLocation,
   RiderStatus,
   CompensationType,
+  Delivery,
+  DeliveryStatus,
   Route,
   RouteStop,
   Transfer,
@@ -254,6 +257,36 @@ export type UpdatePickupStatusBody = {
 }
 
 /**
+ * The delivery projection the admin renders.
+ *
+ * `Delivery` from `@dropx/types` is the row; the API joins the tracking
+ * number, hub name/code, and rider name/employee code so dispatch does not
+ * look any of them up per row.
+ */
+export type DeliveryRow = Delivery & {
+  parcelTrackingNumber: string
+  hubName: string
+  hubCode: string
+  riderName: string
+  riderEmployeeCode: string
+}
+
+export type CreateDeliveryBody = {
+  parcelId: string
+  riderId: string
+  deliveryAddress: string
+}
+
+export type ReassignDeliveryBody = {
+  riderId: string
+}
+
+export type UpdateDeliveryStatusBody = {
+  status: DeliveryStatus
+  reason?: string | null
+}
+
+/**
  * A transfer is raised between two hubs, so both ends are required — unlike a
  * pickup, which inherits its hub from the parcel. `driverRef` is a **staff**
  * member's id or email rather than a rider: rule 9 makes transfer drivers staff,
@@ -442,6 +475,35 @@ export const assignPickupSchema = z.object({
 export const updatePickupStatusSchema = z
   .object({
     status: z.enum(PICKUP_STATUSES),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.status === "FAILED" || value.status === "CANCELLED") && !value.reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reason"],
+        message: "Say what happened",
+      })
+    }
+  })
+
+/**
+ * `parcelId` is typed as a string the human types, then handed to the API as-is
+ * — same convention as pickups: the tracking number is the string a human has.
+ */
+export const createDeliverySchema = z.object({
+  parcelId: z.string().trim().min(1, "Tracking number or parcel id is required").max(64),
+  riderId: z.string().trim().min(1, "Pick a rider"),
+  deliveryAddress: z.string().trim().min(1, "Where is it being delivered?").max(500),
+})
+
+export const reassignDeliverySchema = z.object({
+  riderId: z.string().trim().min(1, "Pick a rider"),
+})
+
+export const updateDeliveryStatusSchema = z
+  .object({
+    status: z.enum(DELIVERY_STATUSES),
     reason: z.string().trim().max(500).optional(),
   })
   .superRefine((value, ctx) => {

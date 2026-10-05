@@ -565,6 +565,31 @@ export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]
 export const CLOSED_DELIVERY_STATUSES = ["DELIVERED", "FAILED", "CANCELLED", "RETURNED"] as const
 export type ClosedDeliveryStatus = (typeof CLOSED_DELIVERY_STATUSES)[number]
 
+/**
+ * The delivery attempt lifecycle, in the same shape and for the same reason as
+ * `PARCEL_TRANSITIONS` and `PICKUP_TRANSITIONS`: the API enforces it, and the
+ * admin's status control offers exactly these moves.
+ *
+ * `ASSIGNED` is the only state a rider is set in by dispatch; the rider's own
+ * outcomes (`DELIVERED`, `FAILED`, `RETURNED`) close the attempt through the
+ * jobs endpoint, and a failed or cancelled attempt is retried as a **new**
+ * `deliveries` row with the next `attempt_no`, never by reopening. So every
+ * closed status maps to an empty transition list here — closure is final, and
+ * the retry is a fresh row.
+ */
+export const DELIVERY_TRANSITIONS: Readonly<Record<DeliveryStatus, readonly DeliveryStatus[]>> = {
+  ASSIGNED: ["OUT_FOR_DELIVERY", "CANCELLED"],
+  OUT_FOR_DELIVERY: ["DELIVERED", "FAILED", "CANCELLED", "RETURNED"],
+  DELIVERED: [],
+  FAILED: [],
+  CANCELLED: [],
+  RETURNED: [],
+}
+
+export function canTransitionDelivery(from: DeliveryStatus, to: DeliveryStatus): boolean {
+  return DELIVERY_TRANSITIONS[from].includes(to)
+}
+
 export type Delivery = EntityBase &
   Timestamped & {
     parcelId: Id

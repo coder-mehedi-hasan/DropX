@@ -2,8 +2,8 @@
 
 ## Status
 
-Verified against the running API on 2026-10-05: **80 operations registered**, all documented in
-`/openapi.json`. Batches 1–7 are built and gate-green; **batches 8–9 are not started**.
+Verified against the running API on 2026-10-05: **85 operations registered**, all documented in
+`/openapi.json`. Batches 1–8 are built and gate-green; **batch 9 is not started**.
 
 - [x] **Batch 1 — Zones + Vehicles** — 9 ops (`admin.zones.*` ×4, `admin.vehicles.*` ×5)
 - [x] **Batch 2 — Pricing Rules** — 6 ops (`admin.pricing.{list,read,create,update,delete,match}`)
@@ -12,10 +12,10 @@ Verified against the running API on 2026-10-05: **80 operations registered**, al
 - [x] **Batch 5 — Rider Location Tracking** — 2 ops (`admin.riderLocations.list`, `job.recordLocation`)
 - [x] **Batch 6 — Pickup Operations** — 5 ops (`admin.pickups.{list,read,create,assign,updateStatus}`)
 - [x] **Batch 7 — Transfer Operations** — 8 ops (`admin.transfers.{list,read,create,update,delete,updateStatus,manifestList,manifestReplace}`)
-- [ ] **Batch 8 — Delivery Management** — 0 of 5 ops. Not started.
+- [x] **Batch 8 — Delivery Management** — 5 ops (`admin.deliveries.{list,read,create,reassign,updateStatus}`)
 - [ ] **Batch 9 — Delivery Proof** — 0 of 4 ops. Not started.
 
-**Remaining: 2 batches, 9 ops, 3 admin screens.**
+**Remaining: 1 batch, 4 ops, 1 admin screen.**
 
 Rider-facing gaps, for contrast: the rider app (`apps/riders`) has only Jobs and Profile
 (`bottom-nav.tsx`), backed by 4 ops (`job.list`, `job.read`, `job.reportOutcome`, `job.recordLocation`).
@@ -314,7 +314,49 @@ Deviations from the plan's file table, all following the codebase:
 
 ## Batch 8 — Delivery Management (5 ops)
 
-**Status: NOT STARTED.** Dependencies met (parcels + riders + hubs exist).
+**Status: done.** 5 operations: list, read, create, reassign, updateStatus — served at
+`/api/v1/admin/deliveries`, built through the registry.
+
+Deviations from the plan's file table, all following the codebase:
+
+- **`create` is the assignment.** There is no rider-less draft attempt
+  (`rider_id` is `NOT NULL`), so opening an attempt *is* assigning a rider:
+  `POST /deliveries` is gated on `deliveries.assign`, not `deliveries.manage`.
+  `reassign` (`PATCH /deliveries/:id`, also `deliveries.assign`) is a rider
+  swap while the attempt is still `ASSIGNED`; `updateStatus` is
+  `deliveries.manage`.
+- **No separate create-vs-assign split.** Pickups could be `REQUESTED` (no
+  rider) then `ASSIGNED`; a delivery row always has a rider, so the split
+  would be a draft that can never hold.
+- **The hub is derived, not taken.** `deliveries.hub_id` comes from the
+  parcel's `COALESCE(current_hub_id, destination_hub_id)` inside the create
+  transaction — one definition of "where the parcel waits", never a client
+  field that could disagree with it.
+- **One open attempt per parcel; retries are new rows.** `countOpenAttempts`
+  (`ASSIGNED`/`OUT_FOR_DELIVERY`) rejects a second open attempt with
+  `ACTIVE_ATTEMPT_EXISTS`, and the parcel row is locked first so two
+  concurrent creates cannot both pass. A failed or cancelled attempt is never
+  reopened; a retry is a new row at `attempt_no + 1`.
+- **`DELIVERY_TRANSITIONS` went into `@dropx/types`**, next to
+  `PICKUP_TRANSITIONS` and `TRANSFER_TRANSITIONS`; the admin's status sheet
+  offers exactly what the API enforces. Closed attempts have no outgoing
+  transitions by design.
+- **`CANCELLED` releases the parcel** back to `AT_HUB`; `FAILED`/`RETURNED`
+  move the parcel to match, both in the same transaction as the attempt.
+- **Two bug fixes along the way:**
+  - `lockScopedParcelForUpdate` moved from `pickups.repository.ts` to
+    `parcels.repository.ts` so deliveries can share it; the pickups service
+    and `check:read-paths` now use the shared one.
+  - `pickups.updatePickupStatusRow` appended a `scope_hub.*` predicate to a
+    bare `UPDATE` with no such alias — it 500'd for every scoped caller
+    making a status write. The `UPDATE` now joins `parcels` and the
+    `scope_hub` alias explicitly. The deliveries repository writes its
+    scoped `UPDATE`s the same joined way.
+
+New read-path cases: `deliveries.selectDeliveries` (all filters, sort keys,
+branch/hub scopes), `selectDelivery` (scoped + `FOR UPDATE` scopes),
+`countOpenAttempts`, `nextAttemptNo`, `parcelDispatchHub` — 20 cases, 188/188
+total.
 
 | File                                                           | Action   |
 | -------------------------------------------------------------- | -------- |
@@ -371,11 +413,11 @@ bun run lint
 | 5         | Rider Locations  | 2           | 1                 | ~7            | done                  |
 | 6         | Pickups          | 5           | 2                 | ~8            | done                  |
 | 7         | Transfers        | 8           | 3                 | ~10           | done                  |
-| 8         | Deliveries       | 5           | 2                 | ~8            | **not started**       |
+| 8         | Deliveries       | 5           | 2                 | ~8            | done                  |
 | 9         | Delivery Proofs  | 4           | 1                 | ~7            | **not started**       |
-| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **42 of 51 ops done** |
+| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **47 of 51 ops done** |
 
-Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 + 8 = **42**, against 51 planned. The API registered **80**
+Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 + 8 + 5 = **47**, against 51 planned. The API registered **85**
 operations at last boot; the other 38 predate the P0 plan (auth, health, tracking, parcels, jobs,
 customer).
 

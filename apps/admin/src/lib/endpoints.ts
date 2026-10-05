@@ -61,6 +61,10 @@ import type {
   Zone,
   ZoneOption,
   ReplaceTransferManifestBody,
+  CreateDeliveryBody,
+  ReassignDeliveryBody,
+  UpdateDeliveryStatusBody,
+  DeliveryRow,
 } from "./types"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
@@ -70,6 +74,7 @@ import type { RidersSearch } from "@/routes/riders-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import type { PickupsSearch } from "@/routes/pickups-search-params"
 import type { TransfersSearch } from "@/routes/transfers-search-params"
+import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -358,7 +363,10 @@ export function listTransfers(params: TransfersSearch) {
 }
 
 export function getTransfer(transferId: string, signal?: AbortSignal) {
-  return api.get<TransferWithManifest>(`/admin/transfers/${transferId}`, signal ? { signal } : undefined)
+  return api.get<TransferWithManifest>(
+    `/admin/transfers/${transferId}`,
+    signal ? { signal } : undefined,
+  )
 }
 
 export function createTransfer(body: CreateTransferBody) {
@@ -378,11 +386,34 @@ export function updateTransferStatus(transferId: string, body: UpdateTransferSta
 }
 
 export function listTransferManifest(transferId: string, signal?: AbortSignal) {
-  return api.get<TransferManifestParcel[]>(`/admin/transfers/${transferId}/parcels`, signal ? { signal } : undefined)
+  return api.get<TransferManifestParcel[]>(
+    `/admin/transfers/${transferId}/parcels`,
+    signal ? { signal } : undefined,
+  )
 }
 
 export function replaceTransferManifest(transferId: string, body: ReplaceTransferManifestBody) {
   return api.put<TransferManifestParcel[]>(`/admin/transfers/${transferId}/parcels`, body)
+}
+
+export function listDeliveries(params: DeliveriesSearch) {
+  return api.get<Page<DeliveryRow>>("/admin/deliveries", { query: deliveryQuery(params) })
+}
+
+export function getDelivery(deliveryId: string, signal?: AbortSignal) {
+  return api.get<DeliveryRow>(`/admin/deliveries/${deliveryId}`, signal ? { signal } : undefined)
+}
+
+export function createDelivery(body: CreateDeliveryBody) {
+  return api.post<DeliveryRow>("/admin/deliveries", body)
+}
+
+export function reassignDelivery(deliveryId: string, body: ReassignDeliveryBody) {
+  return api.patch<DeliveryRow>(`/admin/deliveries/${deliveryId}`, body)
+}
+
+export function updateDeliveryStatus(deliveryId: string, body: UpdateDeliveryStatusBody) {
+  return api.patch<DeliveryRow>(`/admin/deliveries/${deliveryId}/status`, body)
 }
 
 export function listRoutes(params: RoutesSearch) {
@@ -498,6 +529,19 @@ function transferQuery(params: TransfersSearch) {
     ...(params.hubId ? { hubId: params.hubId } : {}),
     ...(params.vehicleId ? { vehicleId: params.vehicleId } : {}),
     ...(params.driverId ? { driverId: params.driverId } : {}),
+  }
+}
+
+function deliveryQuery(params: DeliveriesSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    ...(params.hubId ? { hubId: params.hubId } : {}),
+    ...(params.riderId ? { riderId: params.riderId } : {}),
   }
 }
 

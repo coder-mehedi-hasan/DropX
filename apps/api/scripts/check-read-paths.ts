@@ -53,6 +53,7 @@ const routes = await import("../src/modules/routes/routes.repository")
 const riders = await import("../src/modules/riders/riders.repository")
 const riderLocations = await import("../src/modules/riders/rider-locations.repository")
 const pickups = await import("../src/modules/pickups/pickups.repository")
+const deliveries = await import("../src/modules/deliveries/deliveries.repository")
 const transfers = await import("../src/modules/transfers/transfers.repository")
 
 const scope: Scope = {
@@ -504,13 +505,13 @@ cases.push(
     run: () => pickups.selectPickup(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
   },
   {
-    name: "pickups.lockScopedParcelForUpdate",
-    run: () => pickups.lockScopedParcelForUpdate(pool, scope, "1"),
+    name: "parcels.lockScopedParcelForUpdate",
+    run: () => parcels.lockScopedParcelForUpdate(pool, scope, "1"),
   },
   {
-    name: "pickups.lockScopedParcelForUpdate(hub-scoped)",
+    name: "parcels.lockScopedParcelForUpdate(hub-scoped)",
     run: () =>
-      pickups.lockScopedParcelForUpdate(
+      parcels.lockScopedParcelForUpdate(
         pool,
         { ...scope, isCompanyWide: false, hubIds: ["1"] },
         "1",
@@ -523,7 +524,10 @@ cases.push(
   // either end (`from_hub_id` OR `to_hub_id`) while a write is scoped to the
   // origin alone. Each clause is built over the same joins the read query uses, so
   // a scoped caller runs exactly the alias a company-wide caller never touches.
-  { name: "transfers.selectTransfers", run: () => transfers.selectTransfers(pool, scope, listParams, {}) },
+  {
+    name: "transfers.selectTransfers",
+    run: () => transfers.selectTransfers(pool, scope, listParams, {}),
+  },
   {
     name: "transfers.selectTransfers(status)",
     run: () => transfers.selectTransfers(pool, scope, listParams, { status: "PLANNED" }),
@@ -561,7 +565,12 @@ cases.push(
   {
     name: "transfers.selectTransfers(hub-scoped)",
     run: () =>
-      transfers.selectTransfers(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
+      transfers.selectTransfers(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        listParams,
+        {},
+      ),
   },
   {
     name: "transfers.selectTransfers(branch+hub-scoped)",
@@ -579,12 +588,21 @@ cases.push(
   },
   {
     name: "transfers.selectTransferWithParcels(branch-scoped)",
-    run: () => transfers.selectTransferWithParcels(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
+    run: () =>
+      transfers.selectTransferWithParcels(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        "1",
+      ),
   },
   {
     name: "transfers.selectTransferWithParcels(hub-scoped)",
     run: () =>
-      transfers.selectTransferWithParcels(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1"),
+      transfers.selectTransferWithParcels(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        "1",
+      ),
   },
   {
     name: "transfers.selectTransferWithParcels(for update)",
@@ -593,12 +611,23 @@ cases.push(
   {
     name: "transfers.selectTransferWithParcels(for update, hub-scoped)",
     run: () =>
-      transfers.selectTransferWithParcels(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1", {
-        forUpdate: true,
-      }),
+      transfers.selectTransferWithParcels(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        "1",
+        {
+          forUpdate: true,
+        },
+      ),
   },
-  { name: "transfers.selectTransferParcels", run: () => transfers.selectTransferParcels(pool, "1") },
-  { name: "transfers.selectManifestParcelIds", run: () => transfers.selectManifestParcelIds(pool, "1") },
+  {
+    name: "transfers.selectTransferParcels",
+    run: () => transfers.selectTransferParcels(pool, "1"),
+  },
+  {
+    name: "transfers.selectManifestParcelIds",
+    run: () => transfers.selectManifestParcelIds(pool, "1"),
+  },
   { name: "transfers.countManifest", run: () => transfers.countManifest(pool, "1") },
   {
     name: "transfers.findManifestCandidates",
@@ -608,10 +637,95 @@ cases.push(
     name: "transfers.findManifestCandidates(empty)",
     run: () => transfers.findManifestCandidates(pool, "1", []),
   },
-  { name: "transfers.findStaffByRef(email)", run: () => transfers.findStaffByRef(pool, "nobody@example.com") },
+  {
+    name: "transfers.findStaffByRef(email)",
+    run: () => transfers.findStaffByRef(pool, "nobody@example.com"),
+  },
   { name: "transfers.findHub", run: () => transfers.findHub(pool, "1") },
   { name: "transfers.findVehicle", run: () => transfers.findVehicle(pool, "1") },
   { name: "transfers.findRoute", run: () => transfers.findRoute(pool, "1") },
+  // ---- deliveries -----------------------------------------------------------
+  //
+  // Scope comes from the attempt's own hub (`d.hub_id`), joined through
+  // `scope_hub`. Each scoped case exercises the alias the company-wide case
+  // never touches — the same class of bug Batch 6 fixed on parcels reads.
+  {
+    name: "deliveries.selectDeliveries",
+    run: () => deliveries.selectDeliveries(pool, scope, listParams, {}),
+  },
+  {
+    name: "deliveries.selectDeliveries(status)",
+    run: () => deliveries.selectDeliveries(pool, scope, listParams, { status: "ASSIGNED" }),
+  },
+  {
+    name: "deliveries.selectDeliveries(riderId)",
+    run: () => deliveries.selectDeliveries(pool, scope, listParams, { riderId: "1" }),
+  },
+  {
+    name: "deliveries.selectDeliveries(hubId)",
+    run: () => deliveries.selectDeliveries(pool, scope, listParams, { hubId: "1" }),
+  },
+  {
+    name: "deliveries.selectDeliveries(search)",
+    run: () => deliveries.selectDeliveries(pool, scope, listParams, { search: "a" }),
+  },
+  ...(["assignedAt", "deliveredAt", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `deliveries.selectDeliveries(sortBy=${sortBy})`,
+    run: () => deliveries.selectDeliveries(pool, scope, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "deliveries.selectDeliveries(branch-scoped)",
+    run: () =>
+      deliveries.selectDeliveries(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        listParams,
+        {},
+      ),
+  },
+  {
+    name: "deliveries.selectDeliveries(hub-scoped)",
+    run: () =>
+      deliveries.selectDeliveries(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        listParams,
+        {},
+      ),
+  },
+  { name: "deliveries.selectDelivery", run: () => deliveries.selectDelivery(pool, scope, "1") },
+  {
+    name: "deliveries.selectDelivery(branch-scoped)",
+    run: () =>
+      deliveries.selectDelivery(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
+  },
+  {
+    name: "deliveries.selectDelivery(hub-scoped)",
+    run: () =>
+      deliveries.selectDelivery(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1"),
+  },
+  {
+    name: "deliveries.selectDelivery(for update)",
+    run: () => deliveries.selectDelivery(pool, scope, "1", { forUpdate: true }),
+  },
+  {
+    name: "deliveries.selectDelivery(for update, hub-scoped)",
+    run: () =>
+      deliveries.selectDelivery(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1", {
+        forUpdate: true,
+      }),
+  },
+  { name: "deliveries.countOpenAttempts", run: () => deliveries.countOpenAttempts(pool, "1") },
+  { name: "deliveries.nextAttemptNo", run: () => deliveries.nextAttemptNo(pool, "1") },
+  {
+    name: "deliveries.parcelDispatchHub",
+    run: () => deliveries.parcelDispatchHub(pool, scope, "1"),
+  },
+  {
+    name: "deliveries.parcelDispatchHub(hub-scoped)",
+    run: () =>
+      deliveries.parcelDispatchHub(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1"),
+  },
 )
 
 let failures = 0

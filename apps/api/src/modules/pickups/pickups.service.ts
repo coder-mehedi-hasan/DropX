@@ -10,7 +10,7 @@ import { withTransaction } from "../../db/transaction"
 import { emit } from "../../shared/events/bus"
 import type { AppEnv } from "../../types/env"
 
-import { insertParcelEvent } from "../parcels/parcels.repository"
+import { insertParcelEvent, lockScopedParcelForUpdate } from "../parcels/parcels.repository"
 import { selectRider } from "../riders/riders.repository"
 import type {
   AssignPickupInput,
@@ -22,7 +22,6 @@ import {
   assignPickupRow,
   countOpenPickups,
   insertPickup,
-  lockScopedParcelForUpdate,
   selectPickup,
   selectPickups,
   updatePickupStatusRow,

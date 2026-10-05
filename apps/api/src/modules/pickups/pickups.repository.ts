@@ -164,45 +164,6 @@ export async function selectPickup(
 }
 
 /**
- * Locks the parcel row the pickup will belong to, in scope.
- *
- * `reference` is matched against **either** the id or the tracking number. That is
- * not leniency for its own sake: the id is never shown to a human anywhere, while
- * the tracking number is the only string a customer can read out over the phone.
- * Accepting a field that callers cannot possibly know would make the whole create
- * path unusable, and a UI that hides raw ids in favour of names would have to
- * invent a lookup to compensate.
- *
- * The lock exists to serialise concurrent creates rather than to read anything:
- * two dispatchers raising a collection for the same parcel at the same moment
- * would each pass an "is there already an open pickup?" check and both insert.
- * Locking the shared parent row makes the second one wait, then see the first.
- */
-export async function lockScopedParcelForUpdate(
-  db: Pool | Connection,
-  scope: Scope,
-  reference: string,
-): Promise<string | null> {
-  const clauses = ["(p.id = ? OR p.tracking_number = ?)"]
-  const params: unknown[] = [reference, reference]
-  const scoped = scopePredicate(scope)
-  if (scoped) {
-    clauses.push(scoped.text)
-    params.push(...scoped.params)
-  }
-
-  // The `scope_hub` alias is what `applyScope` writes against, so this joins the
-  // same way the parcels repository does rather than restating the condition.
-  const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT p.id FROM parcels AS p
-     LEFT JOIN hubs AS scope_hub ON scope_hub.id = COALESCE(p.current_hub_id, p.destination_hub_id)
-     WHERE ${clauses.join(" AND ")} LIMIT 1 FOR UPDATE`,
-    params,
-  )
-  return rows[0] ? String(rows[0].id) : null
-}
-
-/**
  * An open pickup is one that has not reached a terminal status. A parcel can
  * have many of these over its life — a failed collection is retried by opening
  * another — but only one at a time, which is the invariant `createPickup`
@@ -298,7 +259,14 @@ export async function updatePickupStatusRow(
   }
 
   params.push(pickupId)
-  let sql = `UPDATE pickups SET ${assignments.join(", ")} WHERE id = ?`
+  // The write carries its scope with it rather than relying on a prior read,
+  // but a bare UPDATE has no `scope_hub` alias to write against — the join is
+  // spelled out the same way as the reads above, or a scoped caller gets an
+  // unknown-column error.
+  let sql = `UPDATE pickups AS pk
+    LEFT JOIN parcels AS p ON p.id = pk.parcel_id
+    LEFT JOIN hubs AS scope_hub ON scope_hub.id = COALESCE(p.current_hub_id, p.destination_hub_id)
+    SET ${assignments.map((a) => "pk." + a).join(", ")} WHERE pk.id = ?`
 
   const scoped = scopePredicate(scope)
   if (scoped) {

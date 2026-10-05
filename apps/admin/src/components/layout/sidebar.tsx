@@ -4,6 +4,7 @@ import {
   Building2,
   Car,
   Globe,
+  Handshake,
   LayoutDashboard,
   MapPin,
   Package,
@@ -35,6 +36,8 @@ import { DEFAULT_PICKUPS_SEARCH_PARAMS } from "@/routes/pickups-search-params"
 import type { PickupsSearch } from "@/routes/pickups-search-params"
 import { DEFAULT_TRANSFERS_SEARCH_PARAMS } from "@/routes/transfers-search-params"
 import type { TransfersSearch } from "@/routes/transfers-search-params"
+import { DEFAULT_DELIVERIES_SEARCH_PARAMS } from "@/routes/deliveries-search-params"
+import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -52,6 +55,7 @@ export type NavItem = {
     | "/rider-locations"
     | "/pickups"
     | "/transfers"
+    | "/deliveries"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -64,6 +68,7 @@ export type NavItem = {
     | RiderLocationsSearch
     | PickupsSearch
     | TransfersSearch
+    | DeliveriesSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -152,6 +157,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_TRANSFERS_SEARCH_PARAMS,
     icon: Truck,
     permission: "transfers.view",
+  },
+  // After Transfers: the attempt the transfer fed, in the last mile.
+  {
+    label: "Deliveries",
+    to: "/deliveries",
+    search: DEFAULT_DELIVERIES_SEARCH_PARAMS,
+    icon: Handshake,
+    permission: "deliveries.view",
   },
 ]
 
