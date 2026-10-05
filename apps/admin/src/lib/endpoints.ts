@@ -22,6 +22,7 @@ import type {
   CreateBranchBody,
   CreateHubBody,
   CreateVehicleBody,
+  CreateRiderBody,
   CreateRouteBody,
   CreateZoneBody,
   CustomerOption,
@@ -34,12 +35,14 @@ import type {
   CreatePricingRuleBody,
   UpdatePricingRuleBody,
   ReferenceListParams,
+  Rider,
   Route,
   RouteStop,
   RouteStopInput,
   StaffIdentity,
   UpdateBranchBody,
   UpdateHubBody,
+  UpdateRiderBody,
   UpdateRouteBody,
   UpdateVehicleBody,
   UpdateZoneBody,
@@ -51,6 +54,7 @@ import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
+import type { RidersSearch } from "@/routes/riders-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -266,6 +270,26 @@ export function deletePricingRule(pricingRuleId: string) {
   return api.delete<void>(`/pricing/rules/${pricingRuleId}`)
 }
 
+export function listRiders(params: RidersSearch) {
+  return api.get<Page<Rider>>("/admin/riders", { query: riderQuery(params) })
+}
+
+export function getRider(riderId: string, signal?: AbortSignal) {
+  return api.get<Rider>(`/admin/riders/${riderId}`, signal ? { signal } : undefined)
+}
+
+export function createRider(body: CreateRiderBody) {
+  return api.post<Rider>("/admin/riders", body)
+}
+
+export function updateRider(riderId: string, body: UpdateRiderBody) {
+  return api.patch<Rider>(`/admin/riders/${riderId}`, body)
+}
+
+export function setRiderStatus(riderId: string, status: Rider["status"]) {
+  return api.post<Rider>(`/admin/riders/${riderId}/status`, { status })
+}
+
 export function listRoutes(params: RoutesSearch) {
   return api.get<Page<Route>>("/routes", { query: routeQuery(params) })
 }
@@ -349,6 +373,19 @@ function pricingRuleQuery(params: {
     sort: params.sort,
     ...(params.search ? { search: params.search } : {}),
     ...(params.status ? { status: params.status } : {}),
+  }
+}
+
+function riderQuery(params: RidersSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    ...(params.compensationType ? { compensationType: params.compensationType } : {}),
+    ...(params.hubId ? { hubId: params.hubId } : {}),
   }
 }
 

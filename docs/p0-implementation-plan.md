@@ -2,32 +2,42 @@
 
 ## Status
 
-Verified against the running API on 2026-10-05: **60 operations registered**, all documented in
-`/openapi.json`. Batches 1–3 are built and gate-green; **batches 4–9 are not started**.
+Verified against the running API on 2026-10-05: **65 operations registered**, all documented in
+`/openapi.json`. Batches 1–4 are built and gate-green; **batches 5–9 are not started**.
 
 - [x] **Batch 1 — Zones + Vehicles** — 9 ops (`admin.zones.*` ×4, `admin.vehicles.*` ×5)
 - [x] **Batch 2 — Pricing Rules** — 6 ops (`admin.pricing.{list,read,create,update,delete,match}`)
 - [x] **Batch 3 — Routes + Stops** — 7 ops (`admin.routes.{list,read,create,update,delete,stopsList,stopsReplace}`)
-- [ ] **Batch 4 — Rider Management** — 0 of 6 ops. No admin Riders screen, no nav item. Not started.
-- [ ] **Batch 5 — Rider Location Tracking** — 0 of 2 ops. Not started.
+- [x] **Batch 4 — Rider Management** — 5 ops (`admin.riders.{list,read,create,update,setStatus}`)
+- [ ] **Batch 5 — Rider Location Tracking** — 0 of 2 ops. Not started. Unblocked: Batch 4 landed.
 - [ ] **Batch 6 — Pickup Operations** — 0 of 5 ops. Not started.
 - [ ] **Batch 7 — Transfer Operations** — 0 of 8 ops. Not started.
 - [ ] **Batch 8 — Delivery Management** — 0 of 5 ops. Not started.
 - [ ] **Batch 9 — Delivery Proof** — 0 of 4 ops. Not started.
 
-**Remaining: 6 batches, 30 ops, 11 admin screens.**
+**Remaining: 5 batches, 24 ops, 9 admin screens.**
 
 Rider-facing gaps, for contrast: the rider app (`apps/riders`) has only Jobs and Profile
 (`bottom-nav.tsx`), backed by 3 ops (`job.list`, `job.read`, `job.reportOutcome`). The two rider-app
 features still missing are Batch 5 (location push) and Batch 9 (proof submission) — rider
 _management_ is admin-side by design and does not belong in the rider app.
 
-## Known deviation
+## Registry vs hand-written routes
 
-Every batch from 2 onward bypasses `admin/registry.ts` and uses standalone hand-written Hono routes
-plus a manual `paths/*.openapi.ts` fragment. Cause: `SurfaceHandlers<typeof ADMIN_SURFACE>` mis-maps
-any newly added feature key to the vehicles handler contract, so adding a registry feature fails
-typecheck. This should be fixed before Batch 4 or the workaround compounds across four more features.
+The plan's file table says to edit `admin/registry.ts` + `admin/handlers.ts` per feature. Batches 2
+and 3 did **not** do this — they used standalone hand-written Hono routes plus a manual
+`paths/*.openapi.ts` fragment, because adding a registry feature was failing typecheck at the time.
+
+**That failure was a misdiagnosis, now corrected.** Batch 4 re-tested it: adding a `riders` feature to
+`registry.ts` and `handlers.ts` typechecked, booted and generated its OpenAPI paths with no special
+handling. `SurfaceHandlers<typeof ADMIN_SURFACE>` does not mis-map new feature keys. The earlier
+failure was almost certainly the handler-map key not matching the registry feature key, which is
+exactly what the boot-time bijection assertion exists to catch.
+
+**From Batch 4 onward, use the registry.** It is one entry in `registry.ts` plus one handler, and it
+derives the operation id, the mounted path, the policy registration and the OpenAPI operation — there
+is no second file to keep in sync. The Batches 2–3 hand-written modules are left as they are; they work
+and rewriting them is not worth the regression risk.
 
 ## Dependencies & Order
 
@@ -127,9 +137,21 @@ endpoints would only add round trips. Also hand-written — see Known deviation 
 
 ## Batch 4 — Rider Management (6 ops)
 
-**Status: NOT STARTED.** Permission keys `RIDERS_VIEW`/`RIDERS_MANAGE` exist and the `riders`
-table is migrated, but there is no operation, no `apps/admin/src/features/riders/`, and no sidebar
-entry. The admin Riders screen the product needs does not exist yet.
+**Status: done, at 5 ops not 6.** list, read, create, update, setStatus — served at
+`/api/v1/admin/riders`, built through the registry (see Registry vs hand-written routes above).
+
+Deviations from the file table, all following the codebase:
+
+- **5 ops, not 6.** The plan's implied sixth was presumably a delete, but a rider is not deletable —
+  they own delivery history (`deliveries`, `parcels.rider_id`), so removing one would orphan the ops
+  record. `SUSPENDED` is the terminal state instead, which is why `setStatus` is its own operation
+  rather than a PATCH field.
+- **No `routes/riders.tsx`.** Routes are declared in `app-routes.tsx` and listed in `router.tsx`;
+  a separate route file is never how a screen is added here.
+- **Create writes two tables.** A rider is a `users` row _and_ a `riders` row (rule 8), so
+  `POST /admin/riders` creates the account the rider app signs in with, in the same transaction as the
+  rider row. Account fields (`email`, `name`, `password`) are create-only: `PATCH` cannot touch them,
+  so two surfaces never write one `users` row.
 
 | File                                                  | Action   |
 | ----------------------------------------------------- | -------- |
@@ -262,14 +284,18 @@ bun run lint
 | 1         | Zones, Vehicles  | 9           | 4                 | ~12           | done                  |
 | 2         | Pricing Rules    | 6           | 2                 | ~8            | done                  |
 | 3         | Routes + Stops   | 7           | 2                 | ~8            | done                  |
-| 4         | Rider Management | 6           | 2                 | ~8            | **not started**       |
+| 4         | Rider Management | 5           | 2                 | ~8            | done                  |
 | 5         | Rider Locations  | 2           | 1                 | ~6            | **not started**       |
 | 6         | Pickups          | 5           | 2                 | ~8            | **not started**       |
 | 7         | Transfers        | 8           | 3                 | ~10           | **not started**       |
 | 8         | Deliveries       | 5           | 2                 | ~8            | **not started**       |
 | 9         | Delivery Proofs  | 4           | 1                 | ~7            | **not started**       |
-| **Total** | **10 features**  | **52 ops**  | **19 screens**    | **~75 files** | **22 of 52 ops done** |
+| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **27 of 51 ops done** |
 
-Ops actually shipped: 9 + 6 + 7 = **22**, not the 24 originally planned — Batch 3 came in one op
-short by design (see its status note). The API registered **60** operations at last boot; the other
-38 predate the P0 plan (auth, health, tracking, parcels, jobs, customer).
+Ops actually shipped: 9 + 6 + 7 + 5 = **27**, against 51 planned. The API registered **65**
+operations at last boot; the other 38 predate the P0 plan (auth, health, tracking, parcels, jobs,
+customer).
+
+Two batches came in one op short, both deliberately: Batch 3 folded stop add/remove into a single
+`PUT`, and Batch 4 has no delete because a rider owns delivery history and is suspended instead. See
+those batches' status notes.

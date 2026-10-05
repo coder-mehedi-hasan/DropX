@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import {
+  Bike,
   Building2,
   Car,
   Globe,
@@ -24,6 +25,8 @@ import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import { DEFAULT_ROUTES_SEARCH_PARAMS } from "@/routes/routes-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
+import { DEFAULT_RIDERS_SEARCH_PARAMS } from "@/routes/riders-search-params"
+import type { RidersSearch } from "@/routes/riders-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -37,6 +40,7 @@ export type NavItem = {
     | "/vehicles"
     | "/pricing-rules"
     | "/routes"
+    | "/riders"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -45,6 +49,7 @@ export type NavItem = {
     | VehiclesSearch
     | PricingRulesSearch
     | RoutesSearch
+    | RidersSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -101,6 +106,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_ROUTES_SEARCH_PARAMS,
     icon: Route,
     permission: "routes.view",
+  },
+  {
+    label: "Riders",
+    to: "/riders",
+    search: DEFAULT_RIDERS_SEARCH_PARAMS,
+    icon: Bike,
+    permission: "riders.view",
   },
 ]
 

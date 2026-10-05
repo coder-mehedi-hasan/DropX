@@ -8,6 +8,7 @@ import * as org from "../org/org.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
 import * as vehicles from "../vehicles/vehicles.service"
+import * as riders from "../riders/riders.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -222,6 +223,37 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     deactivate: async (c) => {
       const vehicle = await vehicles.deactivateVehicle(c, c.req.valid("param").id)
       return c.json(response.success(vehicle))
+    },
+  },
+
+  riders: {
+    list: async (c) => {
+      const page = await riders.listRiders(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const rider = await riders.getRider(c, c.req.valid("param").id)
+      return c.json(response.success(rider))
+    },
+
+    create: async (c) => {
+      const rider = await riders.createRider(c, c.req.valid("json"))
+      return c.json(response.success(rider), 201)
+    },
+
+    update: async (c) => {
+      const rider = await riders.updateRider(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(rider))
+    },
+
+    setStatus: async (c) => {
+      const rider = await riders.setRiderStatus(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json").status,
+      )
+      return c.json(response.success(rider))
     },
   },
 }

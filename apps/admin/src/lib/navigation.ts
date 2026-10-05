@@ -20,8 +20,10 @@ import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
+import type { RidersSearch } from "@/routes/riders-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import { DEFAULT_ROUTES_SEARCH_PARAMS, routesSearchSchema } from "@/routes/routes-search-params"
+import { DEFAULT_RIDERS_SEARCH_PARAMS, ridersSearchSchema } from "@/routes/riders-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -47,6 +49,7 @@ export type AdminDestination =
   | { to: "/vehicles"; search: VehiclesSearch }
   | { to: "/pricing-rules"; search: PricingRulesSearch }
   | { to: "/routes"; search: RoutesSearch }
+  | { to: "/riders"; search: RidersSearch }
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -122,6 +125,13 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
     return {
       to: "/routes",
       search: resolveListSearch(routesSearchSchema, DEFAULT_ROUTES_SEARCH_PARAMS, url.searchParams),
+    }
+  }
+
+  if (path === "/riders") {
+    return {
+      to: "/riders",
+      search: resolveListSearch(ridersSearchSchema, DEFAULT_RIDERS_SEARCH_PARAMS, url.searchParams),
     }
   }
 
