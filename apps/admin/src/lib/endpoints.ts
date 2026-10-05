@@ -65,6 +65,7 @@ import type {
   ReassignDeliveryBody,
   UpdateDeliveryStatusBody,
   DeliveryRow,
+  DeliveryProofRow,
 } from "./types"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
@@ -75,6 +76,7 @@ import type { RiderLocationsSearch } from "@/routes/rider-locations-search-param
 import type { PickupsSearch } from "@/routes/pickups-search-params"
 import type { TransfersSearch } from "@/routes/transfers-search-params"
 import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
+import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 
 export function loginWithPassword(email: string, password: string) {
@@ -416,6 +418,16 @@ export function updateDeliveryStatus(deliveryId: string, body: UpdateDeliverySta
   return api.patch<DeliveryRow>(`/admin/deliveries/${deliveryId}/status`, body)
 }
 
+export function listDeliveryProofs(params: DeliveryProofsSearch) {
+  return api.get<Page<DeliveryProofRow>>("/admin/delivery-proofs", {
+    query: deliveryProofQuery(params),
+  })
+}
+
+export function verifyDeliveryProof(proofId: string) {
+  return api.patch<DeliveryProofRow>(`/admin/delivery-proofs/${proofId}/verify`, {})
+}
+
 export function listRoutes(params: RoutesSearch) {
   return api.get<Page<Route>>("/routes", { query: routeQuery(params) })
 }
@@ -542,6 +554,19 @@ function deliveryQuery(params: DeliveriesSearch) {
     ...(params.status ? { status: params.status } : {}),
     ...(params.hubId ? { hubId: params.hubId } : {}),
     ...(params.riderId ? { riderId: params.riderId } : {}),
+  }
+}
+
+function deliveryProofQuery(params: DeliveryProofsSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.type ? { type: params.type } : {}),
+    ...(params.verified ? { verified: params.verified } : {}),
+    ...(params.deliveryId ? { deliveryId: params.deliveryId } : {}),
   }
 }
 

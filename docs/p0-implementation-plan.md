@@ -2,8 +2,8 @@
 
 ## Status
 
-Verified against the running API on 2026-10-05: **85 operations registered**, all documented in
-`/openapi.json`. Batches 1–8 are built and gate-green; **batch 9 is not started**.
+Verified against the running API on 2026-10-05: **89 operations registered**, all documented in
+`/openapi.json`. Batches 1–9 are built and gate-green.
 
 - [x] **Batch 1 — Zones + Vehicles** — 9 ops (`admin.zones.*` ×4, `admin.vehicles.*` ×5)
 - [x] **Batch 2 — Pricing Rules** — 6 ops (`admin.pricing.{list,read,create,update,delete,match}`)
@@ -13,9 +13,9 @@ Verified against the running API on 2026-10-05: **85 operations registered**, al
 - [x] **Batch 6 — Pickup Operations** — 5 ops (`admin.pickups.{list,read,create,assign,updateStatus}`)
 - [x] **Batch 7 — Transfer Operations** — 8 ops (`admin.transfers.{list,read,create,update,delete,updateStatus,manifestList,manifestReplace}`)
 - [x] **Batch 8 — Delivery Management** — 5 ops (`admin.deliveries.{list,read,create,reassign,updateStatus}`)
-- [ ] **Batch 9 — Delivery Proof** — 0 of 4 ops. Not started.
+- [x] **Batch 9 — Delivery Proof** — 4 ops (`admin.deliveryProofs.{list,verify}`, `job.listProofs`, `job.submitProof`)
 
-**Remaining: 1 batch, 4 ops, 1 admin screen.**
+**Remaining: none. All batches built.**
 
 Rider-facing gaps, for contrast: the rider app (`apps/riders`) has only Jobs and Profile
 (`bottom-nav.tsx`), backed by 4 ops (`job.list`, `job.read`, `job.reportOutcome`, `job.recordLocation`).
@@ -320,7 +320,7 @@ Deviations from the plan's file table, all following the codebase:
 Deviations from the plan's file table, all following the codebase:
 
 - **`create` is the assignment.** There is no rider-less draft attempt
-  (`rider_id` is `NOT NULL`), so opening an attempt *is* assigning a rider:
+  (`rider_id` is `NOT NULL`), so opening an attempt _is_ assigning a rider:
   `POST /deliveries` is gated on `deliveries.assign`, not `deliveries.manage`.
   `reassign` (`PATCH /deliveries/:id`, also `deliveries.assign`) is a rider
   swap while the attempt is still `ASSIGNED`; `updateStatus` is
@@ -376,7 +376,40 @@ total.
 
 ## Batch 9 — Delivery Proof Submission (4 ops)
 
-**Status: NOT STARTED.** Blocked on Batch 8 (proofs hang off a delivery attempt).
+**Status: done.** 4 operations: `admin.deliveryProofs.list`, `admin.deliveryProofs.verify`,
+`job.listProofs`, `job.submitProof`.
+
+Deviations from the plan's file table, all following the codebase:
+
+- **4 ops, split `2 admin + 2 rider`.** The plan implied one rider op
+  (`POST /jobs/proofs`) and one admin write. It became: the rider files a proof
+  (`job.submitProof`, `rider.proof.submit`), the rider reads their job's proofs
+  (`job.listProofs`, `rider.jobs.view`), admin lists (`admin.deliveryProofs.list`,
+  `deliveries.view`), and admin confirms (`admin.deliveryProofs.verify`,
+  `deliveries.manage`). Verifying stamps the existing `verified_at` column, with
+  a second call a 409 rather than a silent timestamp overwrite.
+- **No admin proof-write op.** `deliveries.manage` says "record proof" in
+  `rbac.md`, but a proof is the rider's artefact; the office verifies it, it
+  does not fabricate it. The admin screen is a worklist with a verify action.
+- **Type-specific capture.** The DTO and the rider sheet both require `value`
+  for `OTP`/`IDENTITY` and `fileUrl` for `SIGNATURE`/`PHOTO` — the API rejects
+  the wrong pairing, and the form refuses it first.
+- **The attempt is server-resolved.** `POST /jobs/proofs` takes `parcelId`, never
+  `deliveryId`; the rider's own attempt is selected (latest in
+  `OUT_FOR_DELIVERY`/`DELIVERED`). A proof against an `ASSIGNED`, failed, or
+  returned attempt is a 409 — an outcome with a reason already closed that work.
+- **`DeliveryProof` no longer claims `updatedAt`.** The type said
+  `EntityBase & Timestamped`, but the table has no `updated_at` column; the
+  shared type is now `EntityBase & CreatedAt`, so the declared shape matches
+  the bytes.
+- **`proof-placeholder.tsx` deleted.** The job detail renders
+  `delivery-proofs-card.tsx` (list + Add button) instead.
+
+New read-path cases: `deliveryProofs.selectDeliveryProofs` (type/verified/
+deliveryId/search filters, sort keys, branch/hub scopes), `selectDeliveryProof`
+(scoped + `FOR UPDATE`), `selectDeliveryProofById`,
+`selectProofsForParcelAndRider`, `selectAttemptForProof` — 15 cases, 203/203
+total.
 
 | File                                                               | Action                             |
 | ------------------------------------------------------------------ | ---------------------------------- |
@@ -414,10 +447,10 @@ bun run lint
 | 6         | Pickups          | 5           | 2                 | ~8            | done                  |
 | 7         | Transfers        | 8           | 3                 | ~10           | done                  |
 | 8         | Deliveries       | 5           | 2                 | ~8            | done                  |
-| 9         | Delivery Proofs  | 4           | 1                 | ~7            | **not started**       |
-| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **47 of 51 ops done** |
+| 9         | Delivery Proofs  | 4           | 1                 | ~7            | done                  |
+| **Total** | **10 features**  | **51 ops**  | **19 screens**    | **~75 files** | **51 of 51 ops done** |
 
-Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 + 8 + 5 = **47**, against 51 planned. The API registered **85**
+Ops actually shipped: 9 + 6 + 7 + 5 + 2 + 5 + 8 + 5 + 4 = **51**, against 51 planned. The API registered **89**
 operations at last boot; the other 38 predate the P0 plan (auth, health, tracking, parcels, jobs,
 customer).
 

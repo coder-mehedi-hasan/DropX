@@ -54,6 +54,7 @@ const riders = await import("../src/modules/riders/riders.repository")
 const riderLocations = await import("../src/modules/riders/rider-locations.repository")
 const pickups = await import("../src/modules/pickups/pickups.repository")
 const deliveries = await import("../src/modules/deliveries/deliveries.repository")
+const deliveryProofs = await import("../src/modules/deliveries/delivery-proofs.repository")
 const transfers = await import("../src/modules/transfers/transfers.repository")
 
 const scope: Scope = {
@@ -725,6 +726,85 @@ cases.push(
     name: "deliveries.parcelDispatchHub(hub-scoped)",
     run: () =>
       deliveries.parcelDispatchHub(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, "1"),
+  },
+  // ---- delivery-proofs --------------------------------------------------------
+  //
+  // Scope resolves through the attempt's hub: every clause names `scope_hub`,
+  // which only exists because of the join spelled out in `PROOF_FROM`. A bare
+  // `scope_hub` predicate would 500 for a scoped caller, so each scope
+  // variant is exercised here.
+  {
+    name: "deliveryProofs.selectDeliveryProofs",
+    run: () => deliveryProofs.selectDeliveryProofs(pool, scope, listParams, {}),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProofs(type)",
+    run: () => deliveryProofs.selectDeliveryProofs(pool, scope, listParams, { type: "OTP" }),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProofs(verified)",
+    run: () => deliveryProofs.selectDeliveryProofs(pool, scope, listParams, { verified: "false" }),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProofs(deliveryId)",
+    run: () => deliveryProofs.selectDeliveryProofs(pool, scope, listParams, { deliveryId: "1" }),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProofs(search)",
+    run: () => deliveryProofs.selectDeliveryProofs(pool, scope, listParams, { search: "a" }),
+  },
+  ...(["createdAt", "type"] as const).map((sortBy) => ({
+    name: `deliveryProofs.selectDeliveryProofs(sortBy=${sortBy})`,
+    run: () => deliveryProofs.selectDeliveryProofs(pool, scope, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "deliveryProofs.selectDeliveryProofs(branch-scoped)",
+    run: () =>
+      deliveryProofs.selectDeliveryProofs(
+        pool,
+        { ...scope, isCompanyWide: false, branchId: "1" },
+        listParams,
+        {},
+      ),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProofs(hub-scoped)",
+    run: () =>
+      deliveryProofs.selectDeliveryProofs(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        listParams,
+        {},
+      ),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProof",
+    run: () => deliveryProofs.selectDeliveryProof(pool, scope, "1"),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProof(hub-scoped)",
+    run: () =>
+      deliveryProofs.selectDeliveryProof(
+        pool,
+        { ...scope, isCompanyWide: false, hubIds: ["1"] },
+        "1",
+      ),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProof(for update)",
+    run: () => deliveryProofs.selectDeliveryProof(pool, scope, "1", { forUpdate: true }),
+  },
+  {
+    name: "deliveryProofs.selectDeliveryProofById",
+    run: () => deliveryProofs.selectDeliveryProofById(pool, "1"),
+  },
+  {
+    name: "deliveryProofs.selectProofsForParcelAndRider",
+    run: () => deliveryProofs.selectProofsForParcelAndRider(pool, "1", "1"),
+  },
+  {
+    name: "deliveryProofs.selectAttemptForProof",
+    run: () => deliveryProofs.selectAttemptForProof(pool, "1", "1"),
   },
 )
 

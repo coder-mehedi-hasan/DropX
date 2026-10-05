@@ -58,6 +58,12 @@ import {
   updatePickupStatusSchema,
 } from "../pickups/pickups.dto"
 import {
+  deliveryProofIdParamSchema as deliveryProofIdParam,
+  deliveryProofListItemSchema as deliveryProofListItem,
+  deliveryProofResponseSchema as deliveryProofResponse,
+  listDeliveryProofsQuerySchema as listDeliveryProofsQuery,
+} from "../deliveries/delivery-proofs.dto"
+import {
   createDeliverySchema as createDeliveryBody,
   deliveryIdParamSchema as deliveryIdParam,
   deliveryResponseSchema as deliveryResponse,
@@ -279,6 +285,45 @@ export const ADMIN_SURFACE = defineSurface({
             404: "No such pickup in scope.",
             409: "The requested status transition is not allowed from the current status.",
             422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Delivery proofs: the artefact recorded at the door. Riders file proofs
+     * through the jobs surface; admin reads them and confirms them.
+     */
+    deliveryProofs: {
+      tag: "delivery-proofs",
+      tagDescription:
+        "Proofs of delivery: what a rider recorded at handover, and whether dispatch has confirmed it.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/delivery-proofs",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_VIEW] },
+          summary: "List delivery proofs",
+          successDescription: "A page of proofs.",
+          description:
+            "Scoped through the delivery attempt's hub. Filter by type, verified state, delivery, or free text over tracking number, rider, and hub.",
+          query: listDeliveryProofsQuery,
+          listNodes: deliveryProofListItem,
+        },
+        verify: {
+          method: "PATCH",
+          path: "/delivery-proofs/:id/verify",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_MANAGE] },
+          summary: "Verify a delivery proof",
+          successDescription: "Verified.",
+          description:
+            "Stamps `verified_at`. The rider does not vouch for their own artefact — confirmation is an office act, and a second call is a 409 rather than a silent overwrite of the original timestamp.",
+          params: deliveryProofIdParam,
+          paramDescriptions: { id: "Proof id." },
+          response: deliveryProofResponse,
+          errors: {
+            404: "No such proof in scope.",
+            409: "The proof is already verified.",
           },
         },
       },

@@ -41,6 +41,11 @@ import {
   deliveriesSearchSchema,
 } from "@/routes/deliveries-search-params"
 import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
+import {
+  DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS,
+  deliveryProofsSearchSchema,
+} from "@/routes/delivery-proofs-search-params"
+import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -71,6 +76,7 @@ export type AdminDestination =
   | { to: "/pickups"; search: PickupsSearch }
   | { to: "/transfers"; search: TransfersSearch }
   | { to: "/deliveries"; search: DeliveriesSearch }
+  | { to: "/delivery-proofs"; search: DeliveryProofsSearch }
 
 const PARCEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -173,6 +179,17 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       search: resolveListSearch(
         pickupsSearchSchema,
         DEFAULT_PICKUPS_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
+  }
+
+  if (path === "/delivery-proofs") {
+    return {
+      to: "/delivery-proofs",
+      search: resolveListSearch(
+        deliveryProofsSearchSchema,
+        DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS,
         url.searchParams,
       ),
     }

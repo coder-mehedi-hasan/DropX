@@ -11,6 +11,10 @@ import {
   reportLocationSchema,
   riderLocationResponseSchema,
 } from "../../modules/riders/rider-locations.dto"
+import {
+  deliveryProofResponseSchema,
+  submitProofSchema,
+} from "../../modules/deliveries/delivery-proofs.dto"
 
 /**
  * `jobs` operations — the rider app's surface.
@@ -100,6 +104,50 @@ export const jobsPaths = {
         404: errorResponse("No open attempt for this rider on that parcel."),
         409: errorResponse("The attempt is already closed, or the transition is not allowed."),
         422: errorResponse("Validation failed — a reason is required for FAILED/RETURNED."),
+      },
+    },
+  },
+  "/jobs/{id}/proofs": {
+    get: {
+      operationId: "job.listProofs",
+      summary: "List proofs filed on one of my jobs",
+      description:
+        "The proofs recorded against the attempts the signed-in rider holds for this parcel, newest first. A bare array, not a page: an attempt has bounded proof rows and the rider app renders them all.",
+      tags: ["jobs"],
+      security: bearerSecurity,
+      parameters: [idParam],
+      responses: {
+        200: {
+          description: "The proofs.",
+          ...json({ type: "array", items: jsonSchemaOf(deliveryProofResponseSchema, "output") }),
+        },
+        401: unauth,
+        403: forbidden,
+        404: errorResponse("No such job for this rider."),
+      },
+    },
+  },
+  "/jobs/proofs": {
+    post: {
+      operationId: "job.submitProof",
+      summary: "File proof of delivery",
+      description:
+        "Records a signature image, photo, receiver OTP, or ID check against the attempt the signed-in rider holds for the parcel. Accepted while the attempt is out for delivery or delivered; `OTP` and `IDENTITY` need `value`, `SIGNATURE` and `PHOTO` need `fileUrl`. Writes are unverified — an office verifies.",
+      tags: ["jobs"],
+      security: bearerSecurity,
+      requestBody: { required: true, ...json(jsonSchemaOf(submitProofSchema, "input")) },
+      responses: {
+        201: {
+          description: "Recorded.",
+          ...json(jsonSchemaOf(deliveryProofResponseSchema, "output")),
+        },
+        401: unauth,
+        403: errorResponse("Wrong audience, or missing `rider.proof.submit`."),
+        404: errorResponse("No such job for this rider."),
+        409: errorResponse("The attempt is not in a state that accepts proof."),
+        422: errorResponse(
+          "Validation failed — OTP/IDENTITY need a value, SIGNATURE/PHOTO need a file.",
+        ),
       },
     },
   },

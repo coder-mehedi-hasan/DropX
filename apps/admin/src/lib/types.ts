@@ -45,6 +45,7 @@ import type {
   CompensationType,
   Delivery,
   DeliveryStatus,
+  DeliveryProof,
   Route,
   RouteStop,
   Transfer,
@@ -284,6 +285,19 @@ export type ReassignDeliveryBody = {
 export type UpdateDeliveryStatusBody = {
   status: DeliveryStatus
   reason?: string | null
+}
+
+/**
+ * The admin's proof row: the proof plus the attempt, parcel, rider, and hub
+ * it belongs to. The rider files it through the jobs surface; admin reads it
+ * and confirms it.
+ */
+export type DeliveryProofRow = DeliveryProof & {
+  parcelTrackingNumber: string
+  attemptNo: number
+  riderName: string
+  riderEmployeeCode: string
+  hubName: string
 }
 
 /**
