@@ -128,9 +128,7 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
       {
         id: "transferNumber",
         header: "Transfer",
-        cell: (transfer) => (
-          <span className="font-mono text-xs">{transfer.transferNumber}</span>
-        ),
+        cell: (transfer) => <span className="font-mono text-xs">{transfer.transferNumber}</span>,
         value: (transfer) => transfer.transferNumber,
       },
       {
