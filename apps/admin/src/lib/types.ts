@@ -45,16 +45,55 @@ import type {
   Route,
   RouteStop,
   Transfer,
-  TransferListItem,
-  TransferParcel,
   TransferStatus,
-  TransferWithManifest,
   Vehicle,
   VehicleStatus,
   VehicleType,
   Zone,
 } from "@dropx/types"
-import type { Id, Page, PageMeta } from "@dropx/types"
+import type { Id, Nullable, Page, PageMeta } from "@dropx/types"
+
+/**
+ * The transfer projections the admin renders.
+ *
+ * `Transfer` is the entity from `@dropx/types`, but the API returns two shapes
+ * derived from it and neither is the entity: the list adds the hub names and a
+ * `parcelCount`, and the read adds the manifest itself. Per the wire-contract
+ * rule, an app-local type is correct exactly when the API genuinely returns a
+ * different shape for that app — which is the case here, so these are declared
+ * below rather than added to the shared package.
+ */
+export type TransferListItem = Transfer & {
+  fromHubName: string
+  fromHubCode: string
+  toHubName: string
+  toHubCode: string
+  /** Present on the list, absent on the read — the read has the parcels. */
+  parcelCount: number
+}
+
+/**
+ * A parcel on a manifest, as the read and the manifest endpoints return it.
+ *
+ * `TransferParcel` from `@dropx/types` is the row on `transfer_parcels`; the API
+ * joins the parcel to add the tracking number and its current status, which is
+ * what a dispatcher reads.
+ */
+export type TransferManifestParcel = {
+  parcelId: Id
+  trackingNumber: string
+  status: ParcelStatus
+  loadedAt: Nullable<string>
+  unloadedAt: Nullable<string>
+}
+
+export type TransferWithManifest = Transfer & {
+  fromHubName: string
+  fromHubCode: string
+  toHubName: string
+  toHubCode: string
+  parcels: TransferManifestParcel[]
+}
 
 export type {
   HubRef,
@@ -80,10 +119,7 @@ export type {
   Route,
   RouteStop,
   Transfer,
-  TransferListItem,
-  TransferParcel,
   TransferStatus,
-  TransferWithManifest,
   Vehicle,
   VehicleStatus,
   VehicleType,
