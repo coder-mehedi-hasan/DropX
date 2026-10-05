@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
+  Route,
   Truck,
   Warehouse,
 } from "lucide-react"
@@ -21,6 +22,8 @@ import type { BranchesSearch, HubsSearch, ParcelListSearch } from "@/lib/parcels
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
+import { DEFAULT_ROUTES_SEARCH_PARAMS } from "@/routes/routes-search-params"
+import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { PermissionKey } from "@/lib/permissions"
 export type NavItem = {
   label: string
@@ -33,6 +36,7 @@ export type NavItem = {
     | "/zones"
     | "/vehicles"
     | "/pricing-rules"
+    | "/routes"
   search?:
     | ParcelListSearch
     | BranchesSearch
@@ -40,6 +44,7 @@ export type NavItem = {
     | ZonesSearch
     | VehiclesSearch
     | PricingRulesSearch
+    | RoutesSearch
     | undefined
   icon: LucideIcon
   permission: PermissionKey | null
@@ -89,6 +94,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_PRICING_RULES_SEARCH_PARAMS,
     icon: Package,
     permission: "pricing.view",
+  },
+  {
+    label: "Routes",
+    to: "/routes",
+    search: DEFAULT_ROUTES_SEARCH_PARAMS,
+    icon: Route,
+    permission: "routes.view",
   },
 ]
 

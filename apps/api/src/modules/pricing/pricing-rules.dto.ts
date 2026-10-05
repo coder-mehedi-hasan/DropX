@@ -4,8 +4,14 @@ import { RECORD_STATUSES } from "../../db/models"
 
 const id = z.string().trim().min(1)
 
-/** Pricing rules are reference data with a single two-valued lifecycle. */
-const priceRuleStatus = z.enum(RECORD_STATUSES).default("ACTIVE")
+/**
+ * Two shapes on purpose. `recordStatus` has no `.default()`, so an absent field
+ * stays absent — the list filter and PATCH must not invent a value the caller
+ * never sent, or a PATCH of one field would silently reset `status` to ACTIVE.
+ * `createStatus` is the only one allowed to pick a default.
+ */
+const recordStatus = z.enum(RECORD_STATUSES)
+const createStatus = recordStatus.default("ACTIVE")
 
 /** DECIMAL(10,2) → at most 2 decimals. */
 const weight = z.coerce
@@ -37,7 +43,7 @@ export const listPricingRulesQuerySchema = z.object({
     .enum(["name", "originZone", "destinationZone", "minWeight", "createdAt"])
     .default("name"),
   sort: z.enum(["asc", "desc"]).default("asc"),
-  status: priceRuleStatus.or(z.literal("")).optional(),
+  status: recordStatus.or(z.literal("")).optional(),
   search: z.string().trim().max(100).optional(),
   originZoneId: id.optional(),
   destinationZoneId: id.optional(),
@@ -62,15 +68,20 @@ export const createPricingRuleSchema = z.object({
   codPercentage: percent,
   codFixedFee: money,
   expressFee: money,
-  status: priceRuleStatus,
+  status: createStatus,
 })
 
 export type CreatePricingRuleInput = z.infer<typeof createPricingRuleSchema>
 
-/** All fields are patchable; the caller decides what to change. */
+/**
+ * All fields are patchable; the caller decides what to change. `maxWeight` and
+ * `status` are re-declared without their create-time defaults, otherwise
+ * omitting them would write `null` / `ACTIVE` over the stored value.
+ */
 export const updatePricingRuleSchema = createPricingRuleSchema
-  .omit({ status: true })
-  .extend({ status: priceRuleStatus.optional() })
+  .omit({ status: true, maxWeight: true })
+  .partial()
+  .extend({ maxWeight: weight.nullable().optional(), status: recordStatus.optional() })
 
 export type UpdatePricingRuleInput = z.infer<typeof updatePricingRuleSchema>
 

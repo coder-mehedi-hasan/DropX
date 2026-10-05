@@ -12,6 +12,7 @@ import {
   parcelDetailRoute,
   parcelsRoute,
   pricingRulesRoute,
+  routesRoute,
   trackingRoute,
   vehiclesRoute,
   zonesRoute,
@@ -30,6 +31,7 @@ const routeTree = rootRoute.addChildren([
     zonesRoute,
     vehiclesRoute,
     pricingRulesRoute,
+    routesRoute,
   ]),
 ])
 

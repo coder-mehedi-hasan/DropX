@@ -49,6 +49,7 @@ const org = await import("../src/modules/org/org.repository")
 const zones = await import("../src/modules/zones/zones.repository")
 const vehicles = await import("../src/modules/vehicles/vehicles.repository")
 const pricingRules = await import("../src/modules/pricing/pricing-rules.repository")
+const routes = await import("../src/modules/routes/routes.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -357,6 +358,23 @@ cases.push(
     }),
   ),
   { name: "pricingRules.selectPricingRule", run: () => pricingRules.selectPricingRule(pool, "1") },
+
+  // --- Routes ---------------------------------------------------------------
+  { name: "routes.selectRoutes", run: () => routes.selectRoutes(pool, listParams, {}) },
+  {
+    name: "routes.selectRoutes(status)",
+    run: () => routes.selectRoutes(pool, listParams, { status: "ACTIVE" }),
+  },
+  {
+    name: "routes.selectRoutes(search)",
+    run: () => routes.selectRoutes(pool, listParams, { search: "DHAKA" }),
+  },
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `routes.selectRoutes(sortBy=${sortBy})`,
+    run: () => routes.selectRoutes(pool, { ...listParams, sortBy }, {}),
+  })),
+  { name: "routes.selectRoute", run: () => routes.selectRoute(pool, "1") },
+  { name: "routes.selectStops", run: () => routes.selectStops(pool, "1") },
 )
 
 let failures = 0
