@@ -33,6 +33,7 @@ export function ReferenceSelect({
   placeholder,
   emptyTitle = "Not configured yet",
   className,
+  loading = false,
 }: {
   value: string
   onValueChange: (value: string) => void
@@ -41,8 +42,22 @@ export function ReferenceSelect({
   placeholder: string
   emptyTitle?: string
   className?: string
+  /** Upstream selection not made yet — render a disabled trigger, not the missing-endpoint state. */
+  loading?: boolean
 }) {
   const isEmpty = options.length === 0
+
+  if (loading) {
+    return (
+      <div className={cn("grid gap-2", className)}>
+        <Select disabled>
+          <SelectTrigger className="w-full" aria-label={placeholder}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+        </Select>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("grid gap-2", className)}>

@@ -3,6 +3,8 @@ import { PARCEL_STATUSES } from "@/db/models"
 import type {
   ListParams,
   Parcel,
+  ParcelAddress,
+  ParcelAddressType,
   ParcelItem,
   ParcelStatus,
   ParcelType,
@@ -241,7 +243,8 @@ type CreateParcelRecord = {
   originHubId: string
   destinationHubId: string
   currentHubId: string | null
-  destinationZoneId: string
+  /** Nullable: the pre-migration pricing anchor, not written by new bookings. */
+  destinationZoneId: string | null
   weight: number
   length?: number | undefined
   width?: number | undefined
@@ -313,6 +316,91 @@ export async function insertParcelItems(
     const sql = `INSERT INTO parcel_items (${fields.join(", ")}) VALUES (${placeholders(fields.length)})`
     await db.execute<OkPacket>(sql, params)
   }
+}
+
+/** A resolved address, ready for the column — names already snapshotted. */
+export type ParcelAddressRecord = {
+  type: ParcelAddressType
+  cityId: string
+  zoneId: string
+  areaId: string | null
+  cityName: string
+  zoneName: string
+  areaName: string | null
+  addressLine: string
+  landmark: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+/**
+ * Both ends of the trip, written in the same transaction as the parcel.
+ *
+ * The ids are foreign keys and the names are snapshots taken at booking: the
+ * ids keep `city → zone → area` enforceable, and the names keep the address
+ * readable after a location is retired. One row per `(parcel, type)` — the
+ * unique key is what stops a retry appending a second pickup address.
+ */
+export async function insertParcelAddresses(
+  db: Pool | Connection,
+  parcelId: string,
+  addresses: readonly ParcelAddressRecord[],
+): Promise<void> {
+  const sql = `INSERT INTO parcel_addresses
+      (parcel_id, type, city_id, zone_id, area_id, city_name, zone_name, area_name,
+       address_line, landmark, latitude, longitude)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+  for (const address of addresses) {
+    await db.execute<OkPacket>(sql, [
+      parcelId,
+      address.type,
+      address.cityId,
+      address.zoneId,
+      address.areaId,
+      address.cityName,
+      address.zoneName,
+      address.areaName,
+      address.addressLine,
+      address.landmark,
+      address.latitude,
+      address.longitude,
+    ])
+  }
+}
+
+export async function listParcelAddresses(
+  db: Pool | Connection,
+  parcelId: string,
+): Promise<ParcelAddress[]> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT id, parcel_id, type, city_id, zone_id, area_id, city_name, zone_name, area_name,
+            address_line, landmark, latitude, longitude, created_at, updated_at
+       FROM parcel_addresses
+      WHERE parcel_id = ?
+      ORDER BY type`,
+    [parcelId],
+  )
+
+  return rows.map(
+    (row): ParcelAddress => ({
+      id: String(row.id),
+      parcelId: String(row.parcel_id),
+      type: row.type as ParcelAddressType,
+      cityId: String(row.city_id),
+      zoneId: String(row.zone_id),
+      areaId: toNullableId(row.area_id),
+      cityName: row.city_name,
+      zoneName: row.zone_name,
+      areaName: toStringOrNull(row.area_name),
+      addressLine: row.address_line,
+      landmark: toStringOrNull(row.landmark),
+      latitude: row.latitude === null ? null : Number(row.latitude),
+      longitude: row.longitude === null ? null : Number(row.longitude),
+      createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+      updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
+    }),
+  )
 }
 
 /**
@@ -444,7 +532,7 @@ type ParcelRow = {
   origin_hub_id: string
   destination_hub_id: string
   current_hub_id: string | null
-  destination_zone_id: string
+  destination_zone_id: string | null
   weight: string
   length: string | null
   width: string | null
@@ -491,7 +579,7 @@ export function decodeParcel(row: unknown): Parcel {
     originHubId: String(r.origin_hub_id),
     destinationHubId: String(r.destination_hub_id),
     currentHubId: toNullableId(r.current_hub_id),
-    destinationZoneId: String(r.destination_zone_id),
+    destinationZoneId: toStringOrNull(r.destination_zone_id),
     weight: toDecimal(r.weight),
     length: r.length === null ? null : toDecimal(r.length),
     width: r.width === null ? null : toDecimal(r.width),

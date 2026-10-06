@@ -17,18 +17,22 @@ import { ERROR_CODES, DomainError, fromDatabaseError, notFound } from "../../cor
 import type { Scope } from "../../shared/auth/auth-context"
 import { emit } from "../../shared/events/bus"
 import { quoteDeliveryFee } from "../pricing/pricing.service"
+import { resolveAddress } from "../locations/locations.service"
 import type { CreateParcelInput, ListParcelsQuery } from "./parcels.dto"
 import { PARCEL_SORT_COLUMN_BY_KEY } from "./parcels.dto"
 import {
   findParcelById,
   findParcelForCustomer,
   insertParcel,
+  insertParcelAddresses,
   insertParcelEvent,
   insertParcelItems,
+  listParcelAddresses,
   listParcelItems,
   listParcels,
   listParcelsForCustomer,
   updateParcelStatus as updateStatusRow,
+  type ParcelAddressRecord,
 } from "./parcels.repository"
 
 /**
@@ -131,7 +135,6 @@ export function getParcelItems(c: Context<AppEnv>, parcelId: Id) {
 
 export type CreateParcelCommand = {
   senderCustomerId: Id
-  originZoneId: Id
   input: CreateParcelInput
   actorId: Id | null
 }
@@ -154,13 +157,28 @@ export async function createParcel(
     })
   }
 
-  // Recomputed server-side: a client-supplied fee is never trusted.
+  // Resolved before anything is written: an address whose zone belongs to
+  // another city, or whose city has been retired, must fail the booking rather
+  // than half-commit it.
+  const pickup = await resolveAddress(c, input.pickupAddress)
+  const delivery = await resolveAddress(c, input.deliveryAddress)
+
+  // Recomputed server-side: a client-supplied fee is never trusted. The weight
+  // is kilograms on the wire and grams on the lane, so the conversion happens
+  // here rather than in either client.
   const quote = await quoteDeliveryFee(c, {
-    originZoneId: command.originZoneId,
-    destinationZoneId: input.destinationZoneId,
-    weightKg: input.weight,
+    pickupCityId: pickup.city.id,
+    pickupZoneId: pickup.zone.id,
+    deliveryCityId: delivery.city.id,
+    deliveryZoneId: delivery.zone.id,
+    weightGrams: Math.round(input.weight * 1000),
     codAmount: input.codAmount,
   })
+
+  const addresses: ParcelAddressRecord[] = [
+    addressRecord("PICKUP", input.pickupAddress, pickup),
+    addressRecord("DELIVERY", input.deliveryAddress, delivery),
+  ]
 
   const trackingNumber = generateTrackingNumber()
 
@@ -175,11 +193,16 @@ export async function createParcel(
         ...(input.receiverSecondaryPhone
           ? { receiverSecondaryPhone: input.receiverSecondaryPhone }
           : {}),
-        ...(input.receiverAddress ? { receiverAddress: input.receiverAddress } : {}),
+        // The snapshot column a legacy screen still reads, derived from the
+        // structured address rather than sent by the client.
+        receiverAddress: input.deliveryAddress.addressLine,
         originHubId: input.originHubId,
         destinationHubId: input.destinationHubId,
         currentHubId: input.originHubId,
-        destinationZoneId: input.destinationZoneId,
+        // Left NULL: this column's foreign key points at the old flat `zones`
+        // table, and a `service_zones` id does not belong there. The lane that
+        // priced the parcel lives on `parcel_addresses`.
+        destinationZoneId: null,
         weight: input.weight,
         length: input.length,
         width: input.width,
@@ -190,6 +213,8 @@ export async function createParcel(
         deliveryFee: quote.total,
         status: "CREATED",
       })
+
+      await insertParcelAddresses(tx, id, addresses)
 
       if (input.items.length > 0) {
         await insertParcelItems(tx, id, input.items)
@@ -218,6 +243,31 @@ export async function createParcel(
     if (error instanceof DomainError) throw error
     throw fromDatabaseError(error, "A parcel with this tracking number")
   }
+}
+
+/** Turns a validated input plus its resolved rows into a storable address. */
+function addressRecord(
+  type: ParcelAddressRecord["type"],
+  input: { addressLine: string; landmark?: string; latitude?: number; longitude?: number },
+  resolved: Awaited<ReturnType<typeof resolveAddress>>,
+): ParcelAddressRecord {
+  return {
+    type,
+    cityId: resolved.city.id,
+    zoneId: resolved.zone.id,
+    areaId: resolved.area?.id ?? null,
+    cityName: resolved.city.name,
+    zoneName: resolved.zone.name,
+    areaName: resolved.area?.name ?? null,
+    addressLine: input.addressLine,
+    landmark: input.landmark ?? null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+  }
+}
+
+export function getParcelAddresses(c: Context<AppEnv>, parcelId: Id) {
+  return listParcelAddresses(c.get("db")!, parcelId)
 }
 
 export type UpdateStatusCommand = {

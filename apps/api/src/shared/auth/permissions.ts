@@ -24,6 +24,8 @@ export const PERMISSIONS = {
   CUSTOMERS_MANAGE: "customers.manage",
   ZONES_VIEW: "zones.view",
   ZONES_MANAGE: "zones.manage",
+  LOCATIONS_VIEW: "locations.view",
+  LOCATIONS_MANAGE: "locations.manage",
   PRICING_VIEW: "pricing.view",
   PRICING_MANAGE: "pricing.manage",
 
@@ -93,12 +95,14 @@ export const DEFAULT_ROLE_GRANTS: Readonly<Record<string, PermissionKey[]>> = {
     PERMISSIONS.HUBS_VIEW,
     PERMISSIONS.HUBS_MANAGE,
     // Zones are company-wide, non-sensitive reference data (name, code, status),
-    // and this role books parcels — which is what originZoneId and
-    // destinationZoneId are. Without it the two zone pickers 403 for every branch
-    // manager while working fine for ADMIN, so the gate would pass against a
-    // superadmin and fail in real use. Read only: `zones.manage` is pricing
-    // configuration and stays with ADMIN.
+    // and this role books parcels — which is what the city/zone/area pickers are.
+    // Without a read key every location picker 403s for a branch manager while
+    // working fine for ADMIN, so the gate would pass against a superadmin and
+    // fail in real use. Read only: `locations.manage` is territory configuration
+    // and stays with ADMIN. The flat `zones.view` is the legacy pricing anchor,
+    // still needed until the lane matrix is the only pricing model.
     PERMISSIONS.ZONES_VIEW,
+    PERMISSIONS.LOCATIONS_VIEW,
     PERMISSIONS.USERS_VIEW,
     PERMISSIONS.RIDERS_VIEW,
     PERMISSIONS.RIDERS_MANAGE,

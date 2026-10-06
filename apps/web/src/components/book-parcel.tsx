@@ -60,13 +60,20 @@ import { PageHeader } from "@/components/page-header"
 import { ReferenceSelect } from "@/components/reference-select"
 import { isApiError } from "@/lib/api-client"
 import { formatMoney } from "@/lib/format"
-import { useCreateParcel, useFeeQuote, useHubs, useZones } from "@/lib/queries"
+import {
+  useCities,
+  useCityZones,
+  useCreateParcel,
+  useFeeQuote,
+  useHubs,
+  useZoneAreas,
+} from "@/lib/queries"
 import { type ReferenceOption } from "@/lib/reference-data"
 import {
   PARCEL_TYPES,
   PAYMENT_TYPES,
   type CreateParcelRequest,
-  type DeliveryQuote,
+  type FeeQuote,
   type QuoteRequest,
 } from "@/lib/types"
 
@@ -143,13 +150,24 @@ const bookParcelSchema = z
       .trim()
       .max(30)
       .refine((value) => value === "" || value.length >= 6, "Enter a valid phone number"),
-    receiverCity: z.string().trim().min(1, "Select or enter a city").max(100),
-    receiverArea: z.string().trim().max(100, "Area is too long"),
-    receiverAddress: z.string().trim().min(1, "Enter the house, building or flat details").max(300),
+    deliveryCityId: z.string().trim().min(1, "Pick the delivery city"),
+    deliveryZoneId: z.string().trim().min(1, "Pick the delivery zone"),
+    deliveryAreaId: z.string(),
+    deliveryAddressLine: z
+      .string()
+      .trim()
+      .min(1, "Enter the house, building or flat details")
+      .max(300),
+    pickupCityId: z.string().trim().min(1, "Pick the pickup city"),
+    pickupZoneId: z.string().trim().min(1, "Pick the pickup zone"),
+    pickupAreaId: z.string(),
+    pickupAddressLine: z
+      .string()
+      .trim()
+      .min(1, "Enter the house, building or flat details")
+      .max(300),
     originHubId: z.string().trim().min(1, "Pick the hub we collect from"),
     destinationHubId: z.string().trim().min(1, "Pick the hub we deliver from"),
-    originZoneId: z.string().trim().min(1, "Pick the origin zone"),
-    destinationZoneId: z.string().trim().min(1, "Pick the destination zone"),
     weight: decimalField("a weight", 9999).refine((value) => Number(value) > 0, "Enter a weight"),
     length: optionalDecimalField(9999),
     width: optionalDecimalField(9999),
@@ -211,12 +229,11 @@ const STEP_FIELDS = [
     "receiverName",
     "receiverPhone",
     "receiverSecondaryPhone",
-    "receiverCity",
-    "receiverArea",
-    "receiverAddress",
-    "destinationZoneId",
+    "deliveryCityId",
+    "deliveryZoneId",
+    "deliveryAddressLine",
   ],
-  ["originHubId", "destinationHubId", "originZoneId"],
+  ["pickupCityId", "pickupZoneId", "pickupAddressLine", "originHubId", "destinationHubId"],
   ["parcelType", "weight", "length", "width", "height"],
   ["paymentType", "codAmount", "items"],
 ] as const
@@ -228,11 +245,31 @@ function toMeasurement(value: string): number | undefined {
   return value === "" ? undefined : Number(value)
 }
 
-function formatDeliveryAddress(
-  values: Pick<BookParcelValues, "receiverAddress" | "receiverArea" | "receiverCity">,
+/**
+ * One end of a booking, for review or the confirm dialog: address line first,
+ * then the cascade's area, zone and city labels.
+ */
+function joinedAddress(
+  values: BookParcelValues,
+  end: "pickup" | "delivery",
+  cities: ReferenceOption[],
+  zones: ReferenceOption[],
+  areas: ReferenceOption[],
 ): string {
-  return [values.receiverAddress, values.receiverArea, values.receiverCity]
-    .map((part) => part.trim())
+  const labelFor = (options: ReferenceOption[], id: string) =>
+    options.find((option) => option.id === id)?.label ?? id
+
+  const line = end === "pickup" ? values.pickupAddressLine : values.deliveryAddressLine
+  const areaId = end === "pickup" ? values.pickupAreaId : values.deliveryAreaId
+  const zoneId = end === "pickup" ? values.pickupZoneId : values.deliveryZoneId
+  const cityId = end === "pickup" ? values.pickupCityId : values.deliveryCityId
+
+  return [
+    line,
+    areaId ? labelFor(areas, areaId) : null,
+    labelFor(zones, zoneId),
+    labelFor(cities, cityId),
+  ]
     .filter(Boolean)
     .join(", ")
 }
@@ -249,11 +286,20 @@ function toCreateRequest(values: BookParcelValues): CreateParcelRequest {
     ...(values.receiverSecondaryPhone
       ? { receiverSecondaryPhone: values.receiverSecondaryPhone }
       : {}),
-    receiverAddress: formatDeliveryAddress(values),
     originHubId: values.originHubId,
     destinationHubId: values.destinationHubId,
-    originZoneId: values.originZoneId,
-    destinationZoneId: values.destinationZoneId,
+    pickupAddress: {
+      cityId: values.pickupCityId,
+      zoneId: values.pickupZoneId,
+      ...(values.pickupAreaId ? { areaId: values.pickupAreaId } : {}),
+      addressLine: values.pickupAddressLine,
+    },
+    deliveryAddress: {
+      cityId: values.deliveryCityId,
+      zoneId: values.deliveryZoneId,
+      ...(values.deliveryAreaId ? { areaId: values.deliveryAreaId } : {}),
+      addressLine: values.deliveryAddressLine,
+    },
     weight: Number(values.weight),
     ...(length === undefined ? {} : { length }),
     ...(width === undefined ? {} : { width }),
@@ -281,13 +327,16 @@ export function BookParcel() {
       receiverName: "",
       receiverPhone: "",
       receiverSecondaryPhone: "",
-      receiverCity: "",
-      receiverArea: "",
-      receiverAddress: "",
+      deliveryCityId: "",
+      deliveryZoneId: "",
+      deliveryAreaId: "",
+      deliveryAddressLine: "",
+      pickupCityId: "",
+      pickupZoneId: "",
+      pickupAreaId: "",
+      pickupAddressLine: "",
       originHubId: "",
       destinationHubId: "",
-      originZoneId: "",
-      destinationZoneId: "",
       weight: "",
       length: "",
       width: "",
@@ -305,46 +354,75 @@ export function BookParcel() {
 
   const [serverError, setServerError] = React.useState<string | null>(null)
 
-  const originZoneId = form.watch("originZoneId")
-  const destinationZoneId = form.watch("destinationZoneId")
+  const pickedCityId = form.watch("pickupCityId")
+  const pickedZoneId = form.watch("pickupZoneId")
+  const deliveredCityId = form.watch("deliveryCityId")
+  const deliveredZoneId = form.watch("deliveryZoneId")
   const weight = form.watch("weight")
   const paymentType = form.watch("paymentType")
   const codAmount = form.watch("codAmount")
 
   const quoteRequest = React.useMemo<QuoteRequest | null>(() => {
+    if (!pickedCityId || !pickedZoneId || !deliveredCityId || !deliveredZoneId) return null
     const weightKg = Number(weight)
-    if (!originZoneId || !destinationZoneId) return null
     if (!Number.isFinite(weightKg) || weightKg <= 0) return null
 
     const collected = Number(codAmount)
     return {
-      originZoneId,
-      destinationZoneId,
-      weightKg,
-      /**
-       * The parcel DTO has no express flag, so the quote is always the standard
-       */
-      /**
-       * service and `express` is never sent.
-       */
+      pickupCityId: pickedCityId,
+      pickupZoneId: pickedZoneId,
+      deliveryCityId: deliveredCityId,
+      deliveryZoneId: deliveredZoneId,
+      weightGrams: Math.round(weightKg * 1000),
       codAmount: paymentType === "COD" && Number.isFinite(collected) ? collected : 0,
-      express: false,
     }
-  }, [originZoneId, destinationZoneId, weight, codAmount, paymentType])
+  }, [pickedCityId, pickedZoneId, deliveredCityId, deliveredZoneId, weight, codAmount, paymentType])
 
   const quote = useFeeQuote(quoteRequest)
 
   const hubs = useHubs()
-  const zones = useZones()
+  const cities = useCities()
+  const pickupZones = useCityZones(pickedCityId)
+  const pickupAreas = useZoneAreas(pickedZoneId)
+  const deliveryZones = useCityZones(deliveredCityId)
+  const deliveryAreas = useZoneAreas(deliveredZoneId)
 
   const hubOptions = hubs.data ?? []
-  const zoneOptions = zones.data ?? []
+  const cityOptions = cities.data ?? []
+  const pickupZoneOptions = pickupZones.data ?? []
+  const pickupAreaOptions = pickupAreas.data ?? []
+  const deliveryZoneOptions = deliveryZones.data ?? []
+  const deliveryAreaOptions = deliveryAreas.data ?? []
 
   /**
-   * Booking is impossible until the API can be asked which hubs and zones
+   * Booking is impossible until the API can be asked which hubs and cities
    * exist — a hard-coded id would post a real parcel to a hub nobody chose.
+   * Zone and area lists follow the picked city, so they are never a gate.
    */
-  const referenceDataReady = hubOptions.length > 0 && zoneOptions.length > 0
+  const referenceDataReady = hubOptions.length > 0 && cityOptions.length > 0
+
+  /** Changing a city orphans its zone and area picks, so clear the cascade. */
+  function selectPickupCity(cityId: string) {
+    form.setValue("pickupCityId", cityId, { shouldValidate: false })
+    form.setValue("pickupZoneId", "", { shouldValidate: false })
+    form.setValue("pickupAreaId", "")
+  }
+
+  function selectPickupZone(zoneId: string) {
+    form.setValue("pickupZoneId", zoneId, { shouldValidate: false })
+    form.setValue("pickupAreaId", "")
+  }
+
+  function selectDeliveryCity(cityId: string) {
+    form.setValue("deliveryCityId", cityId, { shouldValidate: false })
+    form.setValue("deliveryZoneId", "", { shouldValidate: false })
+    form.setValue("deliveryAreaId", "")
+  }
+
+  function selectDeliveryZone(zoneId: string) {
+    form.setValue("deliveryZoneId", zoneId, { shouldValidate: false })
+    form.setValue("deliveryAreaId", "")
+  }
 
   async function goNext() {
     setServerError(null)
@@ -372,7 +450,14 @@ export function BookParcel() {
         <span className="grid gap-1.5">
           <span>
             Sending to {values.receiverName} ({values.receiverPhone}), at{" "}
-            {formatDeliveryAddress(values)}.
+            {joinedAddress(
+              values,
+              "delivery",
+              cityOptions,
+              deliveryZoneOptions,
+              deliveryAreaOptions,
+            )}
+            .
           </span>
           {quoted ? <span>Estimated fee {formatMoney(quoted.total, quoted.currency)}.</span> : null}
           {codOnDelivery ? <span>Collected on delivery: {codOnDelivery}.</span> : null}
@@ -576,39 +661,67 @@ export function BookParcel() {
                       </div>
 
                       <div className="grid gap-5">
-                        <FormField
-                          control={form.control}
-                          name="receiverCity"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>City</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="e.g. Dhaka"
-                                  autoComplete="address-level2"
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name="deliveryCityId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City</FormLabel>
+                                <ReferenceSelect
+                                  value={field.value}
+                                  onValueChange={selectDeliveryCity}
+                                  options={cityOptions}
+                                  source="cities"
+                                  placeholder="Pick the delivery city"
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="deliveryZoneId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Zone</FormLabel>
+                                <ReferenceSelect
+                                  value={field.value}
+                                  onValueChange={selectDeliveryZone}
+                                  options={deliveryZoneOptions}
+                                  source="city-zones"
+                                  loading={!deliveredCityId}
+                                  placeholder="Pick the zone under that city"
+                                />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
 
                         <FormField
                           control={form.control}
-                          name="destinationZoneId"
+                          name="deliveryAreaId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Selected zone</FormLabel>
+                              <FormLabel>
+                                Area{" "}
+                                <span className="text-muted-foreground font-normal">
+                                  (optional)
+                                </span>
+                              </FormLabel>
                               <ReferenceSelect
                                 value={field.value}
                                 onValueChange={field.onChange}
-                                options={zoneOptions}
-                                source="zones"
-                                placeholder="Select a zone under your city"
+                                options={deliveryAreaOptions}
+                                source="zone-areas"
+                                loading={!deliveredZoneId}
+                                placeholder="Pick an area, if listed"
+                                emptyTitle="No areas in this zone yet"
                               />
                               <FormDescription>
-                                The delivery fee is calculated from this zone.
+                                Optional — narrows the drop-off for the rider.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -617,31 +730,7 @@ export function BookParcel() {
 
                         <FormField
                           control={form.control}
-                          name="receiverArea"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                Select area{" "}
-                                <span className="text-muted-foreground font-normal">
-                                  (optional)
-                                </span>
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="e.g. Dhanmondi, Nikunja 2"
-                                  autoComplete="address-level3"
-                                  className="rounded-full bg-white px-5"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="receiverAddress"
+                          name="deliveryAddressLine"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Address line</FormLabel>
@@ -673,8 +762,8 @@ export function BookParcel() {
                       title="Pickup and delivery route"
                     />
                     <CardDescription>
-                      Where we collect from and where it is delivered to. Pricing follows the
-                      destination zone.
+                      Where we collect from and where it is delivered to. Pricing follows the lane
+                      between the two pickup and delivery zones.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-6 px-5 py-6 sm:grid-cols-2 sm:px-7 sm:py-7">
@@ -714,23 +803,105 @@ export function BookParcel() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="originZoneId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Origin zone</FormLabel>
-                          <ReferenceSelect
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            options={zoneOptions}
-                            source="zones"
-                            placeholder="Pick the origin zone"
+                    <div className="rounded-2xl bg-[#F6F8FB] p-4 sm:col-span-2 sm:p-5">
+                      <div className="mb-5 flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FFF0EB] text-[#E64D00]">
+                          <PackageIcon className="size-5" aria-hidden />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-[#1A1D24]">Pickup address</p>
+                          <p className="text-muted-foreground text-xs">
+                            Where the rider collects the parcel
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-5">
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name="pickupCityId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City</FormLabel>
+                                <ReferenceSelect
+                                  value={field.value}
+                                  onValueChange={selectPickupCity}
+                                  options={cityOptions}
+                                  source="cities"
+                                  placeholder="Pick the pickup city"
+                                />
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
+                          <FormField
+                            control={form.control}
+                            name="pickupZoneId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Zone</FormLabel>
+                                <ReferenceSelect
+                                  value={field.value}
+                                  onValueChange={selectPickupZone}
+                                  options={pickupZoneOptions}
+                                  source="city-zones"
+                                  loading={!pickedCityId}
+                                  placeholder="Pick the zone under that city"
+                                />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="pickupAreaId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Area{" "}
+                                <span className="text-muted-foreground font-normal">
+                                  (optional)
+                                </span>
+                              </FormLabel>
+                              <ReferenceSelect
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                options={pickupAreaOptions}
+                                source="zone-areas"
+                                loading={!pickedZoneId}
+                                placeholder="Pick an area, if listed"
+                                emptyTitle="No areas in this zone yet"
+                              />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="pickupAddressLine"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Address line</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  rows={3}
+                                  placeholder="House / Building / Flat number, road and landmark"
+                                  className="bg-white"
+                                  autoComplete="street-address"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               ) : null}
@@ -1048,7 +1219,20 @@ export function BookParcel() {
                 <ReviewCard
                   values={form.getValues()}
                   hubOptions={hubOptions}
-                  zoneOptions={zoneOptions}
+                  pickupAddress={joinedAddress(
+                    form.getValues(),
+                    "pickup",
+                    cityOptions,
+                    pickupZoneOptions,
+                    pickupAreaOptions,
+                  )}
+                  deliveryAddress={joinedAddress(
+                    form.getValues(),
+                    "delivery",
+                    cityOptions,
+                    deliveryZoneOptions,
+                    deliveryAreaOptions,
+                  )}
                   quote={quote.data}
                 />
               ) : null}
@@ -1093,13 +1277,15 @@ export function BookParcel() {
                   ) : (
                     <dl className="grid gap-3 text-sm">
                       <QuoteRow
-                        label="Base price"
-                        value={formatMoney(quote.data.basePrice, quote.data.currency)}
+                        label="Base fee"
+                        value={formatMoney(quote.data.baseFee, quote.data.currency)}
                       />
-                      <QuoteRow
-                        label={`Weight charge (${weight} kg)`}
-                        value={formatMoney(quote.data.weightCharge, quote.data.currency)}
-                      />
+                      {quote.data.extraWeightFee > 0 ? (
+                        <QuoteRow
+                          label="Extra weight fee"
+                          value={formatMoney(quote.data.extraWeightFee, quote.data.currency)}
+                        />
+                      ) : null}
                       {quote.data.codFee > 0 ? (
                         <QuoteRow
                           label="Cash on delivery fee"
@@ -1169,7 +1355,7 @@ export function BookParcel() {
 
               {!referenceDataReady ? (
                 <p className="text-muted-foreground text-xs">
-                  Booking is disabled until the hub, zone and recipient lists are available.
+                  Booking is disabled until the hub and city lists are available.
                 </p>
               ) : null}
             </aside>
@@ -1278,13 +1464,15 @@ function BookingCardTitle({
 function ReviewCard({
   values,
   hubOptions,
-  zoneOptions,
+  pickupAddress,
+  deliveryAddress,
   quote,
 }: {
   values: BookParcelValues
   hubOptions: ReferenceOption[]
-  zoneOptions: ReferenceOption[]
-  quote: DeliveryQuote | undefined
+  pickupAddress: string
+  deliveryAddress: string
+  quote: FeeQuote | undefined
 }) {
   const labelFor = (options: ReferenceOption[], id: string) =>
     options.find((option) => option.id === id)?.label ?? id
@@ -1303,14 +1491,16 @@ function ReviewCard({
             {values.receiverSecondaryPhone ? (
               <ReviewRow label="Secondary phone" value={values.receiverSecondaryPhone} />
             ) : null}
-            <ReviewRow label="Address" value={values.receiverAddress} />
+            <ReviewRow label="Address" value={deliveryAddress} />
           </ReviewGroup>
           <ReviewGroup title="Route" icon={MapPinIcon}>
-            <ReviewRow label="From" value={labelFor(hubOptions, values.originHubId)} />
-            <ReviewRow label="To" value={labelFor(hubOptions, values.destinationHubId)} />
             <ReviewRow
-              label="Zones"
-              value={`${labelFor(zoneOptions, values.originZoneId)} → ${labelFor(zoneOptions, values.destinationZoneId)}`}
+              label="Pickup"
+              value={`${labelFor(hubOptions, values.originHubId)} · ${pickupAddress}`}
+            />
+            <ReviewRow
+              label="Delivery"
+              value={`${labelFor(hubOptions, values.destinationHubId)} · ${deliveryAddress}`}
             />
           </ReviewGroup>
         </div>

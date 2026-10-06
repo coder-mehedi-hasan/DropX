@@ -47,6 +47,8 @@ const pricing = await import("../src/modules/pricing/pricing.service")
 const reference = await import("../src/modules/reference/reference.repository")
 const org = await import("../src/modules/org/org.repository")
 const zones = await import("../src/modules/zones/zones.repository")
+const locations = await import("../src/modules/locations/locations.repository")
+const pricingLanes = await import("../src/modules/pricing/pricing-lanes.repository")
 const vehicles = await import("../src/modules/vehicles/vehicles.repository")
 const pricingRules = await import("../src/modules/pricing/pricing-rules.repository")
 const routes = await import("../src/modules/routes/routes.repository")
@@ -189,6 +191,7 @@ cases.push(
     run: () => parcels.findParcelForCustomer(pool, "1", "1"),
   },
   { name: "parcels.listParcelItems", run: () => parcels.listParcelItems(pool, "1") },
+  { name: "parcels.listParcelAddresses", run: () => parcels.listParcelAddresses(pool, "1") },
 
   {
     name: "auth.findUserByEmail",
@@ -274,20 +277,23 @@ cases.push(
     name: "pricing.quoteDeliveryFee",
     run: () =>
       pricing.quoteDeliveryFee(ctx, {
-        originZoneId: "1",
-        destinationZoneId: "2",
-        weightKg: 2.5,
+        pickupCityId: "1",
+        pickupZoneId: "1",
+        deliveryCityId: "2",
+        deliveryZoneId: "2",
+        weightGrams: 2500,
         codAmount: 1000,
-        express: true,
       }),
   },
   {
     name: "pricing.quoteDeliveryFee(prepaid)",
     run: () =>
       pricing.quoteDeliveryFee(ctx, {
-        originZoneId: "1",
-        destinationZoneId: "2",
-        weightKg: 0.5,
+        pickupCityId: "1",
+        pickupZoneId: "1",
+        deliveryCityId: "2",
+        deliveryZoneId: "2",
+        weightGrams: 500,
         codAmount: 0,
       }),
   },
@@ -356,6 +362,100 @@ cases.push(
       ),
   })),
   { name: "zones.selectZone", run: () => zones.selectZone(pool, "1") },
+
+  // --- Locations: cities, zones, areas --------------------------------------
+  {
+    name: "locations.selectServiceCities",
+    run: () => locations.selectServiceCities(pool, listParams, {}),
+  },
+  ...(["name", "code", "serviceType", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `locations.selectServiceCities(sortBy=${sortBy})`,
+    run: () => locations.selectServiceCities(pool, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "locations.selectServiceCities(status+search)",
+    run: () =>
+      locations.selectServiceCities(pool, listParams, { status: "ACTIVE", search: "DHAKA" }),
+  },
+  { name: "locations.selectServiceCity", run: () => locations.selectServiceCity(pool, "1") },
+
+  {
+    name: "locations.selectServiceZones",
+    run: () => locations.selectServiceZones(pool, listParams, {}),
+  },
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `locations.selectServiceZones(sortBy=${sortBy})`,
+    run: () => locations.selectServiceZones(pool, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "locations.selectServiceZones(cityId+status+search)",
+    run: () =>
+      locations.selectServiceZones(pool, listParams, {
+        cityId: "1",
+        status: "ACTIVE",
+        search: "DHAN",
+      }),
+  },
+  { name: "locations.selectServiceZone", run: () => locations.selectServiceZone(pool, "1") },
+
+  {
+    name: "locations.selectServiceAreas",
+    run: () => locations.selectServiceAreas(pool, listParams, {}),
+  },
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `locations.selectServiceAreas(sortBy=${sortBy})`,
+    run: () => locations.selectServiceAreas(pool, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "locations.selectServiceAreas(zoneId+status+search)",
+    run: () =>
+      locations.selectServiceAreas(pool, listParams, {
+        zoneId: "1",
+        status: "ACTIVE",
+        search: "BADAM",
+      }),
+  },
+  { name: "locations.selectServiceArea", run: () => locations.selectServiceArea(pool, "1") },
+  {
+    name: "locations.codeExistsUnderParent(zones)",
+    run: () =>
+      locations.codeExistsUnderParent(pool, "service_zones", { cityId: "1" }, "DHANMONDI"),
+  },
+  {
+    name: "locations.codeExistsUnderParent(areas)",
+    run: () =>
+      locations.codeExistsUnderParent(pool, "service_areas", { zoneId: "1" }, "BADAMTOLA"),
+  },
+
+  // --- Pricing lanes and slabs ----------------------------------------------
+  {
+    name: "pricingLanes.selectPricingLanes",
+    run: () => pricingLanes.selectPricingLanes(pool, listParams, {}),
+  },
+  {
+    name: "pricingLanes.selectPricingLanes(status+sort)",
+    run: () =>
+      pricingLanes.selectPricingLanes(
+        pool,
+        { ...listParams, sort: "asc" },
+        { status: "ACTIVE" },
+      ),
+  },
+  ...(["pickupType", "deliveryType", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `pricingLanes.selectPricingLanes(sortBy=${sortBy})`,
+    run: () => pricingLanes.selectPricingLanes(pool, { ...listParams, sortBy }, {}),
+  })),
+  { name: "pricingLanes.selectPricingLane", run: () => pricingLanes.selectPricingLane(pool, "1") },
+  {
+    name: "pricingLanes.selectSlabsForLanes",
+    run: () => pricingLanes.selectSlabsForLanes(pool, ["1", "2", "3"]),
+  },
+  { name: "pricingLanes.selectLaneSlabs", run: () => pricingLanes.selectLaneSlabs(pool, "1") },
+  { name: "pricingLanes.selectSlab", run: () => pricingLanes.selectSlab(pool, "1") },
+  {
+    name: "pricingLanes.selectOverlappingSlab",
+    run: () => pricingLanes.selectOverlappingSlab(pool, "1", 0, 500),
+  },
 
   // --- Fleet: vehicles ------------------------------------------------------
   { name: "vehicles.selectVehicles", run: () => vehicles.selectVehicles(pool, listParams, {}) },

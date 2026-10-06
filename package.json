@@ -28,7 +28,8 @@
     "db:seed": "bun run --cwd apps/api seed",
     "db:seed:demo": "bun run --cwd apps/api seed:demo",
     "db:bootstrap-admin": "bun run --cwd apps/api bootstrap-admin",
-    "clean": "bun run --filter \"./apps/*\" clean"
+    "clean": "bun run --filter \"./apps/*\" clean",
+    "db:seed:pricing": "bun run --cwd apps/api seed:pricing"
   },
   "type": "module",
   "workspaces": [

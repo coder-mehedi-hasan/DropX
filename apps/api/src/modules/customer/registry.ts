@@ -8,10 +8,20 @@ import {
   zoneRefResponseSchema,
 } from "../reference/reference.dto"
 import {
+  areaRefResponseSchema,
+  cityRefResponseSchema,
+  cityZonesParamSchema,
+  listCitiesQuerySchema,
+  listCityZonesQuerySchema,
+  listZoneAreasQuerySchema,
+  zoneAreasParamSchema,
+  zoneRefResponseSchema as serviceZoneRefResponseSchema,
+} from "../locations/locations.dto"
+import {
   listParcelsQuerySchema,
   parcelIdParamSchema,
   parcelResponseSchema,
-  parcelWithItemsResponseSchema,
+  parcelDetailResponseSchema,
   createParcelSchema,
 } from "../parcels/parcels.dto"
 
@@ -82,6 +92,59 @@ export const CUSTOMER_SURFACE = defineSurface({
         },
       },
     },
+    /**
+     * The booking cascade: cities, then the zones of one city, then the areas
+     * of one zone. The three ids a client needs for the next hop come back in
+     * the rows it already received, so the path segments are never guessed.
+     *
+     * Only `ACTIVE` rows are served — a retired location must disappear from
+     * the picker without disappearing from the parcels that were sent there.
+     */
+    locations: {
+      tag: "customer-locations",
+      tagDescription:
+        "The cascading location picker behind booking: cities, then one city's zones, then one zone's areas. Active rows only.",
+      operations: {
+        listCities: {
+          method: "GET",
+          path: "/locations/cities",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List bookable cities",
+          successDescription: "A page of active cities.",
+          query: listCitiesQuerySchema,
+          listNodes: cityRefResponseSchema,
+        },
+        listZones: {
+          method: "GET",
+          path: "/locations/cities/:cityId/zones",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List a city's zones",
+          successDescription: "A page of the city's active zones.",
+          description:
+            "The second hop of the cascade. A zone whose `cityId` is not the one in the path is never returned.",
+          params: cityZonesParamSchema,
+          paramDescriptions: { cityId: "The city these zones belong to." },
+          query: listCityZonesQuerySchema,
+          listNodes: serviceZoneRefResponseSchema,
+          errors: { 404: "No such city." },
+        },
+        listAreas: {
+          method: "GET",
+          path: "/locations/zones/:zoneId/areas",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List a zone's areas",
+          successDescription: "A page of the zone's active areas.",
+          description:
+            "The third hop of the cascade. Areas are optional — a booking may stop at the zone and type an address line.",
+          params: zoneAreasParamSchema,
+          paramDescriptions: { zoneId: "The zone these areas belong to." },
+          query: listZoneAreasQuerySchema,
+          listNodes: areaRefResponseSchema,
+          errors: { 404: "No such zone." },
+        },
+      },
+    },
+
     parcels: {
       tag: "parcels",
       operations: {
@@ -102,10 +165,11 @@ export const CUSTOMER_SURFACE = defineSurface({
           policy: { audience: ["web"], requiresActiveCustomer: true },
           summary: "Read one of my parcels (customer)",
           successDescription: "The parcel.",
-          description: "Full parcel with items, limited to parcels the customer is party to.",
+          description:
+            "The parcel with its items and both structured addresses, limited to parcels the customer is party to.",
           params: parcelIdParamSchema,
           paramDescriptions: { id: "Parcel id." },
-          response: parcelWithItemsResponseSchema,
+          response: parcelDetailResponseSchema,
           errors: { 404: "No such parcel in scope." },
         },
         create: {
@@ -115,12 +179,12 @@ export const CUSTOMER_SURFACE = defineSurface({
           summary: "Book a parcel (customer)",
           successDescription: "Created.",
           description:
-            "Self-service booking. The sender is the session — `senderCustomerId` is not accepted on this input at all, and the delivery fee is quoted server-side.",
+            "Self-service booking. The sender is the session — `senderCustomerId` is not accepted on this input at all — and the delivery fee is quoted server-side from the lane matrix.",
           body: createOwnParcelSchema,
-          response: parcelWithItemsResponseSchema,
+          response: parcelDetailResponseSchema,
           successStatus: 201,
           errors: {
-            422: "Validation failed, or no pricing rule covers the route/weight.",
+            422: "Validation failed, or the price list covers neither the route nor the weight.",
           },
         },
       },

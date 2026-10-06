@@ -11,6 +11,8 @@ import * as deliveryProofs from "../deliveries/delivery-proofs.service"
 import * as transfers from "../transfers/transfers.service"
 import * as reference from "../reference/reference.service"
 import * as zones from "../zones/zones.service"
+import * as locations from "../locations/locations.service"
+import * as pricingLanes from "../pricing/pricing-lanes.service"
 import * as vehicles from "../vehicles/vehicles.service"
 import * as riderLocations from "../riders/rider-locations.service"
 import * as riders from "../riders/riders.service"
@@ -54,7 +56,8 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
         c.req.valid("param").id,
       )
       const items = await parcels.getParcelItems(c, parcel.id)
-      return c.json(response.success({ ...parcel, items }))
+      const addresses = await parcels.getParcelAddresses(c, parcel.id)
+      return c.json(response.success({ ...parcel, items, addresses }))
     },
 
     create: async (c) => {
@@ -69,12 +72,13 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
 
       const parcel = await parcels.createParcel(c, {
         senderCustomerId: input.senderCustomerId,
-        originZoneId: input.originZoneId,
         input,
         actorId: actorId(auth),
       })
 
-      return c.json(response.success(parcel, 201), 201)
+      const items = await parcels.getParcelItems(c, parcel.id)
+      const addresses = await parcels.getParcelAddresses(c, parcel.id)
+      return c.json(response.success({ ...parcel, items, addresses }, 201), 201)
     },
 
     updateStatus: async (c) => {
@@ -367,6 +371,115 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     update: async (c) => {
       const zone = await zones.updateZone(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(zone))
+    },
+  },
+
+  /**
+   * Locations. The parent id on a create or a move is validated by the service,
+   * not here — the handler stays one line per operation so the relationship rule
+   * has exactly one home.
+   */
+  locations: {
+    listCities: async (c) => {
+      const page = await locations.listServiceCities(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    createCity: async (c) => {
+      const city = await locations.createServiceCity(c, c.req.valid("json"))
+      return c.json(response.success(city), 201)
+    },
+
+    updateCity: async (c) => {
+      const city = await locations.updateServiceCity(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(city))
+    },
+
+    listZones: async (c) => {
+      const page = await locations.listServiceZones(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    createZone: async (c) => {
+      const zone = await locations.createServiceZone(c, c.req.valid("json"))
+      return c.json(response.success(zone), 201)
+    },
+
+    updateZone: async (c) => {
+      const zone = await locations.updateServiceZone(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(zone))
+    },
+
+    listAreas: async (c) => {
+      const page = await locations.listServiceAreas(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    createArea: async (c) => {
+      const area = await locations.createServiceArea(c, c.req.valid("json"))
+      return c.json(response.success(area), 201)
+    },
+
+    updateArea: async (c) => {
+      const area = await locations.updateServiceArea(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(area))
+    },
+  },
+
+  /**
+   * The lane matrix. No create operation by design — the twelve lanes are
+   * seeded, so what a handler can do is read a row, reprice or retire it, and
+   * edit the slabs underneath.
+   */
+  pricingLanes: {
+    listLanes: async (c) => {
+      const page = await pricingLanes.listPricingLanes(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    readLane: async (c) => {
+      const lane = await pricingLanes.getPricingLane(c, c.req.valid("param").id)
+      return c.json(response.success(lane))
+    },
+
+    updateLane: async (c) => {
+      const lane = await pricingLanes.updatePricingLane(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(lane))
+    },
+
+    createSlab: async (c) => {
+      const slab = await pricingLanes.createPricingSlab(
+        c,
+        c.req.valid("param").laneId,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(slab), 201)
+    },
+
+    updateSlab: async (c) => {
+      const slab = await pricingLanes.updatePricingSlab(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(slab))
+    },
+
+    updateCodSettings: async (c) => {
+      const result = await pricingLanes.updateCodSettings(c, c.req.valid("json"))
+      return c.json(response.success(result))
     },
   },
 

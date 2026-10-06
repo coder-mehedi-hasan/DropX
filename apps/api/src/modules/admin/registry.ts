@@ -18,6 +18,37 @@ import {
   zoneResponseSchema as zoneResponse,
 } from "../zones/zones.dto"
 import {
+  createServiceAreaSchema as createServiceAreaBody,
+  createServiceCitySchema as createServiceCityBody,
+  createServiceZoneSchema as createServiceZoneBody,
+  listServiceAreasQuerySchema as listServiceAreasQuery,
+  listServiceCitiesQuerySchema as listServiceCitiesQuery,
+  listServiceZonesQuerySchema as listServiceZonesQuery,
+  serviceAreaIdParamSchema as serviceAreaIdParam,
+  serviceAreaResponseSchema as serviceAreaResponse,
+  serviceCityIdParamSchema as serviceCityIdParam,
+  serviceCityResponseSchema as serviceCityResponse,
+  serviceZoneIdParamSchema as serviceZoneIdParam,
+  serviceZoneResponseSchema as serviceZoneResponse,
+  updateServiceAreaSchema as updateServiceAreaBody,
+  updateServiceCitySchema as updateServiceCityBody,
+  updateServiceZoneSchema as updateServiceZoneBody,
+} from "../locations/locations.dto"
+import {
+  createPricingSlabSchema as createPricingSlabBody,
+  listPricingLanesQuerySchema as listPricingLanesQuery,
+  pricingLaneIdParamSchema as pricingLaneIdParam,
+  pricingLanePathParamSchema as pricingLanePathParam,
+  pricingSlabIdParamSchema as pricingSlabIdParam,
+  pricingLaneResponseSchema as pricingLaneResponse,
+  pricingLaneWithSlabsResponseSchema as pricingLaneWithSlabsResponse,
+  pricingSlabResponseSchema as pricingSlabResponse,
+  codSettingsResponseSchema as codSettingsResponse,
+  updateCodSettingsSchema as updateCodSettingsBody,
+  updatePricingLaneSchema as updatePricingLaneBody,
+  updatePricingSlabSchema as updatePricingSlabBody,
+} from "../pricing/pricing-lanes.dto"
+import {
   createVehicleSchema as createVehicleBody,
   listVehiclesQuerySchema as listVehiclesQuery,
   updateVehicleSchema as updateVehicleBody,
@@ -42,7 +73,7 @@ import {
   listParcelsQuerySchema,
   parcelIdParamSchema,
   parcelResponseSchema,
-  parcelWithItemsResponseSchema,
+  parcelDetailResponseSchema,
   updateParcelStatusSchema,
 } from "../parcels/parcels.dto"
 import {
@@ -181,10 +212,11 @@ export const ADMIN_SURFACE = defineSurface({
           policy: { audience: ["admin"], permissions: [PERMISSIONS.PARCELS_VIEW] },
           summary: "Read a parcel (staff)",
           successDescription: "The parcel.",
-          description: "Full parcel with its items, scoped to the caller's branch/hubs.",
+          description:
+            "The parcel with its items and both structured addresses, scoped to the caller's branch/hubs.",
           params: parcelIdParamSchema,
           paramDescriptions: { id: "Parcel id." },
-          response: parcelWithItemsResponseSchema,
+          response: parcelDetailResponseSchema,
           errors: { 404: "No such parcel in scope." },
         },
         create: {
@@ -194,12 +226,12 @@ export const ADMIN_SURFACE = defineSurface({
           summary: "Create a parcel (staff)",
           successDescription: "Created.",
           description:
-            "Books a parcel on a customer's behalf, so `senderCustomerId` is required. The delivery fee is quoted server-side from the destination zone and is never accepted from the client.",
+            "Books a parcel on a customer's behalf, so `senderCustomerId` is required. Both addresses are validated against the city/zone/area hierarchy, and the delivery fee is quoted server-side from the lane matrix — never accepted from the client.",
           body: createParcelSchema,
-          response: parcelWithItemsResponseSchema,
+          response: parcelDetailResponseSchema,
           successStatus: 201,
           errors: {
-            422: "Validation failed, or no pricing rule covers the route/weight.",
+            422: "Validation failed, or the price list covers neither the route nor the weight.",
           },
         },
         updateStatus: {
@@ -1258,6 +1290,245 @@ export const ADMIN_SURFACE = defineSurface({
           body: updateZoneBody,
           response: zoneResponse,
           errors: { 404: "No such zone.", 409: "A zone with that code already exists." },
+        },
+      },
+    },
+
+    /**
+     * The pricing lane matrix: pickup type × delivery type × same-city, with
+     * weight slabs under each row.
+     *
+     * Read is `pricing.view`, write `pricing.manage`, shared with the legacy
+     * per-zone rules. Note what is *not* here: there is no create-lane. The
+     * twelve rows are product configuration, seeded with the matrix, so a
+     * screen can only reprice a row or its bands — never invent a thirteenth.
+     */
+    pricingLanes: {
+      tag: "pricing-lanes",
+      tagDescription:
+        "The delivery-fee matrix: one lane per pickup type, delivery type, and same-city flag, each holding weight slabs. Lanes are seeded, slabs and prices are edited here.",
+      operations: {
+        listLanes: {
+          method: "GET",
+          path: "/pricing/lanes",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PRICING_VIEW] },
+          summary: "List pricing lanes with their slabs",
+          successDescription: "A page of lanes, each with its slabs in weight order.",
+          description:
+            "The whole matrix in one page — filter with `status` to see only retired rows.",
+          query: listPricingLanesQuery,
+          listNodes: pricingLaneWithSlabsResponse,
+        },
+        readLane: {
+          method: "GET",
+          path: "/pricing/lanes/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PRICING_VIEW] },
+          summary: "Read one pricing lane",
+          successDescription: "The lane and its slabs.",
+          params: pricingLaneIdParam,
+          paramDescriptions: { id: "Lane id." },
+          response: pricingLaneWithSlabsResponse,
+          errors: { 404: "No such lane." },
+        },
+        updateLane: {
+          method: "PATCH",
+          path: "/pricing/lanes/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PRICING_MANAGE] },
+          summary: "Reprice-or-retire a lane",
+          successDescription: "Updated.",
+          description:
+            "Status only. Set `INACTIVE` to refuse the lane's price entirely — it is never silently substituted by another lane.",
+          params: pricingLaneIdParam,
+          paramDescriptions: { id: "Lane id." },
+          body: updatePricingLaneBody,
+          response: pricingLaneResponse,
+          errors: { 404: "No such lane." },
+        },
+        createSlab: {
+          method: "POST",
+          path: "/pricing/lanes/:laneId/slabs",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PRICING_MANAGE] },
+          summary: "Add a weight slab to a lane",
+          successDescription: "Created.",
+          description:
+            "Bands are in grams and must not overlap an active slab of the same lane — `0-500g` beside `0-200g` would make one weight answer two prices.",
+          params: pricingLanePathParam,
+          paramDescriptions: { laneId: "Lane id." },
+          body: createPricingSlabBody,
+          response: pricingSlabResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such lane.",
+            409: "That band overlaps an existing slab.",
+            422: "Validation failed, or the upper bound is not above the lower bound.",
+          },
+        },
+        updateSlab: {
+          method: "PATCH",
+          path: "/pricing/slabs/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PRICING_MANAGE] },
+          summary: "Edit a weight slab",
+          successDescription: "Updated.",
+          description: "Partial. Moving the band re-checks overlap against the rest of the lane.",
+          params: pricingSlabIdParam,
+          paramDescriptions: { id: "Slab id." },
+          body: updatePricingSlabBody,
+          response: pricingSlabResponse,
+          errors: {
+            404: "No such slab.",
+            409: "That band overlaps an existing slab.",
+            422: "Validation failed, or the upper bound is not above the lower bound.",
+          },
+        },
+        updateCodSettings: {
+          method: "PATCH",
+          path: "/pricing/cod-settings",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PRICING_MANAGE] },
+          summary: "Set the company COD fee",
+          successDescription: "Applied to every slab.",
+          description:
+            "One company-wide rule rather than a per-slab edit: the COD percentage and handling fee are written to all forty-eight slabs in a single statement.",
+          body: updateCodSettingsBody,
+          response: codSettingsResponse,
+          errors: { 422: "Validation failed." },
+        },
+      },
+    },
+
+    /**
+     * Locations — the customer-facing city → zone → area hierarchy, and the
+     * territory pricing is derived from.
+     *
+     * Reads are `locations.view` and writes `locations.manage`, deliberately
+     * separate from the legacy flat `zones` above: that table is the old pricing
+     * anchor and stays read-compatible until the lane matrix is the only model.
+     * Nothing here deletes — a location is deactivated, because a historical
+     * parcel's foreign key has to keep pointing at something.
+     *
+     * The parent id is on every create, and the service re-checks it: the admin
+     * UI filters the zone picker by city, but a request that ignores the picker
+     * is exactly the request that would file a zone under the wrong city.
+     */
+    locations: {
+      tag: "locations",
+      tagDescription:
+        "The service territory — cities, the zones inside them, and the areas inside those — used for address selection and for choosing a pricing lane. Company-wide; deactivation rather than deletion.",
+      operations: {
+        listCities: {
+          method: "GET",
+          path: "/service-cities",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_VIEW] },
+          summary: "List service cities",
+          successDescription: "A page of cities.",
+          query: listServiceCitiesQuery,
+          listNodes: serviceCityResponse,
+        },
+        createCity: {
+          method: "POST",
+          path: "/service-cities",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_MANAGE] },
+          summary: "Create a service city",
+          successDescription: "Created.",
+          description:
+            "`serviceType` is what selects a pricing lane later, so it is set here rather than at quote time.",
+          body: createServiceCityBody,
+          response: serviceCityResponse,
+          successStatus: 201,
+          errors: { 409: "A city with that code already exists." },
+        },
+        updateCity: {
+          method: "PATCH",
+          path: "/service-cities/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_MANAGE] },
+          summary: "Update a service city",
+          successDescription: "Updated.",
+          description:
+            "Set `status` to `INACTIVE` to retire a city. It is not deleted, and parcels already addressed to it keep working.",
+          params: serviceCityIdParam,
+          paramDescriptions: { id: "City id." },
+          body: updateServiceCityBody,
+          response: serviceCityResponse,
+          errors: { 404: "No such city.", 409: "A city with that code already exists." },
+        },
+        listZones: {
+          method: "GET",
+          path: "/service-zones",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_VIEW] },
+          summary: "List service zones",
+          successDescription: "A page of zones.",
+          description: "Filter with `cityId` to see one city's zones.",
+          query: listServiceZonesQuery,
+          listNodes: serviceZoneResponse,
+        },
+        createZone: {
+          method: "POST",
+          path: "/service-zones",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_MANAGE] },
+          summary: "Create a service zone",
+          successDescription: "Created.",
+          body: createServiceZoneBody,
+          response: serviceZoneResponse,
+          successStatus: 201,
+          errors: {
+            409: "A zone with that code already exists in this city.",
+            422: "Validation failed, or `cityId` names no city.",
+          },
+        },
+        updateZone: {
+          method: "PATCH",
+          path: "/service-zones/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_MANAGE] },
+          summary: "Update a service zone",
+          successDescription: "Updated.",
+          params: serviceZoneIdParam,
+          paramDescriptions: { id: "Zone id." },
+          body: updateServiceZoneBody,
+          response: serviceZoneResponse,
+          errors: {
+            404: "No such zone.",
+            409: "A zone with that code already exists in this city.",
+            422: "Validation failed, or `cityId` names no city.",
+          },
+        },
+        listAreas: {
+          method: "GET",
+          path: "/service-areas",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_VIEW] },
+          summary: "List service areas",
+          successDescription: "A page of areas.",
+          description: "Filter with `zoneId` to see one zone's areas.",
+          query: listServiceAreasQuery,
+          listNodes: serviceAreaResponse,
+        },
+        createArea: {
+          method: "POST",
+          path: "/service-areas",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_MANAGE] },
+          summary: "Create a service area",
+          successDescription: "Created.",
+          body: createServiceAreaBody,
+          response: serviceAreaResponse,
+          successStatus: 201,
+          errors: {
+            409: "An area with that code already exists in this zone.",
+            422: "Validation failed, or `zoneId` names no zone.",
+          },
+        },
+        updateArea: {
+          method: "PATCH",
+          path: "/service-areas/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.LOCATIONS_MANAGE] },
+          summary: "Update a service area",
+          successDescription: "Updated.",
+          params: serviceAreaIdParam,
+          paramDescriptions: { id: "Area id." },
+          body: updateServiceAreaBody,
+          response: serviceAreaResponse,
+          errors: {
+            404: "No such area.",
+            409: "An area with that code already exists in this zone.",
+            422: "Validation failed, or `zoneId` names no zone.",
+          },
         },
       },
     },

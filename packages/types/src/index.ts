@@ -49,12 +49,18 @@ export const ENTITY_NAMES = [
   "customer",
   "customer_address",
   "zone",
+  "service_city",
+  "service_zone",
+  "service_area",
   "pricing_rule",
+  "pricing_lane",
+  "pricing_slab",
   "vehicle",
   "route",
   "route_stop",
   "rider",
   "parcel",
+  "parcel_address",
   "parcel_item",
   "pickup",
   "transfer",
@@ -243,6 +249,123 @@ export type PricingRule = EntityBase &
     status: RecordStatus
   }
 
+// ---------------------------------------------------------------------------
+// Service locations (city -> zone -> area)
+// ---------------------------------------------------------------------------
+
+/**
+ * What a city is, for pricing. `ISD`/`SUBURB`/`OSD` is half of the pricing-lane
+ * key, so it is carried on the city rather than chosen at quote time.
+ *
+ * Deactivated locations stay in the table and keep their foreign keys — a
+ * historical parcel must never lose the place it was sent to — so every
+ * customer-facing read filters on `ACTIVE` rather than relying on absence.
+ */
+export const LOCATION_SERVICE_TYPES = ["ISD", "SUBURB", "OSD"] as const
+export type LocationServiceType = (typeof LOCATION_SERVICE_TYPES)[number]
+
+export type ServiceCity = EntityBase &
+  Timestamped & {
+    name: string
+    code: string
+    serviceType: LocationServiceType
+    status: RecordStatus
+  }
+
+export type ServiceZone = EntityBase &
+  Timestamped & {
+    cityId: Id
+    name: string
+    code: string
+    status: RecordStatus
+  }
+
+export type ServiceArea = EntityBase &
+  Timestamped & {
+    zoneId: Id
+    name: string
+    code: string
+    status: RecordStatus
+  }
+
+// ---------------------------------------------------------------------------
+// Pricing lanes & slabs
+// ---------------------------------------------------------------------------
+
+/**
+ * The two ends of a pricing lane.
+ *
+ * `ISD_ON_DEMAND` / `SAME_CITY_ON_DEMAND` are the same-city express pair; every
+ * other value is a `LocationServiceType`, with `SAME_CITY` and
+ * `DIFFERENT_CITY` standing in for "the delivery city's type, but somewhere
+ * else" so the matrix does not need a row per (pickup type x delivery type x
+ * same-city) combination.
+ */
+export const PRICING_PICKUP_TYPES = ["ISD", "SUBURB", "OSD", "ISD_ON_DEMAND"] as const
+export type PricingPickupType = (typeof PRICING_PICKUP_TYPES)[number]
+
+export const PRICING_DELIVERY_TYPES = [
+  "ISD",
+  "SUBURB",
+  "OSD",
+  "SAME_CITY",
+  "DIFFERENT_CITY",
+  "SAME_CITY_ON_DEMAND",
+] as const
+export type PricingDeliveryType = (typeof PRICING_DELIVERY_TYPES)[number]
+
+export type PricingLane = EntityBase &
+  Timestamped & {
+    pickupType: PricingPickupType
+    deliveryType: PricingDeliveryType
+    sameCity: boolean
+    status: RecordStatus
+  }
+
+/**
+ * One weight band of one lane. Grams, not kilograms: the bands are 0-200g,
+ * 201-500g, 501g-1kg and 1kg-2kg, and a kilogram column cannot express the
+ * first two. Slabs of a lane never overlap — the service rejects an insert or
+ * an edit whose range intersects an existing one.
+ */
+export type PricingSlab = EntityBase &
+  Timestamped & {
+    pricingLaneId: Id
+    minWeightGrams: number
+    maxWeightGrams: number
+    baseFee: number
+    /** Per whole kg above `maxWeightGrams`, and only the top slab's ever applies. */
+    extraKgFee: number
+    codPercentage: number
+    codFixedFee: number
+    status: RecordStatus
+  }
+
+export type PricingLaneWithSlabs = PricingLane & {
+  slabs: PricingSlab[]
+}
+
+/**
+ * The server's fee breakdown. The client never computes a price; it renders
+ * these four numbers and the lane/slab that produced them.
+ */
+export type FeeQuote = {
+  baseFee: number
+  codFee: number
+  extraWeightFee: number
+  total: number
+  currency: "BDT"
+  lane: {
+    pickupType: PricingPickupType
+    deliveryType: PricingDeliveryType
+    sameCity: boolean
+  }
+  slab: {
+    minWeightGrams: number
+    maxWeightGrams: number
+  }
+}
+
 export type Route = EntityBase &
   Timestamped & {
     name: string
@@ -368,7 +491,12 @@ export type Parcel = EntityBase &
     originHubId: Id
     destinationHubId: Id
     currentHubId: Nullable<Id>
-    destinationZoneId: Id
+    /**
+     * Legacy pricing anchor from the flat `zones` model. New bookings quote from
+     * `addresses` and the lane matrix, so this is `null` for anything booked
+     * after the migration; older rows keep the zone they were quoted against.
+     */
+    destinationZoneId: Nullable<Id>
     weight: number
     length: Nullable<number>
     width: Nullable<number>
@@ -392,6 +520,50 @@ export type ParcelItem = EntityBase &
 
 export type ParcelWithItems = Parcel & {
   items: ParcelItem[]
+}
+
+export const PARCEL_ADDRESS_TYPES = ["PICKUP", "DELIVERY"] as const
+export type ParcelAddressType = (typeof PARCEL_ADDRESS_TYPES)[number]
+
+/**
+ * One end of a parcel's structured address, stored as a row rather than as
+ * columns on `parcels` so the two ends cannot drift apart and so a parcel keeps
+ * both after the hierarchy is renamed underneath it.
+ *
+ * The `cityName`/`zoneName`/`areaName` fields are snapshots written at booking
+ * time. They are what a historical read uses: joining back to `service_*` would
+ * silently rewrite the past whenever an administrator renames a zone.
+ */
+export type ParcelAddress = EntityBase &
+  Timestamped & {
+    parcelId: Id
+    type: ParcelAddressType
+    cityId: Id
+    zoneId: Id
+    areaId: Nullable<Id>
+    cityName: string
+    zoneName: string
+    areaName: Nullable<string>
+    addressLine: string
+    landmark: Nullable<string>
+    latitude: Nullable<number>
+    longitude: Nullable<number>
+  }
+
+/** What a booking sends for each end. The server resolves ids to snapshots. */
+export type ParcelAddressInput = {
+  cityId: Id
+  zoneId: Id
+  areaId?: Id
+  addressLine: string
+  landmark?: string
+  latitude?: number
+  longitude?: number
+}
+
+/** The parcel detail read: the row, its items, and both structured addresses. */
+export type ParcelDetail = ParcelWithItems & {
+  addresses: ParcelAddress[]
 }
 
 export const PARCEL_EVENT_TYPES = [

@@ -4,6 +4,7 @@ import { isCustomer, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
 import * as parcels from "../parcels/parcels.service"
 import * as reference from "../reference/reference.service"
+import * as locations from "../locations/locations.service"
 import type { CUSTOMER_SURFACE } from "./registry"
 
 /**
@@ -35,6 +36,27 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
     searchRecipients: async (c) =>
       c.json(response.success(await reference.searchCustomers(c, c.req.valid("query"), "ACTIVE"))),
   },
+
+  locations: {
+    listCities: async (c) =>
+      c.json(response.success(await locations.listCitiesForCustomer(c, c.req.valid("query")))),
+    listZones: async (c) =>
+      c.json(
+        response.success(
+          await locations.listZonesForCity(
+            c,
+            c.req.valid("param").cityId,
+            c.req.valid("query"),
+          ),
+        ),
+      ),
+    listAreas: async (c) =>
+      c.json(
+        response.success(
+          await locations.listAreasForZone(c, c.req.valid("param").zoneId, c.req.valid("query")),
+        ),
+      ),
+  },
   parcels: {
     list: async (c) => {
       const auth = c.get("auth")
@@ -64,7 +86,8 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
         c.req.valid("param").id,
       )
       const items = await parcels.getParcelItems(c, parcel.id)
-      return c.json(response.success({ ...parcel, items }))
+      const addresses = await parcels.getParcelAddresses(c, parcel.id)
+      return c.json(response.success({ ...parcel, items, addresses }))
     },
 
     create: async (c) => {
@@ -79,12 +102,13 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
       // `createOwnParcelSchema` does not even accept the field.
       const parcel = await parcels.createParcel(c, {
         senderCustomerId: auth.actor.customerId,
-        originZoneId: input.originZoneId,
         input: { ...input, senderCustomerId: auth.actor.customerId },
         actorId: null,
       })
 
-      return c.json(response.success(parcel, 201), 201)
+      const items = await parcels.getParcelItems(c, parcel.id)
+      const addresses = await parcels.getParcelAddresses(c, parcel.id)
+      return c.json(response.success({ ...parcel, items, addresses }, 201), 201)
     },
   },
 }

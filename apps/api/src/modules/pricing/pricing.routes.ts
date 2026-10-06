@@ -10,8 +10,10 @@ import pricingRules from "./pricing-rules.routes"
 
 /**
  * `GET /pricing/quote` — available to the admin and the customer portal so a
- * fee can be shown before committing. Customers see the quote only; the booking
- * endpoint re-computes it and ignores anything sent here.
+ * fee can be shown before committing. The client sends two city/zone pairs and
+ * a weight in grams; the lane, the slab, the COD fee and the extra-weight fee
+ * are all chosen here. The booking endpoint re-computes the same quote and
+ * ignores anything sent with the booking.
  */
 const router = new Hono<AppEnv>()
 
@@ -27,11 +29,12 @@ router.get(
   async (c) => {
     const input = c.req.valid("query")
     const quote = await quoteDeliveryFee(c, {
-      originZoneId: input.originZoneId,
-      destinationZoneId: input.destinationZoneId,
-      weightKg: input.weightKg,
+      pickupCityId: input.pickupCityId,
+      pickupZoneId: input.pickupZoneId,
+      deliveryCityId: input.deliveryCityId,
+      deliveryZoneId: input.deliveryZoneId,
+      weightGrams: input.weightGrams,
       codAmount: input.codAmount,
-      express: input.express,
     })
     return c.json(response.success(quote))
   },

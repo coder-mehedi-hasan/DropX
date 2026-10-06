@@ -14,6 +14,7 @@ import type {
   PaymentType,
   HubRef,
   ParcelEventSummary,
+  ParcelAddressInput,
 } from "@dropx/types"
 
 export { PARCEL_STATUSES, PARCEL_TYPES, PAYMENT_TYPES } from "@dropx/types"
@@ -26,9 +27,14 @@ export type {
   ParcelEventType,
   Parcel,
   ParcelWithItems,
+  ParcelDetail,
+  ParcelAddress,
+  ParcelAddressInput,
   Page,
   HubRef,
   ParcelEventSummary,
+  FeeQuote,
+  LocationServiceType,
 } from "@dropx/types"
 
 export type ParcelTracking = {
@@ -45,16 +51,6 @@ export type ParcelTracking = {
   currentHub: HubRef | null
   deliveredAt: string | null
   events: ParcelEventSummary[]
-}
-
-export type DeliveryQuote = {
-  pricingRuleId: string
-  basePrice: number
-  weightCharge: number
-  codFee: number
-  expressFee: number
-  total: number
-  currency: "BDT"
 }
 
 export type OtpChannel = "SMS" | "EMAIL"
@@ -160,6 +156,9 @@ export type CreateParcelItemInput = {
 /**
  * `createOwnParcelSchema`: the staff create input minus `senderCustomerId`,
  * which the API stamps from the session.
+ *
+ * Addresses are the booking cascade's picks: the API resolves ids to name
+ * snapshots and derives `receiverAddress` from the delivery line.
  */
 export type CreateParcelRequest = {
   /** The receiver is not required to have a DropX account. */
@@ -167,11 +166,10 @@ export type CreateParcelRequest = {
   receiverName: string
   receiverPhone: string
   receiverSecondaryPhone?: string
-  receiverAddress: string
   originHubId: string
   destinationHubId: string
-  originZoneId: string
-  destinationZoneId: string
+  pickupAddress: ParcelAddressInput
+  deliveryAddress: ParcelAddressInput
   weight: number
   length?: number
   width?: number
@@ -182,10 +180,15 @@ export type CreateParcelRequest = {
   items: CreateParcelItemInput[]
 }
 
+/**
+ * `quoteSchema` on the wire: grams, not kilograms, and the two city/zone pairs
+ * the service resolves to a pricing lane.
+ */
 export type QuoteRequest = {
-  originZoneId: string
-  destinationZoneId: string
-  weightKg: number
+  pickupCityId: string
+  pickupZoneId: string
+  deliveryCityId: string
+  deliveryZoneId: string
+  weightGrams: number
   codAmount: number
-  express: boolean
 }

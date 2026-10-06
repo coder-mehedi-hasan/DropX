@@ -29,15 +29,28 @@ import { EventTimeline } from "@/components/event-timeline"
 import { isApiError } from "@/lib/api-client"
 import { formatDateTime, formatDimensions, formatMoney, formatWeight } from "@/lib/format"
 import { useMyParcel, useTracking } from "@/lib/queries"
-import type { Parcel } from "@/lib/types"
+import type { Parcel, ParcelAddress } from "@/lib/types"
+
+/**
+ * One end of a booking, from the name snapshots the API wrote at booking time.
+ * Everything is a string already, so a renamed zone never rewrites the past.
+ */
+function addressSummary(addresses: ParcelAddress[], type: ParcelAddress["type"]): string {
+  const address = addresses.find((item) => item.type === type)
+  return address
+    ? [address.addressLine, address.areaName, address.zoneName, address.cityName]
+        .filter(Boolean)
+        .join(", ")
+    : "—"
+}
 
 /**
  * A customer's own parcel.
  *
- * The portal read (`/customer/parcels/:id`) carries the parcel and its items but
- * no events, so the timeline comes from the public `/tracking/:trackingNumber`
- * projection — the same data a customer would see without signing in, which is
- * also what the API deliberately exposes for it.
+ * The portal read (`/customer/parcels/:id`) carries the parcel, its items and
+ * both booking addresses but no events, so the timeline comes from the public
+ * `/tracking/:trackingNumber` projection — the same data a customer would see
+ * without signing in, which is also what the API deliberately exposes for it.
  */
 export function ParcelDetail({ parcelId }: { parcelId: string }) {
   const query = useMyParcel(parcelId)
@@ -135,7 +148,8 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
                   label="Dimensions (L×W×H)"
                   value={formatDimensions(parcel.length, parcel.width, parcel.height)}
                 />
-                <Fact label="Destination zone" value={`#${parcel.destinationZoneId}`} />
+                <Fact label="Pickup" value={addressSummary(parcel.addresses, "PICKUP")} />
+                <Fact label="Delivery" value={addressSummary(parcel.addresses, "DELIVERY")} />
                 <Fact label="Origin hub" value={`#${parcel.originHubId}`} />
                 <Fact label="Destination hub" value={`#${parcel.destinationHubId}`} />
                 <Fact
@@ -146,8 +160,8 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
               </dl>
 
               <p className="text-muted-foreground mt-4 text-xs">
-                Hub and zone names are shown on the tracking view — the API does not resolve them in
-                this response.
+                Address names are snapshots from booking time, so they stay correct even if a zone
+                is renamed later. Hubs are shown as ids here; the tracking view resolves names.
               </p>
             </CardContent>
           </Card>

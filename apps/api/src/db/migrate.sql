@@ -166,6 +166,69 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
 );
 
 -- ============================================================
+-- Service locations (city -> zone -> area)
+-- ============================================================
+
+-- The customer-facing territory: address selection and pricing both hang off
+-- this hierarchy. Deliberately separate from `hubs`, which are internal sorting
+-- points — a hub is not a city and a city is not an operating location.
+--
+-- Rows are deactivated (`status = 'INACTIVE'`), never deleted: historical
+-- parcels keep their foreign keys and their name snapshots. The flat `zones`
+-- table below stays for the length of the migration as a compatibility layer.
+
+CREATE TABLE IF NOT EXISTS service_cities (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    -- ISD / SUBURB / OSD is what selects a pricing lane, so it is a column of
+    -- the city rather than a property of a quote.
+    service_type ENUM('ISD','SUBURB','OSD') NOT NULL DEFAULT 'ISD',
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_service_cities_code (code),
+    KEY idx_service_cities_status (status),
+    KEY idx_service_cities_service_type (service_type)
+);
+
+CREATE TABLE IF NOT EXISTS service_zones (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    city_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    -- Scoped to the city, not global: two cities may each have a "Sadar".
+    UNIQUE KEY uq_service_zones_city_code (city_id, code),
+    KEY idx_service_zones_city (city_id),
+    KEY idx_service_zones_status (status),
+    CONSTRAINT fk_service_zones_city
+        FOREIGN KEY (city_id) REFERENCES service_cities(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS service_areas (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    zone_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_service_areas_zone_code (zone_id, code),
+    KEY idx_service_areas_zone (zone_id),
+    KEY idx_service_areas_status (status),
+    CONSTRAINT fk_service_areas_zone
+        FOREIGN KEY (zone_id) REFERENCES service_zones(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- ============================================================
 -- Zones & Pricing
 -- ============================================================
 
@@ -206,6 +269,58 @@ CREATE TABLE IF NOT EXISTS pricing_rules (
     CONSTRAINT fk_pricing_rules_destination_zone
         FOREIGN KEY (destination_zone_id) REFERENCES zones(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- The lane matrix replaces the origin/destination zone lookup above. A lane is
+-- one row of the pricing matrix — the pickup service type, the delivery service
+-- type, and whether the two ends are in the same city — and `pricing_slabs`
+-- hangs off it with one row per weight band.
+
+CREATE TABLE IF NOT EXISTS pricing_lanes (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    pickup_type ENUM('ISD','SUBURB','OSD','ISD_ON_DEMAND') NOT NULL,
+    delivery_type ENUM('ISD','SUBURB','OSD','SAME_CITY','DIFFERENT_CITY','SAME_CITY_ON_DEMAND') NOT NULL,
+    -- Redundant with `delivery_type = 'SAME_CITY'` by construction, kept as a
+    -- column because it is half of the lane's identity and the quote reads it.
+    same_city TINYINT(1) NOT NULL DEFAULT 0,
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_pricing_lanes_route (pickup_type, delivery_type, same_city),
+    KEY idx_pricing_lanes_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS pricing_slabs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    pricing_lane_id BIGINT UNSIGNED NOT NULL,
+    -- Grams, not kilograms: the matrix bands are 0-200g, 201-500g, 501g-1kg,
+    -- 1kg-2kg, and a kilogram column could not express the first two.
+    min_weight_grams INT UNSIGNED NOT NULL,
+    max_weight_grams INT UNSIGNED NOT NULL,
+    base_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    -- Charged per whole kg *above* `max_weight_grams`, which is how a parcel
+    -- over 2kg is priced: the top slab's base plus its extra-weight rule. It is
+    -- an explicit per-lane number, not the old `price_per_kg` carry-over.
+    extra_kg_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cod_percentage DECIMAL(5,2) NOT NULL DEFAULT 0,
+    cod_fixed_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    -- Two slabs of one lane cannot share a boundary, which is the structural
+    -- half of the no-overlap rule. Full overlap detection needs a row comparison
+    -- and lives in `pricing-lanes.service`, which rejects an insert or an edit
+    -- whose range intersects an existing slab of the same lane.
+    UNIQUE KEY uq_pricing_slabs_lane_min (pricing_lane_id, min_weight_grams),
+    UNIQUE KEY uq_pricing_slabs_lane_max (pricing_lane_id, max_weight_grams),
+    KEY idx_pricing_slabs_lane_status (pricing_lane_id, status),
+    CONSTRAINT fk_pricing_slabs_lane
+        FOREIGN KEY (pricing_lane_id) REFERENCES pricing_lanes(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_pricing_slabs_range
+        CHECK (max_weight_grams > min_weight_grams)
 );
 
 -- ============================================================
@@ -349,8 +464,10 @@ CREATE TABLE IF NOT EXISTS parcels (
     origin_hub_id BIGINT UNSIGNED NOT NULL,
     destination_hub_id BIGINT UNSIGNED NOT NULL,
     current_hub_id BIGINT UNSIGNED NULL,
-    -- Pricing uses destination zone (matched against pricing_rules)
-    destination_zone_id BIGINT UNSIGNED NOT NULL,
+    -- Legacy pricing anchor. New bookings quote from `parcel_addresses` and
+    -- the lane matrix, and write NULL here; rows booked under the old flat
+    -- zone model keep their value so the compatibility layer still reads.
+    destination_zone_id BIGINT UNSIGNED NULL,
     weight DECIMAL(10,2) NOT NULL,
     length DECIMAL(10,2) NULL,
     width DECIMAL(10,2) NULL,
@@ -416,6 +533,47 @@ CREATE TABLE IF NOT EXISTS parcel_items (
     CONSTRAINT fk_parcel_items_parcel
         FOREIGN KEY (parcel_id) REFERENCES parcels(id)
         ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- One pickup address and one delivery address per parcel, selected from the
+-- city -> zone -> area hierarchy.
+--
+-- The `*_name` columns are snapshots: an administrator renaming a zone must not
+-- rewrite what a parcel said the day it was booked. Every read of a historical
+-- parcel therefore comes from here, not from a join back to `service_*`.
+CREATE TABLE IF NOT EXISTS parcel_addresses (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    parcel_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('PICKUP','DELIVERY') NOT NULL,
+    city_id BIGINT UNSIGNED NOT NULL,
+    zone_id BIGINT UNSIGNED NOT NULL,
+    area_id BIGINT UNSIGNED NULL,
+    city_name VARCHAR(100) NOT NULL,
+    zone_name VARCHAR(100) NOT NULL,
+    area_name VARCHAR(100) NULL,
+    address_line VARCHAR(300) NOT NULL,
+    landmark VARCHAR(255) NULL,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(10,7) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_parcel_addresses_parcel_type (parcel_id, type),
+    KEY idx_parcel_addresses_city (city_id),
+    KEY idx_parcel_addresses_zone (zone_id),
+    KEY idx_parcel_addresses_area (area_id),
+    CONSTRAINT fk_parcel_addresses_parcel
+        FOREIGN KEY (parcel_id) REFERENCES parcels(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_parcel_addresses_city
+        FOREIGN KEY (city_id) REFERENCES service_cities(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_parcel_addresses_zone
+        FOREIGN KEY (zone_id) REFERENCES service_zones(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_parcel_addresses_area
+        FOREIGN KEY (area_id) REFERENCES service_areas(id)
+        ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 -- ============================================================

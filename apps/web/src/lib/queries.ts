@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { parcelsApi, pricingApi, trackingApi } from "@/lib/api"
-import { listHubs, listZones } from "@/lib/reference-data"
+import { listCities, listCityZones, listHubs, listZoneAreas } from "@/lib/reference-data"
 import type { CreateParcelRequest, ListQueryParams, QuoteRequest } from "@/lib/types"
 
 /**
@@ -16,7 +16,9 @@ export const queryKeys = {
   tracking: (trackingNumber: string) => ["tracking", trackingNumber] as const,
   quote: (request: QuoteRequest) => ["pricing", "quote", request] as const,
   hubs: () => ["reference", "hubs"] as const,
-  zones: () => ["reference", "zones"] as const,
+  cities: () => ["reference", "cities"] as const,
+  cityZones: (cityId: string) => ["reference", "cities", cityId, "zones"] as const,
+  zoneAreas: (zoneId: string) => ["reference", "zones", zoneId, "areas"] as const,
 }
 
 export function useMyParcels(params: ListQueryParams) {
@@ -57,11 +59,12 @@ export function useFeeQuote(request: QuoteRequest | null) {
   return useQuery({
     queryKey: queryKeys.quote(
       request ?? {
-        originZoneId: "",
-        destinationZoneId: "",
-        weightKg: 0,
+        pickupCityId: "",
+        pickupZoneId: "",
+        deliveryCityId: "",
+        deliveryZoneId: "",
+        weightGrams: 0,
         codAmount: 0,
-        express: false,
       },
     ),
     queryFn: () => {
@@ -88,6 +91,25 @@ export function useHubs() {
   return useQuery({ queryKey: queryKeys.hubs(), queryFn: listHubs, staleTime: Infinity })
 }
 
-export function useZones() {
-  return useQuery({ queryKey: queryKeys.zones(), queryFn: listZones, staleTime: Infinity })
+export function useCities() {
+  return useQuery({ queryKey: queryKeys.cities(), queryFn: listCities, staleTime: Infinity })
+}
+
+/** `cityId` empty keeps the query disabled — no request until a city is picked. */
+export function useCityZones(cityId: string) {
+  return useQuery({
+    queryKey: queryKeys.cityZones(cityId),
+    queryFn: () => listCityZones(cityId),
+    enabled: cityId.length > 0,
+    staleTime: Infinity,
+  })
+}
+
+export function useZoneAreas(zoneId: string) {
+  return useQuery({
+    queryKey: queryKeys.zoneAreas(zoneId),
+    queryFn: () => listZoneAreas(zoneId),
+    enabled: zoneId.length > 0,
+    staleTime: Infinity,
+  })
 }

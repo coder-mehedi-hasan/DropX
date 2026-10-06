@@ -97,8 +97,6 @@ export async function matchPricingRule(
     originZoneId: query.originZoneId,
     destinationZoneId: query.destinationZoneId,
     weightKg: query.weightKg,
-    codAmount: 0,
-    express: false,
   })
   return rule ? selectPricingRule(c.get("db")!, String(rule.id)) : null
 }

@@ -12,6 +12,7 @@ import type {
   Id,
   Page,
   Parcel,
+  ParcelAddressInput,
   ParcelDetail,
   ParcelStatus,
   ParcelTracking,
@@ -19,7 +20,16 @@ import type {
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH } from "@/routes/org-search-params"
 
-export type { DeliveryQuote, Id, Page, Parcel, ParcelDetail, ParcelStatus, ParcelTracking }
+export type {
+  DeliveryQuote,
+  Id,
+  Page,
+  Parcel,
+  ParcelAddressInput,
+  ParcelDetail,
+  ParcelStatus,
+  ParcelTracking,
+}
 export type { ParcelType, PaymentType }
 export { PARCEL_STATUSES, PARCEL_TRANSITIONS, PARCEL_TYPES, PAYMENT_TYPES }
 

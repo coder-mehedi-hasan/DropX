@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "DropX backend API — Hono, modular by domain feature.",
+  "description": "DropX backend API \u2014 Hono, modular by domain feature.",
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
@@ -13,7 +13,8 @@
     "seed": "bun run ./scripts/seed.ts",
     "seed:demo": "bun run ./scripts/seed-demo.ts",
     "check:read-paths": "API_LOG_LEVEL=silent bun run ./scripts/check-read-paths.ts",
-    "migrate": "bun run src/db/migrate.ts"
+    "migrate": "bun run src/db/migrate.ts",
+    "seed:pricing": "bun run ./scripts/seed-pricing.ts"
   },
   "dependencies": {
     "@dropx/types": "workspace:*",

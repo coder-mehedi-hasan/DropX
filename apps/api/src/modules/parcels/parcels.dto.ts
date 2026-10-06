@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { PARCEL_STATUSES, PARCEL_TYPES, PAYMENT_TYPES } from "../../db/models"
+import { PARCEL_ADDRESS_TYPES, PARCEL_STATUSES, PARCEL_TYPES, PAYMENT_TYPES } from "../../db/models"
 
 /**
  * Boundary DTOs.
@@ -46,17 +46,35 @@ export const parcelItemInputSchema = z.object({
   unitPrice: money.default(0),
 })
 
+/**
+ * One end of the trip, as the booking sends it.
+ *
+ * `cityId`/`zoneId`/`areaId` are the cascade's picks and `addressLine` is the
+ * one free-text field. The server resolves the ids to names and stores both:
+ * the ids keep the relationship, the names keep the address readable after a
+ * location is retired. Nothing here is a price — the lane is derived from the
+ * cities, never chosen.
+ */
+export const parcelAddressInputSchema = z.object({
+  cityId: id,
+  zoneId: id,
+  areaId: id.optional(),
+  addressLine: z.string().trim().min(1, "Address line is required").max(300),
+  landmark: z.string().trim().max(200).optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
+})
+
 export const createParcelSchema = z.object({
   receiverCustomerId: id.optional(),
   receiverName: z.string().trim().min(1, "Receiver name is required").max(150),
   receiverPhone: z.string().trim().min(6).max(30),
   receiverSecondaryPhone: z.string().trim().max(30).optional(),
-  receiverAddress: z.string().trim().max(300).optional(),
   senderCustomerId: id.optional(),
   originHubId: id,
   destinationHubId: id,
-  originZoneId: id,
-  destinationZoneId: id,
+  pickupAddress: parcelAddressInputSchema,
+  deliveryAddress: parcelAddressInputSchema,
   weight: decimal(9999).refine((value) => Number.isInteger(value * 100), {
     message: decimalPlacesError,
   }),
@@ -138,7 +156,12 @@ export const parcelResponseSchema = z.object({
   originHubId: z.string(),
   destinationHubId: z.string(),
   currentHubId: z.string().nullable(),
-  destinationZoneId: z.string(),
+  /**
+   * Nullable because it is the pre-migration pricing anchor. A parcel booked
+   * under the lane matrix quotes from `parcel_addresses` and stores nothing
+   * here; older rows keep the zone they were priced against.
+   */
+  destinationZoneId: z.string().nullable(),
   weight: z.number(),
   length: z.number().nullable(),
   width: z.number().nullable(),
@@ -165,4 +188,26 @@ export const parcelItemResponseSchema = z.object({
 
 export const parcelWithItemsResponseSchema = parcelResponseSchema.extend({
   items: z.array(parcelItemResponseSchema),
+})
+
+export const parcelAddressResponseSchema = z.object({
+  id: z.string(),
+  parcelId: z.string(),
+  type: z.enum(PARCEL_ADDRESS_TYPES),
+  cityId: z.string(),
+  zoneId: z.string(),
+  areaId: z.string().nullable(),
+  /** Snapshots, so a retired city still reads as the place it was sent to. */
+  cityName: z.string(),
+  zoneName: z.string(),
+  areaName: z.string().nullable(),
+  addressLine: z.string(),
+  landmark: z.string().nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+})
+
+/** The detail read: the row, its items, and both structured addresses. */
+export const parcelDetailResponseSchema = parcelWithItemsResponseSchema.extend({
+  addresses: z.array(parcelAddressResponseSchema),
 })

@@ -2,13 +2,13 @@ import { apiRequest } from "@/lib/api-client"
 import type {
   CreateParcelRequest,
   CustomerSession,
-  DeliveryQuote,
+  FeeQuote,
   ListQueryParams,
   OtpChannel,
   OtpRequestResult,
   Page,
   Parcel,
-  ParcelWithItems,
+  ParcelDetail,
   ParcelTracking,
   QuoteRequest,
   SessionMe,
@@ -56,8 +56,8 @@ export const parcelsApi = {
     return apiRequest<Page<Parcel>>("/customer/parcels", { query: { ...params } })
   },
 
-  getOwn(id: string): Promise<ParcelWithItems> {
-    return apiRequest<ParcelWithItems>(`/customer/parcels/${encodeURIComponent(id)}`)
+  getOwn(id: string): Promise<ParcelDetail> {
+    return apiRequest<ParcelDetail>(`/customer/parcels/${encodeURIComponent(id)}`)
   },
 
   createOwn(payload: CreateParcelRequest): Promise<Parcel> {
@@ -74,18 +74,15 @@ export const trackingApi = {
 }
 
 export const pricingApi = {
-  quote(request: QuoteRequest): Promise<DeliveryQuote> {
-    return apiRequest<DeliveryQuote>("/pricing/quote", {
+  quote(request: QuoteRequest): Promise<FeeQuote> {
+    return apiRequest<FeeQuote>("/pricing/quote", {
       query: {
-        originZoneId: request.originZoneId,
-        destinationZoneId: request.destinationZoneId,
-        weightKg: request.weightKg,
+        pickupCityId: request.pickupCityId,
+        pickupZoneId: request.pickupZoneId,
+        deliveryCityId: request.deliveryCityId,
+        deliveryZoneId: request.deliveryZoneId,
+        weightGrams: request.weightGrams,
         codAmount: request.codAmount,
-        /**
-         * The DTO is `z.coerce.boolean()`, which turns the *string* "false"
-         * into `true`. The flag is therefore omitted rather than sent as false.
-         */
-        ...(request.express ? { express: true } : {}),
       },
     })
   },

@@ -28,10 +28,13 @@ import type {
   CustomerStatus,
   CustomerType,
   CustomerWithAddresses,
+  FeeQuote,
   HubStatus,
   HubType,
   HubRef,
   Parcel,
+  ParcelAddress,
+  ParcelAddressInput,
   ParcelEventSummary,
   ParcelEventType,
   ParcelItem,
@@ -50,6 +53,9 @@ import type {
   Rider,
   RiderLocation,
   RiderStatus,
+  ServiceArea,
+  ServiceCity,
+  ServiceZone,
   Settlement,
   SettlementStatus,
   CompensationType,
@@ -116,11 +122,14 @@ export type {
   CustomerStatus,
   CustomerType,
   CustomerWithAddresses,
+  FeeQuote,
   HubRef,
   Id,
   Page,
   PageMeta,
   Parcel,
+  ParcelAddress,
+  ParcelAddressInput,
   ParcelEventSummary,
   ParcelEventType,
   ParcelItem,
@@ -139,6 +148,9 @@ export type {
   Rider,
   RiderLocation,
   RiderStatus,
+  ServiceArea,
+  ServiceCity,
+  ServiceZone,
   Settlement,
   SettlementStatus,
   CompensationType,
@@ -153,8 +165,13 @@ export type {
   Zone,
 }
 
-/** Alias for the one envelope the admin adds to the shared entity types. */
-export type ParcelDetail = ParcelWithItems
+/**
+ * Alias for the one envelope the admin adds to the shared entity types: the
+ * `/admin/parcels/:id` read carries both item lines and the booking addresses.
+ */
+export type ParcelDetail = ParcelWithItems & {
+  addresses: ParcelAddress[]
+}
 
 /**
  * A payment as the admin surface reads it. The base `Payment` entity carries
@@ -781,15 +798,7 @@ export type LoginResult = TokenPair & {
 }
 
 /** The API computes the fee, so the create form only ever reads this. */
-export type DeliveryQuote = {
-  pricingRuleId: Id
-  basePrice: number
-  weightCharge: number
-  codFee: number
-  expressFee: number
-  total: number
-  currency: string
-}
+export type DeliveryQuote = FeeQuote
 
 /*
  * Reference reads, mirroring the three `admin.reference.*` response schemas.
