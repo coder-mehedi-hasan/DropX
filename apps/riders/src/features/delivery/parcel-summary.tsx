@@ -1,7 +1,6 @@
 import { Banknote, MapPin, PackageSearch, Phone, TriangleAlert, User } from "lucide-react"
-import type { ReactNode } from "react"
 import {
-  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -32,15 +31,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function StatusRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-1.5">
-      <dt className="text-muted-foreground text-sm">{label}</dt>
-      <dd>{children}</dd>
-    </div>
-  )
-}
-
 /**
  * The job a rider is holding: the parcel the customer is tracking, the attempt
  * they are acting on, and the drop those two legs share.
@@ -54,28 +44,76 @@ export function ParcelSummary({ job }: { job: JobDetail }) {
 
   return (
     <div className="space-y-3">
+      <Card className="gap-0 overflow-hidden py-0">
+        <CardHeader className="border-b px-4 py-4">
+          <CardDescription className="text-xs font-medium tracking-wide uppercase">
+            Tracking number
+          </CardDescription>
+          <CardTitle data-numeric className="font-mono text-xl break-all">
+            {job.parcel.trackingNumber}
+          </CardTitle>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <StatusBadge status={job.parcel.status} />
+            <DeliveryAttemptBadge delivery={job.delivery} />
+          </div>
+        </CardHeader>
+        <CardContent className="bg-muted/60 flex items-center justify-between gap-3 px-4 py-3">
+          {isCod ? (
+            <>
+              <span className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                <Banknote className="size-4" strokeWidth={1.75} aria-hidden />
+                Collect in cash
+              </span>
+              <span data-numeric className="text-2xl font-bold tracking-tight">
+                {formatMoney(job.parcel.codAmount)}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground text-sm font-medium">
+              Prepaid · nothing to collect
+            </span>
+          )}
+        </CardContent>
+      </Card>
+
+      {/*
+        The drop-off details come off the delivery attempt rather than the customer
+        record: the address on the attempt is the one dispatch actually planned this
+        leg against, and it is the one the rider can act on.
+      */}
       <Card>
         <CardHeader>
-          <CardTitle className="font-mono text-xl break-all">{job.parcel.trackingNumber}</CardTitle>
-          <CardDescription className="flex flex-wrap items-center gap-2">
-            <Badge variant={isCod ? "warning" : "outline"}>
-              {isCod ? "Cash on delivery" : "Prepaid"}
-            </Badge>
-          </CardDescription>
+          <CardTitle className="text-base">Where to deliver</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="flex items-center gap-2 text-base font-semibold">
+            <User className="text-muted-foreground size-4 shrink-0" aria-hidden />
+            <span className="min-w-0 break-words">
+              {job.delivery.recipientName ?? "No recipient name on file"}
+            </span>
+          </p>
+          <p className="flex items-start gap-2 text-sm">
+            <MapPin className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
+            <span className="min-w-0 break-words">{job.delivery.address}</span>
+          </p>
+          {job.delivery.recipientPhone ? (
+            <Button asChild variant="outline" size="lg" className="tap-target w-full">
+              <a href={`tel:${job.delivery.recipientPhone}`}>
+                <Phone aria-hidden />
+                <span data-numeric>Call {job.delivery.recipientPhone}</span>
+              </a>
+            </Button>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Job details</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="divide-y">
-            <StatusRow label="Parcel status">
-              <StatusBadge status={job.parcel.status} />
-            </StatusRow>
-            <StatusRow label="Delivery attempt">
-              <DeliveryAttemptBadge delivery={job.delivery} />
-            </StatusRow>
             <DetailRow label="Weight" value={formatWeight(job.parcel.weight)} />
-            <DetailRow
-              label="To collect"
-              value={isCod ? formatMoney(job.parcel.codAmount) : "Nothing to collect"}
-            />
             <DetailRow label="Booked" value={formatDateTime(job.parcel.createdAt)} />
             {job.delivery.outForDeliveryAt ? (
               <DetailRow
@@ -89,18 +127,6 @@ export function ParcelSummary({ job }: { job: JobDetail }) {
           </dl>
         </CardContent>
       </Card>
-
-      {isCod ? (
-        <Card>
-          <CardContent className="flex items-start gap-3 py-4">
-            <Banknote className="text-warning mt-0.5 size-5 shrink-0" aria-hidden />
-            <p className="text-sm">
-              Collect <span className="font-semibold">{formatMoney(job.parcel.codAmount)}</span> in
-              cash before handing the parcel over, then hand it in through settlements.
-            </p>
-          </CardContent>
-        </Card>
-      ) : null}
 
       {job.delivery.failureReason ? (
         <Card>
@@ -118,36 +144,6 @@ export function ParcelSummary({ job }: { job: JobDetail }) {
           </CardContent>
         </Card>
       ) : null}
-
-      {/*
-        The drop-off details come off the delivery attempt rather than the customer
-        record: the address on the attempt is the one dispatch actually planned this
-        leg against, and it is the one the rider can act on.
-      */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Where to deliver</CardTitle>
-          <CardDescription>From attempt {job.delivery.attemptNo} on this job.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          <p className="flex items-center gap-2 font-medium">
-            <User className="text-muted-foreground size-4 shrink-0" aria-hidden />
-            <span className="min-w-0 break-words">
-              {job.delivery.recipientName ?? "No recipient name on file"}
-            </span>
-          </p>
-          {job.delivery.recipientPhone ? (
-            <p className="flex items-center gap-2 text-sm" data-numeric>
-              <Phone className="text-muted-foreground size-4 shrink-0" aria-hidden />
-              {job.delivery.recipientPhone}
-            </p>
-          ) : null}
-          <p className="flex items-start gap-2 text-sm">
-            <MapPin className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
-            <span className="min-w-0 break-words">{job.delivery.address}</span>
-          </p>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>

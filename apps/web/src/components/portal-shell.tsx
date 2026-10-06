@@ -74,7 +74,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
+      <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur-xl">
         <div className="max-w-page mx-auto flex h-16 w-full items-center gap-4 px-4">
           <Link href="/dashboard" className="text-foreground hover:text-foreground shrink-0">
             <DropXLogo size="sm" />
@@ -103,8 +103,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-muted-foreground hidden text-sm sm:inline">
-              {customer?.name || customer?.phone || "Signed in"}
+            <span className="bg-foreground text-background hidden size-8 items-center justify-center rounded-full text-xs font-semibold sm:flex">
+              {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
             </span>
             <LoadingButton variant="outline" size="sm" onClick={onSignOut} loading={signingOut}>
               <LogOutIcon aria-hidden />
@@ -136,7 +136,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
 
-      <main className="max-w-page mx-auto w-full flex-1 px-4 py-8">{children}</main>
+      <main className="max-w-page mx-auto w-full flex-1 px-4 py-10">{children}</main>
 
       <footer className="bg-card border-t">
         <div className="text-muted-foreground max-w-page mx-auto flex w-full items-center justify-between px-4 py-6 text-sm">

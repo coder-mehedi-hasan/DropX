@@ -1,9 +1,6 @@
 import { useNavigate } from "@tanstack/react-router"
-import { KeyRound, LogOut, Moon, Sun } from "lucide-react"
+import { Check, LogOut, Moon, Sun } from "lucide-react"
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Avatar,
   AvatarFallback,
   Badge,
@@ -21,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Separator,
 } from "@dropx/ui"
 
 import { AppHeader, AppShell } from "../../components/layout/app-shell"
@@ -52,7 +48,7 @@ export function ProfileScreen() {
       <AppHeader title="Profile" subtitle={rider?.email} />
 
       <main className="flex-1 space-y-3 px-3 py-4">
-        <Card>
+        <Card className="bg-card">
           <CardContent className="flex items-center gap-4 py-4">
             <Avatar className="size-14">
               <AvatarFallback className="text-lg">
@@ -63,7 +59,7 @@ export function ProfileScreen() {
               <p className="truncate text-lg font-semibold">{rider?.name}</p>
               <p className="text-muted-foreground truncate text-sm">{rider?.email}</p>
               <Badge variant="secondary" className="mt-2">
-                Home hub {rider?.hubId}
+                Hub {rider?.hubId}
               </Badge>
             </div>
           </CardContent>
@@ -72,10 +68,7 @@ export function ProfileScreen() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">What you can do</CardTitle>
-            <CardDescription>
-              Granted by the RIDER role in role_permissions. The API checks these keys on every
-              request.
-            </CardDescription>
+            <CardDescription>What your rider account is allowed to do in this app.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="divide-y">
@@ -83,11 +76,15 @@ export function ProfileScreen() {
                 <li key={key} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{PERMISSION_LABELS[key]}</p>
-                    <p className="text-muted-foreground font-mono text-xs">{key}</p>
                   </div>
-                  <Badge variant={can(key) ? "secondary" : "outline"}>
-                    {can(key) ? "Granted" : "Not granted"}
-                  </Badge>
+                  {can(key) ? (
+                    <Badge variant="secondary">
+                      <Check aria-hidden />
+                      Granted
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Not granted</Badge>
+                  )}
                 </li>
               ))}
             </ul>
@@ -97,10 +94,7 @@ export function ProfileScreen() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Appearance</CardTitle>
-            <CardDescription>
-              Dark is the default for daylight legibility. Light follows your phone's setting until
-              you pick one here.
-            </CardDescription>
+            <CardDescription>Choose what is easiest to read on your route.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
@@ -114,19 +108,6 @@ export function ProfileScreen() {
             </Button>
           </CardContent>
         </Card>
-
-        <Separator />
-
-        <Alert>
-          <KeyRound />
-          <AlertTitle>Rider sign-in</AlertTitle>
-          <AlertDescription>
-            <p>
-              This app only talks to the riders audience. Admin and customer sessions cannot be used
-              here.
-            </p>
-          </AlertDescription>
-        </Alert>
 
         <Dialog>
           <DialogTrigger asChild>

@@ -8,6 +8,7 @@ import {
   AlertDescription,
   AlertTitle,
   Card,
+  DropXLogo,
   Form,
   FormInput,
   FormPasswordInput,
@@ -62,9 +63,12 @@ function ChangePasswordScreen() {
 
   return (
     <main className="bg-background text-foreground flex min-h-dvh items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-md p-6 shadow-lg sm:p-8">
-        <p className="text-primary text-sm font-semibold">Welcome to DropX, {rider?.name}</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Set your password</h1>
+      <Card className="rounded-feature w-full max-w-md p-6 shadow-sm sm:p-8">
+        <DropXLogo size="md" />
+        <p className="text-accent-ink mt-8 text-xs font-semibold tracking-[0.16em] uppercase">
+          Welcome, {rider?.name}
+        </p>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight">Set your password</h1>
         <p className="text-muted-foreground mt-2 text-sm leading-5">
           Your administrator gave you a temporary password. Choose a private password before you
           access rider jobs.

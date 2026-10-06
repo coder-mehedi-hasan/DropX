@@ -39,8 +39,12 @@ export default function BecomeARiderPage() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <section className="border-b bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_62%)] px-4 py-16 opacity-100 sm:py-24">
-          <div className="max-w-page mx-auto grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+        <section className="relative isolate overflow-hidden border-b py-16 sm:py-24">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_62%)] opacity-[0.14]"
+          />
+          <div className="max-w-page mx-auto grid gap-10 px-4 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div className="grid gap-5">
               <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
                 DropX rider network
@@ -53,11 +57,11 @@ export default function BecomeARiderPage() {
                 that fits your schedule.
               </p>
               <div className="flex items-center gap-2 text-sm font-medium">
-                <TruckIcon className="text-primary size-5" aria-hidden /> Apply in a few minutes.
-                Our team will contact you after review.
+                <TruckIcon className="text-primary size-5 shrink-0" strokeWidth={1.75} aria-hidden />
+                Apply in a few minutes. Our team will contact you after review.
               </div>
             </div>
-            <Card className="bg-background/95 shadow-xl">
+            <Card className="rounded-feature gap-6 py-6 shadow-sm sm:py-8">
               <CardHeader>
                 <CardTitle>Tell us about yourself</CardTitle>
                 <p className="text-muted-foreground text-sm">
@@ -81,9 +85,11 @@ export default function BecomeARiderPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {BENEFITS.map((item) => (
-              <Card key={item.title} className="bg-card/70 border-0 shadow-sm">
+              <Card key={item.title} className="shadow-none">
                 <CardContent className="grid gap-3 p-5">
-                  <item.icon className="text-primary size-6" aria-hidden />
+                  <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
+                    <item.icon className="size-5" strokeWidth={1.75} aria-hidden />
+                  </span>
                   <h3 className="font-semibold">{item.title}</h3>
                   <p className="text-muted-foreground text-sm leading-5">{item.body}</p>
                 </CardContent>

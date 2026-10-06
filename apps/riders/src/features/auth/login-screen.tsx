@@ -64,11 +64,11 @@ export function LoginScreen() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <DropXLogo size="lg" />
-          <h1 className="mt-8 text-2xl font-semibold tracking-tight">Rider sign in</h1>
+          <h1 className="mt-8 text-2xl font-bold tracking-tight">Rider sign in</h1>
           <p className="text-muted-foreground mt-2 text-sm">Sign in to see today&apos;s jobs.</p>
         </div>
 
-        <Card className="rounded-feature border-border/80 p-6 shadow-lg sm:p-8">
+        <Card className="rounded-feature p-6 shadow-sm sm:p-8">
           {serverError ? (
             <Alert variant="destructive" className="mb-4">
               <AlertTitle>Sign in failed</AlertTitle>

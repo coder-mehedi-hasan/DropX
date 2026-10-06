@@ -46,6 +46,7 @@ import { useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { PageHeader } from "@/components/page-header"
 import { ReferenceSelect } from "@/components/reference-select"
 import { isApiError } from "@/lib/api-client"
 import { formatMoney } from "@/lib/format"
@@ -321,15 +322,11 @@ export function BookParcel() {
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-6">
-      <div className="grid gap-1">
-        <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
-          Step {step} of {STEPS.length} · {STEPS[step - 1]?.title}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">Book a parcel</h1>
-        <p className="text-muted-foreground text-sm">
-          A few quick steps. You will see the delivery fee before you confirm.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={`Step ${step} of ${STEPS.length} · ${STEPS[step - 1]?.title}`}
+        title="Book a parcel"
+        description="A few quick steps. You will see the delivery fee before you confirm."
+      />
 
       {!referenceDataReady ? (
         <Alert variant="warning">
@@ -359,7 +356,7 @@ export function BookParcel() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
           <nav
             aria-label="Booking progress"
-            className="relative grid gap-3 rounded-2xl border bg-white/60 p-4 sm:grid-cols-5 sm:gap-0 sm:px-6 sm:py-5"
+            className="relative grid gap-3 rounded-feature bg-card border p-4 sm:grid-cols-5 sm:gap-0 sm:px-6 sm:py-5"
           >
             <span
               className="bg-border absolute top-9 right-[12%] left-[12%] hidden h-px sm:block"
@@ -405,7 +402,7 @@ export function BookParcel() {
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.85fr)]">
             <div className="grid gap-6">
               {step === 1 ? (
-                <Card className="border-primary/20 bg-primary/[0.025] shadow-sm">
+                <Card className="shadow-sm">
                   <CardHeader>
                     <CardTitle>Receiver</CardTitle>
                     <CardDescription>
@@ -730,7 +727,7 @@ export function BookParcel() {
                   </CardHeader>
                   <CardContent className="grid gap-4">
                     {items.fields.length === 0 ? (
-                      <div className="bg-muted/35 rounded-xl px-4 py-3 text-sm">
+                      <div className="bg-muted/60 rounded-xl px-4 py-3 text-sm">
                         <p className="font-medium">No items added</p>
                         <p className="text-muted-foreground mt-1">
                           Optional. Add contents if the receiver needs to check what is inside.
@@ -739,7 +736,7 @@ export function BookParcel() {
                     ) : null}
 
                     {items.fields.map((field, index) => (
-                      <div key={field.id} className="bg-muted/20 grid gap-3 rounded-xl border p-4">
+                      <div key={field.id} className="bg-muted/40 grid gap-3 rounded-xl border p-4">
                         <div className="flex items-center justify-between">
                           <Badge variant="secondary">Item {index + 1}</Badge>
                           <Button
@@ -848,7 +845,7 @@ export function BookParcel() {
             </div>
 
             <div className="grid h-fit gap-4 lg:sticky lg:top-24">
-              <Card className="border-primary/20 bg-primary/[0.025] shadow-sm">
+              <Card className="shadow-sm">
                 <CardHeader className="gap-1 pb-3">
                   <CardTitle className="flex items-center gap-2">
                     <ReceiptIcon className="size-4" aria-hidden />
@@ -1048,7 +1045,7 @@ function ReviewGroup({ title, children }: { title: string; children: React.React
   return (
     <div className="grid gap-2">
       <h3 className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">{title}</h3>
-      <div className="bg-muted/35 grid gap-2 rounded-xl p-3">{children}</div>
+      <div className="bg-muted/60 grid gap-2 rounded-xl p-3">{children}</div>
     </div>
   )
 }
