@@ -28,6 +28,7 @@ import type {
   CreateRouteBody,
   CreateTransferBody,
   CreateZoneBody,
+  CreateUserBody,
   CustomerOption,
   DeliveryQuote,
   Hub,
@@ -38,6 +39,8 @@ import type {
   CreatePricingRuleBody,
   UpdatePricingRuleBody,
   ReferenceListParams,
+  ResetPasswordBody,
+  RoleOption,
   Pickup,
   Rider,
   RiderApplication,
@@ -47,6 +50,7 @@ import type {
   RouteStop,
   RouteStopInput,
   StaffIdentity,
+  StaffUser,
   TransferListItem,
   TransferManifestParcel,
   TransferWithManifest,
@@ -57,8 +61,10 @@ import type {
   UpdateTransferBody,
   UpdateTransferStatusBody,
   UpdateRouteBody,
+  UpdateUserBody,
   UpdateVehicleBody,
   UpdateZoneBody,
+  UserStatus,
   Vehicle,
   Zone,
   ZoneOption,
@@ -81,6 +87,7 @@ import type { TransfersSearch } from "@/routes/transfers-search-params"
 import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
 import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
+import type { UsersSearch } from "@/routes/users-search-params"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -371,6 +378,51 @@ export function listRidersForPicker(
   })
 }
 
+/*
+ * Staff accounts. Create writes the account and both assignment sets in one
+ * transaction, so the picker's roles and hubs have to be resolved before the
+ * request leaves — hence the two reads below living beside these writes.
+ */
+export function listUsers(params: UsersSearch) {
+  return api.get<Page<StaffUser>>("/admin/users", { query: usersQuery(params) })
+}
+
+export function getUser(userId: string, signal?: AbortSignal) {
+  return api.get<StaffUser>(`/admin/users/${userId}`, signal ? { signal } : undefined)
+}
+
+export function createUser(body: CreateUserBody) {
+  return api.post<StaffUser>("/admin/users", body)
+}
+
+export function updateUser(userId: string, body: UpdateUserBody) {
+  return api.patch<StaffUser>(`/admin/users/${userId}`, body)
+}
+
+export function resetUserPassword(userId: string, body: ResetPasswordBody) {
+  return api.post<StaffUser>(`/admin/users/${userId}/reset-password`, body)
+}
+
+export function setUserStatus(userId: string, status: UserStatus) {
+  return api.post<StaffUser>(`/admin/users/${userId}/status`, { status })
+}
+
+/**
+ * Roles for the user form's checkbox group. A picker read rather than the
+ * Batch 2 management screen's own list: the form asks for a page of names and
+ * nothing else, and Batch 2 will extend the same operation rather than add a
+ * second role endpoint.
+ */
+export function listRolesForPicker(
+  params: { page: number; limit: number; search?: string },
+  signal?: AbortSignal,
+) {
+  return api.get<Page<RoleOption>>("/admin/roles", {
+    query: params,
+    ...(signal ? { signal } : {}),
+  })
+}
+
 export function listPickups(params: PickupsSearch) {
   return api.get<Page<Pickup>>("/admin/pickups", { query: pickupQuery(params) })
 }
@@ -551,6 +603,18 @@ function riderQuery(params: RidersSearch) {
     ...(params.status ? { status: params.status } : {}),
     ...(params.compensationType ? { compensationType: params.compensationType } : {}),
     ...(params.hubId ? { hubId: params.hubId } : {}),
+  }
+}
+
+function usersQuery(params: UsersSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    ...(params.branchId ? { branchId: params.branchId } : {}),
   }
 }
 

@@ -15,6 +15,8 @@ import * as vehicles from "../vehicles/vehicles.service"
 import * as riderLocations from "../riders/rider-locations.service"
 import * as riders from "../riders/riders.service"
 import * as riderApplications from "../rider-applications/rider-applications.service"
+import * as users from "../users/users.service"
+import * as roles from "../roles/roles.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -173,6 +175,66 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     updateHub: async (c) => {
       const hub = await org.updateHub(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(hub))
+    },
+  },
+
+  /**
+   * Staff accounts. The scope comes from the token and is resolved here, never
+   * from anything the client sent; `create` deliberately takes no scope, because
+   * it has nothing to scope against — the policy above is what gates who may
+   * write an account at all.
+   */
+  users: {
+    list: async (c) => {
+      const page = await users.listUsers(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const user = await users.getUser(c, scopeFromAuth(c.get("auth")), c.req.valid("param").id)
+      return c.json(response.success(user))
+    },
+
+    create: async (c) => {
+      const user = await users.createUser(c, c.req.valid("json"))
+      return c.json(response.success(user), 201)
+    },
+
+    update: async (c) => {
+      const user = await users.updateUser(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(user))
+    },
+
+    resetPassword: async (c) => {
+      const user = await users.resetPassword(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(user))
+    },
+
+    setStatus: async (c) => {
+      const user = await users.setUserStatus(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+        c.req.valid("json").status,
+      )
+      return c.json(response.success(user))
+    },
+  },
+
+  roles: {
+    list: async (c) => {
+      const page = await roles.listRoles(c, c.req.valid("query"))
+      return c.json(response.success(page))
     },
   },
 

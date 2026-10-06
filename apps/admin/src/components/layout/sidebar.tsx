@@ -13,6 +13,7 @@ import {
   PackageSearch,
   Route,
   Truck,
+  Users,
   Warehouse,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -31,6 +32,8 @@ import { DEFAULT_ROUTES_SEARCH_PARAMS } from "@/routes/routes-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import { DEFAULT_RIDERS_SEARCH_PARAMS } from "@/routes/riders-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
+import { DEFAULT_USERS_SEARCH_PARAMS } from "@/routes/users-search-params"
+import type { UsersSearch } from "@/routes/users-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import { DEFAULT_RIDER_APPLICATIONS_SEARCH } from "@/routes/rider-applications-search-params"
@@ -52,6 +55,7 @@ export type NavItem = {
     | "/tracking"
     | "/branches"
     | "/hubs"
+    | "/users"
     | "/zones"
     | "/vehicles"
     | "/pricing-rules"
@@ -67,6 +71,7 @@ export type NavItem = {
     | ParcelListSearch
     | BranchesSearch
     | HubsSearch
+    | UsersSearch
     | ZonesSearch
     | VehiclesSearch
     | PricingRulesSearch
@@ -106,6 +111,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_HUBS_SEARCH,
     icon: Warehouse,
     permission: "hubs.view",
+  },
+  // After Hubs: the people who sign into them. Accounts sit with the
+  // organization screens because a staff row is branch-and-hub scoped the same
+  // way a hub is branch scoped.
+  {
+    label: "Users",
+    to: "/users",
+    search: DEFAULT_USERS_SEARCH_PARAMS,
+    icon: Users,
+    permission: "users.view",
   },
   {
     label: "Zones",

@@ -52,6 +52,11 @@ OTP codes are short-lived and never persisted in the database.
 
 Email + `password_hash` on `users`, plus roles → `role_permissions`. Permission keys are static in code.
 
+Staff accounts are managed from the admin **Users** screen (`/users`, `users.view` /
+`users.manage`): create writes the account with its roles and hub scope in one transaction,
+passwords change only via **reset** (never as an edit field), and a user is suspended rather
+than deleted. The last active `ADMIN` cannot be suspended.
+
 Hub-scoped staff are linked via **`user_hubs`** (many hubs per user). Branch scope still uses `users.branch_id`.
 
 ### Rider (`apps/riders`)

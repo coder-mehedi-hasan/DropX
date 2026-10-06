@@ -194,7 +194,7 @@ Used only by `apps/riders`.
 2. **Customer** — OTP session identifies `customer_id`; never check `role_permissions`. Require `customers.status = ACTIVE`. Filter queries to that customer. Allow `parcels.create` for own bookings.
 3. **Public tracking** — tracking-number lookup is public (no auth). Do not expose unrelated customer PII beyond tracking payload.
 4. **No guest booking** — creating parcels as a customer requires ACTIVE OTP session.
-5. **Branch scope** — if user has `branch_id` and is not `ADMIN`, restrict hubs/users/parcels/riders to that branch.
+5. **Branch scope** — if user has `branch_id` and is not `ADMIN`, restrict hubs/users/parcels/riders to that branch. (For `users` this is the `Scope` guard in `modules/users/users.repository.ts`, applied to list and read alike — an out-of-scope user id answers 404, not 403.)
 6. **Hub scope** — restrict ops to hubs in `user_hubs` when the role requires hub scoping (e.g. `HUB_OPERATOR`).
 7. **Rider scope** — rider may only see/update jobs where `assigned_rider_id` / `rider_id` is themselves. `GET /api/v1/jobs` filters on `deliveries.rider_id`; the rider never sends an id.
 8. **App boundary** — prefer separate tokens/audiences per app; if a user has multiple roles, still only expose routes for the app they logged into.

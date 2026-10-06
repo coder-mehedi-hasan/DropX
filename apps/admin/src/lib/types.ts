@@ -17,6 +17,7 @@ import {
   PICKUP_STATUSES,
   RIDER_STATUSES,
   TRANSFER_STATUSES,
+  USER_STATUSES,
   VEHICLE_STATUSES,
   VEHICLE_TYPES,
 } from "@dropx/types"
@@ -50,6 +51,7 @@ import type {
   RouteStop,
   Transfer,
   TransferStatus,
+  UserStatus,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -124,6 +126,7 @@ export type {
   RouteStop,
   Transfer,
   TransferStatus,
+  UserStatus,
   Vehicle,
   VehicleStatus,
   VehicleType,
@@ -143,6 +146,44 @@ export type StaffIdentity = {
   permissions: string[]
   branchId: Id | null
   hubIds: Id[]
+}
+
+/**
+ * A staff account as the list and the edit form receive it.
+ *
+ * App-local for the same reason `TransferListItem` is: the API returns the
+ * `users` row *joined* to its role names, hub names and branch name, which is
+ * not the `User` entity in `@dropx/types` — and per the wire-contract rule an
+ * app-local type is correct exactly when the API genuinely returns a different
+ * shape for that app. The roles and hubs ride along as `{ id, name }` so a list
+ * row and the edit form's checkbox groups both render without one request per
+ * account.
+ */
+export type StaffUser = {
+  id: Id
+  branchId: Id | null
+  branchName: string | null
+  name: string
+  email: string
+  phone: string | null
+  status: UserStatus
+  mustChangePassword: boolean
+  roles: { id: Id; name: string }[]
+  hubs: { id: Id; name: string }[]
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * One role, as the user form's picker reads it. Batch 2's permission matrix
+ * will read the same endpoint with its own projection; this is the row the
+ * checkbox group needs and nothing more.
+ */
+export type RoleOption = {
+  id: Id
+  name: string
+  description: string | null
+  createdAt: string
 }
 
 /** A branch as the admin sees it. Mirrors `branchResponseSchema` in the API. */
@@ -488,6 +529,37 @@ export const createRiderSchema = z.object({
 export const updateRiderSchema = createRiderSchema
   .omit({ email: true, name: true, password: true, phone: true })
   .partial()
+
+/**
+ * Staff accounts. Create carries the account fields because the API's create
+ * writes `users` + `user_roles` + `user_hubs` in one transaction — `roleIds`
+ * therefore has to leave the form with at least one role in it. Edit drops
+ * `email` and `password` for the same reason the rider edit sheet does: two
+ * surfaces writing one account row is how a login drifts from the record that
+ * owns it. `branchId` is blank-means-company-wide and converted to `null` on
+ * submit, like `phone`.
+ */
+export const createUserSchema = z.object({
+  email: z.string().trim().email("Enter a valid email").max(150),
+  name: z.string().trim().min(1, "Name is required").max(150),
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+  phone: z.string().trim().max(30).nullish(),
+  branchId: z.string().trim().max(64).nullish(),
+  status: z.enum(USER_STATUSES).default("ACTIVE"),
+  roleIds: z.array(z.string().min(1)).min(1, "Pick at least one role"),
+  hubIds: z.array(z.string().min(1)),
+})
+
+export const updateUserSchema = createUserSchema.omit({ email: true, password: true }).partial()
+
+/** Its own sheet rather than a confirm dialog: the API takes the new password. */
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+})
+
+export type CreateUserBody = z.infer<typeof createUserSchema>
+export type UpdateUserBody = z.infer<typeof updateUserSchema>
+export type ResetPasswordBody = z.infer<typeof resetPasswordSchema>
 
 /**
  * `parcelId` is typed as a string the human types, then handed to the API as-is.
