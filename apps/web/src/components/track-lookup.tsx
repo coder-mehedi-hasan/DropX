@@ -33,10 +33,13 @@ import type { HubRef } from "@/lib/types"
 export function TrackLookup({
   initialTrackingNumber = "",
   embedded = false,
+  submitPath = "/track",
 }: {
   initialTrackingNumber?: string
   /** Render the search field without its own card, for placement inside one. */
   embedded?: boolean
+  /** Where a search writes its tracking number to. Defaults to the public track page. */
+  submitPath?: string
 }) {
   const router = useRouter()
   const [input, setInput] = React.useState(initialTrackingNumber)
@@ -56,13 +59,14 @@ export function TrackLookup({
 
     const trackingNumber = input.trim().toUpperCase()
     setSubmitted(trackingNumber)
-    router.replace(trackingNumber ? `/track?t=${encodeURIComponent(trackingNumber)}` : "/track", {
-      scroll: false,
-    })
+    router.replace(
+      trackingNumber ? `${submitPath}?t=${encodeURIComponent(trackingNumber)}` : submitPath,
+      { scroll: false },
+    )
   }
 
   const searchForm = (
-    <form onSubmit={onSubmit} className="grid gap-3" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-3 p-4" noValidate>
       <label htmlFor="tracking-number" className="text-sm font-semibold">
         Tracking number
       </label>

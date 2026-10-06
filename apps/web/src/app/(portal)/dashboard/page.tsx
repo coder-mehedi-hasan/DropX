@@ -22,7 +22,7 @@ export default function DashboardPage() {
         actions={
           <>
             <Button asChild variant="outline" size="lg" className="bg-white shadow-sm">
-              <Link href="/track">
+              <Link href="/dashboard/track">
                 <SearchIcon aria-hidden />
                 Quick track
               </Link>

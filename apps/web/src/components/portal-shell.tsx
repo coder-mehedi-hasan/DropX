@@ -60,7 +60,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 const NAV = [
   { href: "/dashboard", label: "My parcels", icon: PackageIcon },
   { href: "/book", label: "Book a parcel", icon: PlusIcon },
-  { href: "/track", label: "Track", icon: SearchIcon },
+  { href: "/dashboard/track", label: "Track", icon: SearchIcon },
 ] as const
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
@@ -108,7 +108,10 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
           <nav className="mt-3 grid gap-1.5" aria-label="Customer portal">
             {NAV.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+              const activeItem = NAV.map((n) => n.href)
+                .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+                .sort((a, b) => b.length - a.length)[0]
+              const active = activeItem === item.href
               return (
                 <Link
                   key={item.href}
