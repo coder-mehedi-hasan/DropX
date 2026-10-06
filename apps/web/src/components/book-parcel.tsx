@@ -363,31 +363,6 @@ export function BookParcel() {
         title="Book a parcel with confidence."
         description="Tell us where it is going and what is inside. Your delivery fee updates as soon as the route and weight are ready."
       />
-
-      {!referenceDataReady ? (
-        <Alert variant="warning">
-          <TriangleAlertIcon aria-hidden />
-          <AlertTitle>Booking is not available yet</AlertTitle>
-          <AlertDescription>
-            <p>
-              Booking needs at least one active hub, pricing zone, and recipient customer. Ask DropX
-              operations to configure the missing reference data, then try again.
-            </p>
-            <ul className="mt-2 grid gap-1 text-xs">
-              <li>
-                Hubs — <code>{REFERENCE_ENDPOINTS.hubs}</code>
-              </li>
-              <li>
-                Zones — <code>{REFERENCE_ENDPOINTS.zones}</code>
-              </li>
-              <li>
-                Recipients — <code>{REFERENCE_ENDPOINTS.recipients}</code>
-              </li>
-            </ul>
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
