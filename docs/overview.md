@@ -30,6 +30,11 @@ Branches and hubs are **not** separate apps. Their staff use `apps/admin` with r
 
 Public **tracking** (by tracking number only) is available without login. **Booking / creating parcels as a customer** requires OTP login — no guest booking.
 
+The public website also exposes `/become-a-rider` for recruitment. Applications capture contact
+details, district, vehicle, availability, and experience in `rider_applications` with `PENDING`
+status. Submission does not create a rider account; staff review the application and then use the
+existing rider setup flow to assign a hub, employee code, password, and permissions.
+
 ---
 
 ## Login flows
@@ -47,7 +52,19 @@ OTP codes are short-lived and never persisted in the database.
 
 Email + `password_hash` on `users`, plus roles → `role_permissions`. Permission keys are static in code.
 
+Staff accounts are managed from the admin **Users** screen (`/users`, `users.view` /
+`users.manage`): create writes the account with its roles and hub scope in one transaction,
+passwords change only via **reset** (never as an edit field), and a user is suspended rather
+than deleted. The last active `ADMIN` cannot be suspended.
+
 Hub-scoped staff are linked via **`user_hubs`** (many hubs per user). Branch scope still uses `users.branch_id`.
+
+Roles and their grants are managed from the admin **Roles** screen (`/roles`, `roles.view` /
+`roles.manage`): a role is created with a name and description, then given a set of permission
+keys in the permission matrix. Saving replaces the whole key set. The API refuses a save that
+would strip `users.manage` from every role that grants it — the last administrator who can undo
+the change cannot be locked out by the screen that exists to change it. The catalog itself is
+never edited at runtime: a role can only hold the keys the code defines and the screen renders.
 
 ### Rider (`apps/riders`)
 

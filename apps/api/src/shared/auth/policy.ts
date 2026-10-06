@@ -33,6 +33,8 @@ export type OperationPolicy = {
   anyOf?: string[]
   /** Customers must be ACTIVE (OTP verified). */
   requiresActiveCustomer?: boolean
+  /** Allows a rider with a temporary password to reach this operation. */
+  allowPasswordChangeRequired?: boolean
 }
 
 export type CatalogEntry = OperationPolicy & {
@@ -82,6 +84,14 @@ export function defineOperation(
           "You do not have permission to perform this action",
         )
       }
+    }
+
+    const actor = c.get("auth").actor
+    if (actor.kind === "rider" && actor.mustChangePassword && !policy.allowPasswordChangeRequired) {
+      throw new DomainError(
+        ERROR_CODES.FORBIDDEN,
+        "Change your temporary password before using the rider portal",
+      )
     }
 
     if (policy.requiresActiveCustomer) assertActiveCustomer(c)

@@ -1,6 +1,7 @@
 export * from "./form-checkbox"
 export * from "./form-field"
 export * from "./form-input"
+export * from "./form-input-slug"
 export * from "./form-otp-input"
 export * from "./form-password-input"
 export * from "./form-select"

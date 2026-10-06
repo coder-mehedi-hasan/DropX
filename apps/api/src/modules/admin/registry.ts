@@ -11,6 +11,20 @@ import {
   zoneRefResponseSchema,
 } from "../reference/reference.dto"
 import {
+  createZoneSchema as createZoneBody,
+  listZonesQuerySchema as listZonesQuery,
+  updateZoneSchema as updateZoneBody,
+  zoneIdParamSchema as zoneIdParam,
+  zoneResponseSchema as zoneResponse,
+} from "../zones/zones.dto"
+import {
+  createVehicleSchema as createVehicleBody,
+  listVehiclesQuerySchema as listVehiclesQuery,
+  updateVehicleSchema as updateVehicleBody,
+  vehicleIdParamSchema as vehicleIdParam,
+  vehicleResponseSchema as vehicleResponse,
+} from "../vehicles/vehicles.dto"
+import {
   branchIdParamSchema as branchIdParam,
   branchResponseSchema as branchResponse,
   createBranchSchema as createBranchBody,
@@ -31,6 +45,97 @@ import {
   parcelWithItemsResponseSchema,
   updateParcelStatusSchema,
 } from "../parcels/parcels.dto"
+import {
+  listRiderLocationsQuerySchema as listRiderLocationsQuery,
+  riderLocationResponseSchema as riderLocationResponse,
+} from "../riders/rider-locations.dto"
+import {
+  assignPickupSchema,
+  createPickupSchema,
+  listPickupsQuerySchema,
+  pickupIdParamSchema,
+  pickupResponseSchema,
+  updatePickupStatusSchema,
+} from "../pickups/pickups.dto"
+import {
+  deliveryProofIdParamSchema as deliveryProofIdParam,
+  deliveryProofListItemSchema as deliveryProofListItem,
+  deliveryProofResponseSchema as deliveryProofResponse,
+  listDeliveryProofsQuerySchema as listDeliveryProofsQuery,
+} from "../deliveries/delivery-proofs.dto"
+import {
+  createDeliverySchema as createDeliveryBody,
+  deliveryIdParamSchema as deliveryIdParam,
+  deliveryResponseSchema as deliveryResponse,
+  listDeliveriesQuerySchema as listDeliveriesQuery,
+  reassignDeliverySchema as reassignDeliveryBody,
+  updateDeliveryStatusSchema as updateDeliveryStatusBody,
+} from "../deliveries/deliveries.dto"
+import {
+  createTransferSchema as createTransferBody,
+  listTransfersQuerySchema as listTransfersQuery,
+  replaceTransferManifestSchema as replaceTransferManifestBody,
+  transferIdParamSchema as transferIdParam,
+  transferParcelListSchema as transferParcelList,
+  transferListItemSchema as transferListItem,
+  transferWithManifestResponseSchema as transferWithManifestResponse,
+  updateTransferSchema as updateTransferBody,
+  updateTransferStatusSchema as updateTransferStatusBody,
+} from "../transfers/transfers.dto"
+import {
+  createRiderSchema as createRiderBody,
+  listRidersQuerySchema as listRidersQuery,
+  riderIdParamSchema as riderIdParam,
+  riderResponseSchema as riderResponse,
+  setRiderStatusSchema as setRiderStatusBody,
+  updateRiderSchema as updateRiderBody,
+} from "../riders/riders.dto"
+import {
+  createUserSchema as createUserBody,
+  listUsersQuerySchema as listUsersQuery,
+  resetPasswordSchema as resetPasswordBody,
+  setUserStatusSchema as setUserStatusBody,
+  userIdParamSchema as userIdParam,
+  updateUserSchema as updateUserBody,
+  userResponseSchema as userResponse,
+} from "../users/users.dto"
+import {
+  createRoleSchema as createRoleBody,
+  listRolesQuerySchema as listRolesQuery,
+  replacePermissionsSchema as replacePermissionsBody,
+  roleIdParamSchema as roleIdParam,
+  roleDetailResponseSchema as roleDetailResponse,
+  roleResponseSchema as roleResponse,
+} from "../roles/roles.dto"
+import {
+  customerIdParamSchema as customerIdParam,
+  customerResponseSchema as customerResponse,
+  customerWithAddressesResponseSchema as customerWithAddressesResponse,
+  listCustomersQuerySchema as listCustomersQuery,
+} from "../customers/customers.dto"
+import {
+  listPaymentsQuerySchema as listPaymentsQuery,
+  paymentIdParamSchema as paymentIdParam,
+  paymentResponseSchema as paymentResponse,
+  recordPaymentSchema as recordPaymentBody,
+  refundPaymentSchema as refundPaymentBody,
+} from "../payments/payments.dto"
+import {
+  createSettlementSchema as createSettlementBody,
+  listSettlementsQuerySchema as listSettlementsQuery,
+  setSettlementStatusSchema as setSettlementStatusBody,
+  settlementIdParamSchema as settlementIdParam,
+  settlementResponseSchema as settlementResponse,
+} from "../settlements/settlements.dto"
+import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
+import {
+  listRiderApplicationsQuerySchema,
+  riderApplicationIdParamSchema,
+  riderApplicationResponseSchema,
+  updateRiderApplicationSchema,
+  approveRiderApplicationSchema,
+  approveRiderApplicationResponseSchema,
+} from "../rider-applications/rider-applications.dto"
 
 /**
  * The admin surface — the whole contract for every staff operation.
@@ -128,6 +233,395 @@ export const ADMIN_SURFACE = defineSurface({
           errors: {
             404: "No such parcel in scope.",
             409: "The parcel cannot be cancelled from its current status.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Pickups: collecting a parcel from a customer.
+     *
+     * A pickup has no hub of its own — it is a collection against one parcel, and
+     * the parcel is what carries geography — so every read and both writes are
+     * scoped through `COALESCE(parcels.current_hub_id, parcels.destination_hub_id)`.
+     * That is why the list filter takes `hubId`: it filters on the parcel's hub,
+     * which is the only hub a pickup has.
+     *
+     * `assign` is a separate operation from `updateStatus` on purpose, so
+     * `pickups.assign` can be granted to dispatch without also handing over the
+     * authority to fail, cancel, or re-status a pickup. It is a POST rather than a
+     * PATCH because the rider id is in the body: `PATCH /pickups/:id` would
+     * invite a client to think it could address the pickup itself.
+     */
+    pickups: {
+      tag: "pickups",
+      tagDescription:
+        "Collections: raising a pickup for a parcel, assigning a rider to it, and moving it through to collected.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/pickups",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_VIEW] },
+          summary: "List pickups",
+          successDescription: "A page of pickups.",
+          description:
+            "Branch/hub-scoped through the parcel each pickup belongs to. Ordering is limited to an allowlist of columns; an unknown `sortBy` is rejected rather than interpolated into SQL.",
+          query: listPickupsQuerySchema,
+          listNodes: pickupResponseSchema,
+        },
+        read: {
+          method: "GET",
+          path: "/pickups/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_VIEW] },
+          summary: "Read a pickup",
+          successDescription: "The pickup.",
+          params: pickupIdParamSchema,
+          paramDescriptions: { id: "Pickup id." },
+          response: pickupResponseSchema,
+          errors: { 404: "No such pickup in scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/pickups",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_MANAGE] },
+          summary: "Create a pickup",
+          successDescription: "Created.",
+          description:
+            "Raises a collection for a parcel. `parcelId` accepts either the parcel id or its tracking number — the only string a customer can read out over the phone. `requestedBy` is the authenticated actor and is never read from the body, and a parcel may have only one unfinished pickup at a time.",
+          body: createPickupSchema,
+          response: pickupResponseSchema,
+          successStatus: 201,
+          errors: {
+            404: "No such parcel in scope.",
+            409: "The parcel already has an unfinished pickup.",
+            422: "Validation failed, or the chosen status needs a reason.",
+          },
+        },
+        assign: {
+          method: "POST",
+          path: "/pickups/:id/assign",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_ASSIGN] },
+          summary: "Assign a rider to a pickup",
+          successDescription: "Assigned.",
+          description:
+            "Assigns a rider and moves the pickup to `ASSIGNED`. Reassigning is a two-step affair — move the pickup back to `REQUESTED` first — so an accidental second dispatch cannot silently replace a rider who was told to turn up.",
+          params: pickupIdParamSchema,
+          paramDescriptions: { id: "Pickup id." },
+          body: assignPickupSchema,
+          response: pickupResponseSchema,
+          errors: {
+            404: "No such pickup in scope, or no such rider.",
+            409: "The pickup cannot be assigned from its current status.",
+          },
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/pickups/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PICKUPS_MANAGE] },
+          summary: "Update pickup status",
+          successDescription: "Updated.",
+          description:
+            "Moves the pickup along its lifecycle. `PICKED_UP` also stamps `pickedUpAt` and moves the parcel to `PICKED_UP`, both in the same transaction.",
+          params: pickupIdParamSchema,
+          paramDescriptions: { id: "Pickup id." },
+          body: updatePickupStatusSchema,
+          response: pickupResponseSchema,
+          errors: {
+            404: "No such pickup in scope.",
+            409: "The requested status transition is not allowed from the current status.",
+            422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Delivery proofs: the artefact recorded at the door. Riders file proofs
+     * through the jobs surface; admin reads them and confirms them.
+     */
+    deliveryProofs: {
+      tag: "delivery-proofs",
+      tagDescription:
+        "Proofs of delivery: what a rider recorded at handover, and whether dispatch has confirmed it.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/delivery-proofs",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_VIEW] },
+          summary: "List delivery proofs",
+          successDescription: "A page of proofs.",
+          description:
+            "Scoped through the delivery attempt's hub. Filter by type, verified state, delivery, or free text over tracking number, rider, and hub.",
+          query: listDeliveryProofsQuery,
+          listNodes: deliveryProofListItem,
+        },
+        verify: {
+          method: "PATCH",
+          path: "/delivery-proofs/:id/verify",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_MANAGE] },
+          summary: "Verify a delivery proof",
+          successDescription: "Verified.",
+          description:
+            "Stamps `verified_at`. The rider does not vouch for their own artefact — confirmation is an office act, and a second call is a 409 rather than a silent overwrite of the original timestamp.",
+          params: deliveryProofIdParam,
+          paramDescriptions: { id: "Proof id." },
+          response: deliveryProofResponse,
+          errors: {
+            404: "No such proof in scope.",
+            409: "The proof is already verified.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Deliveries: the rider's last-mile attempts, created and overseen by
+     * dispatch.
+     *
+     * A delivery is the rider's leg of one parcel, and there is exactly one
+     * open attempt per parcel at a time — retries are new rows with the next
+     * `attempt_no`, never reopened ones. Reads and writes are scoped through
+     * `d.hub_id` (the attempt's own hub), while create additionally locks the
+     * parcel and takes its hub from the parcel row, so the address a dispatcher
+     * types can never land on the wrong hub.
+     *
+     * `create` is gated on `deliveries.assign` because raising an attempt *is*
+     * assigning a rider — there is no draft attempt without one. `reassign`
+     * shares that key: dispatch owns the rider on the attempt. `updateStatus`
+     * is `deliveries.manage`: the rider owns the outcome transitions in
+     * normal running, so the admin side is reserved for overrides and
+     * cancellations, and a cancellation releases the parcel back to its hub.
+     */
+    deliveries: {
+      tag: "deliveries",
+      tagDescription:
+        "Last-mile attempts: opening an attempt for a parcel, reassigning its rider, and overriding its status.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/deliveries",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_VIEW] },
+          summary: "List deliveries",
+          successDescription: "A page of deliveries.",
+          description:
+            "Scoped by the attempt's hub. Ordering is limited to an allowlist of columns; an unknown `sortBy` is rejected rather than interpolated into SQL.",
+          query: listDeliveriesQuery,
+          listNodes: deliveryResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/deliveries/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_VIEW] },
+          summary: "Read a delivery",
+          successDescription: "The delivery.",
+          params: deliveryIdParam,
+          paramDescriptions: { id: "Delivery id." },
+          response: deliveryResponse,
+          errors: { 404: "No such delivery in scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/deliveries",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_ASSIGN] },
+          summary: "Create a delivery attempt",
+          successDescription: "Created.",
+          description:
+            "Opens an attempt for a parcel: locks the parcel, checks there is no open attempt, and opens row `attempt_no + 1`. `parcelId` accepts either the parcel id or its tracking number — the only string a human has. The parcel must be `AT_HUB` or `FAILED`, and the rider must not be suspended. The hub is derived from the parcel, never taken from the body.",
+          body: createDeliveryBody,
+          response: deliveryResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such parcel in scope, or no such rider.",
+            409: "The parcel already has an open delivery attempt.",
+            422: "Validation failed, or the parcel is not in a dispatchable status.",
+          },
+        },
+        reassign: {
+          method: "PATCH",
+          path: "/deliveries/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_ASSIGN] },
+          summary: "Reassign a delivery attempt",
+          successDescription: "Reassigned.",
+          description:
+            "Swaps the rider on the same attempt. Only allowed while the attempt is still `ASSIGNED` — once it is out for delivery, a rider swap is a status event, not an edit.",
+          params: deliveryIdParam,
+          paramDescriptions: { id: "Delivery id." },
+          body: reassignDeliveryBody,
+          response: deliveryResponse,
+          errors: {
+            404: "No such delivery in scope, or no such rider.",
+            409: "Only an attempt that has not started can be reassigned.",
+          },
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/deliveries/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.DELIVERIES_MANAGE] },
+          summary: "Update delivery status",
+          successDescription: "Updated.",
+          description:
+            "Moves the attempt along its lifecycle, in the same transaction as the parcel: `DELIVERED`/`FAILED`/`RETURNED`/`OUT_FOR_DELIVERY` move the parcel to match, `CANCELLED` releases the parcel back to `AT_HUB`. The rider's own outcome reporting flows through the jobs endpoint, not this one.",
+          params: deliveryIdParam,
+          paramDescriptions: { id: "Delivery id." },
+          body: updateDeliveryStatusBody,
+          response: deliveryResponse,
+          errors: {
+            404: "No such delivery in scope.",
+            409: "The requested status transition is not allowed from the current status.",
+            422: "Validation failed. `FAILED` and `CANCELLED` require a reason.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Transfers: moving parcels between two hubs.
+     *
+     * Two things here are unlike the rest of this surface, and both are forced by
+     * the domain rather than chosen:
+     *
+     * - **A transfer has two ends, so it is scoped by either.** `transfers.manage`
+     *   is checked against the origin hub alone — the hub that loads the truck is
+     *   the one that owns it — while every read matches `from_hub` **or** `to_hub`,
+     *   because a hub must see the transfer it is about to unload as well as the
+     *   one it is loading. `AND` would hide inbound trucks; the asymmetry is in
+     *   `transfers.repository.ts` and is the part to read before changing it.
+     * - **The manifest is sealed at departure.** `PUT /transfers/:id/parcels`
+     *   replaces the load list freely until the transfer is `IN_TRANSIT`, after
+     *   which the list is a record of what was on the truck. There is no
+     *   "cancel in transit" for the same reason: the parcels are on a vehicle this
+     *   system does not track.
+     *
+     * `delete` exists but only bites on an empty `PLANNED` transfer — a draft.
+     * Anything with a manifest is cancelled instead, so the record of what was
+     * loaded onto a truck is never destroyed.
+     */
+    transfers: {
+      tag: "transfers",
+      tagDescription:
+        "Hub-to-hub transfers: planning a run, loading its manifest, departing, and arriving.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/transfers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_VIEW] },
+          summary: "List transfers",
+          successDescription: "A page of transfers.",
+          description:
+            "Scoped by either hub, so a hub sees what it is loading and what is arriving. The `hubId` filter matches either end too. Ordering is limited to an allowlist of columns.",
+          query: listTransfersQuery,
+          listNodes: transferListItem,
+        },
+        read: {
+          method: "GET",
+          path: "/transfers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_VIEW] },
+          summary: "Read a transfer",
+          successDescription: "The transfer, with its manifest.",
+          description:
+            "One request for the whole screen: the transfer, both hub names, and every parcel on it with its load and unload timestamps.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          response: transferWithManifestResponse,
+          errors: { 404: "No such transfer in scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/transfers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Create a transfer",
+          successDescription: "Created.",
+          description:
+            "Plans a hub-to-hub run. `transferNumber` is generated server-side and never accepted from a client. `driverRef` is a **staff** member — rule 9 makes transfer drivers staff, not riders — matched by id or email, and it has to be an active account.",
+          body: createTransferBody,
+          response: transferWithManifestResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such hub, vehicle, route, or driver.",
+            422: "Validation failed — including origin and destination being the same hub.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/transfers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Update a transfer",
+          successDescription: "Updated.",
+          description:
+            "Hubs are editable only while `PLANNED`, because a manifest is validated against the origin hub and changing it afterwards would invalidate every row. Route, vehicle and driver stay editable until the truck departs.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          body: updateTransferBody,
+          response: transferWithManifestResponse,
+          errors: {
+            404: "No such transfer in scope, or a referenced record does not exist.",
+            409: "The transfer has departed or finished, so it cannot be edited.",
+            422: "Nothing to change.",
+          },
+        },
+        delete: {
+          method: "DELETE",
+          path: "/transfers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Delete a planned transfer",
+          successDescription: "Deleted.",
+          description:
+            "Removes a draft: a `PLANNED` transfer with an empty manifest. Anything further along is cancelled instead, so the record of what was loaded is never destroyed.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          successStatus: 204,
+          errors: {
+            404: "No such transfer in scope.",
+            409: "The transfer is not a draft, or has parcels on it. Cancel it instead.",
+          },
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/transfers/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Update transfer status",
+          successDescription: "Updated.",
+          description:
+            "Moves the transfer along its lifecycle. `IN_TRANSIT` requires a non-empty manifest, stamps `departedAt` and `loadedAt`, and moves every manifest parcel to `IN_TRANSIT`. `ARRIVED` stamps `arrivedAt` and `unloadedAt`, moves every manifest parcel to the destination hub and back to `AT_HUB`. Both write a parcel event per parcel, so the customer's timeline is intact.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          body: updateTransferStatusBody,
+          response: transferWithManifestResponse,
+          errors: {
+            404: "No such transfer in scope.",
+            409: "The requested transition is not allowed from the current status.",
+            422: "`CANCELLED` requires a reason; `IN_TRANSIT` requires a non-empty manifest.",
+          },
+        },
+        manifestList: {
+          method: "GET",
+          path: "/transfers/:id/parcels",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_VIEW] },
+          summary: "List a transfer's manifest",
+          successDescription: "The parcels on this transfer.",
+          description:
+            "The manifest alone, for the sheet that edits a load list without refetching the whole transfer. A bare array, not a page: the manifest is bounded at 500 parcels by `PUT`, so there is nothing to page through — the same shape `routes/:id/stops` returns.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          response: transferParcelList,
+          errors: { 404: "No such transfer in scope." },
+        },
+        manifestReplace: {
+          method: "PUT",
+          path: "/transfers/:id/parcels",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.TRANSFERS_MANAGE] },
+          summary: "Replace a transfer's manifest",
+          successDescription: "The new manifest.",
+          description:
+            "Replaces the whole load list. Every parcel must be at the origin hub and be in a status that may legally depart — a parcel that is not is named in the 422 rather than quietly dropped. Rejected once the transfer is `IN_TRANSIT`, where the manifest is history.",
+          params: transferIdParam,
+          paramDescriptions: { id: "Transfer id." },
+          body: replaceTransferManifestBody,
+          response: transferParcelList,
+          errors: {
+            404: "No such transfer in scope.",
+            409: "The transfer has departed, arrived, or been cancelled, so its manifest is fixed.",
+            422: "One or more parcels are not at the origin hub, or are already moving.",
           },
         },
       },
@@ -248,6 +742,382 @@ export const ADMIN_SURFACE = defineSurface({
     },
 
     /**
+     * Staff accounts, and the first writer of a `users` row other than the
+     * one-shot bootstrap: a staff member is the account, the roles it holds,
+     * and the hub scope that decides which records it may see, so `create` and
+     * `update` write all three in one transaction.
+     *
+     * Reads are scope-narrowed (branch via `users.branch_id`, hub via
+     * `user_hubs`) exactly as the parcel guard narrows its data — one `Scope`,
+     * one reading of it — so a branch manager's own-branch rule in
+     * `docs/rbac.md` is enforced here and not only in the sidebar.
+     *
+     * `email` and `password` are create-only, `resetPassword` is its own
+     * operation, and `setStatus` carries the last-ADMIN guard. That last one is
+     * why availability has its own endpoint: flipping it from a list row should
+     * not require knowing which other fields exist.
+     */
+    users: {
+      tag: "users",
+      tagDescription:
+        "Staff accounts: the `users` row, the roles that grant what it may do, and the hub scope that decides which records it may see.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/users",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_VIEW] },
+          summary: "List staff users",
+          successDescription: "A page of staff accounts, each carrying its roles and hub scope.",
+          query: listUsersQuery,
+          listNodes: userResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/users/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_VIEW] },
+          summary: "Read a staff user",
+          successDescription: "The account, with its roles and hub scope.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          response: userResponse,
+          errors: { 404: "No such user, or outside the caller's branch/hub scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/users",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Create a staff user",
+          description:
+            "Writes the account, its roles and its hub scope in one transaction — none of the three is useful alone. The temporary password becomes a bcrypt hash and `must_change_password` starts TRUE.",
+          successDescription: "Created.",
+          body: createUserBody,
+          response: userResponse,
+          successStatus: 201,
+          errors: {
+            409: "An account with that email already exists.",
+            422: "A named role, hub or branch does not exist.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/users/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Update a staff user",
+          description:
+            "Profile columns, and when supplied a full replacement of both assignment sets. `email` and `password` are not accepted here — they are create-only, so two surfaces never write one account row. `branchId: null` clears the branch restriction.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          body: updateUserBody,
+          response: userResponse,
+          errors: {
+            404: "No such user, or outside the caller's branch/hub scope.",
+            409: "This is the last active ADMIN account, and this write would leave none.",
+            422: "A named role, hub or branch does not exist.",
+          },
+        },
+        resetPassword: {
+          method: "POST",
+          path: "/users/:id/reset-password",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Reset a staff user's password",
+          description:
+            "Its own operation rather than a PATCH field: it is the only write that cannot be safely retried from a stale screen. Sets the temporary hash and flips `must_change_password` in the same statement. The flag is stored for a staff change-password gate that does not exist yet — `auth.service` reports it only for the riders audience, so today the new password is simply the account's password.",
+          successDescription: "Password reset. The account signs in with the new password.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          body: resetPasswordBody,
+          response: userResponse,
+          errors: { 404: "No such user, or outside the caller's branch/hub scope." },
+        },
+        setStatus: {
+          method: "POST",
+          path: "/users/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Set a staff user's status",
+          description:
+            "Its own operation, mirroring `admin.riders.setStatus`. `SUSPENDED` is terminal — a user with delivery history is never deleted — and the last active ADMIN cannot be suspended.",
+          successDescription: "Updated.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          body: setUserStatusBody,
+          response: userResponse,
+          errors: {
+            404: "No such user, or outside the caller's branch/hub scope.",
+            409: "This is the last active ADMIN account.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Roles, and the permission matrix built on them: Batch 1's list read is
+     * what makes the user form's role picker more than a hard-coded guess;
+     * Batch 2 adds `read`, `create` and `replacePermissions` for the screen
+     * that edits a role's key set — one tag, one module, one policy
+     * declaration for the whole RBAC surface.
+     */
+    roles: {
+      tag: "roles",
+      tagDescription:
+        "Roles and the permission keys they grant — what a staff account is allowed to do.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/roles",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_VIEW] },
+          summary: "List roles",
+          successDescription: "A page of roles.",
+          query: listRolesQuery,
+          listNodes: roleResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/roles/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_VIEW] },
+          summary: "Read a role's permissions",
+          successDescription:
+            "The role, with every static permission key and whether it is granted.",
+          description:
+            "One row per key in the static catalog, so the permission matrix renders from a single response rather than a detail read stitched to a separate grants read.",
+          params: roleIdParam,
+          paramDescriptions: { id: "Role id." },
+          response: roleDetailResponse,
+          errors: { 404: "No such role." },
+        },
+        create: {
+          method: "POST",
+          path: "/roles",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_MANAGE] },
+          summary: "Create a role",
+          successDescription: "Created.",
+          description:
+            "Creates the role empty; granting its keys is `PUT /roles/:id/permissions`' job, so the response is the plain projection rather than a detail full of ungranted keys.",
+          body: createRoleBody,
+          response: roleResponse,
+          successStatus: 201,
+          errors: { 409: "A role with that name already exists." },
+        },
+        replacePermissions: {
+          method: "PUT",
+          path: "/roles/:id/permissions",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_MANAGE] },
+          summary: "Replace a role's permissions",
+          successDescription: "The role with its new key set.",
+          description:
+            "The whole set, replaced — add and remove in one body beats two operations that race each other, the same shape `PUT /transfers/:id/parcels` uses. Rejected when it would leave no active account able to manage users: the screen that can undo this change must never be locked by this change.",
+          params: roleIdParam,
+          paramDescriptions: { id: "Role id." },
+          body: replacePermissionsBody,
+          response: roleDetailResponse,
+          errors: {
+            404: "No such role.",
+            409: "This is the last role granting users.manage, and no other role reaches it.",
+            422: "A named permission key does not exist in the static catalog.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Customers — the support surface Batch 3 adds. Reads are company-wide and
+     * gated by `customers.view`; the only write is `activate`, the support
+     * override that flips a TEMP customer to ACTIVE without a code, gated by
+     * `customers.manage`. There is deliberately no edit: customer details and
+     * addresses are owned by the OTP portal, and staff never writes them.
+     */
+    customers: {
+      tag: "customers",
+      tagDescription:
+        "Customers: who books parcels. Company-wide reads gated by customers.view; the one write is the activate override.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/customers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_VIEW] },
+          summary: "List customers",
+          successDescription: "A page of customers.",
+          description:
+            "Company-wide — customers are not scoped to a branch or hub. TEMP rows appear with their status so support can spot consents that never verified a code.",
+          query: listCustomersQuery,
+          listNodes: customerResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/customers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_VIEW] },
+          summary: "Read a customer",
+          successDescription: "The customer, with its address book.",
+          description:
+            "Addresses ride along in the same response — `customer_addresses` is owned by the OTP portal, so staff reads it and never gets an operation that writes it. The parcel history is the parcels list filtered by this customer, not a second op.",
+          params: customerIdParam,
+          paramDescriptions: { id: "Customer id." },
+          response: customerWithAddressesResponse,
+          errors: { 404: "No such customer." },
+        },
+        activate: {
+          method: "POST",
+          path: "/customers/:id/activate",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_MANAGE] },
+          summary: "Activate a customer",
+          description:
+            "Support override: marks a TEMP customer ACTIVE without a code. Idempotent — an ACTIVE customer passes through untouched, so a retried POST is harmless. Emits the same customer.activated event as OTP verification.",
+          successDescription: "Activated.",
+          params: customerIdParam,
+          paramDescriptions: { id: "Customer id." },
+          response: customerResponse,
+          errors: { 404: "No such customer." },
+        },
+      },
+    },
+
+    /**
+     * Payments — money against parcels. Batch 4 is deliberately cash-only:
+     * `record` is the finance clerk's remittance of a cash COD collection and
+     * writes a CASH row straight to PAID; `refund` writes a REFUND row against
+     * the parcel's paid COD balance. Methods beyond CASH and a PENDING
+     * lifecycle belong to the online-payments P2 track. Company-wide like
+     * customers — the permission is the whole guard.
+     */
+    payments: {
+      tag: "payments",
+      tagDescription:
+        "Cash COD collections remitted to the company, and refunds against them. Cash-only in this batch; digital methods are a P2 track.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/payments",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_VIEW] },
+          summary: "List payments",
+          successDescription: "A page of payments.",
+          description:
+            "Company-wide — payments are not scoped to a branch or hub. Every row carries its parcel's tracking number.",
+          query: listPaymentsQuery,
+          listNodes: paymentResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/payments/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_VIEW] },
+          summary: "Read a payment",
+          successDescription: "The payment.",
+          description: "One payment, with its parcel's tracking number.",
+          params: paymentIdParam,
+          paramDescriptions: { id: "Payment id." },
+          response: paymentResponse,
+          errors: { 404: "No such payment." },
+        },
+        record: {
+          method: "POST",
+          path: "/payments",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_MANAGE] },
+          summary: "Record a COD remittance",
+          successDescription: "Recorded.",
+          description:
+            "The finance clerk's remittance of a cash COD collection: a CASH row written straight to PAID. Refused when the parcel does not collect on delivery, or when the amount exceeds what is still outstanding on it.",
+          body: recordPaymentBody,
+          response: paymentResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such parcel.",
+            409: "The amount exceeds the COD still outstanding on the parcel.",
+            422: "The parcel does not collect on delivery.",
+          },
+        },
+        refund: {
+          method: "POST",
+          path: "/payments/:id/refund",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_MANAGE] },
+          summary: "Refund a COD collection",
+          successDescription: "Refunded.",
+          description:
+            "Writes a REFUND row against the parcel's remaining COD balance. When the balance reaches zero the parcel's paid COD rows are stamped REFUNDED. Cash is the only method in this batch.",
+          params: paymentIdParam,
+          paramDescriptions: { id: "The COD payment being refunded." },
+          body: refundPaymentBody,
+          response: paymentResponse,
+          errors: {
+            404: "No such payment or parcel.",
+            409: "The refund exceeds the refundable balance, or the payment is not a paid COD collection.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Settlements. The finance clerk's period statement to a merchant: how
+     * much COD the company collected on their parcels inside the period, the
+     * delivery fees earned, and the net the company will disburse. The money
+     * is aggregated server-side from the customer's paid payments — `create`
+     * accepts only the customer and the period, and the statement is refused
+     * when nothing was collected in it. Company-wide like payments: the
+     * permission is the whole guard, and the finance role owns it.
+     */
+    settlements: {
+      tag: "settlements",
+      tagDescription:
+        "Period statements of COD collected per merchant, and the PENDING → PROCESSING → PAID lifecycle of the disbursement against them.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/settlements",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_VIEW] },
+          summary: "List settlements",
+          successDescription: "A page of settlement statements.",
+          description:
+            "Company-wide. Each statement carries the merchant's name and phone plus the period and the computed total, fee, and net figures.",
+          query: listSettlementsQuery,
+          listNodes: settlementResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/settlements/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_VIEW] },
+          summary: "Read a settlement",
+          successDescription: "The settlement statement.",
+          description: "One settlement statement, with the merchant's identity.",
+          params: settlementIdParam,
+          paramDescriptions: { id: "Settlement id." },
+          response: settlementResponse,
+          errors: { 404: "No such settlement." },
+        },
+        create: {
+          method: "POST",
+          path: "/settlements",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_MANAGE] },
+          summary: "Create a settlement",
+          successDescription: "Created.",
+          description:
+            "Raises a period statement for a merchant. Takes only the customer and a `YYYY-MM-DD` period; total_cod, delivery_charges and net_amount are computed server-side from the customer's paid COD and delivery-fee payments in the period. Refused when the customer or period is unknown, when a statement already exists for that exact period, or when nothing was collected in it.",
+          body: createSettlementBody,
+          response: settlementResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such customer.",
+            409: "A settlement already exists for this customer and period.",
+            422: "The period is invalid, or nothing was collected for the customer in it.",
+          },
+        },
+        setStatus: {
+          method: "POST",
+          path: "/settlements/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_MANAGE] },
+          summary: "Update settlement status",
+          successDescription: "Updated.",
+          description:
+            "Drives the disbursement through PENDING → PROCESSING → PAID, stamps a paid_at when it lands on PAID, with FAILED and FAILED → PENDING for a retry. PAID is terminal.",
+          params: settlementIdParam,
+          paramDescriptions: { id: "Settlement id." },
+          body: setSettlementStatusBody,
+          response: settlementResponse,
+          errors: {
+            404: "No such settlement.",
+            409: "The status cannot move from where it now is.",
+          },
+        },
+      },
+    },
+
+    /**
      * Reference reads. The Phase 0 feature, and the reason Phase 0 exists: the
      * parcel-create dialog has six free-text id fields today, and this is what
      * turns them into comboboxes.
@@ -309,6 +1179,289 @@ export const ADMIN_SURFACE = defineSurface({
             "Customer search for pickers, matching on name, phone, or email. The projection deliberately excludes addresses and consent timestamps: a combobox has no use for them, and a published contract that omits them cannot be quietly widened later.",
           query: searchCustomersQuerySchema,
           listNodes: customerRefResponseSchema,
+        },
+      },
+    },
+
+    bootstrap: {
+      tag: "bootstrap",
+      tagDescription:
+        "First-run setup. One unauthenticated route that creates the initial administrator, closed by a shared token and by itself once an admin exists.",
+      operations: {
+        create: {
+          method: "POST",
+          path: "/bootstrap",
+          // Public by necessity: this is the only way to create the first account, so
+          // there is no admin to authenticate as yet. Safety lives in the handler —
+          // a constant-time `BOOTSTRAP_TOKEN` comparison plus a one-shot refusal once
+          // any account holds the ADMIN role — and not in this flag.
+          policy: { public: true },
+          summary: "Create the first administrator",
+          successDescription: "The administrator that was created.",
+          description:
+            "One-shot. Requires the server's `BOOTSTRAP_TOKEN` in the body, and refuses once any account already holds the ADMIN role — so after first use this route is permanently closed and every later staff account is created from the authenticated admin app. The one-shot test runs under a row lock, so concurrent calls cannot both win. Roles must already be seeded (`bun run db:seed`), since the role grant is what makes the account an administrator.",
+          body: bootstrapAdminSchema,
+          response: bootstrapAdminResponseSchema,
+          errors: {
+            401: "The token does not match `BOOTSTRAP_TOKEN`.",
+            403: "`BOOTSTRAP_TOKEN` is not configured, so bootstrap is disabled.",
+            409: "An administrator already exists, no roles are seeded, or the email is taken.",
+          },
+        },
+      },
+    },
+
+    zones: {
+      tag: "zones",
+      tagDescription:
+        "Geographic pricing zones and the pricing rules that hang off them. Zones are company-wide reference data.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/zones",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_VIEW] },
+          summary: "List zones",
+          successDescription: "A page of zones.",
+          query: listZonesQuery,
+          listNodes: zoneResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/zones/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_VIEW] },
+          summary: "Read a zone",
+          successDescription: "The zone.",
+          params: zoneIdParam,
+          paramDescriptions: { id: "Zone id." },
+          response: zoneResponse,
+          errors: { 404: "No such zone." },
+        },
+        create: {
+          method: "POST",
+          path: "/zones",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_MANAGE] },
+          summary: "Create a zone",
+          successDescription: "Created.",
+          body: createZoneBody,
+          response: zoneResponse,
+          successStatus: 201,
+          errors: { 409: "A zone with that code already exists." },
+        },
+        update: {
+          method: "PATCH",
+          path: "/zones/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_MANAGE] },
+          summary: "Update a zone",
+          successDescription: "Updated.",
+          params: zoneIdParam,
+          paramDescriptions: { id: "Zone id." },
+          body: updateZoneBody,
+          response: zoneResponse,
+          errors: { 404: "No such zone.", 409: "A zone with that code already exists." },
+        },
+      },
+    },
+
+    vehicles: {
+      tag: "vehicles",
+      tagDescription:
+        "Fleet vehicles used on transfers. Read-only for most roles; writes are gated on `vehicles.manage`.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/vehicles",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.VEHICLES_VIEW] },
+          summary: "List vehicles",
+          successDescription: "A page of vehicles.",
+          query: listVehiclesQuery,
+          listNodes: vehicleResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/vehicles/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.VEHICLES_VIEW] },
+          summary: "Read a vehicle",
+          successDescription: "The vehicle.",
+          params: vehicleIdParam,
+          paramDescriptions: { id: "Vehicle id." },
+          response: vehicleResponse,
+          errors: { 404: "No such vehicle." },
+        },
+        create: {
+          method: "POST",
+          path: "/vehicles",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.VEHICLES_MANAGE] },
+          summary: "Create a vehicle",
+          successDescription: "Created.",
+          body: createVehicleBody,
+          response: vehicleResponse,
+          successStatus: 201,
+          errors: { 409: "A vehicle with that registration number already exists." },
+        },
+        update: {
+          method: "PATCH",
+          path: "/vehicles/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.VEHICLES_MANAGE] },
+          summary: "Update a vehicle",
+          successDescription: "Updated.",
+          params: vehicleIdParam,
+          paramDescriptions: { id: "Vehicle id." },
+          body: updateVehicleBody,
+          response: vehicleResponse,
+          errors: {
+            404: "No such vehicle.",
+            409: "A vehicle with that registration number already exists.",
+          },
+        },
+        deactivate: {
+          method: "POST",
+          path: "/vehicles/:id/deactivate",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.VEHICLES_MANAGE] },
+          summary: "Deactivate a vehicle",
+          successDescription: "Deactivated.",
+          description:
+            "Retires a vehicle from the fleet by moving it to `INACTIVE`, so it can no longer be assigned to a transfer. A vehicle that is already inactive is rejected rather than silently accepted, so a double-click surfaces instead of passing for a state change.",
+          params: vehicleIdParam,
+          paramDescriptions: { id: "Vehicle id." },
+          response: vehicleResponse,
+          errors: {
+            404: "No such vehicle.",
+            409: "The vehicle is already inactive.",
+          },
+        },
+      },
+    },
+
+    riders: {
+      tag: "riders",
+      tagDescription:
+        "Delivery riders. Each rider is a `users` account plus a `riders` row, so creating one also creates the login the rider app signs in with.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/riders",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "List riders",
+          successDescription: "A page of riders.",
+          query: listRidersQuery,
+          listNodes: riderResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/riders/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "Read a rider",
+          successDescription: "The rider.",
+          params: riderIdParam,
+          paramDescriptions: { id: "Rider id." },
+          response: riderResponse,
+          errors: { 404: "No such rider." },
+        },
+        create: {
+          method: "POST",
+          path: "/riders",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Create a rider",
+          description:
+            "Creates the rider's login account and their `riders` row in one transaction, because a rider is always both (rule 8) and neither half is useful alone.",
+          successDescription: "Created.",
+          body: createRiderBody,
+          response: riderResponse,
+          successStatus: 201,
+          errors: {
+            409: "That email is already registered, or the employee code is already in use.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/riders/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Update a rider",
+          successDescription: "Updated.",
+          description:
+            "Hub, employee code, licence, compensation and status only. The rider's email, name and password belong to their `users` account and are not editable here.",
+          params: riderIdParam,
+          paramDescriptions: { id: "Rider id." },
+          body: updateRiderBody,
+          response: riderResponse,
+          errors: {
+            404: "No such rider.",
+            409: "That employee code is already in use.",
+          },
+        },
+        setStatus: {
+          method: "POST",
+          path: "/riders/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Set a rider's availability",
+          description:
+            "Availability is its own operation because ops flips it constantly from the dispatch board, and because it has distinct transition rules from the rest of the rider record.",
+          successDescription: "Updated.",
+          params: riderIdParam,
+          paramDescriptions: { id: "Rider id." },
+          body: setRiderStatusBody,
+          response: riderResponse,
+          errors: { 404: "No such rider." },
+        },
+      },
+    },
+    riderLocations: {
+      tag: "rider-locations",
+      tagDescription:
+        "Where riders are. Fixes are append-only, written only by the rider app's `POST /jobs/locations`, and read here.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/rider-locations",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "List rider location history",
+          description:
+            "Every rider's fixes, newest first. Pass `riderId` for one rider's trail. There is no write operation here on purpose: a position is the rider's own to report, so the admin surface is read-only over data the rider app pushed.",
+          successDescription: "A page of recorded locations.",
+          query: listRiderLocationsQuery,
+          listNodes: riderLocationResponse,
+        },
+      },
+    },
+    riderApplications: {
+      tag: "rider applications",
+      tagDescription:
+        "Public applications from people interested in joining the DropX rider network.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/rider-applications",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_VIEW] },
+          summary: "List rider applications",
+          successDescription: "A page of rider applications.",
+          query: listRiderApplicationsQuerySchema,
+          listNodes: riderApplicationResponseSchema,
+        },
+        updateStatus: {
+          method: "PATCH",
+          path: "/rider-applications/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Update rider application status",
+          successDescription: "Application status updated.",
+          params: riderApplicationIdParamSchema,
+          body: updateRiderApplicationSchema,
+          response: riderApplicationResponseSchema,
+          errors: { 404: "No such rider application." },
+        },
+        approve: {
+          method: "POST",
+          path: "/rider-applications/:id/approve",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.RIDERS_MANAGE] },
+          summary: "Approve a rider application",
+          description:
+            "Creates the rider login and operational rider record, then marks the application approved in one transaction.",
+          params: riderApplicationIdParamSchema,
+          body: approveRiderApplicationSchema,
+          response: approveRiderApplicationResponseSchema,
+          errors: {
+            404: "No such rider application.",
+            409: "The application is already approved, or the email/employee code is already in use.",
+          },
         },
       },
     },

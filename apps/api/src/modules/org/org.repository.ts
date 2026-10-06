@@ -1,5 +1,17 @@
 import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import type { Branch, Hub, HubWithBranch, ListParams } from "@/db/models"
+import {
+  escapeLike,
+  orderByClauseOf,
+  pageOf,
+  sortColumnOf,
+  toDecimal,
+  toNullableDecimal,
+  toStringOrNull,
+  toUtcDate,
+  whereClause,
+} from "@/db/sql"
+import { buildAssignments } from "@/db/updates"
 
 /**
  * Persistence for `branches` and `hubs`.
@@ -24,7 +36,34 @@ const HUB_COLUMNS = `
 `
 
 const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status", "b.created_at"] as const
+const BRANCH_TIEBREAK = "b.name ASC, b.id ASC"
 const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status", "h.created_at"] as const
+const HUB_TIEBREAK = "h.name ASC, h.id ASC"
+
+const BRANCH_PATCH_COLUMNS = {
+  name: "name",
+  code: "code",
+  phone: "phone",
+  address: "address",
+  city: "city",
+  district: "district",
+  latitude: "latitude",
+  longitude: "longitude",
+  status: "status",
+} as const
+
+const HUB_PATCH_COLUMNS = {
+  branchId: "branch_id",
+  name: "name",
+  code: "code",
+  type: "type",
+  address: "address",
+  district: "district",
+  latitude: "latitude",
+  longitude: "longitude",
+  capacity: "capacity",
+  status: "status",
+} as const
 
 function branchRow(row: Record<string, unknown>): Branch {
   return {
@@ -38,8 +77,8 @@ function branchRow(row: Record<string, unknown>): Branch {
     latitude: toDecimal(row.latitude),
     longitude: toDecimal(row.longitude),
     status: row.status as Branch["status"],
-    createdAt: row.created_at as Date,
-    updatedAt: row.updated_at as Date,
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
   }
 }
 
@@ -56,48 +95,11 @@ function hubRow(row: Record<string, unknown>): HubWithBranch {
     longitude: toDecimal(row.longitude),
     capacity: toNullableDecimal(row.capacity),
     status: row.status as Hub["status"],
-    createdAt: row.created_at as Date,
-    updatedAt: row.updated_at as Date,
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
     branchName: String(row.branch_name),
     branchCode: String(row.branch_code),
   }
-}
-
-function toDecimal(value: unknown, fallback = 0): number {
-  if (typeof value === "number") return value
-  if (typeof value === "bigint") return Number(value)
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : fallback
-  }
-  return fallback
-}
-
-function toNullableDecimal(value: unknown): number | null {
-  return value === null || value === undefined ? null : toDecimal(value)
-}
-
-function toStringOrNull(value: unknown): string | null {
-  return value === null || value === undefined ? null : String(value)
-}
-
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (match) => `\\${match}`)
-}
-
-async function pageOf<T>(
-  db: Pool,
-  sql: string,
-  params: unknown[],
-  countSql: string,
-  countParams: unknown[],
-  decode: (row: Record<string, unknown>) => T,
-): Promise<{ nodes: T[]; totalCount: number }> {
-  const [countRows] = await db.query<RowDataPacket[]>(countSql, countParams)
-  const [rows] = await db.query<RowDataPacket[]>(sql, params)
-  const countRow = countRows[0]
-  const totalCount = countRow?.count == null ? 0 : Number(countRow.count)
-  return { nodes: rows.map(decode), totalCount }
 }
 
 export type ListBranchesFilter = {
@@ -110,36 +112,35 @@ export async function selectBranches(
   params: ListParams,
   filter: ListBranchesFilter,
 ): Promise<{ nodes: Branch[]; totalCount: number }> {
-  const paramsAcc = []
+  const filterParams: unknown[] = []
   const clauses: string[] = []
 
   if (filter.status) {
     clauses.push("b.status = ?")
-    paramsAcc.push(filter.status)
+    filterParams.push(filter.status)
   }
   if (filter.search) {
     const like = `%${escapeLike(filter.search)}%`
-    clauses.push(
-      `(${["b.name", "b.code", "b.district"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
-    )
-    paramsAcc.push(like, like, like)
+    clauses.push(`(${["b.name", "b.code", "b.district"].map((c) => `${c} LIKE ?`).join(" OR ")})`)
+    filterParams.push(like, like, like)
   }
-  const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
+  const where = whereClause(clauses)
 
-  const countSql = `SELECT COUNT(*) AS count FROM branches${where ? " " + where : ""}`
-  const sortColumn =
-    params.sortBy && (BRANCH_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
-  const orderByClause = sortColumn
-    ? `${sortColumn} ${params.sort.toUpperCase()}, b.name ASC, b.id ASC`
-    : `b.name ASC, b.id ASC`
+  const countSql = `SELECT COUNT(*) AS count FROM branches AS b${where ? " " + where : ""}`
+  const orderBy = orderByClauseOf(
+    sortColumnOf(params, BRANCH_SORT_COLUMNS),
+    params.sort,
+    BRANCH_TIEBREAK,
+  )
 
-  const pageSql =
-    `SELECT ${BRANCH_COLUMNS} FROM branches AS b ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
-  const pageParams = [...paramsAcc, params.limit, params.offset]
-
-  return pageOf(db, pageSql, pageParams, countSql, paramsAcc, branchRow)
+  return pageOf(db, {
+    pageSql: `SELECT ${BRANCH_COLUMNS} FROM branches AS b ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    countSql,
+    filterParams,
+    params,
+    decode: branchRow,
+  })
 }
-
 
 export async function selectBranch(db: Pool, branchId: string): Promise<Branch | null> {
   const [rows] = await db.query<RowDataPacket[]>(
@@ -180,15 +181,7 @@ export async function patchBranch(
   branchId: string,
   patch: Partial<Omit<Branch, "id" | "createdAt" | "updatedAt">>,
 ): Promise<Branch | null> {
-  const assignments: string[] = []
-  const params = []
-
-  for (const [key, value] of Object.entries(patch)) {
-    if (value !== undefined) {
-      assignments.push(`${key} = ?`)
-      params.push(value)
-    }
-  }
+  const { assignments, params } = buildAssignments(patch, BRANCH_PATCH_COLUMNS)
 
   if (assignments.length === 0) return selectBranch(db, branchId)
 
@@ -211,40 +204,38 @@ export async function selectHubs(
   params: ListParams,
   filter: ListHubsFilter,
 ): Promise<{ nodes: HubWithBranch[]; totalCount: number }> {
-  const paramsAcc = []
+  const filterParams: unknown[] = []
   const clauses: string[] = []
 
   if (filter.branchId) {
     clauses.push("h.branch_id = ?")
-    paramsAcc.push(filter.branchId)
+    filterParams.push(filter.branchId)
   }
   if (filter.type) {
     clauses.push("h.type = ?")
-    paramsAcc.push(filter.type)
+    filterParams.push(filter.type)
   }
   if (filter.status) {
     clauses.push("h.status = ?")
-    paramsAcc.push(filter.status)
+    filterParams.push(filter.status)
   }
   if (filter.search) {
     const like = `%${escapeLike(filter.search)}%`
     clauses.push(`(${["h.name", "h.code", "h.district"].map((c) => `${c} LIKE ?`).join(" OR ")})`)
-    paramsAcc.push(like, like, like)
+    filterParams.push(like, like, like)
   }
-  const where = clauses.length ? `WHERE (${clauses.join(") AND (")})` : ""
+  const where = whereClause(clauses)
 
-  const countSql = `SELECT COUNT(*) AS count FROM hubs${where ? " " + where : ""}`
-  const sortColumn =
-    params.sortBy && (HUB_SORT_COLUMNS as readonly string[]).includes(params.sortBy) ? params.sortBy : undefined
-  const orderByClause = sortColumn
-    ? `${sortColumn} ${params.sort.toUpperCase()}, h.name ASC, h.id ASC`
-    : `h.name ASC, h.id ASC`
+  const countSql = `SELECT COUNT(*) AS count FROM hubs AS h${where ? " " + where : ""}`
+  const orderBy = orderByClauseOf(sortColumnOf(params, HUB_SORT_COLUMNS), params.sort, HUB_TIEBREAK)
 
-  const pageSql =
-    `SELECT ${HUB_COLUMNS} FROM hubs AS h LEFT JOIN branches AS br ON br.id = h.branch_id ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
-  const pageParams = [...paramsAcc, params.limit, params.offset]
-
-  return pageOf(db, pageSql, pageParams, countSql, paramsAcc, hubRow)
+  return pageOf(db, {
+    pageSql: `SELECT ${HUB_COLUMNS} FROM hubs AS h LEFT JOIN branches AS br ON br.id = h.branch_id ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    countSql,
+    filterParams,
+    params,
+    decode: hubRow,
+  })
 }
 
 export async function selectHub(db: Pool, hubId: string): Promise<HubWithBranch | null> {
@@ -282,15 +273,7 @@ export async function patchHub(
   hubId: string,
   patch: Partial<Omit<Hub, "id" | "createdAt" | "updatedAt">>,
 ): Promise<HubWithBranch | null> {
-  const assignments: string[] = []
-  const params = []
-
-  for (const [key, value] of Object.entries(patch)) {
-    if (value !== undefined) {
-      assignments.push(`${key} = ?`)
-      params.push(value)
-    }
-  }
+  const { assignments, params } = buildAssignments(patch, HUB_PATCH_COLUMNS)
 
   if (assignments.length === 0) return selectHub(db, hubId)
 

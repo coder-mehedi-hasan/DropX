@@ -30,7 +30,14 @@ import type { HubRef } from "@/lib/types"
  * why a submission is written back to the URL: a delivered parcel's status is
  * what people screenshot and share.
  */
-export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNumber?: string }) {
+export function TrackLookup({
+  initialTrackingNumber = "",
+  embedded = false,
+}: {
+  initialTrackingNumber?: string
+  /** Render the search field without its own card, for placement inside one. */
+  embedded?: boolean
+}) {
   const router = useRouter()
   const [input, setInput] = React.useState(initialTrackingNumber)
   const [submitted, setSubmitted] = React.useState(initialTrackingNumber)
@@ -54,36 +61,47 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
     })
   }
 
+  const searchForm = (
+    <form onSubmit={onSubmit} className="grid gap-3" noValidate>
+      <label htmlFor="tracking-number" className="text-sm font-semibold">
+        Tracking number
+      </label>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          id="tracking-number"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="DPX260101123456"
+          autoComplete="off"
+          spellCheck={false}
+          className="h-11 font-mono font-semibold tracking-wide uppercase"
+          aria-describedby="tracking-number-hint"
+        />
+        <LoadingButton
+          type="submit"
+          size="lg"
+          loading={tracking.isFetching}
+          disabled={input.trim() === ""}
+        >
+          <SearchIcon aria-hidden />
+          Track
+        </LoadingButton>
+      </div>
+      <p id="tracking-number-hint" className="text-muted-foreground text-xs">
+        Printed on your booking confirmation. No account needed.
+      </p>
+    </form>
+  )
+
   return (
     <div className="grid gap-6">
-      <Card className="border-primary/30 gap-0 py-0 shadow-sm">
-        <CardContent>
-          <form onSubmit={onSubmit} className="grid gap-3" noValidate>
-            <label htmlFor="tracking-number" className="text-sm font-semibold">
-              Tracking number
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="tracking-number"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="DPX260101123456"
-                autoComplete="off"
-                spellCheck={false}
-                className="font-mono font-semibold tracking-wide uppercase"
-                aria-describedby="tracking-number-hint"
-              />
-              <LoadingButton type="submit" loading={tracking.isPending} disabled={input.trim() === ""}>
-                <SearchIcon aria-hidden />
-                Track
-              </LoadingButton>
-            </div>
-            <p id="tracking-number-hint" className="text-muted-foreground text-xs">
-              Printed on your booking confirmation. No account needed.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+      {embedded ? (
+        searchForm
+      ) : (
+        <Card className="gap-0 py-0 shadow-sm">
+          <CardContent>{searchForm}</CardContent>
+        </Card>
+      )}
 
       {message ? (
         <Alert variant="destructive">
@@ -93,7 +111,7 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
         </Alert>
       ) : null}
 
-      {tracking.isPending ? <TrackingSkeleton /> : null}
+      {tracking.isFetching && !result ? <TrackingSkeleton /> : null}
 
       {result ? (
         <Card>
@@ -147,7 +165,7 @@ export function TrackLookup({ initialTrackingNumber = "" }: { initialTrackingNum
         </Card>
       ) : null}
 
-      {!result && !tracking.isPending && !message && submitted === "" ? (
+      {!embedded && !result && !tracking.isFetching && !message && submitted === "" ? (
         <p className="text-muted-foreground text-sm">
           Enter a tracking number above to see where a parcel is.
         </p>

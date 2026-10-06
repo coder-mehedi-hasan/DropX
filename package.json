@@ -19,7 +19,7 @@
     "dev:rider": "bun run --cwd apps/riders dev",
     "dev:web": "bun run --cwd apps/web dev",
     "build": "bun run --filter \"./apps/*\" build",
-    "typecheck": "bun run --filter \"./apps/*\" typecheck",
+    "typecheck": "bun run --filter \"./apps/*\" --filter \"./packages/*\" typecheck",
     "lint": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
     "lint:fix": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",

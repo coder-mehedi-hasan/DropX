@@ -7,9 +7,9 @@
 # or `cmd`. `<CONFIG_DIR>` expands to the directory holding this file, so the
 # paths stay correct no matter which directory mprocs was launched from.
 #
-# Each process runs in its app directory (`cwd`), so the frontends pick up their
-# own `.env` from there and the API/scripts load the root `.env` themselves via
-# `--env-file=../../.env`; no env is forwarded from here.
+# Each process runs in its app directory (`cwd`), and Bun auto-loads `.env` from
+# there — so every app picks up its own config with no `--env-file` and no env
+# forwarded from here.
 
 procs:
   api:

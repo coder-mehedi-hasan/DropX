@@ -8,7 +8,12 @@ import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
 import { pushEmailJob } from "../../shared/email/queue"
 import { emit } from "../../shared/events/bus"
-import type { OtpRequestInput, OtpVerifyInput, StaffLoginInput } from "./auth.dto"
+import type {
+  ChangePasswordInput,
+  OtpRequestInput,
+  OtpVerifyInput,
+  StaffLoginInput,
+} from "./auth.dto"
 import { authRepository } from "./auth.repository"
 import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
@@ -38,6 +43,7 @@ export type LoginResult = TokenPair & {
     name: string
     email: string
     roles: string[]
+    mustChangePassword: boolean
   }
 }
 
@@ -136,9 +142,20 @@ export async function loginWithPassword(
       kind: audience === "riders" ? "rider" : "staff",
       name: user.name,
       email: user.email,
+      mustChangePassword: audience === "riders" ? Boolean(user.must_change_password) : false,
       roles: [],
     },
   }
+}
+
+export async function changeRiderPassword(
+  c: Context<AppEnv>,
+  userId: string,
+  input: ChangePasswordInput,
+): Promise<{ ok: true }> {
+  const passwordHash = await bcrypt.hash(input.newPassword, 10)
+  await authRepository.updatePassword(c.get("db")!, userId, passwordHash)
+  return { ok: true }
 }
 
 export async function refreshSession(
@@ -155,10 +172,11 @@ export async function refreshSession(
       throw new DomainError(ERROR_CODES.TOKEN_INVALID, "This account no longer exists")
     }
   } else {
-    const [rows] = await c.get("db")!.query<mysql.RowDataPacket[]>(
-      `SELECT id, status FROM users WHERE id = ? LIMIT 1`,
-      [payload.sub],
-    )
+    const [rows] = await c
+      .get("db")!
+      .query<mysql.RowDataPacket[]>(`SELECT id, status FROM users WHERE id = ? LIMIT 1`, [
+        payload.sub,
+      ])
     const user = rows[0] as { id: string; status: string } | undefined
     if (!user || user.status !== "ACTIVE") {
       throw new DomainError(ERROR_CODES.INVALID_CREDENTIALS, "This account is not active")
@@ -279,7 +297,9 @@ export async function verifyOtp(
 
   const customerId = String(customer.id)
   const activated =
-    customer.status === "ACTIVE" ? customer : await authRepository.activateCustomer(c.get("db")!, customerId)
+    customer.status === "ACTIVE"
+      ? customer
+      : await authRepository.activateCustomer(c.get("db")!, customerId)
 
   if (activated.status !== "ACTIVE") {
     throw new DomainError(ERROR_CODES.CUSTOMER_NOT_ACTIVE, "Your account is not active yet")

@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { DELIVERY_STATUSES } from "../../db/models"
+import { DELIVERY_STATUSES, PARCEL_STATUSES, PAYMENT_TYPES } from "../../db/models"
 
 /**
  * Boundary DTOs for the rider app.
@@ -65,10 +65,10 @@ export const jobResponseSchema = z.object({
   parcel: z.object({
     id: z.string(),
     trackingNumber: z.string(),
-    status: z.string(),
+    status: z.enum(PARCEL_STATUSES),
     weight: z.number(),
     codAmount: z.number(),
-    paymentType: z.string(),
+    paymentType: z.enum(PAYMENT_TYPES),
     createdAt: z.iso.datetime(),
   }),
 })

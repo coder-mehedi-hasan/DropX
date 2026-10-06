@@ -19,10 +19,24 @@ import {
 import {
   listBranchesForPicker,
   listHubsForPicker,
+  listParcels,
+  listRidersForPicker,
+  listRoutes,
+  listVehicles,
   listZonesForPicker,
   searchCustomersForPicker,
 } from "@/lib/endpoints"
-import type { BranchOption, CustomerOption, HubOption, ZoneOption } from "@/lib/types"
+import type {
+  BranchOption,
+  CustomerOption,
+  HubOption,
+  Parcel,
+  Rider,
+  Route,
+  Vehicle,
+  ZoneOption,
+} from "@/lib/types"
+import { formatMoney } from "@/lib/format"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 
 /**
@@ -43,7 +57,16 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
  * so the page size here is a display concern rather than a safety one.
  */
 
-export type PickerSource = "branches" | "hubs" | "zones" | "customers"
+/**
+ * `riders` is backed by the roster list rather than an `admin.reference.*`
+ * endpoint, and that is deliberate: a reference endpoint exists to feed a
+ * dropdown of things you *define* (hubs, zones), and riders are already a
+ * first-class list with its own screen, permissions and pagination. Re-adding a
+ * narrowed copy of it to the reference module would be a second source of truth
+ * for the same rows.
+ */
+export type PickerSource =
+  "branches" | "hubs" | "zones" | "customers" | "riders" | "vehicles" | "routes" | "parcels"
 
 type Row = {
   id: string
@@ -97,6 +120,71 @@ function toCustomerRows(nodes: readonly CustomerOption[]): Row[] {
   }))
 }
 
+/**
+ * `GET /admin/riders` returns the `riders` row and not the joined `users` row, so
+ * there is no name to show — the employee code is the label. That is also what
+ * dispatch already calls riders by; the roster screen shows the same column first
+ * for the same reason.
+ *
+ * The status travels with the row because an offline rider is not worth assigning
+ * to, so the picker shows the difference without a second request.
+ */
+function toRiderRows(nodes: readonly Rider[]): Row[] {
+  return nodes.map((rider) => ({
+    id: rider.id,
+    label: rider.employeeCode,
+    hint: rider.licenseNumber ? `Licence ${rider.licenseNumber}` : null,
+    status: rider.status,
+  }))
+}
+
+/**
+ * `vehicles` and `routes` are backed by their own list endpoints rather than
+ * `admin.reference.*`, for the same reason `riders` is: both are first-class
+ * lists with their own screens, permissions and pagination. A narrowed copy in
+ * the reference module would be a second source of truth for the same rows.
+ *
+ * The status travels with the row because a vehicle in maintenance is not worth
+ * loading a truck onto, so the picker shows the difference without a second
+ * request.
+ */
+function toVehicleRows(nodes: readonly Vehicle[]): Row[] {
+  return nodes.map((vehicle) => ({
+    id: vehicle.id,
+    label: vehicle.registrationNumber,
+    hint: vehicle.type,
+    status: vehicle.status,
+  }))
+}
+
+function toRouteRows(nodes: readonly Route[]): Row[] {
+  return nodes.map((route) => ({
+    id: route.id,
+    label: route.name,
+    hint: route.code,
+    status: route.status,
+  }))
+}
+
+/**
+ * `parcels` is backed by the parcels list like `riders`/`vehicles`/`routes` are:
+ * it is a first-class scoped list with its own screen, not a reference shape.
+ * The remittance picker needs it because a finance clerk recognises the money
+ * they are settling by tracking number — and the hint carries the COD amount so
+ * the clerk does not have to open the parcel to see what they are recording.
+ */
+function toParcelRows(nodes: readonly Parcel[]): Row[] {
+  return nodes.map((parcel) => ({
+    id: parcel.id,
+    label: parcel.trackingNumber,
+    hint:
+      parcel.paymentType === "COD"
+        ? `Collects ${formatMoney(parcel.codAmount)} on delivery`
+        : "Prepaid",
+    status: parcel.status,
+  }))
+}
+
 function useReferenceRows(
   source: PickerSource,
   search: string,
@@ -132,33 +220,110 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
-  // Only the matching query is enabled, so the other three never hold data.
+  const riderList = useQuery({
+    queryKey: ["reference", "riders", params],
+    queryFn: ({ signal }) => listRidersForPicker(params, signal),
+    enabled: enabled && source === "riders",
+    staleTime: 60_000,
+  })
+
+  // `listVehicles`/`listRoutes` take the full list query, so they get the sort
+  // keys their table screens sort by — `search` is `string | undefined` here and
+  // the two expect `string`, hence the `?? ""`. No signal is threaded: the list
+  // helpers do not accept one, and dropping the request's abort signal here would
+  // mean a superseded search still renders.
+  const vehicleList = useQuery({
+    queryKey: ["reference", "vehicles", params],
+    queryFn: () =>
+      listVehicles({
+        page: params.page,
+        limit: params.limit,
+        search: params.search ?? "",
+        sortBy: "createdAt",
+        sort: "desc",
+      }),
+    enabled: enabled && source === "vehicles",
+    staleTime: 60_000,
+  })
+
+  const routeList = useQuery({
+    queryKey: ["reference", "routes", params],
+    queryFn: () =>
+      listRoutes({
+        page: params.page,
+        limit: params.limit,
+        search: params.search ?? "",
+        sortBy: "createdAt",
+        sort: "desc",
+      }),
+    enabled: enabled && source === "routes",
+    staleTime: 60_000,
+  })
+
+  const parcelList = useQuery({
+    queryKey: ["reference", "parcels", params],
+    queryFn: ({ signal }) =>
+      listParcels(
+        {
+          page: params.page,
+          limit: params.limit,
+          search: params.search ?? "",
+          sortBy: "createdAt",
+          sort: "desc",
+        },
+        signal,
+      ),
+    enabled: enabled && source === "parcels",
+    staleTime: 60_000,
+  })
+
+  // Only the matching query is enabled, so the others never hold data.
   // Their pending flags are read anyway: an unused query is
   // `isFetching === false`, which is exactly the answer wanted for a source
   // that is not in play.
-  const isFetching =
-    source === "branches"
-      ? branches.isFetching
-      : source === "hubs"
-        ? hubs.isFetching
-        : source === "zones"
-          ? zones.isFetching
-          : customers.isFetching
-  const isError =
-    source === "branches"
-      ? branches.isError
-      : source === "hubs"
-        ? hubs.isError
-        : source === "zones"
-          ? zones.isError
-          : customers.isError
+  const sources = {
+    branches,
+    hubs,
+    zones,
+    customers,
+    riderList,
+    vehicleList,
+    routeList,
+    parcelList,
+  }
+  const active =
+    source === "riders"
+      ? riderList
+      : source === "vehicles"
+        ? vehicleList
+        : source === "routes"
+          ? routeList
+          : source === "parcels"
+            ? parcelList
+            : sources[source]
+  const isFetching = active.isFetching
+  const isError = active.isError
 
   const rows = React.useMemo(() => {
     if (source === "branches") return toBranchRows(branches.data?.nodes ?? [])
     if (source === "hubs") return toHubRows(hubs.data?.nodes ?? [])
     if (source === "zones") return toZoneRows(zones.data?.nodes ?? [])
+    if (source === "riders") return toRiderRows(riderList.data?.nodes ?? [])
+    if (source === "vehicles") return toVehicleRows(vehicleList.data?.nodes ?? [])
+    if (source === "routes") return toRouteRows(routeList.data?.nodes ?? [])
+    if (source === "parcels") return toParcelRows(parcelList.data?.nodes ?? [])
     return toCustomerRows(customers.data?.nodes ?? [])
-  }, [source, branches.data, hubs.data, zones.data, customers.data])
+  }, [
+    source,
+    branches.data,
+    hubs.data,
+    zones.data,
+    customers.data,
+    riderList.data,
+    vehicleList.data,
+    routeList.data,
+    parcelList.data,
+  ])
 
   return { rows, isFetching, isError }
 }

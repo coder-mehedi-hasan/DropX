@@ -194,13 +194,14 @@ Used only by `apps/riders`.
 2. **Customer** — OTP session identifies `customer_id`; never check `role_permissions`. Require `customers.status = ACTIVE`. Filter queries to that customer. Allow `parcels.create` for own bookings.
 3. **Public tracking** — tracking-number lookup is public (no auth). Do not expose unrelated customer PII beyond tracking payload.
 4. **No guest booking** — creating parcels as a customer requires ACTIVE OTP session.
-5. **Branch scope** — if user has `branch_id` and is not `ADMIN`, restrict hubs/users/parcels/riders to that branch.
+5. **Branch scope** — if user has `branch_id` and is not `ADMIN`, restrict hubs/users/parcels/riders to that branch. (For `users` this is the `Scope` guard in `modules/users/users.repository.ts`, applied to list and read alike — an out-of-scope user id answers 404, not 403.)
 6. **Hub scope** — restrict ops to hubs in `user_hubs` when the role requires hub scoping (e.g. `HUB_OPERATOR`).
 7. **Rider scope** — rider may only see/update jobs where `assigned_rider_id` / `rider_id` is themselves. `GET /api/v1/jobs` filters on `deliveries.rider_id`; the rider never sends an id.
 8. **App boundary** — prefer separate tokens/audiences per app; if a user has multiple roles, still only expose routes for the app they logged into.
 9. **Delivery retry** — allow multiple `deliveries` per parcel (`attempt_no`); only one active attempt at a time (enforce in API).
 10. **Permission keys** — never invent a permissions catalog table; add keys to `PERMISSIONS` in `apps/api/src/shared/auth/permissions.ts`, attach via `role_permissions`. `bun run db:seed` reconciles the two and reports keys that are granted but no longer in code.
 11. **OTP** — store codes only in Redis/cache; never in MySQL.
+12. **Roles are editable at runtime from the admin** — the Roles screen (`/roles`, `roles.view` / `roles.manage`) creates roles and replaces a role's whole key set via `PUT /api/v1/admin/roles/:id/permissions`. `roles.read` is the runtime view of the static catalog: it returns every known key with a granted flag (rider keys included, never granted to staff). Replacing is guarded: a save that strips `users.manage` from the only role still granting it to any staff is refused with 409, so the one screen that can undo the change cannot be locked out by it. The catalog itself stays static in code — the runtime cannot invent a key the policy layer does not enforce.
 
 ---
 

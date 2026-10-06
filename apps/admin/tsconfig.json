@@ -5,8 +5,7 @@
     "types": ["vite/client", "node"],
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"],
-      "@dropx/db": ["../api/src/db/models"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(30) NULL,
     password_hash VARCHAR(255) NOT NULL,
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
     status ENUM('ACTIVE','INACTIVE','SUSPENDED') NOT NULL DEFAULT 'ACTIVE',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -293,6 +294,29 @@ CREATE TABLE IF NOT EXISTS riders (
     CONSTRAINT fk_riders_hub
         FOREIGN KEY (hub_id) REFERENCES hubs(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- ============================================================
+-- Rider applications
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS rider_applications (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    email VARCHAR(255) NULL,
+    district VARCHAR(100) NOT NULL,
+    vehicle_type ENUM('BICYCLE','MOTORCYCLE','CAR','VAN','OTHER') NOT NULL,
+    license_number VARCHAR(100) NULL,
+    experience_years DECIMAL(4,1) NULL,
+    availability VARCHAR(100) NOT NULL,
+    notes VARCHAR(1000) NULL,
+    status ENUM('PENDING','REVIEWING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_rider_applications_status_created (status, created_at),
+    KEY idx_rider_applications_phone (phone)
 );
 
 CREATE TABLE IF NOT EXISTS rider_locations (

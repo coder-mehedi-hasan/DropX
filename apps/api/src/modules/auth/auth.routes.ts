@@ -4,7 +4,13 @@ import { defineOperation } from "../../shared/auth/policy"
 import type { AppEnv } from "../../types/env"
 import { Hono } from "hono"
 
-import { otpRequestSchema, otpVerifySchema, refreshSchema, staffLoginSchema } from "./auth.dto"
+import {
+  changePasswordSchema,
+  otpRequestSchema,
+  otpVerifySchema,
+  refreshSchema,
+  staffLoginSchema,
+} from "./auth.dto"
 import * as authService from "./auth.service"
 
 /**
@@ -90,52 +96,84 @@ router.post(
   },
 )
 
-router.get("/me", defineOperation({ id: "auth.me" }, { method: "GET", path: "/auth/me" }), (c) => {
-  const { actor, audience } = c.get("auth")
+router.get(
+  "/me",
+  defineOperation(
+    { id: "auth.me", allowPasswordChangeRequired: true },
+    { method: "GET", path: "/auth/me" },
+  ),
+  (c) => {
+    const { actor, audience } = c.get("auth")
 
-  switch (actor.kind) {
-    case "staff":
-      return c.json(
-        response.success({
-          kind: "staff" as const,
-          audience,
-          id: actor.userId,
-          email: actor.email,
-          roles: actor.roles,
-          permissions: [...actor.permissions],
-          branchId: actor.branchId,
-          hubIds: actor.hubIds,
-        }),
-      )
-    case "rider":
-      return c.json(
-        response.success({
-          kind: "rider" as const,
-          audience,
-          id: actor.userId,
-          riderId: actor.riderId,
-          hubId: actor.hubId,
-          email: actor.email,
-          permissions: [...actor.permissions],
-        }),
-      )
-    case "customer":
-      return c.json(
-        response.success({
-          kind: "customer" as const,
-          audience,
-          id: actor.customerId,
-          status: actor.status,
-        }),
-      )
-    case "public":
-      throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
-  }
-})
+    switch (actor.kind) {
+      case "staff":
+        return c.json(
+          response.success({
+            kind: "staff" as const,
+            audience,
+            id: actor.userId,
+            email: actor.email,
+            roles: actor.roles,
+            permissions: [...actor.permissions],
+            mustChangePassword: false,
+            branchId: actor.branchId,
+            hubIds: actor.hubIds,
+          }),
+        )
+      case "rider":
+        return c.json(
+          response.success({
+            kind: "rider" as const,
+            audience,
+            id: actor.userId,
+            riderId: actor.riderId,
+            hubId: actor.hubId,
+            email: actor.email,
+            mustChangePassword: actor.mustChangePassword,
+            permissions: [...actor.permissions],
+          }),
+        )
+      case "customer":
+        return c.json(
+          response.success({
+            kind: "customer" as const,
+            audience,
+            id: actor.customerId,
+            status: actor.status,
+          }),
+        )
+      case "public":
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+    }
+  },
+)
+
+router.post(
+  "/riders/password",
+  defineOperation(
+    { id: "auth.changeRiderPassword", audience: ["riders"], allowPasswordChangeRequired: true },
+    { method: "POST", path: "/auth/riders/password" },
+  ),
+  validateJson(changePasswordSchema),
+  async (c) => {
+    const auth = c.get("auth")
+    if (auth.actor.kind !== "rider") {
+      throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
+    }
+    return c.json(
+      response.success(
+        await authService.changeRiderPassword(c, auth.actor.userId, c.req.valid("json")),
+      ),
+    )
+  },
+)
 
 router.post(
   "/logout",
-  defineOperation({ id: "auth.logout" }, { method: "POST", path: "/auth/logout" }),
+  defineOperation(
+    { id: "auth.logout", allowPasswordChangeRequired: true },
+    { method: "POST", path: "/auth/logout" },
+  ),
   (c) => {
     // Access tokens are stateless and short-lived; the client discards its
     // refresh token. Add a `sid` denylist here if instant revocation is needed.

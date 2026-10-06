@@ -235,7 +235,7 @@ function SummaryCard({
   if (hidden) return null
 
   return (
-    <Card className="gap-2 py-4 transition-colors hover:border-primary/30">
+    <Card className="hover:border-primary/30 gap-2 py-4 transition-colors">
       <CardHeader className="px-4">
         <CardTitle className="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
           <Icon className="text-primary size-3.5" aria-hidden />

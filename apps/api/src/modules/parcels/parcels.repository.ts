@@ -1,6 +1,14 @@
 import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import { PARCEL_STATUSES } from "@/db/models"
-import type { ListParams, Parcel, ParcelItem, ParcelStatus, ParcelType, PaymentType } from "@/db/models"
+import type {
+  ListParams,
+  Parcel,
+  ParcelItem,
+  ParcelStatus,
+  ParcelType,
+  PaymentType,
+} from "@/db/models"
+import { toDecimal, toUtcDate } from "@/db/sql"
 import type { Scope } from "@/shared/auth/auth-context"
 
 /**
@@ -27,6 +35,7 @@ export type ListParcelsFilter = {
   paymentType?: PaymentType | undefined
   search?: string | undefined
   searchFields?: readonly string[]
+  customerId?: string | undefined
 }
 
 function escapeLike(value: string): string {
@@ -39,10 +48,17 @@ function placeholders(count: number): string {
 
 type Clause = { text: string; params: unknown[] }
 
+/**
+ * Joins conditions into a single parenthesised expression — **not** a `WHERE`
+ * clause. Scope and filters are combined with each other and with a search
+ * clause, so a `WHERE` baked in here was nested inside another `WHERE` and the
+ * query was a syntax error the moment two of them were present. Callers prefix
+ * the keyword.
+ */
 function combineClauses(clauses: Clause[]): Clause {
   if (clauses.length === 0) return { text: "", params: [] }
   return {
-    text: `WHERE (${clauses.map((c) => c.text).join(") AND (")})`,
+    text: `(${clauses.map((c) => c.text).join(") AND (")})`,
     params: clauses.flatMap((c) => c.params),
   }
 }
@@ -52,7 +68,10 @@ export function applyScope(scope: Scope): Clause {
   if (scope.isCompanyWide) return combineClauses(clauses)
   if (scope.branchId) clauses.push({ text: "scope_hub.branch_id = ?", params: [scope.branchId] })
   if (scope.hubIds.length > 0) {
-    clauses.push({ text: `scope_hub.id IN (${placeholders(scope.hubIds.length)})`, params: scope.hubIds })
+    clauses.push({
+      text: `scope_hub.id IN (${placeholders(scope.hubIds.length)})`,
+      params: scope.hubIds,
+    })
   }
   return combineClauses(clauses)
 }
@@ -62,6 +81,12 @@ export function applyFilters(filter: ListParcelsFilter): Clause {
   if (filter.status) clauses.push({ text: "p.status = ?", params: [filter.status] })
   if (filter.hubId) clauses.push({ text: "p.current_hub_id = ?", params: [filter.hubId] })
   if (filter.paymentType) clauses.push({ text: "p.payment_type = ?", params: [filter.paymentType] })
+  if (filter.customerId) {
+    clauses.push({
+      text: "(p.sender_customer_id = ? OR p.receiver_customer_id = ?)",
+      params: [filter.customerId, filter.customerId],
+    })
+  }
   if (filter.search && filter.searchFields) {
     const like = `%${escapeLike(filter.search)}%`
     clauses.push({
@@ -75,6 +100,8 @@ export function applyFilters(filter: ListParcelsFilter): Clause {
 function baseSql(): string {
   return `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN customers AS r ON r.id = p.receiver_customer_id LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON}`
 }
+
+const PARCEL_JOINS = ` LEFT JOIN customers AS r ON r.id = p.receiver_customer_id LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON}`
 
 async function pageOf<T>(
   db: Pool | Connection,
@@ -106,14 +133,24 @@ export async function listParcels(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${where ? " " + where : ""}`
+  // Both queries join `scope_hub`, because `applyScope` writes `scope_hub.branch_id`
+  // and `scope_hub.id`. Omitting the join here fails only for a *scoped* caller —
+  // a company-wide read emits no scope clause and never notices — so the parcel
+  // list 500s for every branch manager and hub-scoped dispatcher while working
+  // perfectly for an ADMIN. `check:read-paths` now runs this query scoped for
+  // exactly that reason.
+  //
+  // `customers r` rides along too: the search columns reference `r.name` and
+  // `r.phone`, so leaving the join off 500s the *all* callers the moment a
+  // search is typed (ADMIN included). Same defence — `check:read-paths` runs a
+  // search case against the real schema.
+  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${PARCEL_JOINS}${where ? " " + where : ""}`
   const sortColumn = params.sortBy ? sortColumnByKey[params.sortBy] : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql =
-    `SELECT ${SELECT_COLUMNS} FROM parcels AS p ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p${PARCEL_JOINS} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)
@@ -170,21 +207,23 @@ export async function listParcelsForCustomer(
   sortColumnByKey: Readonly<Record<string, string>>,
 ): Promise<{ nodes: Parcel[]; totalCount: number }> {
   const clauses: Clause[] = [
-    { text: "(p.sender_customer_id = ? OR p.receiver_customer_id = ?)", params: [customerId, customerId] },
+    {
+      text: "(p.sender_customer_id = ? OR p.receiver_customer_id = ?)",
+      params: [customerId, customerId],
+    },
   ]
   const filterClause = applyFilters(filter)
   if (filterClause.params.length) clauses.push(filterClause)
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${PARCEL_JOINS}${where ? " " + where : ""}`
   const sortColumn = params.sortBy ? sortColumnByKey[params.sortBy] : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql =
-    `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p${PARCEL_JOINS} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)
@@ -209,7 +248,10 @@ type CreateParcelRecord = {
   status: ParcelStatus
 }
 
-export async function insertParcel(db: Pool | Connection, record: CreateParcelRecord): Promise<string> {
+export async function insertParcel(
+  db: Pool | Connection,
+  record: CreateParcelRecord,
+): Promise<string> {
   const fields: string[] = []
   const params: (string | number | null)[] = []
   const push = (field: string, value: string | number | null | undefined) => {
@@ -248,7 +290,13 @@ export async function insertParcelItems(
 ): Promise<void> {
   for (const item of items) {
     const fields: string[] = ["parcel_id", "name", "quantity", "unit_price", "total_price"]
-    const params = [parcelId, item.name, item.quantity, item.unitPrice, Math.round(item.unitPrice * item.quantity * 100) / 100]
+    const params = [
+      parcelId,
+      item.name,
+      item.quantity,
+      item.unitPrice,
+      Math.round(item.unitPrice * item.quantity * 100) / 100,
+    ]
     if (item.description !== undefined) {
       fields.push("description")
       params.push(item.description)
@@ -295,6 +343,44 @@ export async function updateParcelStatus(
   return result.affectedRows
 }
 
+/**
+ * Locks the parcel row a create-side operation will belong to, in scope.
+ *
+ * `reference` is matched against **either** the id or the tracking number. That is
+ * not leniency for its own sake: the id is never shown to a human anywhere, while
+ * the tracking number is the only string a customer can read out over the phone.
+ * Accepting a field that callers cannot possibly know would make the whole create
+ * path unusable.
+ *
+ * The lock exists to serialise concurrent creates rather than to read anything:
+ * two dispatchers raising work against the same parcel at the same moment would
+ * each pass an "is there already an open row?" check and both insert. Locking the
+ * shared parent row makes the second one wait, then see the first.
+ */
+export async function lockScopedParcelForUpdate(
+  db: Pool | Connection,
+  scope: Scope,
+  reference: string,
+): Promise<string | null> {
+  const clauses = ["(p.id = ? OR p.tracking_number = ?)"]
+  const params: unknown[] = [reference, reference]
+  const scoped = applyScope(scope)
+  if (scoped.params.length > 0) {
+    clauses.push(scoped.text)
+    params.push(...scoped.params)
+  }
+
+  // The `scope_hub` alias is what `applyScope` writes against, so this joins the
+  // same way the rest of this file does rather than restating the condition.
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT p.id FROM parcels AS p
+     LEFT JOIN hubs AS scope_hub ON scope_hub.id = COALESCE(p.current_hub_id, p.destination_hub_id)
+     WHERE ${clauses.join(" AND ")} LIMIT 1 FOR UPDATE`,
+    params,
+  )
+  return rows[0] ? String(rows[0].id) : null
+}
+
 export async function insertParcelEvent(
   db: Pool | Connection,
   input: {
@@ -323,7 +409,10 @@ export async function insertParcelEvent(
   await db.execute<OkPacket>(sql, params)
 }
 
-export async function listParcelItems(db: Pool | Connection, parcelId: string): Promise<ParcelItem[]> {
+export async function listParcelItems(
+  db: Pool | Connection,
+  parcelId: string,
+): Promise<ParcelItem[]> {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT id, parcel_id, name, description, quantity, unit_price, total_price, created_at
        FROM parcel_items
@@ -352,8 +441,8 @@ type ParcelRow = {
   cod_amount: string
   delivery_fee: string
   status: ParcelStatus
-  created_at: string
-  updated_at: string
+  created_at: string | Date
+  updated_at: string | Date
 }
 
 export type ParcelItemRow = {
@@ -364,21 +453,11 @@ export type ParcelItemRow = {
   quantity: string
   unit_price: string
   total_price: string
-  created_at: string
+  created_at: string | Date
 }
 
 function toNullableId(value: unknown): string | null {
   return value === null || value === undefined ? null : String(value)
-}
-
-function toDecimal(value: unknown, fallback = 0): number {
-  if (typeof value === "number") return value
-  if (typeof value === "bigint") return Number(value)
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : fallback
-  }
-  return fallback
 }
 
 function toStringOrNull(value: unknown): string | null {
@@ -405,8 +484,8 @@ export function decodeParcel(row: unknown): Parcel {
     codAmount: toDecimal(r.cod_amount),
     deliveryFee: toDecimal(r.delivery_fee),
     status: r.status,
-    createdAt: new Date(`${r.created_at.replace(" ", "T")}Z`),
-    updatedAt: new Date(`${r.updated_at.replace(" ", "T")}Z`),
+    createdAt: toUtcDate(r.created_at).toISOString(),
+    updatedAt: toUtcDate(r.updated_at).toISOString(),
   }
 }
 
@@ -420,7 +499,7 @@ export function decodeItem(row: unknown): ParcelItem {
     quantity: Number(r.quantity),
     unitPrice: toDecimal(r.unit_price),
     totalPrice: toDecimal(r.total_price),
-    createdAt: new Date(`${r.created_at.replace(" ", "T")}Z`),
+    createdAt: toUtcDate(r.created_at).toISOString(),
   }
 }
 

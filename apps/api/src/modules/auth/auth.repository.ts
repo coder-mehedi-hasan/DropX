@@ -12,6 +12,7 @@ export type StaffLoginRow = {
   email: string
   name: string
   password_hash: string
+  must_change_password: boolean
   status: "ACTIVE" | "INACTIVE" | "SUSPENDED"
 }
 
@@ -28,7 +29,7 @@ const CUSTOMER_COLUMNS = "id, name, phone, email, status"
 export const authRepository = {
   async findUserByEmail(db: Pool, email: string): Promise<StaffLoginRow | null> {
     const [rows] = await db.query<RowDataPacket[]>(
-      `SELECT id, email, name, password_hash, status
+      `SELECT id, email, name, password_hash, must_change_password, status
          FROM users
         WHERE email = ?
         LIMIT 1`,
@@ -38,7 +39,10 @@ export const authRepository = {
   },
 
   /** Riders authenticate as users; the rider profile is resolved separately. */
-  async findRiderByUserId(db: Pool, userId: string): Promise<{ id: string; hub_id: string } | null> {
+  async findRiderByUserId(
+    db: Pool,
+    userId: string,
+  ): Promise<{ id: string; hub_id: string } | null> {
     const [rows] = await db.query<RowDataPacket[]>(
       `SELECT id, hub_id FROM riders WHERE user_id = ? LIMIT 1`,
       [userId],
@@ -111,7 +115,16 @@ export const authRepository = {
 
   async touchLastLogin(db: Pool, userId: string): Promise<void> {
     // `updated_at` is ON UPDATE CURRENT_TIMESTAMP, so this records the activity.
-    await db.execute<OkPacket>(`UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [userId])
+    await db.execute<OkPacket>(`UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [
+      userId,
+    ])
+  },
+
+  async updatePassword(db: Pool, userId: string, passwordHash: string): Promise<void> {
+    await db.execute<OkPacket>(
+      `UPDATE users SET password_hash = ?, must_change_password = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [passwordHash, userId],
+    )
   },
 
   async findCustomerById(

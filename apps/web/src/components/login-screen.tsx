@@ -23,7 +23,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@dropx/ui"
-import { ArrowLeftIcon, MessageSquareIcon, TriangleAlertIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  BanknoteIcon,
+  MessageSquareIcon,
+  PackageCheckIcon,
+  RouteIcon,
+  TriangleAlertIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
 import { useForm } from "react-hook-form"
@@ -162,31 +169,11 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(34rem,0.95fr)]">
-      <section
-        className="relative hidden min-h-screen overflow-hidden bg-cover bg-center lg:block"
-        style={{
-          backgroundImage:
-            "url(https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1400&q=85)",
-        }}
-        aria-label="A DropX team planning parcel deliveries"
-      >
-        <div className="absolute inset-0 bg-slate-950/25" />
-        <div className="relative flex h-full flex-col justify-between p-10 text-white xl:p-14">
-          <DropXLogo size="lg" className="text-white" />
-          <div className="max-w-sm">
-            <p className="mb-3 text-sm font-semibold tracking-[0.18em] text-white/75 uppercase">
-              Parcel delivery, simplified
-            </p>
-            <h1 className="text-4xl leading-tight font-semibold tracking-tight xl:text-5xl">
-              Send it anywhere. Follow it everywhere.
-            </h1>
-          </div>
-        </div>
-      </section>
+      <BrandPanel />
 
-      <section className="flex min-h-screen items-center justify-center bg-white px-6 py-12 sm:px-12 lg:px-20">
+      <section className="bg-card flex min-h-screen items-center justify-center px-6 py-12 sm:px-12 lg:px-20">
         <div className="w-full max-w-md">
-          <div className="mb-14">
+          <div className="mb-12 lg:hidden">
             <DropXLogo size="lg" />
           </div>
           <Tabs value={challenge ? "code" : "identifier"} className="gap-4">
@@ -292,7 +279,7 @@ export function LoginScreen({ requestedPath }: { requestedPath?: string }) {
             </DialogContent>
           </Dialog>
           <p className="text-muted-foreground mt-12 text-center text-sm">
-            <a href="/track" className="hover:text-foreground underline underline-offset-4">
+            <a href="/track" className="font-medium">
               Track a parcel without signing in
             </a>
           </p>
@@ -402,7 +389,7 @@ function CodeStep({
           Didn&apos;t receive code?{" "}
           <button
             type="button"
-            className="text-primary font-medium hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-accent-ink hover:text-accent-ink-hover font-medium hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onResend}
             disabled={!canResend || verifying}
           >
@@ -414,5 +401,90 @@ function CodeStep({
         </Button>
       </div>
     </TabsContent>
+  )
+}
+
+const PROMISES = [
+  { icon: PackageCheckIcon, text: "Fee quoted before you book" },
+  { icon: RouteIcon, text: "Every hub handover tracked" },
+  { icon: BanknoteIcon, text: "Prepaid or cash on delivery" },
+] as const
+
+/**
+ * The sign-in brand panel: Obsidian canvas, a hub-to-hub route drawn in the
+ * brand's outline-stroke language, and the product promise as plain text. It
+ * replaces a stock photograph the imagery brief rules out (generic scene, no
+ * Bangladeshi merchant/rider/parcel context) with an on-brand illustration.
+ */
+function BrandPanel() {
+  return (
+    <section
+      className="relative hidden min-h-screen overflow-hidden bg-[#0D0F12] text-white lg:block"
+      aria-label="About DropX"
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:48px_48px]"
+      />
+      <div
+        aria-hidden
+        className="absolute -bottom-40 -left-32 size-[34rem] rounded-full bg-[#FF5500] opacity-[0.18] blur-[120px]"
+      />
+
+      <div className="relative flex h-full flex-col justify-between p-10 xl:p-14">
+        <DropXLogo size="lg" className="text-white" />
+
+        <div className="grid gap-10">
+          <RouteIllustration />
+          <div className="grid max-w-lg gap-4">
+            <h1 className="text-4xl leading-[1.1] font-bold tracking-tight text-balance xl:text-5xl">
+              Send it anywhere. Follow it everywhere.
+            </h1>
+            <p className="text-base leading-7 text-white/70">
+              Book a pickup, see the fee up front, and watch your parcel move hub to hub until it
+              reaches the receiver.
+            </p>
+          </div>
+          <ul className="grid gap-3 text-sm text-white/85">
+            {PROMISES.map((item) => (
+              <li key={item.text} className="flex items-center gap-3">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-white/10">
+                  <item.icon className="size-4 text-[#FF5500]" strokeWidth={1.75} aria-hidden />
+                </span>
+                {item.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function RouteIllustration() {
+  return (
+    <svg
+      viewBox="0 0 420 120"
+      className="h-auto w-full max-w-md"
+      fill="none"
+      role="img"
+      aria-label="A parcel route from a pickup point through two hubs to a doorstep"
+    >
+      <path d="M24 84 C90 84 100 36 170 36 S270 84 340 84 S380 60 396 60" stroke="#fff" strokeOpacity="0.2" strokeWidth="1.75" strokeDasharray="4 6" />
+      <path d="M24 84 C90 84 100 36 170 36" stroke="#FF5500" strokeWidth="1.75" strokeLinecap="round" />
+      {[
+        [24, 84, "Pickup"],
+        [170, 36, "Origin hub"],
+        [340, 84, "Dest. hub"],
+        [396, 60, "Door"],
+      ].map(([x, y, label], index) => (
+        <g key={String(label)}>
+          <circle cx={x as number} cy={y as number} r="7" fill={index < 2 ? "#FF5500" : "#1A1D24"} stroke={index < 2 ? "#FF5500" : "#fff"} strokeOpacity={index < 2 ? 1 : 0.4} strokeWidth="1.75" />
+          <text x={x as number} y={(y as number) + (index === 1 ? -16 : 26)} textAnchor="middle" fill="#fff" fillOpacity="0.7" fontSize="11" fontFamily="inherit">
+            {label as string}
+          </text>
+        </g>
+      ))}
+    </svg>
   )
 }

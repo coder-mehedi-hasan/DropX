@@ -30,7 +30,7 @@ apps/
   admin/     # Admin / ops portal (email + password) — Vite
   api/       # Backend API for all clients — Hono, run by Bun
 packages/
-  db/        # Database port + MySQL adapter, entities, query builder, migrate runner
+  types/      # The wire contract — entity shapes + status vocabularies every app imports
   ui/        # Shared design tokens and shadcn-style components on Radix
 mprocs.yaml  # `bun run dev` runs api + admin + riders + web together
 ```
@@ -51,6 +51,7 @@ docs/brand-guidelines.md                 # written brand contract and handoff ch
 | `apps/admin`  | Staff            | `users` email + password + RBAC           | 5173     |
 | `apps/api`    | All of the above | Auth, business logic, DB access           | 8000     |
 | `packages/ui` | —                | Tokens + components, no app logic         | —        |
+| `packages/types` | —             | Wire contract — types only, no app logic  | —        |
 
 **Do not** create separate portals for branches or hubs. Branch/hub staff use `apps/admin` with role + branch/hub scoping.
 
@@ -67,12 +68,25 @@ docs/brand-guidelines.md                 # written brand contract and handoff ch
 | `bun run db:seed`                         | Seed roles + their default permission grants                            |
 | `bun run --cwd apps/api check:read-paths` | Run every read query against the real schema (needs `db:migrate` first) |
 
-Server-side config (`DATABASE_URL`, `APP_SECRET`, `API_*`, `BOOTSTRAP_*`) lives in
-`.env` at the repo root; the API and the scripts read it from there whatever
-directory they run in. Each frontend loads its own URL from its own `.env`
-(Next/Vite auto-load from the app directory) — see `apps/web/.env.example`,
-`apps/admin/.env.example` and `apps/riders/.env.example`. Local overrides go in
-`.env.local` per app (gitignored).
+Every app loads its own config from its own `.env`, auto-loaded from the app
+directory — no script passes `--env-file`. Server-side config (`DATABASE_URL`,
+`REDIS_URL`, `MAIL_*`, `API_*`, `BOOTSTRAP_TOKEN`) therefore lives in
+`apps/api/.env`; each frontend loads its own API URL the same way. See
+`apps/web/.env.example`, `apps/admin/.env.example`, `apps/riders/.env.example`
+and `apps/api/.env.example`. Local overrides go in `.env.local` per app
+(gitignored).
+
+### First administrator
+
+Nothing else in the codebase writes a `users` row, so a fresh database has no way
+in. It is created over HTTP by `POST /api/v1/admin/bootstrap` — easiest from
+`/docs` — with `{ token, name, email, password }`. There is no script. Two
+independent locks: the body `token` must equal `BOOTSTRAP_TOKEN` (unset means
+every call is refused, so a deploy that forgot it is closed), and the route
+refuses once any account holds the `ADMIN` role, which makes it permanently dead
+after first use. The one-shot test runs inside the transaction under a row lock
+on the `ADMIN` role, so concurrent calls cannot both win. Roles must be seeded
+first (`bun run db:seed`) — the role grant is what makes the account an admin.
 
 `check:read-paths` executes every SELECT against a migrated database, which is how a query referencing a column that does not exist gets caught. An empty database is enough, since a bad column throws while a valid one simply returns no rows. Run it after touching SQL.
 
@@ -180,6 +194,16 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
      ```
 
      Each module keeps its own repository with the SQL for that domain co-located with its service (`modules/{domain}/{module}.repository.ts`). Repositories take a `Pool` (or transaction) so a caller can pass `tx`; a route passes business input only. Sort columns arrive from clients, so the allowlist lives next to each query.
+
+     The server-only half stays in `apps/api/src/db/models.ts` (table names and the pagination arithmetic that turns a query string into `{ nodes, meta }`). It re-exports `@dropx/types`, so the API's many `from "../db/models"` imports are unaffected.
+
+19. **`@dropx/types` is the one wire contract** — every app imports entity shapes and status vocabularies from `packages/types`. It is types and `as const` tuples only, with no build step, and must never gain a dependency on the database layer.
+
+     **Timestamps are ISO `string`s, not `Date`s.** That is the wire: Hono's JSON encoder converts a `Date` on the way out anyway, so the mappers in the repositories call `.toISOString()` themselves and the declared type matches the bytes on the wire. A frontend writing `parcel.createdAt.getTime()` is a type error, not a runtime crash.
+
+     Adding a member to a status tuple is therefore a compile error in every app that has not handled it. That is the point: the parcel status list used to be written out in four places (API, admin, riders, web), and a fifth app would have silently disagreed with the other four. Do not re-declare one of these lists locally — import it.
+
+     A frontend needs an app-local type only when the API genuinely returns a different shape for that app (the customer portal's `ParcelTracking` adds `parcelId`, which the staff projection does not).
 17. **Audience and permission are separate axes** — a rider token holds `rider.jobs.*` and must never satisfy `parcels.*`; the admin and rider surfaces are separate modules, not one route with two audiences.
 18. **Branding has a source-of-truth contract** — use the approved assets in `apps/web/public/brand/`; do not recreate or manually combine logos in app code. Material brand changes update the interactive page, asset README, and `docs/brand-guidelines.md` together. The web brand page is light-first; dark mode is a documented paired environment.
 
@@ -192,8 +216,9 @@ The spec is public and unversioned at **`/openapi.json`**, with Swagger UI at **
 | Admin/ops screens, branch/hub mgmt        | `apps/admin`                                                                             |
 | Auth, permissions checks, domain APIs     | `apps/api`                                                                               |
 | Shared components, design tokens          | `packages/ui`                                                                            |
+| Shared entity/status types (the wire)     | `packages/types`                                                                         |
 | Brand guidelines, logos, marketing assets | `apps/web/public/brand`, `apps/web/src/app/brand-guidelines`, `docs/brand-guidelines.md` |
-| Database pool, model types, migrations    | `apps/api/src/db/pool.ts`, `apps/api/src/db/models.ts`, `apps/api/src/db/migrate.sql`  |
+| Database pool, SQL, migrations            | `apps/api/src/db/pool.ts`, `apps/api/src/db/migrate.sql`                                 |
 | Product / auth / RBAC docs                | `docs/`                                                                                  |
 
 ## Coding expectations

@@ -17,9 +17,8 @@ export function AppShell() {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Header />
-          <main className="flex-1 px-4 py-6">
-            {/* `max-w-page` is the brand's 1200px content width, not a Tailwind default. */}
-            <div className="mx-auto w-full max-w-page">
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="w-full">
               <Outlet />
             </div>
           </main>

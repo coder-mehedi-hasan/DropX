@@ -89,25 +89,34 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
     <div className="grid gap-6">
       <BackLink />
 
-      <div className="bg-primary/8 flex flex-wrap items-start justify-between gap-5 rounded-3xl px-5 py-6 sm:px-7">
-        <div className="grid gap-2">
-          <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
-            Parcel details
-          </p>
-          <h1 className="font-mono text-2xl font-semibold tracking-tight">
-            {parcel.trackingNumber}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Booked {formatDateTime(parcel.createdAt)} · last updated{" "}
-            {formatDateTime(parcel.updatedAt)}
-          </p>
-        </div>
-        <div className="grid justify-items-start gap-2 sm:justify-items-end">
+      <div className="bg-card rounded-feature grid gap-6 border p-6 shadow-sm sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="grid gap-2">
+            <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
+              Parcel
+            </p>
+            <h1 className="font-mono text-2xl font-bold tracking-tight sm:text-3xl">
+              {parcel.trackingNumber}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Booked {formatDateTime(parcel.createdAt)} · updated {formatDateTime(parcel.updatedAt)}
+            </p>
+          </div>
           <StatusBadge status={parcel.status} />
-          <p className="text-muted-foreground max-w-xs text-left text-xs sm:text-right">
-            {statusMessage(parcel.status)}
-          </p>
         </div>
+        <p className="bg-muted/60 rounded-lg px-4 py-3 text-sm">{statusMessage(parcel.status)}</p>
+        <dl className="grid gap-4 border-t pt-5 sm:grid-cols-3">
+          <Fact label="Delivery fee" value={formatMoney(parcel.deliveryFee)} />
+          <Fact
+            label="Payment"
+            value={
+              parcel.paymentType === "COD"
+                ? `Cash on delivery · ${formatMoney(parcel.codAmount)}`
+                : "Prepaid"
+            }
+          />
+          <Fact label="Weight" value={formatWeight(parcel.weight)} />
+        </dl>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -115,27 +124,15 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
           <Card>
             <CardHeader>
               <CardTitle>Parcel</CardTitle>
-              <CardDescription>
-                The delivery fee is set by the API when the parcel is created and cannot be edited.
-              </CardDescription>
+              <CardDescription>Route and size. The delivery fee is fixed at booking.</CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="grid gap-4 sm:grid-cols-2">
                 <Fact label="Type" value={parcel.parcelType} />
-                <Fact label="Weight" value={formatWeight(parcel.weight)} />
                 <Fact
                   label="Dimensions (L×W×H)"
                   value={formatDimensions(parcel.length, parcel.width, parcel.height)}
                 />
-                <Fact
-                  label="Payment"
-                  value={
-                    parcel.paymentType === "COD"
-                      ? `Cash on delivery · ${formatMoney(parcel.codAmount)}`
-                      : "Prepaid"
-                  }
-                />
-                <Fact label="Delivery fee" value={formatMoney(parcel.deliveryFee)} />
                 <Fact label="Destination zone" value={`#${parcel.destinationZoneId}`} />
                 <Fact label="Origin hub" value={`#${parcel.originHubId}`} />
                 <Fact label="Destination hub" value={`#${parcel.destinationHubId}`} />
@@ -262,7 +259,7 @@ function BackLink() {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1">
-      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{label}</dt>
       <dd className="text-sm font-medium">{value}</dd>
     </div>
   )

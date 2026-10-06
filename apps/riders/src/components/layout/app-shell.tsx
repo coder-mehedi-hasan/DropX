@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
 import { ChevronLeft } from "lucide-react"
-import { Avatar, AvatarFallback, buttonVariants, cn } from "@dropx/ui"
+import { Avatar, AvatarFallback, DropXMark, buttonVariants, cn } from "@dropx/ui"
 
 import { useAuth } from "../../lib/auth"
 import { initials } from "../../lib/format"
@@ -26,7 +26,7 @@ export type ScreenHeaderAction = {
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-muted/30 text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col border-x">
+    <div className="bg-background text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col border-x">
       {children}
       <BottomNav />
     </div>
@@ -56,7 +56,9 @@ export function AppHeader({
         >
           <ChevronLeft className="size-6" />
         </Link>
-      ) : null}
+      ) : (
+        <DropXMark className="ml-1 size-9 rounded-[10px]" />
+      )}
 
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg leading-tight font-bold tracking-tight">{title}</h1>

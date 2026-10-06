@@ -17,10 +17,19 @@ import {
   SelectValue,
   Skeleton,
   StatusBadge,
+  cn,
   parcelStatusLabel,
   type DataTableColumn,
 } from "@dropx/ui"
-import { PackageOpenIcon, SearchIcon, TriangleAlertIcon } from "lucide-react"
+import {
+  CircleCheckIcon,
+  PackageIcon,
+  PackageOpenIcon,
+  SearchIcon,
+  TriangleAlertIcon,
+  TruckIcon,
+  type LucideIcon,
+} from "lucide-react"
 import Link from "next/link"
 import * as React from "react"
 
@@ -68,6 +77,23 @@ export function ParcelList() {
   const parcels = query.data?.nodes ?? []
   const meta = query.data?.meta
   const isFiltered = search !== "" || status !== "ALL"
+
+  const summary = React.useMemo(() => {
+    const activeStatuses = new Set<ParcelStatus>([
+      "PICKED_UP",
+      "IN_TRANSIT",
+      "AT_HUB",
+      "OUT_FOR_DELIVERY",
+    ])
+    const attentionStatuses = new Set<ParcelStatus>(["FAILED", "RETURNED"])
+
+    return {
+      total: meta?.totalCount ?? parcels.length,
+      active: parcels.filter((parcel) => activeStatuses.has(parcel.status)).length,
+      delivered: parcels.filter((parcel) => parcel.status === "DELIVERED").length,
+      attention: parcels.filter((parcel) => attentionStatuses.has(parcel.status)).length,
+    }
+  }, [meta?.totalCount, parcels])
 
   const errorMessage = isApiError(query.error) ? query.error.message : null
 
@@ -125,50 +151,40 @@ export function ParcelList() {
   )
 
   return (
-    <div className="grid gap-4">
-      <Card className="bg-card/60 border-0 shadow-sm">
-        <CardContent className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="grid gap-1">
-            <p className="text-sm font-semibold">Find a parcel</p>
-            <p className="text-muted-foreground text-xs">
-              Search by tracking number or narrow by status.
-            </p>
-          </div>
-          <div className="relative">
-            <SearchIcon
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-              aria-hidden
-            />
-            <Input
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by tracking number"
-              className="pl-9"
-              aria-label="Search parcels by tracking number"
-            />
-          </div>
-
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              setStatus(value === "ALL" ? "ALL" : (value as ParcelStatus))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-56" aria-label="Filter by status">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              {PARCEL_STATUSES.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {parcelStatusLabel(value)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+    <div className="grid gap-6">
+      <section
+        aria-label="Shipment pulse"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.35fr_1fr_1fr_1fr]"
+      >
+        <MetricCard
+          dark
+          icon={PackageIcon}
+          label="All parcels"
+          value={summary.total}
+          note={isFiltered ? "Matching this view" : "Across your account"}
+        />
+        <MetricCard
+          icon={TruckIcon}
+          label="On the way"
+          value={summary.active}
+          note="On this page"
+          accent="orange"
+        />
+        <MetricCard
+          icon={CircleCheckIcon}
+          label="Delivered"
+          value={summary.delivered}
+          note="On this page"
+          accent="green"
+        />
+        <MetricCard
+          icon={TriangleAlertIcon}
+          label="Needs attention"
+          value={summary.attention}
+          note="Failed or returned"
+          accent="amber"
+        />
+      </section>
 
       {errorMessage ? (
         <Alert variant="destructive">
@@ -178,9 +194,66 @@ export function ParcelList() {
         </Alert>
       ) : null}
 
-      <Card>
-        <CardContent className="p-3 sm:p-5">
-          {query.isPending ? <ListSkeleton /> : null}
+      <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-28px_rgba(13,15,18,.28)] ring-1 ring-black/5">
+        <div className="grid gap-4 border-b border-black/6 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,.9fr)] lg:items-end">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-tight">Shipments</h2>
+              {!query.isPending ? (
+                <span className="rounded-md bg-[#0D0F12] px-2 py-0.5 text-[0.65rem] font-semibold text-white tabular-nums">
+                  {meta?.totalCount ?? parcels.length}
+                </span>
+              ) : null}
+            </div>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Search, filter, and open a parcel to see its journey.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <SearchIcon
+                className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+                strokeWidth={1.75}
+                aria-hidden
+              />
+              <Input
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search tracking number"
+                className="h-11 border-black/10 bg-[#F7F8FA] pl-9 shadow-none"
+                aria-label="Search parcels by tracking number"
+              />
+            </div>
+            <Select
+              value={status}
+              onValueChange={(value) => {
+                setStatus(value === "ALL" ? "ALL" : (value as ParcelStatus))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger
+                className="h-11 w-full border-black/10 bg-[#F7F8FA] shadow-none sm:w-48"
+                aria-label="Filter by status"
+              >
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                {PARCEL_STATUSES.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {parcelStatusLabel(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <CardContent className="p-0 sm:p-0">
+          {query.isPending ? (
+            <div className="p-4">
+              <ListSkeleton />
+            </div>
+          ) : null}
 
           {!query.isPending && parcels.length === 0 && !errorMessage ? (
             <EmptyState
@@ -216,18 +289,19 @@ export function ParcelList() {
           ) : null}
 
           {parcels.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid">
               <DataTable
                 data={parcels}
                 columns={columns}
                 rowId={(parcel) => parcel.id}
                 caption={`Your ${parcels.length} parcels`}
-                variant="bordered"
+                variant="minimal"
+                density="relaxed"
                 keyboardNavigation={false}
                 clipboard={false}
               />
 
-              <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm">
                 <p>
                   {meta
                     ? `Showing ${(meta.currentPage - 1) * PAGE_SIZE + 1}–${Math.min(
@@ -259,6 +333,65 @@ export function ParcelList() {
           ) : null}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function MetricCard({
+  dark = false,
+  icon: Icon,
+  label,
+  value,
+  note,
+  accent = "neutral",
+}: {
+  dark?: boolean
+  icon: LucideIcon
+  label: string
+  value: number
+  note: string
+  accent?: "neutral" | "orange" | "green" | "amber"
+}) {
+  const iconClass = {
+    neutral: "bg-muted text-foreground",
+    orange: "bg-primary/10 text-accent-ink",
+    green: "bg-status-delivered/10 text-success",
+    amber: "bg-status-out-for-delivery/10 text-warning",
+  }[accent]
+
+  return (
+    <div
+      className={cn(
+        "relative min-h-36 overflow-hidden rounded-2xl p-5",
+        dark
+          ? "bg-[#0D0F12] text-white shadow-[0_18px_40px_-24px_rgba(13,15,18,.85)]"
+          : "text-foreground bg-white shadow-[0_12px_32px_-26px_rgba(13,15,18,.55)] ring-1 ring-black/5",
+      )}
+    >
+      {dark ? (
+        <div className="pointer-events-none absolute -top-16 -right-10 size-40 rounded-full bg-[#FF5500]/20 blur-2xl" />
+      ) : null}
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p
+            className={cn("text-sm font-medium", dark ? "text-white/60" : "text-muted-foreground")}
+          >
+            {label}
+          </p>
+          <p className="mt-3 text-3xl font-extrabold tracking-[-0.04em] tabular-nums">{value}</p>
+        </div>
+        <span
+          className={cn(
+            "flex size-9 items-center justify-center rounded-xl",
+            dark ? "bg-white/10 text-[#FF8A4C]" : iconClass,
+          )}
+        >
+          <Icon className="size-4" aria-hidden />
+        </span>
+      </div>
+      <p className={cn("relative mt-3 text-xs", dark ? "text-white/45" : "text-muted-foreground")}>
+        {note}
+      </p>
     </div>
   )
 }

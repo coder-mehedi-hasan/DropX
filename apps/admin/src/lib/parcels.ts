@@ -5,7 +5,7 @@ import {
   PAYMENT_TYPES,
   type PaymentType,
   type ParcelType,
-} from "@dropx/db"
+} from "@dropx/types"
 
 import type {
   DeliveryQuote,
@@ -79,7 +79,7 @@ export function paymentFilter(value: PaymentType | "" | undefined): PaymentType 
 }
 
 /**
- * Forward edges of the lifecycle, read straight from `@dropx/db` so the
+ * Forward edges of the lifecycle, read straight from `@dropx/types` so the
  * status picker can only offer moves the API will accept.
  */
 export function nextStatuses(status: ParcelStatus): readonly ParcelStatus[] {
@@ -95,6 +95,7 @@ export type ParcelListParams = {
   status?: ParcelStatus | undefined
   hubId?: string | undefined
   paymentType?: PaymentType | undefined
+  customerId?: string | undefined
 }
 
 export type CreateParcelItemInput = {

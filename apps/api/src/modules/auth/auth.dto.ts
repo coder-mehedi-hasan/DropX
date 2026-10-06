@@ -24,6 +24,12 @@ export const staffLoginSchema = z.object({
 
 export type StaffLoginInput = z.infer<typeof staffLoginSchema>
 
+export const changePasswordSchema = z.object({
+  newPassword: z.string().min(8, "Password must be at least 8 characters").max(200),
+})
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+
 export const refreshSchema = z.object({
   refreshToken: z.string().min(1, "refreshToken is required"),
 })
@@ -81,6 +87,7 @@ export const loginResponseSchema = z.object({
     name: z.string().nullable(),
     email: z.string().nullable(),
     roles: z.array(z.string()),
+    mustChangePassword: z.boolean(),
   }),
 })
 
@@ -129,6 +136,7 @@ export const meResponseSchema = z.discriminatedUnion("kind", [
     riderId: z.string(),
     hubId: z.string().nullable(),
     email: z.string(),
+    mustChangePassword: z.boolean(),
     permissions: z.array(z.string()),
   }),
   z.object({

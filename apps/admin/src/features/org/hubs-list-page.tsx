@@ -11,12 +11,12 @@ import {
   ServerDataTable,
   type DataTableColumn,
 } from "@dropx/ui"
-import { HUB_STATUSES, HUB_TYPES } from "@dropx/db"
+import { HUB_STATUSES, HUB_TYPES } from "@dropx/types"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
-import { createHub, listHubs } from "@/lib/endpoints"
+import { listHubs } from "@/lib/endpoints"
 import { formatDateTime } from "@/lib/format"
 import { type Hub } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
@@ -232,7 +232,7 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
         </CardContent>
       </Card>
 
-      <HubFormSheet open={createOpen} onOpenChange={setCreateOpen} onSubmit={createHub} />
+      <HubFormSheet open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

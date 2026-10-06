@@ -11,12 +11,12 @@ import {
   ServerDataTable,
   type DataTableColumn,
 } from "@dropx/ui"
-import { BRANCH_STATUSES } from "@dropx/db"
+import { BRANCH_STATUSES } from "@dropx/types"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
-import { createBranch, listBranches } from "@/lib/endpoints"
+import { listBranches } from "@/lib/endpoints"
 import { formatDateTime } from "@/lib/format"
 import { type Branch } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
@@ -198,7 +198,7 @@ export function BranchesListPage({ search }: { search: BranchesSearch }) {
         </CardContent>
       </Card>
 
-      <BranchFormSheet open={createOpen} onOpenChange={setCreateOpen} onSubmit={createBranch} />
+      <BranchFormSheet open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

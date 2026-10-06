@@ -1,6 +1,9 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import {
+  AppToast,
   BoundFormField,
+  FormInputSlug,
   FormItem,
   FormLabel,
   FormMessage,
@@ -13,8 +16,9 @@ import {
   Textarea,
 } from "@dropx/ui"
 import { ReferenceCombobox } from "@/components/reference-combobox"
-import { OrgFormShell } from "./org-form-shell"
-import { createHubSchema, type CreateHubBody, type Hub } from "@/lib/types"
+import { FormSheet } from "@/components/form-sheet"
+import { createHub } from "@/lib/endpoints"
+import { createHubSchema, type CreateHubBody } from "@/lib/types"
 
 /** Same reasoning as the branch form: the schema is the API's DTO, so the two
  *  cannot drift — a field added here is a field the endpoint rejects. */
@@ -36,32 +40,30 @@ const DEFAULT_VALUES: z.infer<typeof schema> = {
 export function HubFormSheet({
   open,
   onOpenChange,
-  onSubmit,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (body: CreateHubBody) => Promise<Hub>
 }) {
-  async function handleSubmit(values: z.infer<typeof schema>) {
-    return onSubmit({
-      ...values,
-      address: values.address?.trim() || null,
-      district: values.district?.trim() || null,
-      latitude: values.latitude ?? null,
-      longitude: values.longitude ?? null,
-      capacity: values.capacity ?? null,
-    } as CreateHubBody)
-  }
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (body: CreateHubBody) => createHub(body),
+    onSuccess: (saved) => {
+      AppToast.success(`${saved.name} created`)
+      void queryClient.invalidateQueries({ queryKey: ["hubs"] })
+      onOpenChange(false)
+    },
+  })
 
   return (
-    <OrgFormShell
+    <FormSheet
       schema={schema}
       open={open}
       onOpenChange={onOpenChange}
       title="New hub"
       description="A hub belongs to exactly one branch. Its code is unique company-wide."
       submitLabel="Create hub"
-      busy={false}
+      busy={mutation.isPending}
       defaults={DEFAULT_VALUES}
       fieldLabels={{
         branchId: "Branch",
@@ -75,7 +77,24 @@ export function HubFormSheet({
         capacity: "Capacity",
         status: "Status",
       }}
-      onSubmit={handleSubmit as (values: Record<string, unknown>) => Promise<unknown>}
+      onSubmit={async (values) => {
+        const typed = values as z.infer<typeof schema>
+        // `mutateAsync`, awaited — not `mutate`. The shell owns the error banner and
+        // only learns there is an error because this handler rejects: it wraps the
+        // call in `try/catch` and hands the rejection to `useServerErrors`. `mutate`
+        // returns before the request settles and never rejects, so a 409 for a
+        // duplicate hub code would be discarded silently.
+        await mutation.mutateAsync({
+          ...typed,
+          // An emptied text input means "not supplied", which the columns store as
+          // NULL rather than as an empty string.
+          address: typed.address?.trim() || null,
+          district: typed.district?.trim() || null,
+          latitude: typed.latitude ?? null,
+          longitude: typed.longitude ?? null,
+          capacity: typed.capacity ?? null,
+        } as CreateHubBody)
+      }}
       error={null}
       renderFields={() => (
         <>
@@ -104,16 +123,7 @@ export function HubFormSheet({
               </FormItem>
             )}
           />
-          <BoundFormField
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code</FormLabel>
-                <Input placeholder="DHAKA-SORT" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormInputSlug name="code" inheritFrom="name" label="Code" placeholder="DHAKA-SORT" />
           <BoundFormField
             name="type"
             render={({ field }) => (

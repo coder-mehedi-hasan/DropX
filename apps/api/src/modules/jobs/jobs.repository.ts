@@ -1,4 +1,4 @@
-import type { Delivery, DeliveryStatus, ListParams, Parcel, ParcelItem } from "@/db/models"
+import type { DeliveryStatus, Job, ListParams, Parcel, ParcelItem } from "@/db/models"
 import { decodeItem, type ParcelItemRow } from "@/modules/parcels/parcels.repository"
 import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 
@@ -30,29 +30,6 @@ type JobRow = {
   created_at: string
 }
 
-export type Job = {
-  delivery: {
-    id: string
-    attemptNo: number
-    status: DeliveryStatus
-    address: string
-    failureReason: string | null
-    recipientName: string | null
-    recipientPhone: string | null
-    outForDeliveryAt: Date | null
-    deliveredAt: Date | null
-  }
-  parcel: {
-    id: string
-    trackingNumber: string
-    status: Parcel["status"]
-    weight: number
-    codAmount: number
-    paymentType: Parcel["paymentType"]
-    createdAt: Date
-  }
-}
-
 const JOB_COLUMNS = `
   d.id AS delivery_id, d.attempt_no, d.status AS delivery_status, d.delivery_address,
   d.failure_reason, d.recipient_name, d.recipient_phone,
@@ -80,8 +57,8 @@ export function decodeJob(row: unknown): Job {
       failureReason: toStringOrNull(r.failure_reason),
       recipientName: toStringOrNull(r.recipient_name),
       recipientPhone: toStringOrNull(r.recipient_phone),
-      outForDeliveryAt: toDate(r.out_for_delivery_at),
-      deliveredAt: toDate(r.delivered_at),
+      outForDeliveryAt: toDate(r.out_for_delivery_at)?.toISOString() ?? null,
+      deliveredAt: toDate(r.delivered_at)?.toISOString() ?? null,
     },
     parcel: {
       id: String(r.parcel_id),
@@ -90,7 +67,7 @@ export function decodeJob(row: unknown): Job {
       weight: Number(r.weight),
       codAmount: Number(r.cod_amount),
       paymentType: r.payment_type,
-      createdAt: toDate(r.created_at) ?? new Date(0),
+      createdAt: toDate(r.created_at)?.toISOString() ?? "",
     },
   }
 }
@@ -131,19 +108,17 @@ export async function listJobsForRider(
   if (search) {
     const like = `%${escapeLike(search)}%`
     clauses.push({
-      sql: `(${["p.tracking_number", "d.recipient_name", "d.recipient_phone"].map(
-        (c) => `${c} LIKE ?`,
-      ).join(" OR ")})`,
+      sql: `(${["p.tracking_number", "d.recipient_name", "d.recipient_phone"]
+        .map((c) => `${c} LIKE ?`)
+        .join(" OR ")})`,
       params: [like, like, like],
     })
   }
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.sql).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql =
-    `SELECT COUNT(*) AS count FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""}`
-  const pageSql =
-    `SELECT ${JOB_COLUMNS} FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""} ORDER BY d.attempt_no DESC, d.id DESC LIMIT ? OFFSET ?`
+  const countSql = `SELECT COUNT(*) AS count FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""}`
+  const pageSql = `SELECT ${JOB_COLUMNS} FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""} ORDER BY d.attempt_no DESC, d.id DESC LIMIT ? OFFSET ?`
 
   return pageJobRows(
     db,
@@ -230,5 +205,3 @@ export async function closeAttempt(
     [status, reason, status, status, deliveryId, attemptNo],
   )
 }
-
-export type { Delivery }

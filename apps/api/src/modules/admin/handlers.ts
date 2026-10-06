@@ -5,7 +5,22 @@ import type { SurfaceHandlers } from "../../shared/auth/surface"
 import { PARCEL_SEARCH_COLUMNS } from "../parcels/parcels.dto"
 import * as parcels from "../parcels/parcels.service"
 import * as org from "../org/org.service"
+import * as pickups from "../pickups/pickups.service"
+import * as deliveries from "../deliveries/deliveries.service"
+import * as deliveryProofs from "../deliveries/delivery-proofs.service"
+import * as transfers from "../transfers/transfers.service"
 import * as reference from "../reference/reference.service"
+import * as zones from "../zones/zones.service"
+import * as vehicles from "../vehicles/vehicles.service"
+import * as riderLocations from "../riders/rider-locations.service"
+import * as riders from "../riders/riders.service"
+import * as riderApplications from "../rider-applications/rider-applications.service"
+import * as users from "../users/users.service"
+import * as roles from "../roles/roles.service"
+import * as customers from "../customers/customers.service"
+import * as payments from "../payments/payments.service"
+import * as settlements from "../settlements/settlements.service"
+import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
 /**
@@ -163,6 +178,478 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     updateHub: async (c) => {
       const hub = await org.updateHub(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(hub))
+    },
+  },
+
+  /**
+   * Staff accounts. The scope comes from the token and is resolved here, never
+   * from anything the client sent; `create` deliberately takes no scope, because
+   * it has nothing to scope against — the policy above is what gates who may
+   * write an account at all.
+   */
+  users: {
+    list: async (c) => {
+      const page = await users.listUsers(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const user = await users.getUser(c, scopeFromAuth(c.get("auth")), c.req.valid("param").id)
+      return c.json(response.success(user))
+    },
+
+    create: async (c) => {
+      const user = await users.createUser(c, c.req.valid("json"))
+      return c.json(response.success(user), 201)
+    },
+
+    update: async (c) => {
+      const user = await users.updateUser(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(user))
+    },
+
+    resetPassword: async (c) => {
+      const user = await users.resetPassword(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(user))
+    },
+
+    setStatus: async (c) => {
+      const user = await users.setUserStatus(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+        c.req.valid("json").status,
+      )
+      return c.json(response.success(user))
+    },
+  },
+
+  roles: {
+    list: async (c) => {
+      const page = await roles.listRoles(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const role = await roles.getRole(c, c.req.valid("param").id)
+      return c.json(response.success(role))
+    },
+
+    create: async (c) => {
+      const role = await roles.createRole(c, c.req.valid("json"))
+      return c.json(response.success(role), 201)
+    },
+
+    replacePermissions: async (c) => {
+      const role = await roles.replaceRolePermissions(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(role))
+    },
+  },
+
+  /**
+   * Customers. No scope anywhere — customers are company-wide, the permission
+   * is the whole guard. `activate` is the one write and it takes no body: the
+   * whole point of the override is that it needs nothing the caller does not
+   * already know.
+   */
+  customers: {
+    list: async (c) => {
+      const page = await customers.listCustomers(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const customer = await customers.getCustomer(c, c.req.valid("param").id)
+      return c.json(response.success(customer))
+    },
+
+    activate: async (c) => {
+      const customer = await customers.activateCustomer(c, c.req.valid("param").id)
+      return c.json(response.success(customer))
+    },
+  },
+
+  /**
+   * Payments. Company-wide like customers, so the permission is the whole
+   * guard. `record`/`refund` are the cash-COD writes: nothing else in the
+   * method enum is reachable this batch.
+   */
+  payments: {
+    list: async (c) => {
+      const page = await payments.listPayments(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const payment = await payments.getPayment(c, c.req.valid("param").id)
+      return c.json(response.success(payment))
+    },
+
+    record: async (c) => {
+      const payment = await payments.recordPayment(c, c.req.valid("json"))
+      return c.json(response.success(payment), 201)
+    },
+
+    refund: async (c) => {
+      const payment = await payments.refundPayment(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(payment))
+    },
+  },
+
+  /**
+   * Settlements. Finance's period statements to merchants: `create` computes
+   * the totals server-side from the customer's paid payments, `setStatus`
+   * drives the PENDING → PROCESSING → PAID disbursement lifecycle.
+   */
+  settlements: {
+    list: async (c) => {
+      const page = await settlements.listSettlements(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const settlement = await settlements.getSettlement(c, c.req.valid("param").id)
+      return c.json(response.success(settlement))
+    },
+
+    create: async (c) => {
+      const settlement = await settlements.createSettlement(c, c.req.valid("json"))
+      return c.json(response.success(settlement), 201)
+    },
+
+    setStatus: async (c) => {
+      const settlement = await settlements.setSettlementStatus(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(settlement))
+    },
+  },
+
+  bootstrap: {
+    create: async (c) => {
+      const admin = await bootstrap.bootstrapAdmin(c, c.req.valid("json"))
+      return c.json(response.success(admin), 201)
+    },
+  },
+
+  zones: {
+    list: async (c) => {
+      const page = await zones.listZones(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const zone = await zones.getZone(c, c.req.valid("param").id)
+      return c.json(response.success(zone))
+    },
+
+    create: async (c) => {
+      const zone = await zones.createZone(c, c.req.valid("json"))
+      return c.json(response.success(zone), 201)
+    },
+
+    update: async (c) => {
+      const zone = await zones.updateZone(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(zone))
+    },
+  },
+
+  vehicles: {
+    list: async (c) => {
+      const page = await vehicles.listVehicles(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const vehicle = await vehicles.getVehicle(c, c.req.valid("param").id)
+      return c.json(response.success(vehicle))
+    },
+
+    create: async (c) => {
+      const vehicle = await vehicles.createVehicle(c, c.req.valid("json"))
+      return c.json(response.success(vehicle), 201)
+    },
+
+    update: async (c) => {
+      const vehicle = await vehicles.updateVehicle(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(vehicle))
+    },
+
+    deactivate: async (c) => {
+      const vehicle = await vehicles.deactivateVehicle(c, c.req.valid("param").id)
+      return c.json(response.success(vehicle))
+    },
+  },
+
+  riders: {
+    list: async (c) => {
+      const page = await riders.listRiders(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const rider = await riders.getRider(c, c.req.valid("param").id)
+      return c.json(response.success(rider))
+    },
+
+    create: async (c) => {
+      const rider = await riders.createRider(c, c.req.valid("json"))
+      return c.json(response.success(rider), 201)
+    },
+
+    update: async (c) => {
+      const rider = await riders.updateRider(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(rider))
+    },
+
+    setStatus: async (c) => {
+      const rider = await riders.setRiderStatus(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json").status,
+      )
+      return c.json(response.success(rider))
+    },
+  },
+
+  riderLocations: {
+    list: async (c) => {
+      const page = await riderLocations.listRiderLocations(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+  },
+  riderApplications: {
+    list: async (c) => {
+      const page = await riderApplications.listRiderApplications(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+    updateStatus: async (c) => {
+      const application = await riderApplications.updateRiderApplication(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json").status,
+      )
+      return c.json(response.success(application))
+    },
+    approve: async (c) => {
+      const result = await riderApplications.approveRiderApplication(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(result))
+    },
+  },
+
+  pickups: {
+    list: async (c) => {
+      const page = await pickups.listPickups(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const pickup = await pickups.getPickup(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(pickup))
+    },
+
+    create: async (c) => {
+      const auth = c.get("auth")
+      const pickup = await pickups.createPickup(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(pickup), 201)
+    },
+
+    assign: async (c) => {
+      const auth = c.get("auth")
+      const pickup = await pickups.assignPickup(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        pickupId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(pickup))
+    },
+
+    updateStatus: async (c) => {
+      const auth = c.get("auth")
+      const pickup = await pickups.updatePickupStatus(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        pickupId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(pickup))
+    },
+  },
+
+  deliveryProofs: {
+    list: async (c) => {
+      const page = await deliveryProofs.listDeliveryProofs(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("query"),
+      )
+      return c.json(response.success(page))
+    },
+
+    verify: async (c) => {
+      const proof = await deliveryProofs.verifyDeliveryProof(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(proof))
+    },
+  },
+
+  deliveries: {
+    list: async (c) => {
+      const page = await deliveries.listDeliveries(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("query"),
+      )
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const delivery = await deliveries.getDelivery(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(delivery))
+    },
+
+    create: async (c) => {
+      const auth = c.get("auth")
+      const delivery = await deliveries.createDelivery(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(delivery), 201)
+    },
+
+    reassign: async (c) => {
+      const auth = c.get("auth")
+      const delivery = await deliveries.reassignDelivery(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        deliveryId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(delivery))
+    },
+
+    updateStatus: async (c) => {
+      const auth = c.get("auth")
+      const delivery = await deliveries.updateDeliveryStatus(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        deliveryId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(delivery))
+    },
+  },
+
+  transfers: {
+    list: async (c) => {
+      const page = await transfers.listTransfers(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("query"),
+      )
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const transfer = await transfers.getTransfer(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(transfer))
+    },
+
+    create: async (c) => {
+      const transfer = await transfers.createTransfer(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(transfer), 201)
+    },
+
+    update: async (c) => {
+      const transfer = await transfers.updateTransfer(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        transferId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(transfer))
+    },
+
+    delete: async (c) => {
+      await transfers.deleteTransfer(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        transferId: c.req.valid("param").id,
+      })
+      // A 204 must not carry a body (RFC 9110), which is why the registry entry
+      // for `delete` declares no response schema.
+      return c.body(null, 204)
+    },
+
+    updateStatus: async (c) => {
+      const auth = c.get("auth")
+      const transfer = await transfers.updateTransferStatus(c, {
+        scope: scopeFromAuth(auth),
+        actorId: actorId(auth),
+        transferId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(transfer))
+    },
+
+    manifestList: async (c) => {
+      const manifest = await transfers.listTransferManifest(
+        c,
+        scopeFromAuth(c.get("auth")),
+        c.req.valid("param").id,
+      )
+      return c.json(response.success(manifest))
+    },
+
+    manifestReplace: async (c) => {
+      const manifest = await transfers.replaceManifest(c, {
+        scope: scopeFromAuth(c.get("auth")),
+        transferId: c.req.valid("param").id,
+        input: c.req.valid("json"),
+      })
+      return c.json(response.success(manifest))
     },
   },
 }

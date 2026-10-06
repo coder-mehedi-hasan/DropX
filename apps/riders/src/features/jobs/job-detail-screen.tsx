@@ -8,7 +8,7 @@ import { usePermission } from "../../lib/auth"
 import { RIDER_PERMISSIONS } from "../../lib/permissions"
 import { DeliveryActionSheet } from "../delivery/delivery-action-sheet"
 import { ParcelSummary } from "../delivery/parcel-summary"
-import { ProofPlaceholder } from "../delivery/proof-placeholder"
+import { DeliveryProofsCard } from "../delivery/delivery-proofs-card"
 import { useJob } from "./job-queries"
 import { isTerminalStatus } from "./jobs.api"
 
@@ -57,7 +57,10 @@ export function JobDetailScreen({ jobId }: { jobId: string }) {
         {job.data ? (
           <>
             <ParcelSummary job={job.data} />
-            <ProofPlaceholder />
+            <DeliveryProofsCard
+              parcelId={job.data.parcel.id}
+              trackingNumber={job.data.parcel.trackingNumber}
+            />
           </>
         ) : null}
 
