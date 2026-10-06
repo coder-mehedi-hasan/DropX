@@ -389,7 +389,7 @@ function CodeStep({
           Didn&apos;t receive code?{" "}
           <button
             type="button"
-            className="text-primary font-medium hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-accent-ink hover:text-accent-ink-hover font-medium hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onResend}
             disabled={!canResend || verifying}
           >
