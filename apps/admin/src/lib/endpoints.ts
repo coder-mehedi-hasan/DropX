@@ -79,6 +79,9 @@ import type {
   UpdateDeliveryStatusBody,
   DeliveryRow,
   DeliveryProofRow,
+  RefundPaymentBody,
+  RecordRemittanceBody,
+  PaymentListItem,
 } from "./types"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
@@ -95,6 +98,7 @@ import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
 import type { RolesSearch } from "@/routes/roles-search-params"
 import type { CustomersSearch } from "@/routes/customers-search-params"
+import type { PaymentsSearch } from "@/routes/payments-search-params"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -462,6 +466,30 @@ export function activateCustomer(customerId: string) {
   return api.post<Customer>(`/admin/customers/${customerId}/activate`)
 }
 
+/**
+ * Payments — the money surface. Cash-only in batch 4: `record` is the finance
+ * clerk's remittance of a COD collection and `refund` returns part or all of
+ * it. Reads are company-wide, just like customers.
+ */
+export function listPayments(params: PaymentsSearch, signal?: AbortSignal) {
+  return api.get<Page<PaymentListItem>>("/admin/payments", {
+    query: paymentsQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function getPayment(paymentId: string, signal?: AbortSignal) {
+  return api.get<PaymentListItem>(`/admin/payments/${paymentId}`, signal ? { signal } : undefined)
+}
+
+export function recordRemittance(body: RecordRemittanceBody) {
+  return api.post<PaymentListItem>("/admin/payments", body)
+}
+
+export function refundPayment(paymentId: string, body: RefundPaymentBody) {
+  return api.post<PaymentListItem>(`/admin/payments/${paymentId}/refund`, body)
+}
+
 export function listPickups(params: PickupsSearch) {
   return api.get<Page<Pickup>>("/admin/pickups", { query: pickupQuery(params) })
 }
@@ -674,6 +702,16 @@ function customersQuery(params: CustomersSearch) {
     sortBy: params.sortBy,
     sort: params.sort,
     ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+  }
+}
+
+function paymentsQuery(params: PaymentsSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
     ...(params.status ? { status: params.status } : {}),
   }
 }

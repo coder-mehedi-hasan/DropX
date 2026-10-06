@@ -59,6 +59,7 @@ const transfers = await import("../src/modules/transfers/transfers.repository")
 const users = await import("../src/modules/users/users.repository")
 const roles = await import("../src/modules/roles/roles.repository")
 const customers = await import("../src/modules/customers/customers.repository")
+const payments = await import("../src/modules/payments/payments.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -80,6 +81,13 @@ const parcelSortByKey = {
   status: "p.status",
   weight: "p.weight",
 } as const
+
+// Mirrors the published contract (`PARCEL_SEARCH_COLUMNS` in parcels.dto). The
+// join-check matters: these columns reference the `customers r` alias, and a
+// filtered list whose FROM omitted that join 500ed for every caller — a search
+// typed into the parcel list — while the no-search case passed. Only a case
+// that actually passes `searchFields` can see that.
+const parcelsSearchColumns = ["p.tracking_number", "r.name", "r.phone"]
 
 cases.push(
   {
@@ -114,7 +122,14 @@ cases.push(
         pool,
         scope,
         { ...listParams, sortBy: "createdAt" },
-        { status: "CREATED", search: "DX", hubId: "1", paymentType: "COD", customerId: "1" },
+        {
+          status: "CREATED",
+          search: "DX",
+          searchFields: parcelsSearchColumns,
+          hubId: "1",
+          paymentType: "COD",
+          customerId: "1",
+        },
         parcelSortByKey,
       ),
   },
@@ -916,6 +931,26 @@ cases.push(
     name: "customers.selectCustomerAddresses",
     run: () => customers.selectCustomerAddresses(pool, "1"),
   },
+
+  // Payments join `parcels`, so they exercise both tables; the status filter
+  // puts a column in the count WHERE too. Every published sort key is checked
+  // the same way the customers block does it.
+  { name: "payments.selectPayments", run: () => payments.selectPayments(pool, listParams, {}) },
+  {
+    name: "payments.selectPayments(status)",
+    run: () => payments.selectPayments(pool, listParams, { status: "PAID" }),
+  },
+  ...(["createdAt", "paidAt", "amount", "status"] as const).map((sortBy) => ({
+    name: `payments.selectPayments(sortBy=${sortBy})`,
+    run: () => payments.selectPayments(pool, { ...listParams, sortBy }, {}),
+  })),
+  { name: "payments.selectPayment", run: () => payments.selectPayment(pool, "1") },
+  {
+    name: "payments.selectParcelPaymentFacts",
+    run: () => payments.selectParcelPaymentFacts(pool, "1", false),
+  },
+  { name: "payments.sumTypedPaid(COD)", run: () => payments.sumTypedPaid(pool, "1", "COD") },
+  { name: "payments.sumTypedPaid(REFUND)", run: () => payments.sumTypedPaid(pool, "1", "REFUND") },
 )
 
 let failures = 0

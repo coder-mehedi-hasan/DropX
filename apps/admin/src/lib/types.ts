@@ -39,6 +39,10 @@ import type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  Payment,
+  PaymentKind,
+  PaymentMethod,
+  PaymentState,
   Pickup,
   PickupStatus,
   PricingRule,
@@ -122,6 +126,10 @@ export type {
   ParcelTracking,
   ParcelType,
   ParcelWithItems,
+  Payment,
+  PaymentKind,
+  PaymentMethod,
+  PaymentState,
   Pickup,
   PickupStatus,
   PricingRule,
@@ -143,6 +151,26 @@ export type {
 
 /** Alias for the one envelope the admin adds to the shared entity types. */
 export type ParcelDetail = ParcelWithItems
+
+/**
+ * A payment as the admin surface reads it. The base `Payment` entity carries
+ * no tracking number — the parcel id is all of it, and that is lost on a money
+ * screen. This app adds the joined tracking number the API returns on every
+ * admin payment response (list, read, record and refund all join `parcels`).
+ */
+export type PaymentListItem = Payment & {
+  trackingNumber: string
+}
+
+/** The staff money writes: a parcel and an amount in JSON taka. */
+export type RecordRemittanceBody = {
+  parcelId: string
+  amount: number
+}
+
+export type RefundPaymentBody = {
+  amount: number
+}
 
 /** `GET /auth/me` for an `admin` audience token. */
 export type StaffIdentity = {

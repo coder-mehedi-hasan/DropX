@@ -687,6 +687,23 @@ export type Payment = EntityBase &
     paidAt: Nullable<string>
   }
 
+/**
+ * Valid payment state transitions. `PENDING` is a digital-payment construct:
+ * batch 4 only ever writes `COD`/`REFUND` rows straight to `PAID`, and nothing
+ * in that batch creates a `PENDING` row, so the transition is declared here as
+ * the contract and exercised the moment an online path exists.
+ */
+export const PAYMENT_TRANSITIONS: Readonly<Record<PaymentState, readonly PaymentState[]>> = {
+  PENDING: ["PAID", "FAILED"],
+  PAID: ["REFUNDED"],
+  FAILED: [],
+  REFUNDED: [],
+}
+
+export function canTransitionPayment(from: PaymentState, to: PaymentState): boolean {
+  return (PAYMENT_TRANSITIONS[from] as readonly string[]).includes(to)
+}
+
 export const SETTLEMENT_STATUSES = ["PENDING", "PROCESSING", "PAID", "FAILED"] as const
 export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number]
 

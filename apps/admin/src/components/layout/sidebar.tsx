@@ -16,6 +16,7 @@ import {
   Truck,
   UserRound,
   Users,
+  Wallet,
   Warehouse,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -40,6 +41,8 @@ import { DEFAULT_ROLES_SEARCH_PARAMS } from "@/routes/roles-search-params"
 import type { RolesSearch } from "@/routes/roles-search-params"
 import { DEFAULT_CUSTOMERS_SEARCH_PARAMS } from "@/routes/customers-search-params"
 import type { CustomersSearch } from "@/routes/customers-search-params"
+import { DEFAULT_PAYMENTS_SEARCH_PARAMS } from "@/routes/payments-search-params"
+import type { PaymentsSearch } from "@/routes/payments-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import { DEFAULT_RIDER_APPLICATIONS_SEARCH } from "@/routes/rider-applications-search-params"
@@ -64,6 +67,7 @@ export type NavItem = {
     | "/users"
     | "/roles"
     | "/customers"
+    | "/payments"
     | "/zones"
     | "/vehicles"
     | "/pricing-rules"
@@ -82,6 +86,7 @@ export type NavItem = {
     | UsersSearch
     | RolesSearch
     | CustomersSearch
+    | PaymentsSearch
     | ZonesSearch
     | VehiclesSearch
     | PricingRulesSearch
@@ -235,6 +240,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS,
     icon: FileCheck,
     permission: "deliveries.view",
+  },
+  // After the delivery lifecycle: the money it settled. Money closes the
+  // operation, so it sits last. The nav item needs only payments.view; the
+  // record/refund writes are gated payments.manage inside the screen.
+  {
+    label: "Payments",
+    to: "/payments",
+    search: DEFAULT_PAYMENTS_SEARCH_PARAMS,
+    icon: Wallet,
+    permission: "payments.view",
   },
 ]
 

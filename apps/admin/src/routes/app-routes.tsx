@@ -14,6 +14,7 @@ import { ridersSearchSchema } from "./riders-search-params"
 import { usersSearchSchema } from "./users-search-params"
 import { rolesSearchSchema } from "./roles-search-params"
 import { customersSearchSchema } from "./customers-search-params"
+import { paymentsSearchSchema } from "./payments-search-params"
 import { riderLocationsSearchSchema } from "./rider-locations-search-params"
 import { riderApplicationsSearchSchema } from "./rider-applications-search-params"
 import { pickupsSearchSchema } from "./pickups-search-params"
@@ -86,6 +87,10 @@ const CustomersListPage = lazyRouteComponent(
 const CustomerDetailPage = lazyRouteComponent(
   () => import("@/features/customers/customer-detail-page"),
   "CustomerDetailPage",
+)
+const PaymentsListPage = lazyRouteComponent(
+  () => import("@/features/payments/payments-list-page"),
+  "PaymentsListPage",
 )
 const RiderLocationsListPage = lazyRouteComponent(
   () => import("@/features/riders/rider-locations-list-page"),
@@ -194,6 +199,13 @@ export const customerDetailRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/customers/$customerId",
   component: CustomerDetailRoute,
+})
+
+export const paymentsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/payments",
+  validateSearch: paymentsSearchSchema,
+  component: PaymentsListPageRoute,
 })
 
 export const zonesRoute = createRoute({
@@ -355,6 +367,15 @@ function CustomerDetailRoute() {
   return (
     <RequirePermission permission="customers.view">
       <CustomerDetailPage customerId={customerId} />
+    </RequirePermission>
+  )
+}
+
+function PaymentsListPageRoute() {
+  const search = paymentsRoute.useSearch()
+  return (
+    <RequirePermission permission="payments.view">
+      <PaymentsListPage search={search} />
     </RequirePermission>
   )
 }
