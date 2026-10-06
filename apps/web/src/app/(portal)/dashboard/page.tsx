@@ -14,20 +14,20 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Customer portal"
-        title="My parcels"
-        description="Everything you have sent, with its latest status. Private to your account."
+        eyebrow="Delivery overview"
+        title="Your parcels, moving clearly."
+        description="Book a delivery, check what is in motion, and open any shipment for its full journey."
         actions={
           <>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="bg-white shadow-sm">
               <Link href="/track">
                 <SearchIcon aria-hidden />
-                Track a parcel
+                Quick track
               </Link>
             </Button>
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="shadow-[0_12px_24px_-12px_rgba(255,85,0,.75)]">
               <Link href="/book">
                 Book a parcel
                 <ArrowRightIcon aria-hidden />

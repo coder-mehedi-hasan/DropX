@@ -22,23 +22,32 @@ import {
   Input,
   LoadingButton,
   QuantityStepper,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Separator,
   Skeleton,
   Textarea,
+  cn,
 } from "@dropx/ui"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  BanknoteIcon,
+  BoxIcon,
   CheckIcon,
+  ClipboardCheckIcon,
+  CreditCardIcon,
+  FileTextIcon,
+  GemIcon,
+  MapPinIcon,
+  PackageIcon,
   PlusIcon,
   ReceiptIcon,
+  ShieldCheckIcon,
+  ShapesIcon,
   Trash2Icon,
   TriangleAlertIcon,
+  UserRoundIcon,
+  WalletCardsIcon,
+  type LucideIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
@@ -57,7 +66,6 @@ import {
   PAYMENT_TYPES,
   type CreateParcelRequest,
   type DeliveryQuote,
-  type PaymentType,
   type QuoteRequest,
 } from "@/lib/types"
 
@@ -155,12 +163,40 @@ const bookParcelSchema = z
 type BookParcelValues = z.infer<typeof bookParcelSchema>
 
 const STEPS = [
-  { title: "Receiver", description: "Who gets it" },
-  { title: "Route", description: "Where it travels" },
-  { title: "Parcel", description: "Size and weight" },
-  { title: "Payment", description: "How it is paid" },
-  { title: "Review", description: "Check and book" },
+  { title: "Receiver", description: "Who gets it", icon: UserRoundIcon },
+  { title: "Route", description: "Where it travels", icon: MapPinIcon },
+  { title: "Parcel", description: "Size and weight", icon: BoxIcon },
+  { title: "Payment", description: "How it is paid", icon: WalletCardsIcon },
+  { title: "Review", description: "Check and book", icon: ClipboardCheckIcon },
 ] as const
+
+const PROGRESS_WIDTHS = ["w-1/5", "w-2/5", "w-3/5", "w-4/5", "w-full"] as const
+
+const PARCEL_TYPE_OPTIONS = {
+  DOCUMENT: { label: "Document", description: "Paperwork and flat mail", icon: FileTextIcon },
+  PACKAGE: { label: "Package", description: "Everyday boxed goods", icon: PackageIcon },
+  FRAGILE: { label: "Fragile", description: "Handle with extra care", icon: GemIcon },
+  OTHER: { label: "Other", description: "Anything that does not fit", icon: ShapesIcon },
+} satisfies Record<
+  (typeof PARCEL_TYPES)[number],
+  { label: string; description: string; icon: LucideIcon }
+>
+
+const PAYMENT_TYPE_OPTIONS = {
+  PREPAID: {
+    label: "Prepaid",
+    description: "The delivery fee is paid before dispatch.",
+    icon: CreditCardIcon,
+  },
+  COD: {
+    label: "Cash on delivery",
+    description: "The rider collects payment from the receiver.",
+    icon: BanknoteIcon,
+  },
+} satisfies Record<
+  (typeof PAYMENT_TYPES)[number],
+  { label: string; description: string; icon: LucideIcon }
+>
 
 const STEP_FIELDS = [
   ["receiverCustomerId", "receiverName", "receiverPhone"],
@@ -321,11 +357,11 @@ export function BookParcel() {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6">
+    <div className="max-w-page mx-auto grid w-full gap-7">
       <PageHeader
-        eyebrow={`Step ${step} of ${STEPS.length} · ${STEPS[step - 1]?.title}`}
-        title="Book a parcel"
-        description="A few quick steps. You will see the delivery fee before you confirm."
+        eyebrow="New shipment"
+        title="Book a parcel with confidence."
+        description="Tell us where it is going and what is inside. Your delivery fee updates as soon as the route and weight are ready."
       />
 
       {!referenceDataReady ? (
@@ -353,63 +389,97 @@ export function BookParcel() {
       ) : null}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid gap-6 [&_[data-slot=input]]:h-12 [&_[data-slot=select-trigger]]:h-12 [&_[data-slot=select-trigger]]:bg-[#FBFBFC] [&_textarea]:bg-[#FBFBFC]"
+          noValidate
+        >
           <nav
             aria-label="Booking progress"
-            className="relative grid gap-3 rounded-feature bg-card border p-4 sm:grid-cols-5 sm:gap-0 sm:px-6 sm:py-5"
+            className="relative overflow-hidden rounded-2xl bg-white p-2 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.28)] ring-1 ring-black/5"
           >
-            <span
-              className="bg-border absolute top-9 right-[12%] left-[12%] hidden h-px sm:block"
-              aria-hidden
-            />
-            {STEPS.map((item, index) => {
-              const number = index + 1
-              const active = number === step
-              const complete = number < step
-              return (
-                <button
-                  key={item.title}
-                  type="button"
-                  className="group relative z-10 flex items-center gap-2 text-left sm:grid sm:justify-items-start"
-                  onClick={() => number < step && setStep(number)}
-                  disabled={number >= step}
-                  aria-current={active ? "step" : undefined}
-                >
-                  <span
-                    className={
-                      complete || active
-                        ? "bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                        : "bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                    }
+            <div className="grid grid-cols-5 gap-1">
+              {STEPS.map((item, index) => {
+                const number = index + 1
+                const active = number === step
+                const complete = number < step
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.title}
+                    type="button"
+                    className={cn(
+                      "group relative flex min-w-0 items-center gap-2 rounded-xl px-2 py-3 text-left transition-all duration-200 sm:px-3",
+                      active
+                        ? "bg-[#0D0F12] text-white shadow-[0_12px_28px_-18px_rgba(13,15,18,.9)]"
+                        : complete
+                          ? "text-foreground hover:bg-[#F7F8FA]"
+                          : "text-muted-foreground",
+                    )}
+                    onClick={() => number < step && setStep(number)}
+                    disabled={number >= step}
+                    aria-current={active ? "step" : undefined}
                   >
-                    {complete ? <CheckIcon className="size-4" aria-hidden /> : number}
-                  </span>
-                  <span className="grid gap-0.5 sm:mt-2">
                     <span
-                      className={active ? "text-sm font-semibold" : "text-muted-foreground text-sm"}
+                      className={cn(
+                        "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                        active
+                          ? "bg-[#FF5500] text-white"
+                          : complete
+                            ? "bg-primary/10 text-accent-ink"
+                            : "bg-muted text-muted-foreground",
+                      )}
                     >
-                      {item.title}
+                      {complete ? (
+                        <CheckIcon className="size-4" aria-hidden />
+                      ) : (
+                        <Icon className="size-4" aria-hidden />
+                      )}
                     </span>
-                    <span className="text-muted-foreground hidden text-xs sm:block">
-                      {item.description}
+                    <span className="hidden min-w-0 lg:grid">
+                      <span className="truncate text-sm font-semibold">{item.title}</span>
+                      <span
+                        className={cn(
+                          "truncate text-[0.68rem]",
+                          active ? "text-white/55" : "text-muted-foreground",
+                        )}
+                      >
+                        {item.description}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              )
-            })}
+                    <span className="sr-only lg:hidden">
+                      Step {number}: {item.title}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-2 flex items-center gap-3 px-2 pb-1 sm:px-3">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#ECEEF1]" aria-hidden>
+                <div
+                  className={cn(
+                    "ease-brand h-full rounded-full bg-[#FF5500] transition-[width] duration-300",
+                    PROGRESS_WIDTHS[step - 1],
+                  )}
+                />
+              </div>
+              <p className="text-muted-foreground text-xs font-semibold tabular-nums">
+                {step}/{STEPS.length}
+              </p>
+            </div>
           </nav>
 
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.85fr)]">
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(19rem,0.8fr)]">
             <div className="grid gap-6">
               {step === 1 ? (
-                <Card className="shadow-sm">
-                  <CardHeader>
-                    <CardTitle>Receiver</CardTitle>
+                <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
+                  <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
+                    <BookingCardTitle icon={UserRoundIcon} step="01" title="Receiver details" />
                     <CardDescription>
                       Who the parcel is going to, and how the rider will reach them.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
+                  <CardContent className="grid gap-6 px-5 py-6 sm:px-7 sm:py-7">
                     <FormField
                       control={form.control}
                       name="receiverCustomerId"
@@ -428,7 +498,7 @@ export function BookParcel() {
                       )}
                     />
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-5 sm:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="receiverName"
@@ -467,15 +537,19 @@ export function BookParcel() {
               ) : null}
 
               {step === 2 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Route</CardTitle>
+                <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
+                  <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
+                    <BookingCardTitle
+                      icon={MapPinIcon}
+                      step="02"
+                      title="Pickup and delivery route"
+                    />
                     <CardDescription>
                       Where we collect from and where it is delivered to. Pricing follows the
                       destination zone.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <CardContent className="grid gap-6 px-5 py-6 sm:grid-cols-2 sm:px-7 sm:py-7">
                     <FormField
                       control={form.control}
                       name="originHubId"
@@ -555,188 +629,231 @@ export function BookParcel() {
               ) : null}
 
               {step === 3 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Parcel</CardTitle>
+                <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
+                  <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
+                    <BookingCardTitle icon={BoxIcon} step="03" title="Parcel details" />
                     <CardDescription>
                       Weight decides the fee, so it has to be accurate.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="parcelType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Parcel type</FormLabel>
-                            <Select value={field.value} onValueChange={field.onChange}>
+                  <CardContent className="grid gap-6 px-5 py-6 sm:px-7 sm:py-7">
+                    <FormField
+                      control={form.control}
+                      name="parcelType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parcel type</FormLabel>
+                          <div
+                            className="grid gap-3 sm:grid-cols-2"
+                            role="radiogroup"
+                            aria-label="Parcel type"
+                          >
+                            {PARCEL_TYPES.map((value) => (
+                              <ChoiceTile
+                                key={value}
+                                name="parcelType"
+                                value={value}
+                                selected={field.value === value}
+                                option={PARCEL_TYPE_OPTIONS[value]}
+                                onSelect={() => field.onChange(value)}
+                                onBlur={field.onBlur}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="weight"
+                      render={({ field }) => (
+                        <FormItem className="max-w-sm">
+                          <FormLabel>Weight (kg)</FormLabel>
+                          <FormControl>
+                            <Input {...field} inputMode="decimal" placeholder="2.5" />
+                          </FormControl>
+                          <FormDescription>
+                            Use the packed weight, including wrapping.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="rounded-xl bg-[#F7F8FA] p-4 sm:p-5">
+                      <div className="mb-4">
+                        <p className="text-sm font-semibold">Measurements</p>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          Optional, but useful for large or unusually shaped parcels.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <FormField
+                          control={form.control}
+                          name="length"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Length (cm)</FormLabel>
                               <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <Input {...field} inputMode="decimal" placeholder="Optional" />
                               </FormControl>
-                              <SelectContent>
-                                {PARCEL_TYPES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="weight"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Weight (kg)</FormLabel>
-                            <FormControl>
-                              <Input {...field} inputMode="decimal" placeholder="2.5" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <FormField
-                        control={form.control}
-                        name="length"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Length (cm)</FormLabel>
-                            <FormControl>
-                              <Input {...field} inputMode="decimal" placeholder="Optional" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="width"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Width (cm)</FormLabel>
-                            <FormControl>
-                              <Input {...field} inputMode="decimal" placeholder="Optional" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="height"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Height (cm)</FormLabel>
-                            <FormControl>
-                              <Input {...field} inputMode="decimal" placeholder="Optional" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="width"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Width (cm)</FormLabel>
+                              <FormControl>
+                                <Input {...field} inputMode="decimal" placeholder="Optional" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="height"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Height (cm)</FormLabel>
+                              <FormControl>
+                                <Input {...field} inputMode="decimal" placeholder="Optional" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ) : null}
 
               {step === 4 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Payment</CardTitle>
+                <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
+                  <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
+                    <BookingCardTitle icon={WalletCardsIcon} step="04" title="Payment" />
                     <CardDescription>
                       Prepaid is charged up front. Cash on delivery is collected by the rider from
                       the receiver.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="paymentType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Payment type</FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={(value) => field.onChange(value as PaymentType)}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {PAYMENT_TYPES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value === "PREPAID" ? "Prepaid" : "Cash on delivery"}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  <CardContent className="grid gap-6 px-5 py-6 sm:px-7 sm:py-7">
+                    <FormField
+                      control={form.control}
+                      name="paymentType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Payment type</FormLabel>
+                          <div
+                            className="grid gap-3 sm:grid-cols-2"
+                            role="radiogroup"
+                            aria-label="Payment type"
+                          >
+                            {PAYMENT_TYPES.map((value) => (
+                              <ChoiceTile
+                                key={value}
+                                name="paymentType"
+                                value={value}
+                                selected={field.value === value}
+                                option={PAYMENT_TYPE_OPTIONS[value]}
+                                onSelect={() => {
+                                  field.onChange(value)
+                                  if (value === "PREPAID") {
+                                    form.setValue("codAmount", "0", { shouldValidate: false })
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
+                    {paymentType === "COD" ? (
                       <FormField
                         control={form.control}
                         name="codAmount"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="max-w-sm rounded-xl bg-[#F7F8FA] p-4 ring-1 ring-black/5">
                             <FormLabel>Amount to collect (BDT)</FormLabel>
                             <FormControl>
-                              <Input
-                                {...field}
-                                inputMode="decimal"
-                                disabled={paymentType !== "COD"}
-                                placeholder={
-                                  paymentType === "COD" ? "0" : "Prepaid — nothing to collect"
-                                }
-                              />
+                              <Input {...field} inputMode="decimal" placeholder="0" />
                             </FormControl>
                             <FormDescription>
-                              Leave at 0 if the receiver pays nothing.
+                              Enter what the rider should collect from the receiver.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
+                    ) : (
+                      <div className="flex items-start gap-3 rounded-xl bg-[#F7F8FA] p-4 text-sm ring-1 ring-black/5">
+                        <ShieldCheckIcon
+                          className="text-success mt-0.5 size-4 shrink-0"
+                          aria-hidden
+                        />
+                        <div>
+                          <p className="font-medium">No cash collection</p>
+                          <p className="text-muted-foreground mt-1 text-xs leading-5">
+                            The receiver will not be asked to pay when the parcel arrives.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ) : null}
 
               {step === 4 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Items</CardTitle>
-                    <CardDescription>
-                      Optional, and not priced for shipping — it helps the receiver check the
-                      parcel.
-                    </CardDescription>
+                <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
+                  <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <CardTitle>What is inside?</CardTitle>
+                        <CardDescription className="mt-1.5">
+                          Optional. A contents list helps the receiver check the parcel.
+                        </CardDescription>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 bg-white"
+                        onClick={() => items.append({ ...EMPTY_ITEM })}
+                        disabled={items.fields.length >= 50}
+                      >
+                        <PlusIcon aria-hidden />
+                        Add item
+                      </Button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
+                  <CardContent className="grid gap-4 px-5 py-6 sm:px-7 sm:py-7">
                     {items.fields.length === 0 ? (
-                      <div className="bg-muted/60 rounded-xl px-4 py-3 text-sm">
-                        <p className="font-medium">No items added</p>
-                        <p className="text-muted-foreground mt-1">
-                          Optional. Add contents if the receiver needs to check what is inside.
+                      <div className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-dashed border-black/12 bg-[#F7F8FA] px-6 py-8 text-center">
+                        <span className="text-muted-foreground flex size-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+                          <BoxIcon className="size-5" aria-hidden />
+                        </span>
+                        <p className="mt-3 text-sm font-semibold">No contents listed</p>
+                        <p className="text-muted-foreground mt-1 max-w-sm text-xs leading-5">
+                          You can book without a contents list, or add items for a clearer handover.
                         </p>
                       </div>
                     ) : null}
 
                     {items.fields.map((field, index) => (
-                      <div key={field.id} className="bg-muted/40 grid gap-3 rounded-xl border p-4">
+                      <div
+                        key={field.id}
+                        className="grid gap-4 rounded-xl bg-[#F7F8FA] p-4 ring-1 ring-black/5 sm:p-5"
+                      >
                         <div className="flex items-center justify-between">
                           <Badge variant="secondary">Item {index + 1}</Badge>
                           <Button
@@ -816,19 +933,6 @@ export function BookParcel() {
                         </div>
                       </div>
                     ))}
-
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => items.append({ ...EMPTY_ITEM })}
-                        disabled={items.fields.length >= 50}
-                      >
-                        <PlusIcon aria-hidden />
-                        Add an item
-                      </Button>
-                    </div>
                   </CardContent>
                 </Card>
               ) : null}
@@ -844,27 +948,31 @@ export function BookParcel() {
               ) : null}
             </div>
 
-            <div className="grid h-fit gap-4 lg:sticky lg:top-24">
-              <Card className="shadow-sm">
-                <CardHeader className="gap-1 pb-3">
-                  <CardTitle className="flex items-center gap-2">
-                    <ReceiptIcon className="size-4" aria-hidden />
-                    Delivery fee
-                  </CardTitle>
-                  <CardDescription>
-                    Your live estimate. It is confirmed again when you book.
+            <aside className="grid h-fit gap-4 lg:sticky lg:top-6" aria-label="Booking summary">
+              <Card className="relative overflow-hidden border-0 bg-[#0D0F12] py-0 text-white shadow-[0_24px_60px_-30px_rgba(13,15,18,.9)]">
+                <div className="pointer-events-none absolute -top-20 -right-16 size-52 rounded-full bg-[#FF5500]/20 blur-3xl" />
+                <CardHeader className="relative gap-1 px-5 pt-6 pb-4">
+                  <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-[#FF5500] text-white shadow-[0_10px_24px_-12px_rgba(255,85,0,.9)]">
+                    <ReceiptIcon className="size-5" aria-hidden />
+                  </span>
+                  <CardTitle className="text-lg">Live delivery estimate</CardTitle>
+                  <CardDescription className="text-[#A7ABB4]">
+                    Updates from the route, weight, and collection amount.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-3">
+                <CardContent className="relative grid gap-4 px-5 pb-6">
                   {!quoteRequest ? (
-                    <p className="text-muted-foreground text-sm">
-                      Pick both zones and enter a weight to see a fee.
-                    </p>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-sm font-medium text-white">Waiting for route and weight</p>
+                      <p className="mt-1 text-xs leading-5 text-[#A7ABB4]">
+                        Complete the route and parcel steps to calculate the fee.
+                      </p>
+                    </div>
                   ) : quote.isPending ? (
                     <div className="grid gap-2" aria-busy="true">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-4 w-full bg-white/10" />
+                      <Skeleton className="h-4 w-2/3 bg-white/10" />
+                      <Skeleton className="h-12 w-full bg-white/10" />
                     </div>
                   ) : quote.isError ? (
                     <Alert variant="warning">
@@ -877,7 +985,7 @@ export function BookParcel() {
                       </AlertDescription>
                     </Alert>
                   ) : (
-                    <dl className="grid gap-2 text-sm">
+                    <dl className="grid gap-3 text-sm">
                       <QuoteRow
                         label="Base price"
                         value={formatMoney(quote.data.basePrice, quote.data.currency)}
@@ -892,19 +1000,26 @@ export function BookParcel() {
                           value={formatMoney(quote.data.codFee, quote.data.currency)}
                         />
                       ) : null}
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <dt className="font-medium">Total</dt>
-                        <dd className="text-lg font-semibold tabular-nums">
+                      <Separator className="bg-white/10" />
+                      <div className="flex items-end justify-between gap-4 pt-1">
+                        <dt className="text-sm font-medium text-[#A7ABB4]">Estimated total</dt>
+                        <dd className="text-2xl font-extrabold tracking-[-0.04em] text-white tabular-nums">
                           {formatMoney(quote.data.total, quote.data.currency)}
                         </dd>
                       </div>
                     </dl>
                   )}
 
-                  <p className="text-muted-foreground text-xs leading-5">
-                    Based on your route, weight, and COD amount. DropX recomputes it at booking.
-                  </p>
+                  <div className="flex items-start gap-2 border-t border-white/10 pt-4 text-xs leading-5 text-[#A7ABB4]">
+                    <ShieldCheckIcon
+                      className="mt-0.5 size-4 shrink-0 text-[#FF8A4C]"
+                      aria-hidden
+                    />
+                    <p>
+                      DropX recomputes the price when you confirm, so the server always applies the
+                      correct rule.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -916,9 +1031,9 @@ export function BookParcel() {
                 </Alert>
               ) : null}
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 rounded-2xl bg-white p-2 shadow-[0_12px_32px_-26px_rgba(13,15,18,.55)] ring-1 ring-black/5">
                 {step > 1 ? (
-                  <Button type="button" variant="outline" onClick={goBack} className="flex-1">
+                  <Button type="button" variant="ghost" onClick={goBack} className="flex-1">
                     <ArrowLeftIcon aria-hidden />
                     Back
                   </Button>
@@ -927,7 +1042,7 @@ export function BookParcel() {
                   <Button
                     type="button"
                     onClick={() => void goNext()}
-                    className="flex-1"
+                    className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
                     disabled={!referenceDataReady}
                   >
                     Continue
@@ -938,7 +1053,7 @@ export function BookParcel() {
                     type="submit"
                     loading={createParcel.isPending}
                     disabled={!referenceDataReady}
-                    className="flex-1"
+                    className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
                   >
                     {createParcel.isPending ? "Booking…" : "Confirm and book"}
                     <CheckIcon aria-hidden />
@@ -951,7 +1066,7 @@ export function BookParcel() {
                   Booking is disabled until the hub, zone and recipient lists are available.
                 </p>
               ) : null}
-            </div>
+            </aside>
           </div>
         </form>
       </Form>
@@ -959,11 +1074,97 @@ export function BookParcel() {
   )
 }
 
+function ChoiceTile({
+  name,
+  value,
+  selected,
+  option,
+  onSelect,
+  onBlur,
+}: {
+  name: string
+  value: string
+  selected: boolean
+  option: { label: string; description: string; icon: LucideIcon }
+  onSelect: () => void
+  onBlur: () => void
+}) {
+  const Icon = option.icon
+
+  return (
+    <label className="group cursor-pointer">
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={selected}
+        onChange={onSelect}
+        onBlur={onBlur}
+        className="peer sr-only"
+      />
+      <span
+        className={cn(
+          "ease-brand peer-focus-visible:ring-primary flex min-h-24 items-start gap-3 rounded-xl p-4 ring-1 transition-[background-color,box-shadow,transform] duration-150 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 active:scale-[0.99]",
+          selected
+            ? "bg-primary/8 ring-primary/35"
+            : "bg-[#FBFBFC] ring-black/7 group-hover:bg-white group-hover:ring-black/14",
+        )}
+      >
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+            selected ? "bg-[#FF5500] text-white" : "text-muted-foreground bg-white shadow-sm",
+          )}
+        >
+          <Icon className="size-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center justify-between gap-2 text-sm font-semibold">
+            {option.label}
+            {selected ? (
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#0D0F12] text-white">
+                <CheckIcon className="size-3" aria-hidden />
+              </span>
+            ) : null}
+          </span>
+          <span className="text-muted-foreground mt-1 block text-xs leading-5">
+            {option.description}
+          </span>
+        </span>
+      </span>
+    </label>
+  )
+}
+
 function QuoteRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="tabular-nums">{value}</dd>
+      <dt className="text-[#A7ABB4]">{label}</dt>
+      <dd className="font-medium text-white tabular-nums">{value}</dd>
+    </div>
+  )
+}
+
+function BookingCardTitle({
+  icon: Icon,
+  step,
+  title,
+}: {
+  icon: LucideIcon
+  step: string
+  title: string
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="bg-primary/10 text-accent-ink flex size-10 items-center justify-center rounded-xl">
+        <Icon className="size-5" aria-hidden />
+      </span>
+      <div>
+        <p className="text-accent-ink text-[0.65rem] font-semibold tracking-[0.16em] uppercase">
+          Step {step}
+        </p>
+        <CardTitle className="mt-1 text-lg">{title}</CardTitle>
+      </div>
     </div>
   )
 }
@@ -985,31 +1186,31 @@ function ReviewCard({
     options.find((option) => option.id === id)?.label ?? id
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Review your booking</CardTitle>
-        <CardDescription>
-          Everything look right? You can go back to make changes before booking.
-        </CardDescription>
+    <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
+      <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
+        <BookingCardTitle icon={ClipboardCheckIcon} step="05" title="Review your booking" />
+        <CardDescription>Check the handover details before creating the parcel.</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-5">
-        <ReviewGroup title="Receiver">
-          <ReviewRow
-            label="Customer"
-            value={labelFor(recipientOptions, values.receiverCustomerId)}
-          />
-          <ReviewRow label="Name" value={values.receiverName} />
-          <ReviewRow label="Phone" value={values.receiverPhone} />
-        </ReviewGroup>
-        <ReviewGroup title="Route">
-          <ReviewRow label="From" value={labelFor(hubOptions, values.originHubId)} />
-          <ReviewRow label="To" value={labelFor(hubOptions, values.destinationHubId)} />
-          <ReviewRow
-            label="Zones"
-            value={`${labelFor(zoneOptions, values.originZoneId)} → ${labelFor(zoneOptions, values.destinationZoneId)}`}
-          />
-        </ReviewGroup>
-        <ReviewGroup title="Parcel and payment">
+      <CardContent className="grid gap-5 px-5 py-6 sm:px-7 sm:py-7">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ReviewGroup title="Receiver" icon={UserRoundIcon}>
+            <ReviewRow
+              label="Customer"
+              value={labelFor(recipientOptions, values.receiverCustomerId)}
+            />
+            <ReviewRow label="Name" value={values.receiverName} />
+            <ReviewRow label="Phone" value={values.receiverPhone} />
+          </ReviewGroup>
+          <ReviewGroup title="Route" icon={MapPinIcon}>
+            <ReviewRow label="From" value={labelFor(hubOptions, values.originHubId)} />
+            <ReviewRow label="To" value={labelFor(hubOptions, values.destinationHubId)} />
+            <ReviewRow
+              label="Zones"
+              value={`${labelFor(zoneOptions, values.originZoneId)} → ${labelFor(zoneOptions, values.destinationZoneId)}`}
+            />
+          </ReviewGroup>
+        </div>
+        <ReviewGroup title="Parcel and payment" icon={BoxIcon}>
           <ReviewRow label="Details" value={`${values.parcelType} · ${values.weight} kg`} />
           <ReviewRow
             label="Payment"
@@ -1029,9 +1230,9 @@ function ReviewCard({
           />
         </ReviewGroup>
         {quote ? (
-          <div className="bg-primary/8 flex items-center justify-between rounded-xl px-4 py-3">
-            <span className="text-sm font-medium">Estimated delivery fee</span>
-            <span className="text-lg font-bold tabular-nums">
+          <div className="flex items-center justify-between rounded-xl bg-[#0D0F12] px-5 py-4 text-white">
+            <span className="text-sm font-medium text-[#C8CBD1]">Estimated delivery fee</span>
+            <span className="text-xl font-extrabold tracking-[-0.03em] tabular-nums">
               {formatMoney(quote.total, quote.currency)}
             </span>
           </div>
@@ -1041,11 +1242,22 @@ function ReviewCard({
   )
 }
 
-function ReviewGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function ReviewGroup({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string
+  icon: LucideIcon
+  children: React.ReactNode
+}) {
   return (
-    <div className="grid gap-2">
-      <h3 className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">{title}</h3>
-      <div className="bg-muted/60 grid gap-2 rounded-xl p-3">{children}</div>
+    <div className="grid gap-3 rounded-xl bg-[#F7F8FA] p-4 ring-1 ring-black/5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <Icon className="text-accent-ink size-4" aria-hidden />
+        {title}
+      </h3>
+      <div className="grid gap-2.5">{children}</div>
     </div>
   )
 }
