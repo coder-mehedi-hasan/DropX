@@ -10,7 +10,7 @@ import {
   Skeleton,
   cn,
 } from "@dropx/ui"
-import { ArrowUpRightIcon, LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
@@ -126,14 +126,14 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="mt-auto grid gap-3">
-            <Link
+          <div className="mt-auto grid min-w-0 grid-cols-1 gap-3">
+            {/* <Link
               href="/"
-              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white"
             >
-              Visit DropX website
+              <span className="truncate">Visit DropX website</span>
               <ArrowUpRightIcon className="size-4" aria-hidden />
-            </Link>
+            </Link> */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
               <div className="flex items-center gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5500] text-sm font-bold text-white">
@@ -151,7 +151,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               <LoadingButton
                 variant="ghost"
                 size="sm"
-                className="mt-3 w-full justify-start text-white/60 hover:bg-white/8 hover:text-white"
+                className="mt-3 min-w-0 w-full justify-start text-white/60 hover:bg-white/8 hover:text-white"
                 onClick={onSignOut}
                 loading={signingOut}
               >
