@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { PageHeader } from "@/components/page-header"
 import { SiteFooter, SiteHeader } from "@/components/site-chrome"
 import { TrackLookup } from "@/components/track-lookup"
 
@@ -28,15 +29,12 @@ export default async function TrackPage({
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12">
-        <div className="mb-8 grid gap-2">
-          <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
-            Public tracking
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight">Track a parcel</h1>
-          <p className="text-muted-foreground text-sm">
-            Anyone with the tracking number can follow a parcel — you do not need an account.
-          </p>
-        </div>
+        <PageHeader
+          className="mb-8"
+          eyebrow="Public tracking"
+          title="Track a parcel"
+          description="Anyone with the tracking number can follow a parcel — you do not need an account."
+        />
 
         <TrackLookup initialTrackingNumber={initialTrackingNumber} />
       </main>

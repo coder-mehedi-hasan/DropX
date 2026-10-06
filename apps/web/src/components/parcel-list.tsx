@@ -126,49 +126,41 @@ export function ParcelList() {
 
   return (
     <div className="grid gap-4">
-      <Card className="bg-card/60 border-0 shadow-sm">
-        <CardContent className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="grid gap-1">
-            <p className="text-sm font-semibold">Find a parcel</p>
-            <p className="text-muted-foreground text-xs">
-              Search by tracking number or narrow by status.
-            </p>
-          </div>
-          <div className="relative">
-            <SearchIcon
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-              aria-hidden
-            />
-            <Input
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by tracking number"
-              className="pl-9"
-              aria-label="Search parcels by tracking number"
-            />
-          </div>
-
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              setStatus(value === "ALL" ? "ALL" : (value as ParcelStatus))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-56" aria-label="Filter by status">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              {PARCEL_STATUSES.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {parcelStatusLabel(value)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <SearchIcon
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <Input
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search by tracking number"
+            className="bg-card h-11 pl-9"
+            aria-label="Search parcels by tracking number"
+          />
+        </div>
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            setStatus(value === "ALL" ? "ALL" : (value as ParcelStatus))
+            setPage(1)
+          }}
+        >
+          <SelectTrigger className="bg-card h-11 w-full sm:w-56" aria-label="Filter by status">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All statuses</SelectItem>
+            {PARCEL_STATUSES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {parcelStatusLabel(value)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {errorMessage ? (
         <Alert variant="destructive">
@@ -178,9 +170,9 @@ export function ParcelList() {
         </Alert>
       ) : null}
 
-      <Card>
-        <CardContent className="p-3 sm:p-5">
-          {query.isPending ? <ListSkeleton /> : null}
+      <Card className="overflow-hidden py-0 shadow-sm">
+        <CardContent className="p-0 sm:p-0">
+          {query.isPending ? <div className="p-4"><ListSkeleton /></div> : null}
 
           {!query.isPending && parcels.length === 0 && !errorMessage ? (
             <EmptyState
@@ -216,7 +208,7 @@ export function ParcelList() {
           ) : null}
 
           {parcels.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid">
               <DataTable
                 data={parcels}
                 columns={columns}
@@ -227,7 +219,7 @@ export function ParcelList() {
                 clipboard={false}
               />
 
-              <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm">
                 <p>
                   {meta
                     ? `Showing ${(meta.currentPage - 1) * PAGE_SIZE + 1}–${Math.min(
