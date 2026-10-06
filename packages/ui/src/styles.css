@@ -217,6 +217,14 @@
   }
 
   /*
+   * Iconography: the brand's outline icons use a 1.75px stroke, where Lucide
+   * defaults to 2. Set once here so no call site has to remember it.
+   */
+  svg.lucide {
+    stroke-width: 1.75;
+  }
+
+  /*
    * Motion is capped at the brand's navigation budget by default, and
    * `prefers-reduced-motion` collapses it entirely. Every app that needs the
    * full stop already inherits this, so no screen can ship an animation the
