@@ -1,0 +1,5610 @@
+[
+  {
+    "city_id": 52,
+    "city_name": "Bagerhat",
+    "zones": [
+      {
+        "zone_id": 156,
+        "zone_name": "Bagerhat Sadar"
+      },
+      {
+        "zone_id": 989,
+        "zone_name": "Bajua"
+      },
+      {
+        "zone_id": 594,
+        "zone_name": "Chitalmari"
+      },
+      {
+        "zone_id": 595,
+        "zone_name": "Fakirhat"
+      },
+      {
+        "zone_id": 596,
+        "zone_name": "Kachua"
+      },
+      {
+        "zone_id": 593,
+        "zone_name": "Mollahat"
+      },
+      {
+        "zone_id": 868,
+        "zone_name": "Mongla"
+      },
+      {
+        "zone_id": 2129,
+        "zone_name": "Mongla Sadar"
+      },
+      {
+        "zone_id": 597,
+        "zone_name": "Morelganj"
+      },
+      {
+        "zone_id": 598,
+        "zone_name": "Rampal"
+      },
+      {
+        "zone_id": 599,
+        "zone_name": "Rayenda"
+      },
+      {
+        "zone_id": 984,
+        "zone_name": "Sarankhola"
+      }
+    ]
+  },
+  {
+    "city_id": 62,
+    "city_name": "Bandarban ",
+    "zones": [
+      {
+        "zone_id": 714,
+        "zone_name": "Alikadam"
+      },
+      {
+        "zone_id": 166,
+        "zone_name": "Bandarban Sadar"
+      },
+      {
+        "zone_id": 692,
+        "zone_name": "Kalaghata"
+      },
+      {
+        "zone_id": 696,
+        "zone_name": "Lama"
+      },
+      {
+        "zone_id": 693,
+        "zone_name": "Roanchhari"
+      },
+      {
+        "zone_id": 695,
+        "zone_name": "Thanchi"
+      }
+    ]
+  },
+  {
+    "city_id": 34,
+    "city_name": "Barguna ",
+    "zones": [
+      {
+        "zone_id": 931,
+        "zone_name": "Amtali"
+      },
+      {
+        "zone_id": 933,
+        "zone_name": "Bamna"
+      },
+      {
+        "zone_id": 135,
+        "zone_name": "Barguna Sadar"
+      },
+      {
+        "zone_id": 932,
+        "zone_name": "Betagi"
+      },
+      {
+        "zone_id": 934,
+        "zone_name": "Patharghata"
+      },
+      {
+        "zone_id": 930,
+        "zone_name": "Taltoli"
+      }
+    ]
+  },
+  {
+    "city_id": 17,
+    "city_name": "Barisal",
+    "zones": [
+      {
+        "zone_id": 911,
+        "zone_name": "Agailzhara"
+      },
+      {
+        "zone_id": 916,
+        "zone_name": "Babuganj"
+      },
+      {
+        "zone_id": 915,
+        "zone_name": "Bakergonj"
+      },
+      {
+        "zone_id": 914,
+        "zone_name": "Banaripara"
+      },
+      {
+        "zone_id": 1014,
+        "zone_name": "Barisal Bandor Thana"
+      },
+      {
+        "zone_id": 113,
+        "zone_name": "Barisal Sadar"
+      },
+      {
+        "zone_id": 910,
+        "zone_name": "Gauronodi"
+      },
+      {
+        "zone_id": 912,
+        "zone_name": "Hizla"
+      },
+      {
+        "zone_id": 909,
+        "zone_name": "Kotowali"
+      },
+      {
+        "zone_id": 607,
+        "zone_name": "Mahendiganj"
+      },
+      {
+        "zone_id": 913,
+        "zone_name": "Muladi"
+      },
+      {
+        "zone_id": 917,
+        "zone_name": "Wazirpur Powrosova"
+      }
+    ]
+  },
+  {
+    "city_id": 32,
+    "city_name": "B. Baria",
+    "zones": [
+      {
+        "zone_id": 2678,
+        "zone_name": "Ajampur"
+      },
+      {
+        "zone_id": 546,
+        "zone_name": "Akhaura"
+      },
+      {
+        "zone_id": 2677,
+        "zone_name": "Akhaura Checkpost"
+      },
+      {
+        "zone_id": 728,
+        "zone_name": "Ashuganj Sadar"
+      },
+      {
+        "zone_id": 2661,
+        "zone_name": "Austagram Ashuganj"
+      },
+      {
+        "zone_id": 133,
+        "zone_name": "Bancharampur"
+      },
+      {
+        "zone_id": 748,
+        "zone_name": "Bijoynagar"
+      },
+      {
+        "zone_id": 547,
+        "zone_name": "Brahamanbaria Sadar"
+      },
+      {
+        "zone_id": 2660,
+        "zone_name": "Char Chartola"
+      },
+      {
+        "zone_id": 2672,
+        "zone_name": "Chargachh"
+      },
+      {
+        "zone_id": 548,
+        "zone_name": "Kasba"
+      },
+      {
+        "zone_id": 2666,
+        "zone_name": "Kasba Sadar"
+      },
+      {
+        "zone_id": 2667,
+        "zone_name": "Kasba West"
+      },
+      {
+        "zone_id": 2671,
+        "zone_name": "Kharera"
+      },
+      {
+        "zone_id": 2676,
+        "zone_name": "Khorompur"
+      },
+      {
+        "zone_id": 2669,
+        "zone_name": "Kuti"
+      },
+      {
+        "zone_id": 2663,
+        "zone_name": "Lalpur Ashuganj"
+      },
+      {
+        "zone_id": 2674,
+        "zone_name": "Mogra Bazar"
+      },
+      {
+        "zone_id": 2670,
+        "zone_name": "Mojlishpur-kasba"
+      },
+      {
+        "zone_id": 2673,
+        "zone_name": "Moniondha"
+      },
+      {
+        "zone_id": 549,
+        "zone_name": "Nabinagar"
+      },
+      {
+        "zone_id": 551,
+        "zone_name": "Nasirnagar"
+      },
+      {
+        "zone_id": 2668,
+        "zone_name": "Noyanpur"
+      },
+      {
+        "zone_id": 2665,
+        "zone_name": "Panishwar-Sarail"
+      },
+      {
+        "zone_id": 550,
+        "zone_name": "Sarail"
+      },
+      {
+        "zone_id": 2662,
+        "zone_name": "Sohagpur"
+      },
+      {
+        "zone_id": 2664,
+        "zone_name": "Talshahar"
+      },
+      {
+        "zone_id": 2675,
+        "zone_name": "Tontor Bazar"
+      }
+    ]
+  },
+  {
+    "city_id": 53,
+    "city_name": "Bhola",
+    "zones": [
+      {
+        "zone_id": 157,
+        "zone_name": "Bhola Sadar"
+      },
+      {
+        "zone_id": 900,
+        "zone_name": "Burhanuddin"
+      },
+      {
+        "zone_id": 903,
+        "zone_name": "Char fashion"
+      },
+      {
+        "zone_id": 904,
+        "zone_name": "Dokkhin aicha"
+      },
+      {
+        "zone_id": 899,
+        "zone_name": "Doulatkhan"
+      },
+      {
+        "zone_id": 901,
+        "zone_name": "Lalmohon"
+      },
+      {
+        "zone_id": 2453,
+        "zone_name": "Monpura"
+      },
+      {
+        "zone_id": 2128,
+        "zone_name": "Soshibushion"
+      },
+      {
+        "zone_id": 902,
+        "zone_name": "Tazumuddin"
+      }
+    ]
+  },
+  {
+    "city_id": 9,
+    "city_name": "Bogra",
+    "zones": [
+      {
+        "zone_id": 753,
+        "zone_name": "Adamdighi"
+      },
+      {
+        "zone_id": 480,
+        "zone_name": "Bogra - Gabtoli"
+      },
+      {
+        "zone_id": 104,
+        "zone_name": "Bogra Sadar"
+      },
+      {
+        "zone_id": 756,
+        "zone_name": "Dhunat"
+      },
+      {
+        "zone_id": 719,
+        "zone_name": "Dupchachia"
+      },
+      {
+        "zone_id": 479,
+        "zone_name": "Kahalu"
+      },
+      {
+        "zone_id": 754,
+        "zone_name": "Nandigram"
+      },
+      {
+        "zone_id": 752,
+        "zone_name": "Sariakandi"
+      },
+      {
+        "zone_id": 1488,
+        "zone_name": "Shahjahanpur"
+      },
+      {
+        "zone_id": 751,
+        "zone_name": "Shajahanpur-Bogra"
+      },
+      {
+        "zone_id": 757,
+        "zone_name": "Shantaher"
+      },
+      {
+        "zone_id": 478,
+        "zone_name": "Sherpur"
+      },
+      {
+        "zone_id": 481,
+        "zone_name": "Shibganj"
+      },
+      {
+        "zone_id": 755,
+        "zone_name": "Sonatola"
+      }
+    ]
+  },
+  {
+    "city_id": 8,
+    "city_name": "Chandpur",
+    "zones": [
+      {
+        "zone_id": 3017,
+        "zone_name": "Chandpur-Baburhat"
+      },
+      {
+        "zone_id": 102,
+        "zone_name": "Chandpur Sadar"
+      },
+      {
+        "zone_id": 667,
+        "zone_name": "Dokkhin Matlab"
+      },
+      {
+        "zone_id": 563,
+        "zone_name": "Faridganj"
+      },
+      {
+        "zone_id": 565,
+        "zone_name": "Hayemchar"
+      },
+      {
+        "zone_id": 564,
+        "zone_name": "Haziganj"
+      },
+      {
+        "zone_id": 566,
+        "zone_name": "Kachua"
+      },
+      {
+        "zone_id": 749,
+        "zone_name": "Matlab-Uttar"
+      },
+      {
+        "zone_id": 567,
+        "zone_name": "Shahrasti"
+      }
+    ]
+  },
+  {
+    "city_id": 15,
+    "city_name": "Chapainawabganj",
+    "zones": [
+      {
+        "zone_id": 558,
+        "zone_name": "Bholahat"
+      },
+      {
+        "zone_id": 111,
+        "zone_name": "Chapainawabganj Sadar"
+      },
+      {
+        "zone_id": 508,
+        "zone_name": "Gomastapur"
+      },
+      {
+        "zone_id": 559,
+        "zone_name": "Nachole"
+      },
+      {
+        "zone_id": 509,
+        "zone_name": "Shibganj"
+      }
+    ]
+  },
+  {
+    "city_id": 2,
+    "city_name": "Chittagong",
+    "zones": [
+      {
+        "zone_id": 2896,
+        "zone_name": "Airport Chittagong"
+      },
+      {
+        "zone_id": 78,
+        "zone_name": "Akbarsha"
+      },
+      {
+        "zone_id": 3013,
+        "zone_name": "Aman Bazar"
+      },
+      {
+        "zone_id": 434,
+        "zone_name": "Anawara"
+      },
+      {
+        "zone_id": 69,
+        "zone_name": "Andarkilla"
+      },
+      {
+        "zone_id": 453,
+        "zone_name": "Anowara"
+      },
+      {
+        "zone_id": 2966,
+        "zone_name": "Bahaddarhat"
+      },
+      {
+        "zone_id": 83,
+        "zone_name": "Bakoliya thana"
+      },
+      {
+        "zone_id": 2999,
+        "zone_name": "Baraiyarhat"
+      },
+      {
+        "zone_id": 459,
+        "zone_name": "Bashkhali"
+      },
+      {
+        "zone_id": 80,
+        "zone_name": "Bayazid"
+      },
+      {
+        "zone_id": 3012,
+        "zone_name": "Bhujpur"
+      },
+      {
+        "zone_id": 394,
+        "zone_name": "Bibir Hat - Fatikchori"
+      },
+      {
+        "zone_id": 681,
+        "zone_name": "Boalkhali"
+      },
+      {
+        "zone_id": 1027,
+        "zone_name": "Bondor"
+      },
+      {
+        "zone_id": 73,
+        "zone_name": "CEPZ"
+      },
+      {
+        "zone_id": 1015,
+        "zone_name": "Chandanaish"
+      },
+      {
+        "zone_id": 375,
+        "zone_name": "Chandgaon"
+      },
+      {
+        "zone_id": 79,
+        "zone_name": "Chawkbazar (Chattogram)"
+      },
+      {
+        "zone_id": 88,
+        "zone_name": "Chawkbazar North Side"
+      },
+      {
+        "zone_id": 460,
+        "zone_name": "CTG - Lohagara"
+      },
+      {
+        "zone_id": 1032,
+        "zone_name": "Dohajari"
+      },
+      {
+        "zone_id": 86,
+        "zone_name": "Double mooring"
+      },
+      {
+        "zone_id": 400,
+        "zone_name": "East Joara"
+      },
+      {
+        "zone_id": 405,
+        "zone_name": "Enayet bazar"
+      },
+      {
+        "zone_id": 2892,
+        "zone_name": "Estrin refinery housing"
+      },
+      {
+        "zone_id": 417,
+        "zone_name": "Fatikchhari"
+      },
+      {
+        "zone_id": 75,
+        "zone_name": "Halishahar"
+      },
+      {
+        "zone_id": 2912,
+        "zone_name": "haque shaheb er Goli"
+      },
+      {
+        "zone_id": 81,
+        "zone_name": "Hathazari"
+      },
+      {
+        "zone_id": 2906,
+        "zone_name": "Housing Colony"
+      },
+      {
+        "zone_id": 3000,
+        "zone_name": "Jorarganj Rastar matha"
+      },
+      {
+        "zone_id": 3001,
+        "zone_name": "Jorargonj"
+      },
+      {
+        "zone_id": 993,
+        "zone_name": "Karnophuli"
+      },
+      {
+        "zone_id": 2714,
+        "zone_name": "Karolia-Takia Fatikchori"
+      },
+      {
+        "zone_id": 2891,
+        "zone_name": "Katghor"
+      },
+      {
+        "zone_id": 2721,
+        "zone_name": "Kazirhat Borobill-Fatikchori"
+      },
+      {
+        "zone_id": 716,
+        "zone_name": "Keranihat"
+      },
+      {
+        "zone_id": 2908,
+        "zone_name": "Khalpar mazar goli"
+      },
+      {
+        "zone_id": 84,
+        "zone_name": "Khulshi"
+      },
+      {
+        "zone_id": 2468,
+        "zone_name": "Korean EPZ - Anwara "
+      },
+      {
+        "zone_id": 364,
+        "zone_name": "Kotowali Chittagong"
+      },
+      {
+        "zone_id": 987,
+        "zone_name": "Kotwali (Chattogram)"
+      },
+      {
+        "zone_id": 70,
+        "zone_name": "Lalkhan Bazar"
+      },
+      {
+        "zone_id": 87,
+        "zone_name": "Mirsharai"
+      },
+      {
+        "zone_id": 2476,
+        "zone_name": "Muradpur - Bibirhat"
+      },
+      {
+        "zone_id": 685,
+        "zone_name": "Nasirabad"
+      },
+      {
+        "zone_id": 703,
+        "zone_name": "Nazirhat"
+      },
+      {
+        "zone_id": 72,
+        "zone_name": "New Market CTG"
+      },
+      {
+        "zone_id": 366,
+        "zone_name": "New Mooring"
+      },
+      {
+        "zone_id": 458,
+        "zone_name": "Notunbridge"
+      },
+      {
+        "zone_id": 2713,
+        "zone_name": "On-Demand-Chattogram"
+      },
+      {
+        "zone_id": 986,
+        "zone_name": "Pahartoli-Halishahar"
+      },
+      {
+        "zone_id": 2658,
+        "zone_name": "Pahartoli-Raozan"
+      },
+      {
+        "zone_id": 333,
+        "zone_name": "Panchlaish ctg"
+      },
+      {
+        "zone_id": 457,
+        "zone_name": "Patia"
+      },
+      {
+        "zone_id": 370,
+        "zone_name": "Potenga"
+      },
+      {
+        "zone_id": 378,
+        "zone_name": "Rangunia"
+      },
+      {
+        "zone_id": 2475,
+        "zone_name": "Rangunia - Ranirhat"
+      },
+      {
+        "zone_id": 68,
+        "zone_name": "Raozan"
+      },
+      {
+        "zone_id": 365,
+        "zone_name": "Sadarghat (Chattogram)"
+      },
+      {
+        "zone_id": 705,
+        "zone_name": "Sandwip"
+      },
+      {
+        "zone_id": 371,
+        "zone_name": "Satkaniya"
+      },
+      {
+        "zone_id": 382,
+        "zone_name": "Sholakbahar"
+      },
+      {
+        "zone_id": 436,
+        "zone_name": "Shulokhbor"
+      },
+      {
+        "zone_id": 420,
+        "zone_name": "Sitakunda"
+      },
+      {
+        "zone_id": 1026,
+        "zone_name": "Vatiary"
+      },
+      {
+        "zone_id": 730,
+        "zone_name": "Zorargonj"
+      }
+    ]
+  },
+  {
+    "city_id": 61,
+    "city_name": "Chuadanga",
+    "zones": [
+      {
+        "zone_id": 647,
+        "zone_name": "Alamdanga"
+      },
+      {
+        "zone_id": 165,
+        "zone_name": "Chuadanga Sadar"
+      },
+      {
+        "zone_id": 591,
+        "zone_name": "Damurhuda"
+      },
+      {
+        "zone_id": 968,
+        "zone_name": "Darshana"
+      },
+      {
+        "zone_id": 592,
+        "zone_name": "Doulatganj"
+      },
+      {
+        "zone_id": 646,
+        "zone_name": "Jiban nagar"
+      }
+    ]
+  },
+  {
+    "city_id": 11,
+    "city_name": "Cox's Bazar",
+    "zones": [
+      {
+        "zone_id": 107,
+        "zone_name": "Chakaria"
+      },
+      {
+        "zone_id": 106,
+        "zone_name": "Cox's bazar Sadar"
+      },
+      {
+        "zone_id": 898,
+        "zone_name": "Eidgah"
+      },
+      {
+        "zone_id": 638,
+        "zone_name": "Kutubdia"
+      },
+      {
+        "zone_id": 896,
+        "zone_name": "Moheshkhali"
+      },
+      {
+        "zone_id": 1008,
+        "zone_name": "Naikhongchori"
+      },
+      {
+        "zone_id": 560,
+        "zone_name": "Pakua"
+      },
+      {
+        "zone_id": 561,
+        "zone_name": "Ramu"
+      },
+      {
+        "zone_id": 897,
+        "zone_name": "Teknaf"
+      },
+      {
+        "zone_id": 562,
+        "zone_name": "Ukhia"
+      }
+    ]
+  },
+  {
+    "city_id": 5,
+    "city_name": "Cumilla",
+    "zones": [
+      {
+        "zone_id": 2019,
+        "zone_name": "Adarsha Sadar"
+      },
+      {
+        "zone_id": 2139,
+        "zone_name": "Bagmaranorth"
+      },
+      {
+        "zone_id": 2140,
+        "zone_name": "Bagmara South"
+      },
+      {
+        "zone_id": 2258,
+        "zone_name": "Bakoi"
+      },
+      {
+        "zone_id": 2931,
+        "zone_name": "Barashalghar"
+      },
+      {
+        "zone_id": 534,
+        "zone_name": "Barura"
+      },
+      {
+        "zone_id": 738,
+        "zone_name": "Batakandi"
+      },
+      {
+        "zone_id": 2236,
+        "zone_name": "Belghar south"
+      },
+      {
+        "zone_id": 2218,
+        "zone_name": "Belghar Uttor "
+      },
+      {
+        "zone_id": 2261,
+        "zone_name": "Bhuloin North "
+      },
+      {
+        "zone_id": 91,
+        "zone_name": "B.Para"
+      },
+      {
+        "zone_id": 92,
+        "zone_name": "B. Para - Burichang"
+      },
+      {
+        "zone_id": 98,
+        "zone_name": "Chandina"
+      },
+      {
+        "zone_id": 2134,
+        "zone_name": "chandina bazar"
+      },
+      {
+        "zone_id": 97,
+        "zone_name": "Chauddagram"
+      },
+      {
+        "zone_id": 1497,
+        "zone_name": "Chayfullakandi"
+      },
+      {
+        "zone_id": 732,
+        "zone_name": "Comilla Companigonj"
+      },
+      {
+        "zone_id": 741,
+        "zone_name": "Cumilla Cantonment"
+      },
+      {
+        "zone_id": 93,
+        "zone_name": "Cumilla Sadar"
+      },
+      {
+        "zone_id": 734,
+        "zone_name": "Cumilla Sadar Dakkhin "
+      },
+      {
+        "zone_id": 545,
+        "zone_name": "Daudkandi"
+      },
+      {
+        "zone_id": 1528,
+        "zone_name": "Delivery Cumilla City A"
+      },
+      {
+        "zone_id": 1529,
+        "zone_name": "Delivery Cumilla City B"
+      },
+      {
+        "zone_id": 99,
+        "zone_name": "Devidwar"
+      },
+      {
+        "zone_id": 736,
+        "zone_name": "Eliotgonj"
+      },
+      {
+        "zone_id": 1496,
+        "zone_name": "Farry Ghat"
+      },
+      {
+        "zone_id": 737,
+        "zone_name": "Gouripur"
+      },
+      {
+        "zone_id": 96,
+        "zone_name": "Homna"
+      },
+      {
+        "zone_id": 2020,
+        "zone_name": "Kangshanagar "
+      },
+      {
+        "zone_id": 731,
+        "zone_name": "Kotbari"
+      },
+      {
+        "zone_id": 2135,
+        "zone_name": "Kutumpur"
+      },
+      {
+        "zone_id": 94,
+        "zone_name": "Laksam"
+      },
+      {
+        "zone_id": 735,
+        "zone_name": "Lalmai"
+      },
+      {
+        "zone_id": 2132,
+        "zone_name": "Madaiya Bazar"
+      },
+      {
+        "zone_id": 740,
+        "zone_name": "Meghna "
+      },
+      {
+        "zone_id": 552,
+        "zone_name": "Mia-Bazar"
+      },
+      {
+        "zone_id": 733,
+        "zone_name": "Monohorgonj"
+      },
+      {
+        "zone_id": 2034,
+        "zone_name": "Moynamoti"
+      },
+      {
+        "zone_id": 103,
+        "zone_name": "Muddafarganj"
+      },
+      {
+        "zone_id": 553,
+        "zone_name": "Muradnagar"
+      },
+      {
+        "zone_id": 95,
+        "zone_name": "Nangolkot"
+      },
+      {
+        "zone_id": 2021,
+        "zone_name": "Nimshar"
+      },
+      {
+        "zone_id": 2259,
+        "zone_name": "Perul North"
+      },
+      {
+        "zone_id": 2260,
+        "zone_name": "Perul South"
+      },
+      {
+        "zone_id": 2755,
+        "zone_name": "rajameher"
+      },
+      {
+        "zone_id": 2933,
+        "zone_name": "Rasulpur"
+      },
+      {
+        "zone_id": 1494,
+        "zone_name": "Ruposhdi"
+      },
+      {
+        "zone_id": 1495,
+        "zone_name": "Sonarampur"
+      },
+      {
+        "zone_id": 2455,
+        "zone_name": "Sultanpur Union"
+      },
+      {
+        "zone_id": 739,
+        "zone_name": "Titash"
+      },
+      {
+        "zone_id": 2930,
+        "zone_name": "Yousufpur"
+      }
+    ]
+  },
+  {
+    "city_id": 1,
+    "city_name": "Dhaka",
+    "zones": [
+      {
+        "zone_id": 298,
+        "zone_name": "60 feet"
+      },
+      {
+        "zone_id": 1070,
+        "zone_name": "Abdullahpur Uttara"
+      },
+      {
+        "zone_id": 1066,
+        "zone_name": "Abul Hotel"
+      },
+      {
+        "zone_id": 52,
+        "zone_name": "Adabor"
+      },
+      {
+        "zone_id": 1094,
+        "zone_name": "Adarsha Nagar - Kutubpur"
+      },
+      {
+        "zone_id": 300,
+        "zone_name": "Aftab Nagar"
+      },
+      {
+        "zone_id": 1764,
+        "zone_name": "Aganagar"
+      },
+      {
+        "zone_id": 17,
+        "zone_name": "Agargaon"
+      },
+      {
+        "zone_id": 1108,
+        "zone_name": "Agargaon-Taltola"
+      },
+      {
+        "zone_id": 1757,
+        "zone_name": "Akran Bazar"
+      },
+      {
+        "zone_id": 2700,
+        "zone_name": "Ali Nagar Bazar"
+      },
+      {
+        "zone_id": 1465,
+        "zone_name": "Amin Bazar"
+      },
+      {
+        "zone_id": 1765,
+        "zone_name": "Amritopur"
+      },
+      {
+        "zone_id": 1749,
+        "zone_name": "Amtola"
+      },
+      {
+        "zone_id": 317,
+        "zone_name": "Arambag"
+      },
+      {
+        "zone_id": 965,
+        "zone_name": "Ashkona"
+      },
+      {
+        "zone_id": 1538,
+        "zone_name": "Ashulia Bazar"
+      },
+      {
+        "zone_id": 1041,
+        "zone_name": "azampur (Uttara)"
+      },
+      {
+        "zone_id": 55,
+        "zone_name": "Azimpur (Lalbag)"
+      },
+      {
+        "zone_id": 30,
+        "zone_name": "Badda"
+      },
+      {
+        "zone_id": 312,
+        "zone_name": "Baily Road"
+      },
+      {
+        "zone_id": 1476,
+        "zone_name": "Baipail"
+      },
+      {
+        "zone_id": 274,
+        "zone_name": "Bakshi Bazar"
+      },
+      {
+        "zone_id": 1466,
+        "zone_name": "Bakurta"
+      },
+      {
+        "zone_id": 292,
+        "zone_name": "Balughat"
+      },
+      {
+        "zone_id": 1,
+        "zone_name": "Banani"
+      },
+      {
+        "zone_id": 181,
+        "zone_name": "Banani DOHS"
+      },
+      {
+        "zone_id": 1763,
+        "zone_name": "banani hq"
+      },
+      {
+        "zone_id": 24,
+        "zone_name": "Banasree (Block A-G)"
+      },
+      {
+        "zone_id": 1058,
+        "zone_name": "Banasree (Block H-J)"
+      },
+      {
+        "zone_id": 40,
+        "zone_name": "Bangla bazar"
+      },
+      {
+        "zone_id": 355,
+        "zone_name": "Banglamotor"
+      },
+      {
+        "zone_id": 250,
+        "zone_name": "Bangshal"
+      },
+      {
+        "zone_id": 1531,
+        "zone_name": "Bank Colony, Savar"
+      },
+      {
+        "zone_id": 958,
+        "zone_name": "Baridhara Diplomatic Zone"
+      },
+      {
+        "zone_id": 959,
+        "zone_name": "Baridhara DOHS"
+      },
+      {
+        "zone_id": 960,
+        "zone_name": "Baridhara J Block"
+      },
+      {
+        "zone_id": 1747,
+        "zone_name": "Barobaria"
+      },
+      {
+        "zone_id": 1477,
+        "zone_name": "Baroipara"
+      },
+      {
+        "zone_id": 303,
+        "zone_name": "Bashabo"
+      },
+      {
+        "zone_id": 6,
+        "zone_name": "Bashundhara R/A"
+      },
+      {
+        "zone_id": 176,
+        "zone_name": "Bawnia"
+      },
+      {
+        "zone_id": 1138,
+        "zone_name": "Begunbari"
+      },
+      {
+        "zone_id": 1132,
+        "zone_name": "Benaroshi Polli"
+      },
+      {
+        "zone_id": 1169,
+        "zone_name": "Benaroshi polli Blok A"
+      },
+      {
+        "zone_id": 1170,
+        "zone_name": "Benaroshi polli Blok B,C"
+      },
+      {
+        "zone_id": 1171,
+        "zone_name": "Benaroshi polli Blok D"
+      },
+      {
+        "zone_id": 981,
+        "zone_name": "Beraid"
+      },
+      {
+        "zone_id": 1554,
+        "zone_name": "Bibir Bagicha"
+      },
+      {
+        "zone_id": 1167,
+        "zone_name": "Block A,B, Mirpur 6"
+      },
+      {
+        "zone_id": 1154,
+        "zone_name": "Block A, C, Mirpur 11"
+      },
+      {
+        "zone_id": 1155,
+        "zone_name": "Block B, D, Mirpur 11"
+      },
+      {
+        "zone_id": 1166,
+        "zone_name": "Block D,E , Mirpur 6"
+      },
+      {
+        "zone_id": 1165,
+        "zone_name": "Block-E, Mirpur 12"
+      },
+      {
+        "zone_id": 1759,
+        "zone_name": "Bolivodro"
+      },
+      {
+        "zone_id": 1503,
+        "zone_name": "Borobag"
+      },
+      {
+        "zone_id": 2705,
+        "zone_name": "Borogram"
+      },
+      {
+        "zone_id": 964,
+        "zone_name": "Boro Moghbazar"
+      },
+      {
+        "zone_id": 1499,
+        "zone_name": "Bosila"
+      },
+      {
+        "zone_id": 1785,
+        "zone_name": "Brahmonkitta"
+      },
+      {
+        "zone_id": 351,
+        "zone_name": "BUET"
+      },
+      {
+        "zone_id": 1168,
+        "zone_name": "Bulk Merchant"
+      },
+      {
+        "zone_id": 2752,
+        "zone_name": "Central Fulfillment"
+      },
+      {
+        "zone_id": 972,
+        "zone_name": "Central Road"
+      },
+      {
+        "zone_id": 1478,
+        "zone_name": "Chakraborty"
+      },
+      {
+        "zone_id": 1539,
+        "zone_name": "Charabag, Ashulia"
+      },
+      {
+        "zone_id": 630,
+        "zone_name": "ChawkBazar (Dhaka)"
+      },
+      {
+        "zone_id": 1766,
+        "zone_name": "Chunkutia"
+      },
+      {
+        "zone_id": 2708,
+        "zone_name": "Company Ghat"
+      },
+      {
+        "zone_id": 15,
+        "zone_name": "Dakshinkhan"
+      },
+      {
+        "zone_id": 287,
+        "zone_name": "Darussalam"
+      },
+      {
+        "zone_id": 245,
+        "zone_name": "Demra"
+      },
+      {
+        "zone_id": 1533,
+        "zone_name": "Deogao, Savar"
+      },
+      {
+        "zone_id": 342,
+        "zone_name": "Dhaka cantonment"
+      },
+      {
+        "zone_id": 1056,
+        "zone_name": "Dhaka Medical"
+      },
+      {
+        "zone_id": 1501,
+        "zone_name": "Dhaka Uddyan"
+      },
+      {
+        "zone_id": 200,
+        "zone_name": "Dhaka University"
+      },
+      {
+        "zone_id": 1744,
+        "zone_name": "Dhamrai"
+      },
+      {
+        "zone_id": 1016,
+        "zone_name": "Dhamrai , Savar"
+      },
+      {
+        "zone_id": 62,
+        "zone_name": "Dhanmondi"
+      },
+      {
+        "zone_id": 1552,
+        "zone_name": "Dholaipar"
+      },
+      {
+        "zone_id": 979,
+        "zone_name": "Dholpur"
+      },
+      {
+        "zone_id": 264,
+        "zone_name": "Dhonia"
+      },
+      {
+        "zone_id": 1745,
+        "zone_name": "Dhulivita"
+      },
+      {
+        "zone_id": 1045,
+        "zone_name": "Diabari"
+      },
+      {
+        "zone_id": 966,
+        "zone_name": "DIT Road"
+      },
+      {
+        "zone_id": 1948,
+        "zone_name": "Document-Central"
+      },
+      {
+        "zone_id": 1075,
+        "zone_name": "Dohar"
+      },
+      {
+        "zone_id": 23,
+        "zone_name": "ECB"
+      },
+      {
+        "zone_id": 967,
+        "zone_name": "Elephant Road"
+      },
+      {
+        "zone_id": 1479,
+        "zone_name": "EPZ"
+      },
+      {
+        "zone_id": 1079,
+        "zone_name": "Equria Thana"
+      },
+      {
+        "zone_id": 311,
+        "zone_name": "Eskaton"
+      },
+      {
+        "zone_id": 1149,
+        "zone_name": "Estern Housing"
+      },
+      {
+        "zone_id": 1131,
+        "zone_name": "Extension Pallabi"
+      },
+      {
+        "zone_id": 13,
+        "zone_name": "Faidabad"
+      },
+      {
+        "zone_id": 978,
+        "zone_name": "Faridabad"
+      },
+      {
+        "zone_id": 46,
+        "zone_name": "Farmgate"
+      },
+      {
+        "zone_id": 1469,
+        "zone_name": "Fulbariya"
+      },
+      {
+        "zone_id": 293,
+        "zone_name": "Gabtoli"
+      },
+      {
+        "zone_id": 42,
+        "zone_name": "Gandaria"
+      },
+      {
+        "zone_id": 1537,
+        "zone_name": "Ganda, Savar"
+      },
+      {
+        "zone_id": 1767,
+        "zone_name": "GhatarChar"
+      },
+      {
+        "zone_id": 1097,
+        "zone_name": "Giridhara Abashik"
+      },
+      {
+        "zone_id": 1541,
+        "zone_name": "Gobindopur"
+      },
+      {
+        "zone_id": 1768,
+        "zone_name": "Golam Bazar"
+      },
+      {
+        "zone_id": 254,
+        "zone_name": "Gopibagh"
+      },
+      {
+        "zone_id": 308,
+        "zone_name": "Goran"
+      },
+      {
+        "zone_id": 1062,
+        "zone_name": "Gulbagh"
+      },
+      {
+        "zone_id": 35,
+        "zone_name": "Gulisthan"
+      },
+      {
+        "zone_id": 4,
+        "zone_name": "Gulshan 1"
+      },
+      {
+        "zone_id": 5,
+        "zone_name": "Gulshan 2"
+      },
+      {
+        "zone_id": 2706,
+        "zone_name": "Hasan Nagar"
+      },
+      {
+        "zone_id": 1769,
+        "zone_name": "Hasnabad"
+      },
+      {
+        "zone_id": 213,
+        "zone_name": "Hatirpool"
+      },
+      {
+        "zone_id": 56,
+        "zone_name": "Hazaribagh"
+      },
+      {
+        "zone_id": 1467,
+        "zone_name": "Hemayetpur"
+      },
+      {
+        "zone_id": 1043,
+        "zone_name": "house building"
+      },
+      {
+        "zone_id": 1935,
+        "zone_name": "Huzurbari Gate"
+      },
+      {
+        "zone_id": 1035,
+        "zone_name": "Ibrahimpur"
+      },
+      {
+        "zone_id": 1984,
+        "zone_name": "Islambag"
+      },
+      {
+        "zone_id": 257,
+        "zone_name": "Islampur"
+      },
+      {
+        "zone_id": 243,
+        "zone_name": "Islampur (Dhamrai)"
+      },
+      {
+        "zone_id": 1520,
+        "zone_name": "Jahangirnagar, Savar"
+      },
+      {
+        "zone_id": 1473,
+        "zone_name": "Jamgora"
+      },
+      {
+        "zone_id": 1054,
+        "zone_name": "Jhauchor"
+      },
+      {
+        "zone_id": 2704,
+        "zone_name": "Jhawlahati"
+      },
+      {
+        "zone_id": 61,
+        "zone_name": "Jigatola"
+      },
+      {
+        "zone_id": 1063,
+        "zone_name": "Joardar Lane"
+      },
+      {
+        "zone_id": 1934,
+        "zone_name": "Jonopoth More Bus Stop"
+      },
+      {
+        "zone_id": 1150,
+        "zone_name": "Journalist Residential Area"
+      },
+      {
+        "zone_id": 977,
+        "zone_name": "Jurain"
+      },
+      {
+        "zone_id": 980,
+        "zone_name": "Kadamtoli"
+      },
+      {
+        "zone_id": 63,
+        "zone_name": "Kalabagan"
+      },
+      {
+        "zone_id": 1491,
+        "zone_name": "kalachadpur"
+      },
+      {
+        "zone_id": 1746,
+        "zone_name": "Kalampur"
+      },
+      {
+        "zone_id": 1771,
+        "zone_name": "Kalindi"
+      },
+      {
+        "zone_id": 64,
+        "zone_name": "Kallyanpur"
+      },
+      {
+        "zone_id": 252,
+        "zone_name": "Kamalapur"
+      },
+      {
+        "zone_id": 655,
+        "zone_name": "Kamranggirchar"
+      },
+      {
+        "zone_id": 2702,
+        "zone_name": "Kamrangirchar Thana"
+      },
+      {
+        "zone_id": 1938,
+        "zone_name": "Karatitola"
+      },
+      {
+        "zone_id": 1556,
+        "zone_name": "Katashur"
+      },
+      {
+        "zone_id": 1536,
+        "zone_name": "Katghora, Savar"
+      },
+      {
+        "zone_id": 59,
+        "zone_name": "Kathalbagan"
+      },
+      {
+        "zone_id": 1750,
+        "zone_name": "Kawalipara"
+      },
+      {
+        "zone_id": 16,
+        "zone_name": "Kawla"
+      },
+      {
+        "zone_id": 58,
+        "zone_name": "Kawran Bazar"
+      },
+      {
+        "zone_id": 286,
+        "zone_name": "Kazipara"
+      },
+      {
+        "zone_id": 1772,
+        "zone_name": "Keraniganj Abdullahpur"
+      },
+      {
+        "zone_id": 1773,
+        "zone_name": "Keraniganj Atibazar"
+      },
+      {
+        "zone_id": 1774,
+        "zone_name": "Keraniganj BoshundhoraRiverview "
+      },
+      {
+        "zone_id": 1770,
+        "zone_name": "Keraniganj Kaliganj"
+      },
+      {
+        "zone_id": 1077,
+        "zone_name": "Keraniganj Model Thana"
+      },
+      {
+        "zone_id": 1775,
+        "zone_name": "Keraniganj Rajendrapur"
+      },
+      {
+        "zone_id": 66,
+        "zone_name": "Keraniganj Sadar"
+      },
+      {
+        "zone_id": 1776,
+        "zone_name": "Khejurbag"
+      },
+      {
+        "zone_id": 29,
+        "zone_name": "Khilgaon"
+      },
+      {
+        "zone_id": 178,
+        "zone_name": "Khilkhet"
+      },
+      {
+        "zone_id": 1777,
+        "zone_name": "Kholamura"
+      },
+      {
+        "zone_id": 1748,
+        "zone_name": "Khorarchar"
+      },
+      {
+        "zone_id": 290,
+        "zone_name": "Kochukhet"
+      },
+      {
+        "zone_id": 1778,
+        "zone_name": "Kodomtoli."
+      },
+      {
+        "zone_id": 1779,
+        "zone_name": "Kolatia"
+      },
+      {
+        "zone_id": 1756,
+        "zone_name": "Kolma"
+      },
+      {
+        "zone_id": 1780,
+        "zone_name": "Konakhola"
+      },
+      {
+        "zone_id": 247,
+        "zone_name": "Konapara"
+      },
+      {
+        "zone_id": 239,
+        "zone_name": "Kotwali (Dhaka)"
+      },
+      {
+        "zone_id": 2707,
+        "zone_name": "Koyla Ghat"
+      },
+      {
+        "zone_id": 177,
+        "zone_name": "Kuril"
+      },
+      {
+        "zone_id": 1551,
+        "zone_name": "Kutubkhali"
+      },
+      {
+        "zone_id": 260,
+        "zone_name": "Lakshmibazar"
+      },
+      {
+        "zone_id": 57,
+        "zone_name": "Lalbag"
+      },
+      {
+        "zone_id": 1036,
+        "zone_name": "Lalkuthi"
+      },
+      {
+        "zone_id": 1498,
+        "zone_name": "Lalmatia"
+      },
+      {
+        "zone_id": 1540,
+        "zone_name": "LaxmiBazar"
+      },
+      {
+        "zone_id": 1102,
+        "zone_name": "london market"
+      },
+      {
+        "zone_id": 1140,
+        "zone_name": "lost"
+      },
+      {
+        "zone_id": 1157,
+        "zone_name": "Love Road, Mirpur-2"
+      },
+      {
+        "zone_id": 1093,
+        "zone_name": "Madani nagar"
+      },
+      {
+        "zone_id": 2699,
+        "zone_name": "Madbor Bazar"
+      },
+      {
+        "zone_id": 1065,
+        "zone_name": "Malibagh  Baganbari"
+      },
+      {
+        "zone_id": 1060,
+        "zone_name": "Malibagh College Road"
+      },
+      {
+        "zone_id": 1061,
+        "zone_name": "Malibagh Lane"
+      },
+      {
+        "zone_id": 1064,
+        "zone_name": "Malibagh Pabna Colony"
+      },
+      {
+        "zone_id": 1937,
+        "zone_name": "Maloncho Road"
+      },
+      {
+        "zone_id": 971,
+        "zone_name": "Manda"
+      },
+      {
+        "zone_id": 337,
+        "zone_name": "Manikdi"
+      },
+      {
+        "zone_id": 251,
+        "zone_name": "Manik Nagar"
+      },
+      {
+        "zone_id": 1158,
+        "zone_name": "Masjid Market, Mirpur 2"
+      },
+      {
+        "zone_id": 291,
+        "zone_name": "Matikata"
+      },
+      {
+        "zone_id": 255,
+        "zone_name": "Matuail"
+      },
+      {
+        "zone_id": 1134,
+        "zone_name": "Mazar road"
+      },
+      {
+        "zone_id": 1099,
+        "zone_name": "Middle Rosulbag"
+      },
+      {
+        "zone_id": 1553,
+        "zone_name": "Mirhazirbag"
+      },
+      {
+        "zone_id": 171,
+        "zone_name": "Mirpur 1"
+      },
+      {
+        "zone_id": 19,
+        "zone_name": "Mirpur 10"
+      },
+      {
+        "zone_id": 20,
+        "zone_name": "Mirpur 11"
+      },
+      {
+        "zone_id": 1156,
+        "zone_name": "Mirpur 11 Lalmatia"
+      },
+      {
+        "zone_id": 280,
+        "zone_name": "Mirpur 12"
+      },
+      {
+        "zone_id": 1163,
+        "zone_name": "Mirpur 12 Block A,C"
+      },
+      {
+        "zone_id": 1164,
+        "zone_name": "Mirpur 12 Block-Dhak, B"
+      },
+      {
+        "zone_id": 1176,
+        "zone_name": "Mirpur 12 Block Ta"
+      },
+      {
+        "zone_id": 717,
+        "zone_name": "Mirpur 13"
+      },
+      {
+        "zone_id": 21,
+        "zone_name": "Mirpur 14"
+      },
+      {
+        "zone_id": 1151,
+        "zone_name": "Mirpur 1 Market Area"
+      },
+      {
+        "zone_id": 22,
+        "zone_name": "Mirpur 2"
+      },
+      {
+        "zone_id": 283,
+        "zone_name": "Mirpur 6"
+      },
+      {
+        "zone_id": 1172,
+        "zone_name": "Mirpur 6 (Block C)"
+      },
+      {
+        "zone_id": 475,
+        "zone_name": "Mirpur 7"
+      },
+      {
+        "zone_id": 1159,
+        "zone_name": "Mirpur Cantonment"
+      },
+      {
+        "zone_id": 1174,
+        "zone_name": "Mirpur Cantonment (Ave new 3 )"
+      },
+      {
+        "zone_id": 281,
+        "zone_name": "Mirpur DOHS"
+      },
+      {
+        "zone_id": 1173,
+        "zone_name": "Mirpur DOHS (Ave new 2)"
+      },
+      {
+        "zone_id": 1175,
+        "zone_name": "Mirpur DOHS (Ave New 9)"
+      },
+      {
+        "zone_id": 1161,
+        "zone_name": "Mirpur-Rupnagar"
+      },
+      {
+        "zone_id": 315,
+        "zone_name": "Modhubag"
+      },
+      {
+        "zone_id": 32,
+        "zone_name": "Mogbazar"
+      },
+      {
+        "zone_id": 2,
+        "zone_name": "Mohakhali"
+      },
+      {
+        "zone_id": 11,
+        "zone_name": "Mohakhali DOHS"
+      },
+      {
+        "zone_id": 50,
+        "zone_name": "Mohammadpur"
+      },
+      {
+        "zone_id": 233,
+        "zone_name": "Monipur"
+      },
+      {
+        "zone_id": 1101,
+        "zone_name": "Monumia Market"
+      },
+      {
+        "zone_id": 34,
+        "zone_name": "Motijheel"
+      },
+      {
+        "zone_id": 307,
+        "zone_name": "Mugda"
+      },
+      {
+        "zone_id": 1096,
+        "zone_name": "mukti nagar"
+      },
+      {
+        "zone_id": 2703,
+        "zone_name": "Munshi Hati"
+      },
+      {
+        "zone_id": 182,
+        "zone_name": "Nadda"
+      },
+      {
+        "zone_id": 10,
+        "zone_name": "Nakhalpara"
+      },
+      {
+        "zone_id": 1074,
+        "zone_name": "Nakhal para"
+      },
+      {
+        "zone_id": 1095,
+        "zone_name": "narayanpur - keshobpur"
+      },
+      {
+        "zone_id": 266,
+        "zone_name": "Narinda"
+      },
+      {
+        "zone_id": 627,
+        "zone_name": "Nawabganj (Dhaka)"
+      },
+      {
+        "zone_id": 1076,
+        "zone_name": "Nawabganj (Dohar)"
+      },
+      {
+        "zone_id": 259,
+        "zone_name": "Nawabpur"
+      },
+      {
+        "zone_id": 41,
+        "zone_name": "Naya Bazar"
+      },
+      {
+        "zone_id": 1139,
+        "zone_name": "Nayanagar"
+      },
+      {
+        "zone_id": 205,
+        "zone_name": "Nazim Uddin Road"
+      },
+      {
+        "zone_id": 36,
+        "zone_name": "Nazira Bazar"
+      },
+      {
+        "zone_id": 60,
+        "zone_name": "New Elephant Road"
+      },
+      {
+        "zone_id": 201,
+        "zone_name": "New Market"
+      },
+      {
+        "zone_id": 1055,
+        "zone_name": "new paltan azimpur"
+      },
+      {
+        "zone_id": 1942,
+        "zone_name": "New Town R/A "
+      },
+      {
+        "zone_id": 9,
+        "zone_name": "Niketan"
+      },
+      {
+        "zone_id": 8,
+        "zone_name": "Nikunja"
+      },
+      {
+        "zone_id": 961,
+        "zone_name": "Nikunja 2"
+      },
+      {
+        "zone_id": 210,
+        "zone_name": "Nilkhet"
+      },
+      {
+        "zone_id": 1092,
+        "zone_name": "Nimaikishori"
+      },
+      {
+        "zone_id": 1470,
+        "zone_name": "Nischintapur"
+      },
+      {
+        "zone_id": 1482,
+        "zone_name": "Nobinagar"
+      },
+      {
+        "zone_id": 1500,
+        "zone_name": "Nobodoy"
+      },
+      {
+        "zone_id": 1471,
+        "zone_name": "Norosinhopur"
+      },
+      {
+        "zone_id": 1557,
+        "zone_name": "North Badda"
+      },
+      {
+        "zone_id": 1113,
+        "zone_name": "North Sanarpar"
+      },
+      {
+        "zone_id": 179,
+        "zone_name": "Notun Bazar"
+      },
+      {
+        "zone_id": 2698,
+        "zone_name": "Noyanagar"
+      },
+      {
+        "zone_id": 1484,
+        "zone_name": "Noyarhat"
+      },
+      {
+        "zone_id": 1067,
+        "zone_name": "Noyatola road"
+      },
+      {
+        "zone_id": 316,
+        "zone_name": "Nurerchala"
+      },
+      {
+        "zone_id": 2035,
+        "zone_name": "On-Demand"
+      },
+      {
+        "zone_id": 1009,
+        "zone_name": "On-demand  transfer"
+      },
+      {
+        "zone_id": 18,
+        "zone_name": "Paikpara"
+      },
+      {
+        "zone_id": 1534,
+        "zone_name": "Pakiza, Savar"
+      },
+      {
+        "zone_id": 975,
+        "zone_name": "Pallabi"
+      },
+      {
+        "zone_id": 1160,
+        "zone_name": "Pallabi Residential area"
+      },
+      {
+        "zone_id": 1481,
+        "zone_name": "Palli Bidyut"
+      },
+      {
+        "zone_id": 33,
+        "zone_name": "Paltan"
+      },
+      {
+        "zone_id": 750,
+        "zone_name": "Panthapath"
+      },
+      {
+        "zone_id": 1939,
+        "zone_name": "Paterbag"
+      },
+      {
+        "zone_id": 2016,
+        "zone_name": "Pathao Central FTL"
+      },
+      {
+        "zone_id": 2081,
+        "zone_name": "Pathao Central Inbound"
+      },
+      {
+        "zone_id": 2017,
+        "zone_name": "Pathao Central LTL"
+      },
+      {
+        "zone_id": 973,
+        "zone_name": "Pirerbagh"
+      },
+      {
+        "zone_id": 1480,
+        "zone_name": "Polashbari"
+      },
+      {
+        "zone_id": 1940,
+        "zone_name": "Polashpur"
+      },
+      {
+        "zone_id": 1530,
+        "zone_name": "Radio Colony, Savar"
+      },
+      {
+        "zone_id": 1535,
+        "zone_name": "Rajashon, Savar"
+      },
+      {
+        "zone_id": 1042,
+        "zone_name": "rajlakkhi market"
+      },
+      {
+        "zone_id": 28,
+        "zone_name": "Rampura"
+      },
+      {
+        "zone_id": 324,
+        "zone_name": "ranavola"
+      },
+      {
+        "zone_id": 244,
+        "zone_name": "Rayerbag"
+      },
+      {
+        "zone_id": 1071,
+        "zone_name": "Rayer Bazar"
+      },
+      {
+        "zone_id": 1137,
+        "zone_name": "Razarbag Police line"
+      },
+      {
+        "zone_id": 1543,
+        "zone_name": "Rohitpur"
+      },
+      {
+        "zone_id": 2701,
+        "zone_name": "Rony Market"
+      },
+      {
+        "zone_id": 974,
+        "zone_name": "Rupnagar"
+      },
+      {
+        "zone_id": 258,
+        "zone_name": "Sadarghat (Dhaka)"
+      },
+      {
+        "zone_id": 1941,
+        "zone_name": "Saddam Market"
+      },
+      {
+        "zone_id": 1472,
+        "zone_name": "Sarkar Market"
+      },
+      {
+        "zone_id": 1754,
+        "zone_name": "Savar Bazar"
+      },
+      {
+        "zone_id": 1046,
+        "zone_name": "Savar-Nabinagar"
+      },
+      {
+        "zone_id": 1755,
+        "zone_name": "Savar Thana Road"
+      },
+      {
+        "zone_id": 39,
+        "zone_name": "Saydabad"
+      },
+      {
+        "zone_id": 1936,
+        "zone_name": "Sayedabad Bus Terminal"
+      },
+      {
+        "zone_id": 173,
+        "zone_name": "Senpara"
+      },
+      {
+        "zone_id": 1502,
+        "zone_name": "Senpara Parbata"
+      },
+      {
+        "zone_id": 1162,
+        "zone_name": "Shagufta Block-D"
+      },
+      {
+        "zone_id": 1135,
+        "zone_name": "Shah Ali Bag"
+      },
+      {
+        "zone_id": 199,
+        "zone_name": "Shahbag"
+      },
+      {
+        "zone_id": 1550,
+        "zone_name": "Shahid Faruk Road"
+      },
+      {
+        "zone_id": 957,
+        "zone_name": "Shahid Nagar"
+      },
+      {
+        "zone_id": 180,
+        "zone_name": "Shahjadpur"
+      },
+      {
+        "zone_id": 318,
+        "zone_name": "Shajahanpur"
+      },
+      {
+        "zone_id": 976,
+        "zone_name": "shampur"
+      },
+      {
+        "zone_id": 38,
+        "zone_name": "Shanir Akhra"
+      },
+      {
+        "zone_id": 1072,
+        "zone_name": "shankar"
+      },
+      {
+        "zone_id": 26,
+        "zone_name": "Shantinagar "
+      },
+      {
+        "zone_id": 302,
+        "zone_name": "Shegunbagicha"
+      },
+      {
+        "zone_id": 1542,
+        "zone_name": "Sheikhdi"
+      },
+      {
+        "zone_id": 1152,
+        "zone_name": "Sheikh Rasel Park"
+      },
+      {
+        "zone_id": 1037,
+        "zone_name": "Sher-e Bangla Nagar"
+      },
+      {
+        "zone_id": 1133,
+        "zone_name": "Sher-E-Bangla National Cricket Stadium"
+      },
+      {
+        "zone_id": 174,
+        "zone_name": "Shewrapara"
+      },
+      {
+        "zone_id": 306,
+        "zone_name": "Shiddeshwari"
+      },
+      {
+        "zone_id": 1100,
+        "zone_name": "Shimrail"
+      },
+      {
+        "zone_id": 1474,
+        "zone_name": "Shimultola Jamgora"
+      },
+      {
+        "zone_id": 1532,
+        "zone_name": "Shimultola, Savar"
+      },
+      {
+        "zone_id": 1128,
+        "zone_name": "Shishu Mela"
+      },
+      {
+        "zone_id": 304,
+        "zone_name": "Shobujbag"
+      },
+      {
+        "zone_id": 31,
+        "zone_name": "Shonalibagh"
+      },
+      {
+        "zone_id": 1555,
+        "zone_name": "Shukrabad"
+      },
+      {
+        "zone_id": 1782,
+        "zone_name": "Shuvadda"
+      },
+      {
+        "zone_id": 198,
+        "zone_name": "Shyamoli"
+      },
+      {
+        "zone_id": 1468,
+        "zone_name": "Singair Road"
+      },
+      {
+        "zone_id": 1492,
+        "zone_name": "Solmaid"
+      },
+      {
+        "zone_id": 297,
+        "zone_name": "SONY Cinema Hall"
+      },
+      {
+        "zone_id": 1558,
+        "zone_name": "South Badda"
+      },
+      {
+        "zone_id": 963,
+        "zone_name": "South Banasree"
+      },
+      {
+        "zone_id": 1111,
+        "zone_name": "South kafrul"
+      },
+      {
+        "zone_id": 1487,
+        "zone_name": "Sreepur-Kashimpur"
+      },
+      {
+        "zone_id": 661,
+        "zone_name": "Sutrapur"
+      },
+      {
+        "zone_id": 1136,
+        "zone_name": "Technical"
+      },
+      {
+        "zone_id": 3,
+        "zone_name": "Tejgaon"
+      },
+      {
+        "zone_id": 1559,
+        "zone_name": "Tejkunipara"
+      },
+      {
+        "zone_id": 1485,
+        "zone_name": "Tenari Savar"
+      },
+      {
+        "zone_id": 282,
+        "zone_name": "Tolarbag"
+      },
+      {
+        "zone_id": 327,
+        "zone_name": "Turag"
+      },
+      {
+        "zone_id": 1475,
+        "zone_name": "Unique Bus Stand"
+      },
+      {
+        "zone_id": 12,
+        "zone_name": "Uttara Sector 1"
+      },
+      {
+        "zone_id": 941,
+        "zone_name": "Uttara Sector 10"
+      },
+      {
+        "zone_id": 942,
+        "zone_name": "Uttara Sector 11"
+      },
+      {
+        "zone_id": 943,
+        "zone_name": "Uttara Sector 12"
+      },
+      {
+        "zone_id": 944,
+        "zone_name": "Uttara Sector 13"
+      },
+      {
+        "zone_id": 945,
+        "zone_name": "Uttara Sector 14"
+      },
+      {
+        "zone_id": 1000,
+        "zone_name": "Uttara Sector 15"
+      },
+      {
+        "zone_id": 1001,
+        "zone_name": "Uttara Sector 16"
+      },
+      {
+        "zone_id": 1002,
+        "zone_name": "Uttara Sector 17"
+      },
+      {
+        "zone_id": 1003,
+        "zone_name": "Uttara Sector 18"
+      },
+      {
+        "zone_id": 935,
+        "zone_name": "Uttara Sector 3"
+      },
+      {
+        "zone_id": 936,
+        "zone_name": "Uttara Sector 4"
+      },
+      {
+        "zone_id": 937,
+        "zone_name": "Uttara Sector 5"
+      },
+      {
+        "zone_id": 938,
+        "zone_name": "Uttara sector 6"
+      },
+      {
+        "zone_id": 939,
+        "zone_name": "Uttara Sector 7"
+      },
+      {
+        "zone_id": 946,
+        "zone_name": "Uttara Sector 8"
+      },
+      {
+        "zone_id": 940,
+        "zone_name": "Uttara Sector 9"
+      },
+      {
+        "zone_id": 14,
+        "zone_name": "UttarKhan"
+      },
+      {
+        "zone_id": 1483,
+        "zone_name": "Vadail"
+      },
+      {
+        "zone_id": 289,
+        "zone_name": "Vasan Tek"
+      },
+      {
+        "zone_id": 236,
+        "zone_name": "Vootergoli"
+      },
+      {
+        "zone_id": 37,
+        "zone_name": "Wari"
+      },
+      {
+        "zone_id": 1109,
+        "zone_name": "West Agargaon"
+      },
+      {
+        "zone_id": 1112,
+        "zone_name": "West Kafrul"
+      },
+      {
+        "zone_id": 1783,
+        "zone_name": "Zazira"
+      },
+      {
+        "zone_id": 1784,
+        "zone_name": "Zinzira"
+      },
+      {
+        "zone_id": 1758,
+        "zone_name": "Zirabo"
+      },
+      {
+        "zone_id": 1486,
+        "zone_name": "Zirani"
+      },
+      {
+        "zone_id": 1153,
+        "zone_name": "Zoo Road"
+      }
+    ]
+  },
+  {
+    "city_id": 35,
+    "city_name": "Dinajpur",
+    "zones": [
+      {
+        "zone_id": 582,
+        "zone_name": "Biral"
+      },
+      {
+        "zone_id": 817,
+        "zone_name": "Birampur"
+      },
+      {
+        "zone_id": 811,
+        "zone_name": "Birganj"
+      },
+      {
+        "zone_id": 814,
+        "zone_name": "Bochaganj"
+      },
+      {
+        "zone_id": 810,
+        "zone_name": "Chirirbandar"
+      },
+      {
+        "zone_id": 136,
+        "zone_name": "Dinajpur Sadar"
+      },
+      {
+        "zone_id": 816,
+        "zone_name": "Fulbari"
+      },
+      {
+        "zone_id": 819,
+        "zone_name": "Ghoraghat"
+      },
+      {
+        "zone_id": 820,
+        "zone_name": "Hakimpur (Hili)"
+      },
+      {
+        "zone_id": 812,
+        "zone_name": "Kaharol"
+      },
+      {
+        "zone_id": 813,
+        "zone_name": "Khanshama"
+      },
+      {
+        "zone_id": 818,
+        "zone_name": "Nawabganj Dinajpur"
+      },
+      {
+        "zone_id": 815,
+        "zone_name": "Parbatipur"
+      }
+    ]
+  },
+  {
+    "city_id": 18,
+    "city_name": "Faridpur",
+    "zones": [
+      {
+        "zone_id": 922,
+        "zone_name": "Alfadanga"
+      },
+      {
+        "zone_id": 923,
+        "zone_name": "Bhanga"
+      },
+      {
+        "zone_id": 924,
+        "zone_name": "Boalmari"
+      },
+      {
+        "zone_id": 925,
+        "zone_name": "Charbhadrashan"
+      },
+      {
+        "zone_id": 114,
+        "zone_name": "Faridpur Sadar"
+      },
+      {
+        "zone_id": 2001,
+        "zone_name": "Madhukhali Upazila"
+      },
+      {
+        "zone_id": 926,
+        "zone_name": "Madukhali"
+      },
+      {
+        "zone_id": 927,
+        "zone_name": "Nagarkanda"
+      },
+      {
+        "zone_id": 928,
+        "zone_name": "Sadarpur"
+      },
+      {
+        "zone_id": 929,
+        "zone_name": "Saltha"
+      }
+    ]
+  },
+  {
+    "city_id": 6,
+    "city_name": "Feni",
+    "zones": [
+      {
+        "zone_id": 568,
+        "zone_name": "Chhagalnaiya"
+      },
+      {
+        "zone_id": 569,
+        "zone_name": "Daganbhuiyan"
+      },
+      {
+        "zone_id": 100,
+        "zone_name": "Feni Sadar"
+      },
+      {
+        "zone_id": 746,
+        "zone_name": "Ful-Gazi"
+      },
+      {
+        "zone_id": 3062,
+        "zone_name": "New Munshir Hat"
+      },
+      {
+        "zone_id": 3063,
+        "zone_name": "Old Munshir Hat"
+      },
+      {
+        "zone_id": 572,
+        "zone_name": "Pashuram"
+      },
+      {
+        "zone_id": 573,
+        "zone_name": "Sonagazi"
+      }
+    ]
+  },
+  {
+    "city_id": 38,
+    "city_name": "Gaibandha",
+    "zones": [
+      {
+        "zone_id": 781,
+        "zone_name": "Fulchhari"
+      },
+      {
+        "zone_id": 139,
+        "zone_name": "Gaibandha Sadar"
+      },
+      {
+        "zone_id": 645,
+        "zone_name": "Gobindaganj"
+      },
+      {
+        "zone_id": 644,
+        "zone_name": "Palashbari"
+      },
+      {
+        "zone_id": 782,
+        "zone_name": "Sadulllahpur"
+      },
+      {
+        "zone_id": 783,
+        "zone_name": "Saghata"
+      },
+      {
+        "zone_id": 784,
+        "zone_name": "Sundarganj"
+      }
+    ]
+  },
+  {
+    "city_id": 22,
+    "city_name": "Gazipur",
+    "zones": [
+      {
+        "zone_id": 1732,
+        "zone_name": "1 No CNB"
+      },
+      {
+        "zone_id": 1733,
+        "zone_name": "2 No CNB"
+      },
+      {
+        "zone_id": 1714,
+        "zone_name": "Ambagh"
+      },
+      {
+        "zone_id": 1184,
+        "zone_name": "Amraid"
+      },
+      {
+        "zone_id": 1731,
+        "zone_name": "Anser Road"
+      },
+      {
+        "zone_id": 1182,
+        "zone_name": "Aral"
+      },
+      {
+        "zone_id": 1719,
+        "zone_name": "Arikhola"
+      },
+      {
+        "zone_id": 1727,
+        "zone_name": "Bagher Bazar"
+      },
+      {
+        "zone_id": 1736,
+        "zone_name": "Barotopa"
+      },
+      {
+        "zone_id": 863,
+        "zone_name": "Bason"
+      },
+      {
+        "zone_id": 1723,
+        "zone_name": "Bhabanipur"
+      },
+      {
+        "zone_id": 1178,
+        "zone_name": "Bhawal Mirzapur"
+      },
+      {
+        "zone_id": 862,
+        "zone_name": "Board Bazar"
+      },
+      {
+        "zone_id": 1722,
+        "zone_name": "Bonmala"
+      },
+      {
+        "zone_id": 1742,
+        "zone_name": "Bormi Bazar"
+      },
+      {
+        "zone_id": 861,
+        "zone_name": "Borobari"
+      },
+      {
+        "zone_id": 1183,
+        "zone_name": "Chalar Bazar"
+      },
+      {
+        "zone_id": 1710,
+        "zone_name": "Chondra"
+      },
+      {
+        "zone_id": 859,
+        "zone_name": "College gate"
+      },
+      {
+        "zone_id": 1718,
+        "zone_name": "Dolan Bazar"
+      },
+      {
+        "zone_id": 1760,
+        "zone_name": "Fulbaria."
+      },
+      {
+        "zone_id": 990,
+        "zone_name": "Gacha"
+      },
+      {
+        "zone_id": 860,
+        "zone_name": "Gazipura"
+      },
+      {
+        "zone_id": 123,
+        "zone_name": "Gazipur Chowrasta"
+      },
+      {
+        "zone_id": 1730,
+        "zone_name": "Gorgoria Masterbari"
+      },
+      {
+        "zone_id": 1751,
+        "zone_name": "Haydrabad"
+      },
+      {
+        "zone_id": 866,
+        "zone_name": "Hotapara"
+      },
+      {
+        "zone_id": 1720,
+        "zone_name": "Jamalpur Kaliganj"
+      },
+      {
+        "zone_id": 1741,
+        "zone_name": "Joina Bazar"
+      },
+      {
+        "zone_id": 1713,
+        "zone_name": "Jorun"
+      },
+      {
+        "zone_id": 864,
+        "zone_name": "Joydebpur"
+      },
+      {
+        "zone_id": 724,
+        "zone_name": "Kaliakair"
+      },
+      {
+        "zone_id": 715,
+        "zone_name": "Kaliganj"
+      },
+      {
+        "zone_id": 1743,
+        "zone_name": "Kaoraid"
+      },
+      {
+        "zone_id": 865,
+        "zone_name": "Kapashiya"
+      },
+      {
+        "zone_id": 1181,
+        "zone_name": "Kapasia"
+      },
+      {
+        "zone_id": 1048,
+        "zone_name": "Kashimpur"
+      },
+      {
+        "zone_id": 1737,
+        "zone_name": "Kawran Bazar Mawna"
+      },
+      {
+        "zone_id": 1068,
+        "zone_name": "Konabari"
+      },
+      {
+        "zone_id": 1547,
+        "zone_name": "Majukhan"
+      },
+      {
+        "zone_id": 1752,
+        "zone_name": "Maleker Bari"
+      },
+      {
+        "zone_id": 867,
+        "zone_name": "Mawna"
+      },
+      {
+        "zone_id": 1735,
+        "zone_name": "Mawna Bazar"
+      },
+      {
+        "zone_id": 1734,
+        "zone_name": "Mawna Chowrasta"
+      },
+      {
+        "zone_id": 1738,
+        "zone_name": "Mawna Gazipur Bazar"
+      },
+      {
+        "zone_id": 1739,
+        "zone_name": "MC Bazar"
+      },
+      {
+        "zone_id": 1549,
+        "zone_name": "Mirer Bazar"
+      },
+      {
+        "zone_id": 1725,
+        "zone_name": "Monipur Mawna"
+      },
+      {
+        "zone_id": 1047,
+        "zone_name": "Mowchak"
+      },
+      {
+        "zone_id": 1740,
+        "zone_name": "Nayonpur"
+      },
+      {
+        "zone_id": 1728,
+        "zone_name": "Notun Bazar Mawna"
+      },
+      {
+        "zone_id": 1726,
+        "zone_name": "Pach Pirer Mazar"
+      },
+      {
+        "zone_id": 1724,
+        "zone_name": "Pirozali"
+      },
+      {
+        "zone_id": 1711,
+        "zone_name": "Pollibiddut"
+      },
+      {
+        "zone_id": 1177,
+        "zone_name": "Porabari"
+      },
+      {
+        "zone_id": 1717,
+        "zone_name": "PRAN RFL Gate"
+      },
+      {
+        "zone_id": 1546,
+        "zone_name": "Pubail"
+      },
+      {
+        "zone_id": 1729,
+        "zone_name": "Puran Bazar"
+      },
+      {
+        "zone_id": 1716,
+        "zone_name": "Raja Bari Sreepur"
+      },
+      {
+        "zone_id": 1179,
+        "zone_name": "Rajendrapur Bangla Bazar"
+      },
+      {
+        "zone_id": 1180,
+        "zone_name": "Rajendrapur Cantonment"
+      },
+      {
+        "zone_id": 1715,
+        "zone_name": "Raniganj"
+      },
+      {
+        "zone_id": 1753,
+        "zone_name": "Salna"
+      },
+      {
+        "zone_id": 1712,
+        "zone_name": "Shafipur"
+      },
+      {
+        "zone_id": 1544,
+        "zone_name": "Shimultoli"
+      },
+      {
+        "zone_id": 529,
+        "zone_name": "Sreepur"
+      },
+      {
+        "zone_id": 1721,
+        "zone_name": "Station Road Tongi"
+      },
+      {
+        "zone_id": 1185,
+        "zone_name": "Toke"
+      },
+      {
+        "zone_id": 517,
+        "zone_name": "Tongi"
+      },
+      {
+        "zone_id": 858,
+        "zone_name": "Tongi Cherag Ali"
+      },
+      {
+        "zone_id": 1548,
+        "zone_name": "Ulukhola"
+      }
+    ]
+  },
+  {
+    "city_id": 56,
+    "city_name": "Gopalgonj ",
+    "zones": [
+      {
+        "zone_id": 160,
+        "zone_name": "Gopalganj Sadar"
+      },
+      {
+        "zone_id": 918,
+        "zone_name": "Kashiani"
+      },
+      {
+        "zone_id": 919,
+        "zone_name": "Kotalipara"
+      },
+      {
+        "zone_id": 920,
+        "zone_name": "Muksudpur"
+      },
+      {
+        "zone_id": 921,
+        "zone_name": "Tungipara"
+      }
+    ]
+  },
+  {
+    "city_id": 30,
+    "city_name": "Habiganj",
+    "zones": [
+      {
+        "zone_id": 684,
+        "zone_name": "Azmireeganj"
+      },
+      {
+        "zone_id": 725,
+        "zone_name": "Bahubal"
+      },
+      {
+        "zone_id": 842,
+        "zone_name": "Baniachong"
+      },
+      {
+        "zone_id": 843,
+        "zone_name": "Chunarughat"
+      },
+      {
+        "zone_id": 131,
+        "zone_name": "Habiganj Sadar"
+      },
+      {
+        "zone_id": 844,
+        "zone_name": "Lakhai"
+      },
+      {
+        "zone_id": 726,
+        "zone_name": "Madhabpur"
+      },
+      {
+        "zone_id": 727,
+        "zone_name": "Nabiganj"
+      },
+      {
+        "zone_id": 1490,
+        "zone_name": "Shaistaganj"
+      }
+    ]
+  },
+  {
+    "city_id": 41,
+    "city_name": "Jamalpur",
+    "zones": [
+      {
+        "zone_id": 871,
+        "zone_name": "Bakshiganj"
+      },
+      {
+        "zone_id": 519,
+        "zone_name": "Dewangonj"
+      },
+      {
+        "zone_id": 649,
+        "zone_name": "Islampur (Jamalpur)"
+      },
+      {
+        "zone_id": 143,
+        "zone_name": "Jamalpur Sadar"
+      },
+      {
+        "zone_id": 532,
+        "zone_name": "Madarganj"
+      },
+      {
+        "zone_id": 531,
+        "zone_name": "Melandaha"
+      },
+      {
+        "zone_id": 533,
+        "zone_name": "Sarishabari"
+      }
+    ]
+  },
+  {
+    "city_id": 19,
+    "city_name": "Jashore",
+    "zones": [
+      {
+        "zone_id": 600,
+        "zone_name": "Bagharpara"
+      },
+      {
+        "zone_id": 116,
+        "zone_name": "Benapole"
+      },
+      {
+        "zone_id": 601,
+        "zone_name": "Chaugachha"
+      },
+      {
+        "zone_id": 115,
+        "zone_name": "Jessore Sadar"
+      },
+      {
+        "zone_id": 602,
+        "zone_name": "Jhikargachha"
+      },
+      {
+        "zone_id": 603,
+        "zone_name": "Keshabpur"
+      },
+      {
+        "zone_id": 604,
+        "zone_name": "Monirampur"
+      },
+      {
+        "zone_id": 605,
+        "zone_name": "Obhoynagar"
+      },
+      {
+        "zone_id": 606,
+        "zone_name": "Sarsa"
+      }
+    ]
+  },
+  {
+    "city_id": 27,
+    "city_name": "Jhalokathi",
+    "zones": [
+      {
+        "zone_id": 128,
+        "zone_name": "Jhalokathi Sadar"
+      },
+      {
+        "zone_id": 583,
+        "zone_name": "Kathalia"
+      },
+      {
+        "zone_id": 609,
+        "zone_name": "Nalchity"
+      },
+      {
+        "zone_id": 608,
+        "zone_name": "Rajapur"
+      }
+    ]
+  },
+  {
+    "city_id": 49,
+    "city_name": "Jhenidah",
+    "zones": [
+      {
+        "zone_id": 465,
+        "zone_name": "Harinakundu"
+      },
+      {
+        "zone_id": 153,
+        "zone_name": "Jhenaidah sadar"
+      },
+      {
+        "zone_id": 466,
+        "zone_name": "Kaligonj-Jhenidah"
+      },
+      {
+        "zone_id": 467,
+        "zone_name": "Kotchandpur"
+      },
+      {
+        "zone_id": 468,
+        "zone_name": "Maheshpur"
+      },
+      {
+        "zone_id": 469,
+        "zone_name": "Shailakupa"
+      }
+    ]
+  },
+  {
+    "city_id": 48,
+    "city_name": "Joypurhat",
+    "zones": [
+      {
+        "zone_id": 787,
+        "zone_name": "Akkelpur"
+      },
+      {
+        "zone_id": 152,
+        "zone_name": "Joypurhat Sadar"
+      },
+      {
+        "zone_id": 785,
+        "zone_name": "Kalai"
+      },
+      {
+        "zone_id": 786,
+        "zone_name": "Khetlal"
+      },
+      {
+        "zone_id": 687,
+        "zone_name": "Panchbibi"
+      }
+    ]
+  },
+  {
+    "city_id": 63,
+    "city_name": "Khagrachari",
+    "zones": [
+      {
+        "zone_id": 2715,
+        "zone_name": "Andhar Manik"
+      },
+      {
+        "zone_id": 1142,
+        "zone_name": "Bagaichari"
+      },
+      {
+        "zone_id": 2720,
+        "zone_name": "Bagan bazar Borobill"
+      },
+      {
+        "zone_id": 2723,
+        "zone_name": "Baghaichari"
+      },
+      {
+        "zone_id": 2737,
+        "zone_name": "Baghaichari-Arojpur bonobihar"
+      },
+      {
+        "zone_id": 2725,
+        "zone_name": "Baghaichari-Babupara"
+      },
+      {
+        "zone_id": 2731,
+        "zone_name": "Baghaichari-Bongoltoli"
+      },
+      {
+        "zone_id": 2733,
+        "zone_name": "Baghaichari-Boradhom"
+      },
+      {
+        "zone_id": 2724,
+        "zone_name": "Baghaichari-Chomohouni"
+      },
+      {
+        "zone_id": 2732,
+        "zone_name": "Baghaichari-collagePara"
+      },
+      {
+        "zone_id": 2740,
+        "zone_name": "Baghaichari-Durchori bazar"
+      },
+      {
+        "zone_id": 2734,
+        "zone_name": "Baghaichari-Hazipara"
+      },
+      {
+        "zone_id": 2736,
+        "zone_name": "Baghaichari-Jiptoli"
+      },
+      {
+        "zone_id": 2730,
+        "zone_name": "Baghaichari-KorengaToli Bazar"
+      },
+      {
+        "zone_id": 2726,
+        "zone_name": "Baghaichari-Masterpara"
+      },
+      {
+        "zone_id": 2727,
+        "zone_name": "Baghaichari-Muslimblock"
+      },
+      {
+        "zone_id": 2738,
+        "zone_name": "Baghaichari-Ogolchari Bazar"
+      },
+      {
+        "zone_id": 2729,
+        "zone_name": "Baghaichari-Rupokari"
+      },
+      {
+        "zone_id": 2739,
+        "zone_name": "Baghaichari-Sijokh Collage"
+      },
+      {
+        "zone_id": 2735,
+        "zone_name": "Baghaichari-Talukder para"
+      },
+      {
+        "zone_id": 2728,
+        "zone_name": "Baghaichari-Tulaban"
+      },
+      {
+        "zone_id": 2716,
+        "zone_name": "Baghmara"
+      },
+      {
+        "zone_id": 2717,
+        "zone_name": "Chikonchora"
+      },
+      {
+        "zone_id": 709,
+        "zone_name": "Dighinala"
+      },
+      {
+        "zone_id": 2718,
+        "zone_name": "Guarder Dokan"
+      },
+      {
+        "zone_id": 888,
+        "zone_name": "Guimara"
+      },
+      {
+        "zone_id": 2719,
+        "zone_name": "Holudia Soinik Para"
+      },
+      {
+        "zone_id": 167,
+        "zone_name": "Khagrachari Sadar"
+      },
+      {
+        "zone_id": 890,
+        "zone_name": "Lakkhichhari"
+      },
+      {
+        "zone_id": 1143,
+        "zone_name": "Langodu"
+      },
+      {
+        "zone_id": 2750,
+        "zone_name": "Logadu-Boiraghi Bazar"
+      },
+      {
+        "zone_id": 2751,
+        "zone_name": "Logadu-Hosenpur"
+      },
+      {
+        "zone_id": 2749,
+        "zone_name": "Logadu-Rajanagar"
+      },
+      {
+        "zone_id": 2742,
+        "zone_name": "Longadu"
+      },
+      {
+        "zone_id": 2744,
+        "zone_name": "Longadu-AdhorokChora"
+      },
+      {
+        "zone_id": 2745,
+        "zone_name": "Longadu-Baittapara"
+      },
+      {
+        "zone_id": 2747,
+        "zone_name": "Longadu-Gulshakhali"
+      },
+      {
+        "zone_id": 2748,
+        "zone_name": "Longadu-Kalapakuijja"
+      },
+      {
+        "zone_id": 2743,
+        "zone_name": "Longadu-Korolachori"
+      },
+      {
+        "zone_id": 2746,
+        "zone_name": "Longadu-Mainimukhbazar"
+      },
+      {
+        "zone_id": 997,
+        "zone_name": "Mahalchhari"
+      },
+      {
+        "zone_id": 893,
+        "zone_name": "Maischori"
+      },
+      {
+        "zone_id": 891,
+        "zone_name": "Manikchori"
+      },
+      {
+        "zone_id": 2741,
+        "zone_name": "Marissha-Baghaichari"
+      },
+      {
+        "zone_id": 892,
+        "zone_name": "Matiranga"
+      },
+      {
+        "zone_id": 894,
+        "zone_name": "Mohalchori"
+      },
+      {
+        "zone_id": 895,
+        "zone_name": "Panchhari"
+      },
+      {
+        "zone_id": 889,
+        "zone_name": "Ramgar"
+      },
+      {
+        "zone_id": 2722,
+        "zone_name": "Ramghor Master Para"
+      },
+      {
+        "zone_id": 1947,
+        "zone_name": "Tabalcchari"
+      }
+    ]
+  },
+  {
+    "city_id": 20,
+    "city_name": "Khulna",
+    "zones": [
+      {
+        "zone_id": 515,
+        "zone_name": "Batiaghata"
+      },
+      {
+        "zone_id": 824,
+        "zone_name": "Boyra"
+      },
+      {
+        "zone_id": 1028,
+        "zone_name": "Chandkhali"
+      },
+      {
+        "zone_id": 2922,
+        "zone_name": "Dacope "
+      },
+      {
+        "zone_id": 827,
+        "zone_name": "Daulatpur-Khulna "
+      },
+      {
+        "zone_id": 514,
+        "zone_name": "Digholia"
+      },
+      {
+        "zone_id": 516,
+        "zone_name": "Dumuria"
+      },
+      {
+        "zone_id": 2888,
+        "zone_name": "Fulbarigate"
+      },
+      {
+        "zone_id": 826,
+        "zone_name": "Fultola"
+      },
+      {
+        "zone_id": 2886,
+        "zone_name": "Horintana"
+      },
+      {
+        "zone_id": 825,
+        "zone_name": "Khalishpur"
+      },
+      {
+        "zone_id": 117,
+        "zone_name": "Khulna Sadar"
+      },
+      {
+        "zone_id": 1006,
+        "zone_name": "Kopilmuni"
+      },
+      {
+        "zone_id": 1005,
+        "zone_name": "Koyra"
+      },
+      {
+        "zone_id": 3079,
+        "zone_name": "Lobonchora"
+      },
+      {
+        "zone_id": 970,
+        "zone_name": "Paikgachha Upozila"
+      },
+      {
+        "zone_id": 822,
+        "zone_name": "Rupsha"
+      },
+      {
+        "zone_id": 1545,
+        "zone_name": "Shiromoni"
+      },
+      {
+        "zone_id": 823,
+        "zone_name": "Sonadanga"
+      },
+      {
+        "zone_id": 969,
+        "zone_name": "Tala Upozilla"
+      },
+      {
+        "zone_id": 992,
+        "zone_name": "Terokhada"
+      },
+      {
+        "zone_id": 2885,
+        "zone_name": "Tootpara"
+      }
+    ]
+  },
+  {
+    "city_id": 42,
+    "city_name": "Kishoreganj",
+    "zones": [
+      {
+        "zone_id": 996,
+        "zone_name": "Astagram"
+      },
+      {
+        "zone_id": 881,
+        "zone_name": "Bajitpur"
+      },
+      {
+        "zone_id": 720,
+        "zone_name": "Bhairab"
+      },
+      {
+        "zone_id": 882,
+        "zone_name": "Hossainpur"
+      },
+      {
+        "zone_id": 995,
+        "zone_name": "Itna"
+      },
+      {
+        "zone_id": 883,
+        "zone_name": "Karimganj"
+      },
+      {
+        "zone_id": 1144,
+        "zone_name": "Katiadi Upozila"
+      },
+      {
+        "zone_id": 144,
+        "zone_name": "Kishoreganj Sadar"
+      },
+      {
+        "zone_id": 884,
+        "zone_name": "Kuliarchar"
+      },
+      {
+        "zone_id": 994,
+        "zone_name": "Mithamoin"
+      },
+      {
+        "zone_id": 887,
+        "zone_name": "Nikli"
+      },
+      {
+        "zone_id": 885,
+        "zone_name": "Pakundia"
+      },
+      {
+        "zone_id": 886,
+        "zone_name": "Tarial"
+      }
+    ]
+  },
+  {
+    "city_id": 55,
+    "city_name": "Kurigram ",
+    "zones": [
+      {
+        "zone_id": 788,
+        "zone_name": "Bhurungamari"
+      },
+      {
+        "zone_id": 795,
+        "zone_name": "Char Rajibpur"
+      },
+      {
+        "zone_id": 792,
+        "zone_name": "Chilmari"
+      },
+      {
+        "zone_id": 159,
+        "zone_name": "Kurigram Sadar"
+      },
+      {
+        "zone_id": 793,
+        "zone_name": "Nagesshari"
+      },
+      {
+        "zone_id": 789,
+        "zone_name": "Phulbari"
+      },
+      {
+        "zone_id": 790,
+        "zone_name": "Rajarhat"
+      },
+      {
+        "zone_id": 794,
+        "zone_name": "Rawmari"
+      },
+      {
+        "zone_id": 791,
+        "zone_name": "Ulipur"
+      }
+    ]
+  },
+  {
+    "city_id": 28,
+    "city_name": "Kushtia",
+    "zones": [
+      {
+        "zone_id": 636,
+        "zone_name": "Bheramara"
+      },
+      {
+        "zone_id": 829,
+        "zone_name": "Daulatpur-Kushtia"
+      },
+      {
+        "zone_id": 828,
+        "zone_name": "Islamic University"
+      },
+      {
+        "zone_id": 637,
+        "zone_name": "Khoksha"
+      },
+      {
+        "zone_id": 634,
+        "zone_name": "Kumarkhali"
+      },
+      {
+        "zone_id": 635,
+        "zone_name": "Kushtia-Mirpur"
+      },
+      {
+        "zone_id": 129,
+        "zone_name": "Kushtia Sadar"
+      }
+    ]
+  },
+  {
+    "city_id": 40,
+    "city_name": "Lakshmipur",
+    "zones": [
+      {
+        "zone_id": 1526,
+        "zone_name": "Chandraganj"
+      },
+      {
+        "zone_id": 1527,
+        "zone_name": "kamalnagar"
+      },
+      {
+        "zone_id": 530,
+        "zone_name": "Komalnagar"
+      },
+      {
+        "zone_id": 142,
+        "zone_name": "Lakshimpur Sadar"
+      },
+      {
+        "zone_id": 575,
+        "zone_name": "Raipur"
+      },
+      {
+        "zone_id": 574,
+        "zone_name": "Ramganj"
+      },
+      {
+        "zone_id": 747,
+        "zone_name": "Ramgoti"
+      }
+    ]
+  },
+  {
+    "city_id": 57,
+    "city_name": "Lalmonirhat ",
+    "zones": [
+      {
+        "zone_id": 802,
+        "zone_name": "Aditmari"
+      },
+      {
+        "zone_id": 804,
+        "zone_name": "Hatibandha"
+      },
+      {
+        "zone_id": 803,
+        "zone_name": "Kaliganj - Lalmonirhat"
+      },
+      {
+        "zone_id": 161,
+        "zone_name": "Lalmonirhat Sadar"
+      },
+      {
+        "zone_id": 805,
+        "zone_name": "Patgram"
+      }
+    ]
+  },
+  {
+    "city_id": 43,
+    "city_name": "Madaripur",
+    "zones": [
+      {
+        "zone_id": 870,
+        "zone_name": "Dasar Thana"
+      },
+      {
+        "zone_id": 869,
+        "zone_name": "Kalkini Thana"
+      },
+      {
+        "zone_id": 1521,
+        "zone_name": "Kodombari"
+      },
+      {
+        "zone_id": 145,
+        "zone_name": "Madaripur Sadar"
+      },
+      {
+        "zone_id": 146,
+        "zone_name": "Rajoir thana"
+      },
+      {
+        "zone_id": 718,
+        "zone_name": "Shibchar"
+      },
+      {
+        "zone_id": 1522,
+        "zone_name": "Takerhat Sadar"
+      }
+    ]
+  },
+  {
+    "city_id": 60,
+    "city_name": "Magura ",
+    "zones": [
+      {
+        "zone_id": 164,
+        "zone_name": "Magura Sadar"
+      },
+      {
+        "zone_id": 463,
+        "zone_name": "Mohammadpur-Magura"
+      },
+      {
+        "zone_id": 956,
+        "zone_name": "Shalikha"
+      },
+      {
+        "zone_id": 464,
+        "zone_name": "Sreepur (Magura)"
+      }
+    ]
+  },
+  {
+    "city_id": 16,
+    "city_name": "Manikganj",
+    "zones": [
+      {
+        "zone_id": 1196,
+        "zone_name": "ANGAR PARA"
+      },
+      {
+        "zone_id": 856,
+        "zone_name": "Daulatpur - Manikganj"
+      },
+      {
+        "zone_id": 1194,
+        "zone_name": "DAULATPUR-Manikganj"
+      },
+      {
+        "zone_id": 1193,
+        "zone_name": "Ghior"
+      },
+      {
+        "zone_id": 854,
+        "zone_name": "Ghior Thana"
+      },
+      {
+        "zone_id": 853,
+        "zone_name": "Harirampur"
+      },
+      {
+        "zone_id": 112,
+        "zone_name": "Manikganj Sadar"
+      },
+      {
+        "zone_id": 857,
+        "zone_name": "Saturia"
+      },
+      {
+        "zone_id": 1195,
+        "zone_name": "SHIBALAYA"
+      },
+      {
+        "zone_id": 855,
+        "zone_name": "Shivalaya"
+      },
+      {
+        "zone_id": 852,
+        "zone_name": "Singair"
+      }
+    ]
+  },
+  {
+    "city_id": 50,
+    "city_name": "Meherpur",
+    "zones": [
+      {
+        "zone_id": 610,
+        "zone_name": "Gangni"
+      },
+      {
+        "zone_id": 154,
+        "zone_name": "Meherpur Sadar"
+      },
+      {
+        "zone_id": 830,
+        "zone_name": "Mujibnagar"
+      }
+    ]
+  },
+  {
+    "city_id": 12,
+    "city_name": "Moulvibazar",
+    "zones": [
+      {
+        "zone_id": 676,
+        "zone_name": "Baralekha"
+      },
+      {
+        "zone_id": 678,
+        "zone_name": "Juri"
+      },
+      {
+        "zone_id": 679,
+        "zone_name": "Kamalganj"
+      },
+      {
+        "zone_id": 680,
+        "zone_name": "Kulaura"
+      },
+      {
+        "zone_id": 108,
+        "zone_name": "Mouluvibazar Sadar"
+      },
+      {
+        "zone_id": 677,
+        "zone_name": "Rajnagar"
+      },
+      {
+        "zone_id": 624,
+        "zone_name": "Sreemangal"
+      }
+    ]
+  },
+  {
+    "city_id": 23,
+    "city_name": "Munsiganj",
+    "zones": [
+      {
+        "zone_id": 1896,
+        "zone_name": "Baluakandi"
+      },
+      {
+        "zone_id": 821,
+        "zone_name": "Gazaria"
+      },
+      {
+        "zone_id": 1895,
+        "zone_name": "Hosseindi"
+      },
+      {
+        "zone_id": 710,
+        "zone_name": "Lohajong"
+      },
+      {
+        "zone_id": 124,
+        "zone_name": "Munshiganj Sadar"
+      },
+      {
+        "zone_id": 1506,
+        "zone_name": "Pakhir mor"
+      },
+      {
+        "zone_id": 1116,
+        "zone_name": "Rosulpur"
+      },
+      {
+        "zone_id": 711,
+        "zone_name": "Sirajdikhan"
+      },
+      {
+        "zone_id": 712,
+        "zone_name": "Sreenagar"
+      },
+      {
+        "zone_id": 713,
+        "zone_name": "Tongibari"
+      },
+      {
+        "zone_id": 1115,
+        "zone_name": "Vabarchar"
+      }
+    ]
+  },
+  {
+    "city_id": 26,
+    "city_name": "Mymensingh",
+    "zones": [
+      {
+        "zone_id": 850,
+        "zone_name": "Bhaluka"
+      },
+      {
+        "zone_id": 847,
+        "zone_name": "Dhobaura"
+      },
+      {
+        "zone_id": 511,
+        "zone_name": "Fulbaria"
+      },
+      {
+        "zone_id": 845,
+        "zone_name": "Gafargaon"
+      },
+      {
+        "zone_id": 846,
+        "zone_name": "Gauripur"
+      },
+      {
+        "zone_id": 851,
+        "zone_name": "Haluaghat"
+      },
+      {
+        "zone_id": 513,
+        "zone_name": "Ishwarganj"
+      },
+      {
+        "zone_id": 512,
+        "zone_name": "Muktagachha"
+      },
+      {
+        "zone_id": 127,
+        "zone_name": "Mymensingh Sadar"
+      },
+      {
+        "zone_id": 848,
+        "zone_name": "Nandail"
+      },
+      {
+        "zone_id": 1038,
+        "zone_name": "Pagla"
+      },
+      {
+        "zone_id": 849,
+        "zone_name": "Phulpur"
+      },
+      {
+        "zone_id": 1489,
+        "zone_name": "Shamvuganj"
+      },
+      {
+        "zone_id": 1049,
+        "zone_name": "Tarakanda"
+      },
+      {
+        "zone_id": 510,
+        "zone_name": "Trishal"
+      }
+    ]
+  },
+  {
+    "city_id": 46,
+    "city_name": "Naogaon",
+    "zones": [
+      {
+        "zone_id": 584,
+        "zone_name": "Atrai"
+      },
+      {
+        "zone_id": 766,
+        "zone_name": "Bodolgaci"
+      },
+      {
+        "zone_id": 765,
+        "zone_name": "Dhamairhat"
+      },
+      {
+        "zone_id": 759,
+        "zone_name": "Manda (Naogaon)"
+      },
+      {
+        "zone_id": 761,
+        "zone_name": "Mohadebpur"
+      },
+      {
+        "zone_id": 150,
+        "zone_name": "Naogaon  Sadar"
+      },
+      {
+        "zone_id": 760,
+        "zone_name": "Niyamatpur"
+      },
+      {
+        "zone_id": 764,
+        "zone_name": "Porsha"
+      },
+      {
+        "zone_id": 762,
+        "zone_name": "Potnitola"
+      },
+      {
+        "zone_id": 758,
+        "zone_name": "Raninagaor"
+      },
+      {
+        "zone_id": 763,
+        "zone_name": "Sapaher"
+      }
+    ]
+  },
+  {
+    "city_id": 54,
+    "city_name": "Narail ",
+    "zones": [
+      {
+        "zone_id": 706,
+        "zone_name": "Kalia"
+      },
+      {
+        "zone_id": 2921,
+        "zone_name": "Narail-Laxmipasha"
+      },
+      {
+        "zone_id": 707,
+        "zone_name": "Narail - Lohagara"
+      },
+      {
+        "zone_id": 158,
+        "zone_name": "Narail Sadar"
+      }
+    ]
+  },
+  {
+    "city_id": 21,
+    "city_name": "Narayanganj",
+    "zones": [
+      {
+        "zone_id": 1025,
+        "zone_name": "2 no gate"
+      },
+      {
+        "zone_id": 1513,
+        "zone_name": "Adomji"
+      },
+      {
+        "zone_id": 1085,
+        "zone_name": "Amlapara"
+      },
+      {
+        "zone_id": 1052,
+        "zone_name": "ananda bazar"
+      },
+      {
+        "zone_id": 721,
+        "zone_name": "Araihazar"
+      },
+      {
+        "zone_id": 1460,
+        "zone_name": "Araihazar Sador"
+      },
+      {
+        "zone_id": 1569,
+        "zone_name": "Atlapur"
+      },
+      {
+        "zone_id": 1088,
+        "zone_name": "baburail"
+      },
+      {
+        "zone_id": 1010,
+        "zone_name": "Baidder Bazar"
+      },
+      {
+        "zone_id": 648,
+        "zone_name": "Bandar"
+      },
+      {
+        "zone_id": 1508,
+        "zone_name": "Bandar Amin/ Rupali"
+      },
+      {
+        "zone_id": 1507,
+        "zone_name": "Bandar Shabdi"
+      },
+      {
+        "zone_id": 1566,
+        "zone_name": "Banti-Bazar"
+      },
+      {
+        "zone_id": 1114,
+        "zone_name": "Bausia"
+      },
+      {
+        "zone_id": 1084,
+        "zone_name": "Bb road"
+      },
+      {
+        "zone_id": 1145,
+        "zone_name": "Beldi-Daudpur"
+      },
+      {
+        "zone_id": 1127,
+        "zone_name": "Bhuighor"
+      },
+      {
+        "zone_id": 1762,
+        "zone_name": "Bhulta"
+      },
+      {
+        "zone_id": 723,
+        "zone_name": "Bhulta/Gawsia"
+      },
+      {
+        "zone_id": 1189,
+        "zone_name": "Bisic"
+      },
+      {
+        "zone_id": 1191,
+        "zone_name": "Boktaboli"
+      },
+      {
+        "zone_id": 1562,
+        "zone_name": "Borabo"
+      },
+      {
+        "zone_id": 1568,
+        "zone_name": "Chanpara-Nawra"
+      },
+      {
+        "zone_id": 1120,
+        "zone_name": "Chashara"
+      },
+      {
+        "zone_id": 1504,
+        "zone_name": "Chowdhuri bari"
+      },
+      {
+        "zone_id": 1516,
+        "zone_name": "Chowdhuri bari- Siddhirganj"
+      },
+      {
+        "zone_id": 1124,
+        "zone_name": "Delpara"
+      },
+      {
+        "zone_id": 1505,
+        "zone_name": "Deobhog"
+      },
+      {
+        "zone_id": 121,
+        "zone_name": "Don Chamber"
+      },
+      {
+        "zone_id": 1083,
+        "zone_name": "Ekrampur"
+      },
+      {
+        "zone_id": 1126,
+        "zone_name": "Epz"
+      },
+      {
+        "zone_id": 1511,
+        "zone_name": "Fatullah Bazar"
+      },
+      {
+        "zone_id": 1517,
+        "zone_name": "Fatullah Rail station "
+      },
+      {
+        "zone_id": 1761,
+        "zone_name": "Gawsia"
+      },
+      {
+        "zone_id": 1464,
+        "zone_name": "Gopaldi"
+      },
+      {
+        "zone_id": 1192,
+        "zone_name": "Isdair"
+      },
+      {
+        "zone_id": 1082,
+        "zone_name": "Ispahani Bandar"
+      },
+      {
+        "zone_id": 1570,
+        "zone_name": "Jahangir Road"
+      },
+      {
+        "zone_id": 1017,
+        "zone_name": "Jalkuri"
+      },
+      {
+        "zone_id": 1033,
+        "zone_name": "Kachpur"
+      },
+      {
+        "zone_id": 1051,
+        "zone_name": "kaikartek"
+      },
+      {
+        "zone_id": 1560,
+        "zone_name": "Kanchan"
+      },
+      {
+        "zone_id": 1050,
+        "zone_name": "kanchpur"
+      },
+      {
+        "zone_id": 1089,
+        "zone_name": "Kashipur"
+      },
+      {
+        "zone_id": 1463,
+        "zone_name": "Khaira"
+      },
+      {
+        "zone_id": 1123,
+        "zone_name": "Khanpur"
+      },
+      {
+        "zone_id": 1509,
+        "zone_name": "Lokkhon khola"
+      },
+      {
+        "zone_id": 1080,
+        "zone_name": "Madanganj"
+      },
+      {
+        "zone_id": 1004,
+        "zone_name": "Madanpur"
+      },
+      {
+        "zone_id": 1186,
+        "zone_name": "Mahmudpur"
+      },
+      {
+        "zone_id": 1118,
+        "zone_name": "Majdair"
+      },
+      {
+        "zone_id": 1020,
+        "zone_name": "Masdair"
+      },
+      {
+        "zone_id": 1188,
+        "zone_name": "Mitali Market"
+      },
+      {
+        "zone_id": 1039,
+        "zone_name": "Modonpur"
+      },
+      {
+        "zone_id": 1091,
+        "zone_name": "Mograpara"
+      },
+      {
+        "zone_id": 1567,
+        "zone_name": "Murapara"
+      },
+      {
+        "zone_id": 1081,
+        "zone_name": "Nabiganj Bandar"
+      },
+      {
+        "zone_id": 3046,
+        "zone_name": "Nayapur"
+      },
+      {
+        "zone_id": 1146,
+        "zone_name": "Neela Market"
+      },
+      {
+        "zone_id": 1117,
+        "zone_name": "New town"
+      },
+      {
+        "zone_id": 1148,
+        "zone_name": "Nila Market"
+      },
+      {
+        "zone_id": 1024,
+        "zone_name": "Nitaiganj"
+      },
+      {
+        "zone_id": 1564,
+        "zone_name": "Nowa para - Bhulta"
+      },
+      {
+        "zone_id": 1565,
+        "zone_name": "Pachgaon - Bhulta"
+      },
+      {
+        "zone_id": 334,
+        "zone_name": "Pagla"
+      },
+      {
+        "zone_id": 1087,
+        "zone_name": "paikpara Narayanganj"
+      },
+      {
+        "zone_id": 1119,
+        "zone_name": "Panchabati"
+      },
+      {
+        "zone_id": 1187,
+        "zone_name": "Passport office (Siddhirganj)"
+      },
+      {
+        "zone_id": 1518,
+        "zone_name": "Pathantoli-Hajiganj"
+      },
+      {
+        "zone_id": 1021,
+        "zone_name": "Ponchoboti"
+      },
+      {
+        "zone_id": 1462,
+        "zone_name": "Provakordi"
+      },
+      {
+        "zone_id": 1147,
+        "zone_name": "Purbachal"
+      },
+      {
+        "zone_id": 722,
+        "zone_name": "Rupganj"
+      },
+      {
+        "zone_id": 1561,
+        "zone_name": "Rupshi"
+      },
+      {
+        "zone_id": 3047,
+        "zone_name": "Sadipur"
+      },
+      {
+        "zone_id": 1086,
+        "zone_name": "Sayedpur - Narayanganj"
+      },
+      {
+        "zone_id": 1103,
+        "zone_name": "Shaheb para"
+      },
+      {
+        "zone_id": 1022,
+        "zone_name": "Shanarpar"
+      },
+      {
+        "zone_id": 1018,
+        "zone_name": "Shibu Market"
+      },
+      {
+        "zone_id": 1125,
+        "zone_name": "Shiddriganj"
+      },
+      {
+        "zone_id": 1512,
+        "zone_name": "Shiddriganj Pool"
+      },
+      {
+        "zone_id": 493,
+        "zone_name": "Siddirganj"
+      },
+      {
+        "zone_id": 1515,
+        "zone_name": "Signboard"
+      },
+      {
+        "zone_id": 654,
+        "zone_name": "Sonargaon"
+      },
+      {
+        "zone_id": 120,
+        "zone_name": "South Chashara"
+      },
+      {
+        "zone_id": 1563,
+        "zone_name": "Tarabo"
+      },
+      {
+        "zone_id": 1510,
+        "zone_name": "Tin Gao"
+      },
+      {
+        "zone_id": 1461,
+        "zone_name": "Uchitpura"
+      },
+      {
+        "zone_id": 1190,
+        "zone_name": "Volail"
+      },
+      {
+        "zone_id": 1019,
+        "zone_name": "Zilla Parishod"
+      }
+    ]
+  },
+  {
+    "city_id": 47,
+    "city_name": "Narshingdi",
+    "zones": [
+      {
+        "zone_id": 2684,
+        "zone_name": "Baduarchar"
+      },
+      {
+        "zone_id": 520,
+        "zone_name": "Belabo"
+      },
+      {
+        "zone_id": 1199,
+        "zone_name": "Chalakchar"
+      },
+      {
+        "zone_id": 2679,
+        "zone_name": "Charsindur"
+      },
+      {
+        "zone_id": 2685,
+        "zone_name": "Chinishpur"
+      },
+      {
+        "zone_id": 2680,
+        "zone_name": "Danga"
+      },
+      {
+        "zone_id": 2686,
+        "zone_name": "East Bramandi "
+      },
+      {
+        "zone_id": 2681,
+        "zone_name": "Ghorashal"
+      },
+      {
+        "zone_id": 1198,
+        "zone_name": "Hatirdia"
+      },
+      {
+        "zone_id": 2687,
+        "zone_name": "Itakhola"
+      },
+      {
+        "zone_id": 2688,
+        "zone_name": "Joynagar"
+      },
+      {
+        "zone_id": 2689,
+        "zone_name": "Karimpur"
+      },
+      {
+        "zone_id": 2690,
+        "zone_name": "Lakhpur"
+      },
+      {
+        "zone_id": 708,
+        "zone_name": "Madhabdi"
+      },
+      {
+        "zone_id": 2682,
+        "zone_name": "Meghna Bazar"
+      },
+      {
+        "zone_id": 1197,
+        "zone_name": "MONOHARDI"
+      },
+      {
+        "zone_id": 521,
+        "zone_name": "Monohordi"
+      },
+      {
+        "zone_id": 151,
+        "zone_name": "Narshingdi Sadar"
+      },
+      {
+        "zone_id": 2062,
+        "zone_name": "Narsingdi-Pachdona "
+      },
+      {
+        "zone_id": 522,
+        "zone_name": "Palash"
+      },
+      {
+        "zone_id": 2691,
+        "zone_name": "Putia"
+      },
+      {
+        "zone_id": 1141,
+        "zone_name": "Raipura North"
+      },
+      {
+        "zone_id": 523,
+        "zone_name": "Raipura South"
+      },
+      {
+        "zone_id": 2692,
+        "zone_name": "Sahaprotab"
+      },
+      {
+        "zone_id": 2693,
+        "zone_name": "Sangita"
+      },
+      {
+        "zone_id": 2694,
+        "zone_name": "Shatirpara"
+      },
+      {
+        "zone_id": 2683,
+        "zone_name": "Shekherchar"
+      },
+      {
+        "zone_id": 524,
+        "zone_name": "Shibpur"
+      },
+      {
+        "zone_id": 2695,
+        "zone_name": "Shibpur Sadar"
+      },
+      {
+        "zone_id": 2696,
+        "zone_name": "Velanagar"
+      },
+      {
+        "zone_id": 2697,
+        "zone_name": "West Bramandi"
+      }
+    ]
+  },
+  {
+    "city_id": 14,
+    "city_name": "Natore",
+    "zones": [
+      {
+        "zone_id": 503,
+        "zone_name": "Bagatipara"
+      },
+      {
+        "zone_id": 500,
+        "zone_name": "Baraigram"
+      },
+      {
+        "zone_id": 991,
+        "zone_name": "Gopalpur UPO"
+      },
+      {
+        "zone_id": 502,
+        "zone_name": "Gurdaspur"
+      },
+      {
+        "zone_id": 1007,
+        "zone_name": "Lalpur UPO"
+      },
+      {
+        "zone_id": 579,
+        "zone_name": "Naldanga - Natore"
+      },
+      {
+        "zone_id": 110,
+        "zone_name": "Natore Sadar"
+      },
+      {
+        "zone_id": 501,
+        "zone_name": "Singra"
+      }
+    ]
+  },
+  {
+    "city_id": 44,
+    "city_name": "Netrakona",
+    "zones": [
+      {
+        "zone_id": 872,
+        "zone_name": "Atpara"
+      },
+      {
+        "zone_id": 878,
+        "zone_name": "Barhatta"
+      },
+      {
+        "zone_id": 2998,
+        "zone_name": "Durgapur Sadar"
+      },
+      {
+        "zone_id": 873,
+        "zone_name": "Kalmakanda"
+      },
+      {
+        "zone_id": 874,
+        "zone_name": "Kendua"
+      },
+      {
+        "zone_id": 875,
+        "zone_name": "Khaliajuri"
+      },
+      {
+        "zone_id": 879,
+        "zone_name": "Madan"
+      },
+      {
+        "zone_id": 880,
+        "zone_name": "Mohanganj"
+      },
+      {
+        "zone_id": 147,
+        "zone_name": "Netrokona Sadar"
+      },
+      {
+        "zone_id": 877,
+        "zone_name": "Purbadhala"
+      },
+      {
+        "zone_id": 876,
+        "zone_name": "Susang Durgapur"
+      }
+    ]
+  },
+  {
+    "city_id": 39,
+    "city_name": "Nilphamari",
+    "zones": [
+      {
+        "zone_id": 640,
+        "zone_name": "Dimla"
+      },
+      {
+        "zone_id": 641,
+        "zone_name": "Domar"
+      },
+      {
+        "zone_id": 642,
+        "zone_name": "Jaldhaka"
+      },
+      {
+        "zone_id": 643,
+        "zone_name": "Kishoriganj"
+      },
+      {
+        "zone_id": 140,
+        "zone_name": "Nilphamari Sadar"
+      },
+      {
+        "zone_id": 141,
+        "zone_name": "Saidpur"
+      }
+    ]
+  },
+  {
+    "city_id": 7,
+    "city_name": "Noakhali",
+    "zones": [
+      {
+        "zone_id": 3021,
+        "zone_name": "Banderhat"
+      },
+      {
+        "zone_id": 620,
+        "zone_name": "Basurhat"
+      },
+      {
+        "zone_id": 621,
+        "zone_name": "Begumganj"
+      },
+      {
+        "zone_id": 3070,
+        "zone_name": "Bodolkot"
+      },
+      {
+        "zone_id": 3019,
+        "zone_name": "Charmatua"
+      },
+      {
+        "zone_id": 622,
+        "zone_name": "Chatkhil"
+      },
+      {
+        "zone_id": 742,
+        "zone_name": "Chondrogonj Thana"
+      },
+      {
+        "zone_id": 744,
+        "zone_name": "Companigonj"
+      },
+      {
+        "zone_id": 3066,
+        "zone_name": "Deliyai"
+      },
+      {
+        "zone_id": 3071,
+        "zone_name": "Doshghoria"
+      },
+      {
+        "zone_id": 3023,
+        "zone_name": "Hanifroad"
+      },
+      {
+        "zone_id": 983,
+        "zone_name": "Hatia"
+      },
+      {
+        "zone_id": 3018,
+        "zone_name": "Islamganj Bazar"
+      },
+      {
+        "zone_id": 3064,
+        "zone_name": "Kachari bazar"
+      },
+      {
+        "zone_id": 3067,
+        "zone_name": "Karihati"
+      },
+      {
+        "zone_id": 3020,
+        "zone_name": "Karmulla"
+      },
+      {
+        "zone_id": 3024,
+        "zone_name": "Khaliferhat"
+      },
+      {
+        "zone_id": 3065,
+        "zone_name": "Khilpara"
+      },
+      {
+        "zone_id": 1106,
+        "zone_name": "Kobirhat"
+      },
+      {
+        "zone_id": 639,
+        "zone_name": "Maizdee"
+      },
+      {
+        "zone_id": 3069,
+        "zone_name": "Mohammodpur"
+      },
+      {
+        "zone_id": 101,
+        "zone_name": "Noakhali Sadar"
+      },
+      {
+        "zone_id": 3025,
+        "zone_name": "Nuru Paowari"
+      },
+      {
+        "zone_id": 3068,
+        "zone_name": "Palla"
+      },
+      {
+        "zone_id": 623,
+        "zone_name": "Senbag"
+      },
+      {
+        "zone_id": 3022,
+        "zone_name": "Shantirhat"
+      },
+      {
+        "zone_id": 3072,
+        "zone_name": "Sompara"
+      },
+      {
+        "zone_id": 3073,
+        "zone_name": "Sonachaka"
+      },
+      {
+        "zone_id": 704,
+        "zone_name": "Sonaimuri"
+      },
+      {
+        "zone_id": 743,
+        "zone_name": "Sonapur"
+      },
+      {
+        "zone_id": 745,
+        "zone_name": "Subornochar"
+      },
+      {
+        "zone_id": 3074,
+        "zone_name": "Yeasin Bazar"
+      }
+    ]
+  },
+  {
+    "city_id": 24,
+    "city_name": "Pabna",
+    "zones": [
+      {
+        "zone_id": 1040,
+        "zone_name": "Aminpur"
+      },
+      {
+        "zone_id": 773,
+        "zone_name": "Ataikula"
+      },
+      {
+        "zone_id": 505,
+        "zone_name": "Atghoria"
+      },
+      {
+        "zone_id": 555,
+        "zone_name": "Bera"
+      },
+      {
+        "zone_id": 556,
+        "zone_name": "Bhangura"
+      },
+      {
+        "zone_id": 557,
+        "zone_name": "Chatmohar"
+      },
+      {
+        "zone_id": 1394,
+        "zone_name": "Faridpur"
+      },
+      {
+        "zone_id": 504,
+        "zone_name": "Ishwardi"
+      },
+      {
+        "zone_id": 772,
+        "zone_name": "Kasinathpur"
+      },
+      {
+        "zone_id": 770,
+        "zone_name": "Pabna-Faridpur"
+      },
+      {
+        "zone_id": 125,
+        "zone_name": "Pabna Sadar"
+      },
+      {
+        "zone_id": 771,
+        "zone_name": "Sathia"
+      },
+      {
+        "zone_id": 506,
+        "zone_name": "Sujanagar"
+      },
+      {
+        "zone_id": 554,
+        "zone_name": "Tebunia"
+      }
+    ]
+  },
+  {
+    "city_id": 37,
+    "city_name": "Panchagarh",
+    "zones": [
+      {
+        "zone_id": 806,
+        "zone_name": "Atwari"
+      },
+      {
+        "zone_id": 809,
+        "zone_name": "Boda"
+      },
+      {
+        "zone_id": 808,
+        "zone_name": "Debiganj"
+      },
+      {
+        "zone_id": 138,
+        "zone_name": "Panchagarh Sadar"
+      },
+      {
+        "zone_id": 807,
+        "zone_name": "Tetulia"
+      }
+    ]
+  },
+  {
+    "city_id": 29,
+    "city_name": "Patuakhali",
+    "zones": [
+      {
+        "zone_id": 470,
+        "zone_name": "Bauphal"
+      },
+      {
+        "zone_id": 999,
+        "zone_name": "Dashmina"
+      },
+      {
+        "zone_id": 471,
+        "zone_name": "Dumkee"
+      },
+      {
+        "zone_id": 472,
+        "zone_name": "Gala chipa"
+      },
+      {
+        "zone_id": 473,
+        "zone_name": "Kala para"
+      },
+      {
+        "zone_id": 988,
+        "zone_name": "Khepupara"
+      },
+      {
+        "zone_id": 1034,
+        "zone_name": "Kuakata"
+      },
+      {
+        "zone_id": 998,
+        "zone_name": "Mirzaganj"
+      },
+      {
+        "zone_id": 130,
+        "zone_name": "Patuakhali Sadar"
+      },
+      {
+        "zone_id": 474,
+        "zone_name": "Rangabali"
+      }
+    ]
+  },
+  {
+    "city_id": 31,
+    "city_name": "Pirojpur",
+    "zones": [
+      {
+        "zone_id": 906,
+        "zone_name": "Bhandaria"
+      },
+      {
+        "zone_id": 570,
+        "zone_name": "kaukhali"
+      },
+      {
+        "zone_id": 907,
+        "zone_name": "Mathbaria"
+      },
+      {
+        "zone_id": 571,
+        "zone_name": "Nazirpur"
+      },
+      {
+        "zone_id": 1395,
+        "zone_name": "Pirojpur-Indurkani"
+      },
+      {
+        "zone_id": 132,
+        "zone_name": "Pirojpur Sadar"
+      },
+      {
+        "zone_id": 905,
+        "zone_name": "Swarupkathi"
+      }
+    ]
+  },
+  {
+    "city_id": 58,
+    "city_name": "Rajbari ",
+    "zones": [
+      {
+        "zone_id": 947,
+        "zone_name": "Baliakandi"
+      },
+      {
+        "zone_id": 948,
+        "zone_name": "Goalanda"
+      },
+      {
+        "zone_id": 950,
+        "zone_name": "Kalukhali"
+      },
+      {
+        "zone_id": 949,
+        "zone_name": "Pangsha"
+      },
+      {
+        "zone_id": 162,
+        "zone_name": "Rajbari Sadar"
+      }
+    ]
+  },
+  {
+    "city_id": 4,
+    "city_name": "Rajshahi",
+    "zones": [
+      {
+        "zone_id": 577,
+        "zone_name": "Bagha"
+      },
+      {
+        "zone_id": 497,
+        "zone_name": "Bagmara"
+      },
+      {
+        "zone_id": 1011,
+        "zone_name": "Banseshwar"
+      },
+      {
+        "zone_id": 499,
+        "zone_name": "Charghat"
+      },
+      {
+        "zone_id": 498,
+        "zone_name": "Durgapur"
+      },
+      {
+        "zone_id": 578,
+        "zone_name": "Godagari"
+      },
+      {
+        "zone_id": 767,
+        "zone_name": "Katakhali"
+      },
+      {
+        "zone_id": 495,
+        "zone_name": "Mohonpur"
+      },
+      {
+        "zone_id": 768,
+        "zone_name": "Motihar"
+      },
+      {
+        "zone_id": 494,
+        "zone_name": "Paba"
+      },
+      {
+        "zone_id": 576,
+        "zone_name": "Puthia"
+      },
+      {
+        "zone_id": 769,
+        "zone_name": "Rajpara"
+      },
+      {
+        "zone_id": 90,
+        "zone_name": "Rajshahi Sadar (Boalia)"
+      },
+      {
+        "zone_id": 580,
+        "zone_name": "Shah Mokdum"
+      },
+      {
+        "zone_id": 1012,
+        "zone_name": "Sharda"
+      },
+      {
+        "zone_id": 1013,
+        "zone_name": "Taherpur"
+      },
+      {
+        "zone_id": 496,
+        "zone_name": "Tanor"
+      }
+    ]
+  },
+  {
+    "city_id": 59,
+    "city_name": "Rangamati ",
+    "zones": [
+      {
+        "zone_id": 672,
+        "zone_name": "Kaptai"
+      },
+      {
+        "zone_id": 669,
+        "zone_name": "Kawkhali Thana"
+      },
+      {
+        "zone_id": 163,
+        "zone_name": "Kotwali Thana"
+      },
+      {
+        "zone_id": 673,
+        "zone_name": "Nanichhar"
+      },
+      {
+        "zone_id": 674,
+        "zone_name": "Rajasthali"
+      }
+    ]
+  },
+  {
+    "city_id": 25,
+    "city_name": "Rangpur",
+    "zones": [
+      {
+        "zone_id": 585,
+        "zone_name": "Badarganj"
+      },
+      {
+        "zone_id": 586,
+        "zone_name": "Gangachara"
+      },
+      {
+        "zone_id": 796,
+        "zone_name": "Haragach Thana"
+      },
+      {
+        "zone_id": 587,
+        "zone_name": "Kaunia"
+      },
+      {
+        "zone_id": 801,
+        "zone_name": "Mahiganj Thana"
+      },
+      {
+        "zone_id": 588,
+        "zone_name": "Mithapukur"
+      },
+      {
+        "zone_id": 589,
+        "zone_name": "Pirgachha"
+      },
+      {
+        "zone_id": 797,
+        "zone_name": "Pirganj Thana"
+      },
+      {
+        "zone_id": 799,
+        "zone_name": "Porshurampur Thana"
+      },
+      {
+        "zone_id": 798,
+        "zone_name": "Rangpur Cantonment"
+      },
+      {
+        "zone_id": 126,
+        "zone_name": "Rangpur Sadar(Kotowali Thana)"
+      },
+      {
+        "zone_id": 800,
+        "zone_name": "Tajhat Thana"
+      },
+      {
+        "zone_id": 590,
+        "zone_name": "Taraganj "
+      }
+    ]
+  },
+  {
+    "city_id": 51,
+    "city_name": "Satkhira",
+    "zones": [
+      {
+        "zone_id": 658,
+        "zone_name": "Ashashuni Thana"
+      },
+      {
+        "zone_id": 652,
+        "zone_name": "Debhata Thana"
+      },
+      {
+        "zone_id": 650,
+        "zone_name": "Kalaroa"
+      },
+      {
+        "zone_id": 653,
+        "zone_name": "Kaliganj-Satkhira"
+      },
+      {
+        "zone_id": 155,
+        "zone_name": "Satkhira Sadar"
+      },
+      {
+        "zone_id": 659,
+        "zone_name": "Shymnagar"
+      },
+      {
+        "zone_id": 651,
+        "zone_name": "Tala Thana"
+      }
+    ]
+  },
+  {
+    "city_id": 64,
+    "city_name": "Shariatpur ",
+    "zones": [
+      {
+        "zone_id": 662,
+        "zone_name": "Bhedorganj"
+      },
+      {
+        "zone_id": 663,
+        "zone_name": "Damudhya"
+      },
+      {
+        "zone_id": 664,
+        "zone_name": "Gosairhat"
+      },
+      {
+        "zone_id": 665,
+        "zone_name": "Jajira"
+      },
+      {
+        "zone_id": 666,
+        "zone_name": "Naria"
+      },
+      {
+        "zone_id": 1073,
+        "zone_name": "Shakhipur"
+      },
+      {
+        "zone_id": 168,
+        "zone_name": "Shariatpur Sadar (Palong)"
+      }
+    ]
+  },
+  {
+    "city_id": 33,
+    "city_name": "Sherpur",
+    "zones": [
+      {
+        "zone_id": 526,
+        "zone_name": "Jhinaigati"
+      },
+      {
+        "zone_id": 527,
+        "zone_name": "Nakla"
+      },
+      {
+        "zone_id": 528,
+        "zone_name": "Nalitabari"
+      },
+      {
+        "zone_id": 134,
+        "zone_name": "Sherpur Sadar"
+      },
+      {
+        "zone_id": 625,
+        "zone_name": "Sreebardi"
+      }
+    ]
+  },
+  {
+    "city_id": 10,
+    "city_name": "Sirajganj",
+    "zones": [
+      {
+        "zone_id": 581,
+        "zone_name": "Belkuchi"
+      },
+      {
+        "zone_id": 1029,
+        "zone_name": "Chowhali"
+      },
+      {
+        "zone_id": 774,
+        "zone_name": "Kamarkhanda"
+      },
+      {
+        "zone_id": 780,
+        "zone_name": "Kazipur"
+      },
+      {
+        "zone_id": 779,
+        "zone_name": "Rayganj"
+      },
+      {
+        "zone_id": 777,
+        "zone_name": "Salonga"
+      },
+      {
+        "zone_id": 775,
+        "zone_name": "Shahjadpur - Shahjadpur"
+      },
+      {
+        "zone_id": 105,
+        "zone_name": "Sirajganj Sadar"
+      },
+      {
+        "zone_id": 778,
+        "zone_name": "Tarash"
+      },
+      {
+        "zone_id": 776,
+        "zone_name": "Ullapara"
+      }
+    ]
+  },
+  {
+    "city_id": 45,
+    "city_name": "Sunamganj",
+    "zones": [
+      {
+        "zone_id": 834,
+        "zone_name": "Bishwamvarpur"
+      },
+      {
+        "zone_id": 149,
+        "zone_name": "Chhatak"
+      },
+      {
+        "zone_id": 836,
+        "zone_name": "Derai"
+      },
+      {
+        "zone_id": 835,
+        "zone_name": "Dharmapasha"
+      },
+      {
+        "zone_id": 837,
+        "zone_name": "Dowarabazar"
+      },
+      {
+        "zone_id": 619,
+        "zone_name": "Jagnnathpur"
+      },
+      {
+        "zone_id": 838,
+        "zone_name": "Jamalganj"
+      },
+      {
+        "zone_id": 840,
+        "zone_name": "Salla"
+      },
+      {
+        "zone_id": 839,
+        "zone_name": "Shantiganj"
+      },
+      {
+        "zone_id": 148,
+        "zone_name": "Sunamganj Sadar"
+      },
+      {
+        "zone_id": 841,
+        "zone_name": "Tahirpur"
+      }
+    ]
+  },
+  {
+    "city_id": 3,
+    "city_name": "Sylhet",
+    "zones": [
+      {
+        "zone_id": 2456,
+        "zone_name": "Akhalia"
+      },
+      {
+        "zone_id": 2461,
+        "zone_name": "Amborkhana"
+      },
+      {
+        "zone_id": 3036,
+        "zone_name": "Ashigor"
+      },
+      {
+        "zone_id": 2465,
+        "zone_name": "Badaghat"
+      },
+      {
+        "zone_id": 2460,
+        "zone_name": "Baghbari"
+      },
+      {
+        "zone_id": 611,
+        "zone_name": "Balaganj"
+      },
+      {
+        "zone_id": 2652,
+        "zone_name": "Bandar Bazar"
+      },
+      {
+        "zone_id": 461,
+        "zone_name": "Beanibazar"
+      },
+      {
+        "zone_id": 612,
+        "zone_name": "Bishwanath"
+      },
+      {
+        "zone_id": 2650,
+        "zone_name": "Boro Bazar"
+      },
+      {
+        "zone_id": 2647,
+        "zone_name": "Boteshwar Bazar"
+      },
+      {
+        "zone_id": 2649,
+        "zone_name": "Chowhatta"
+      },
+      {
+        "zone_id": 618,
+        "zone_name": "Companyganj"
+      },
+      {
+        "zone_id": 831,
+        "zone_name": "Dakshin Surma"
+      },
+      {
+        "zone_id": 613,
+        "zone_name": "Fenchuganj"
+      },
+      {
+        "zone_id": 3041,
+        "zone_name": "Fenchuganj Bazar"
+      },
+      {
+        "zone_id": 3038,
+        "zone_name": "Fenchuganj-BIDC"
+      },
+      {
+        "zone_id": 3034,
+        "zone_name": "Gilachora"
+      },
+      {
+        "zone_id": 615,
+        "zone_name": "Golapganj"
+      },
+      {
+        "zone_id": 614,
+        "zone_name": "Gowainghat"
+      },
+      {
+        "zone_id": 616,
+        "zone_name": "Jaintapur"
+      },
+      {
+        "zone_id": 3039,
+        "zone_name": "Kaistogat"
+      },
+      {
+        "zone_id": 2651,
+        "zone_name": "Kajal Shah"
+      },
+      {
+        "zone_id": 617,
+        "zone_name": "Kanaighat"
+      },
+      {
+        "zone_id": 2655,
+        "zone_name": "Khadimnagar"
+      },
+      {
+        "zone_id": 2644,
+        "zone_name": "Khadim Para"
+      },
+      {
+        "zone_id": 3040,
+        "zone_name": "Kotalpur"
+      },
+      {
+        "zone_id": 2654,
+        "zone_name": "Kumarpara"
+      },
+      {
+        "zone_id": 2657,
+        "zone_name": "Lama Bazar"
+      },
+      {
+        "zone_id": 2466,
+        "zone_name": "Lamakazi"
+      },
+      {
+        "zone_id": 3037,
+        "zone_name": "Maijgaw"
+      },
+      {
+        "zone_id": 3035,
+        "zone_name": "Manikuna"
+      },
+      {
+        "zone_id": 2643,
+        "zone_name": "Mejortila"
+      },
+      {
+        "zone_id": 2641,
+        "zone_name": "Mirabazar"
+      },
+      {
+        "zone_id": 2458,
+        "zone_name": "Modina Market"
+      },
+      {
+        "zone_id": 832,
+        "zone_name": "Osmani Nagar"
+      },
+      {
+        "zone_id": 2457,
+        "zone_name": "Pathantula"
+      },
+      {
+        "zone_id": 2646,
+        "zone_name": "Pirer Bazar"
+      },
+      {
+        "zone_id": 2462,
+        "zone_name": "Sagordighi Par"
+      },
+      {
+        "zone_id": 89,
+        "zone_name": "Shahi Eidgah"
+      },
+      {
+        "zone_id": 2645,
+        "zone_name": "Shahporan "
+      },
+      {
+        "zone_id": 2464,
+        "zone_name": "Shiber Bazar"
+      },
+      {
+        "zone_id": 2640,
+        "zone_name": "Shibganj, Sylhet"
+      },
+      {
+        "zone_id": 2653,
+        "zone_name": "Sobhanighat"
+      },
+      {
+        "zone_id": 2459,
+        "zone_name": "Subid Bazar"
+      },
+      {
+        "zone_id": 2642,
+        "zone_name": "Tilagor"
+      },
+      {
+        "zone_id": 2463,
+        "zone_name": "Tuker Bazar"
+      },
+      {
+        "zone_id": 2656,
+        "zone_name": "Uposhohor"
+      },
+      {
+        "zone_id": 1519,
+        "zone_name": "Ward No-01"
+      },
+      {
+        "zone_id": 833,
+        "zone_name": "Zakiganj"
+      },
+      {
+        "zone_id": 2648,
+        "zone_name": "Zindabazar"
+      }
+    ]
+  },
+  {
+    "city_id": 13,
+    "city_name": "Tangail",
+    "zones": [
+      {
+        "zone_id": 535,
+        "zone_name": "Bashail"
+      },
+      {
+        "zone_id": 536,
+        "zone_name": "Bhuapur"
+      },
+      {
+        "zone_id": 537,
+        "zone_name": "Delduar"
+      },
+      {
+        "zone_id": 675,
+        "zone_name": "Dhanbari"
+      },
+      {
+        "zone_id": 538,
+        "zone_name": "Ghatail"
+      },
+      {
+        "zone_id": 539,
+        "zone_name": "Gopalpur"
+      },
+      {
+        "zone_id": 540,
+        "zone_name": "Kalihati"
+      },
+      {
+        "zone_id": 541,
+        "zone_name": "Madhupur"
+      },
+      {
+        "zone_id": 542,
+        "zone_name": "Mirzapur"
+      },
+      {
+        "zone_id": 543,
+        "zone_name": "Nagarpur"
+      },
+      {
+        "zone_id": 544,
+        "zone_name": "Sakhipur"
+      },
+      {
+        "zone_id": 109,
+        "zone_name": "Tangail Sadar"
+      }
+    ]
+  },
+  {
+    "city_id": 36,
+    "city_name": "Thakurgaon ",
+    "zones": [
+      {
+        "zone_id": 951,
+        "zone_name": "Baliadangi"
+      },
+      {
+        "zone_id": 952,
+        "zone_name": "Haripur"
+      },
+      {
+        "zone_id": 953,
+        "zone_name": "Pirganj"
+      },
+      {
+        "zone_id": 954,
+        "zone_name": "Ranisankail"
+      },
+      {
+        "zone_id": 955,
+        "zone_name": "Ruhiya"
+      },
+      {
+        "zone_id": 137,
+        "zone_name": "Thakurgaon Sadar"
+      }
+    ]
+  }
+]
