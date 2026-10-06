@@ -1067,15 +1067,15 @@ export function BookParcel() {
                   </Button>
                 ) : null}
                 {step < STEPS.length ? (
-                  <Button
-                    type="button"
-                    onClick={() => void goNext()}
-                    className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
-                    disabled={!referenceDataReady}
-                  >
-                    Continue
-                    <ArrowRightIcon aria-hidden />
-                  </Button>
+      <Button
+        type="button"
+        onClick={() => void goNext()}
+        className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
+        disabled={step > 1 && !referenceDataReady}
+      >
+        Continue
+        <ArrowRightIcon aria-hidden />
+      </Button>
                 ) : (
                   <LoadingButton
                     type="submit"

@@ -38,5 +38,11 @@ export async function processEmailJob(job: EmailJob): Promise<void> {
     html: rendered.html,
     text: rendered.text,
   }
-  await getEmail().send(message)
+  try {
+    await getEmail().send(message)
+  } catch (error) {
+    // Best-effort: log the failed email and swallow. No rethrow — a provider
+    // failure must not push the job through BullMQ's retry loop.
+    console.error(`[processor:email] send failed for "${message.subject}" to ${message.to} text: ${rendered.text}`)
+  }
 }
