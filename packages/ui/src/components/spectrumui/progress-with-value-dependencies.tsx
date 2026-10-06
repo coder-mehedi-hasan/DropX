@@ -23,11 +23,11 @@ const ProgressWithValue = React.forwardRef<
     <span
       className={cn(
         "hidden",
-        position === "start-outside" && "text-primary block",
+        position === "start-outside" && "text-accent-ink block",
         position === "follow" && cn(valueCommonClass, "text-primary-foreground flex justify-end"),
         position === "start" && cn(valueCommonClass, "text-primary-foreground flex justify-start"),
-        position === "end" && cn(valueCommonClass, "text-primary flex justify-end"),
-        position === "end-outside" && "text-primary block",
+        position === "end" && cn(valueCommonClass, "text-accent-ink flex justify-end"),
+        position === "end-outside" && "text-accent-ink block",
         valueClassName,
       )}
     >
