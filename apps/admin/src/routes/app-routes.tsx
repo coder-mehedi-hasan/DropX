@@ -13,6 +13,7 @@ import { routesSearchSchema } from "./routes-search-params"
 import { ridersSearchSchema } from "./riders-search-params"
 import { usersSearchSchema } from "./users-search-params"
 import { rolesSearchSchema } from "./roles-search-params"
+import { customersSearchSchema } from "./customers-search-params"
 import { riderLocationsSearchSchema } from "./rider-locations-search-params"
 import { riderApplicationsSearchSchema } from "./rider-applications-search-params"
 import { pickupsSearchSchema } from "./pickups-search-params"
@@ -77,6 +78,14 @@ const UsersListPage = lazyRouteComponent(
 const RolesListPage = lazyRouteComponent(
   () => import("@/features/roles/roles-list-page"),
   "RolesListPage",
+)
+const CustomersListPage = lazyRouteComponent(
+  () => import("@/features/customers/customers-list-page"),
+  "CustomersListPage",
+)
+const CustomerDetailPage = lazyRouteComponent(
+  () => import("@/features/customers/customer-detail-page"),
+  "CustomerDetailPage",
 )
 const RiderLocationsListPage = lazyRouteComponent(
   () => import("@/features/riders/rider-locations-list-page"),
@@ -172,6 +181,19 @@ export const rolesRoute = createRoute({
   path: "/roles",
   validateSearch: rolesSearchSchema,
   component: RolesListPageRoute,
+})
+
+export const customersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/customers",
+  validateSearch: customersSearchSchema,
+  component: CustomersListPageRoute,
+})
+
+export const customerDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/customers/$customerId",
+  component: CustomerDetailRoute,
 })
 
 export const zonesRoute = createRoute({
@@ -315,6 +337,24 @@ function RolesListPageRoute() {
   return (
     <RequirePermission permission="roles.view">
       <RolesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function CustomersListPageRoute() {
+  const search = customersRoute.useSearch()
+  return (
+    <RequirePermission permission="customers.view">
+      <CustomersListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function CustomerDetailRoute() {
+  const { customerId } = customerDetailRoute.useParams()
+  return (
+    <RequirePermission permission="customers.view">
+      <CustomerDetailPage customerId={customerId} />
     </RequirePermission>
   )
 }

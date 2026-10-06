@@ -17,6 +17,7 @@ import * as riders from "../riders/riders.service"
 import * as riderApplications from "../rider-applications/rider-applications.service"
 import * as users from "../users/users.service"
 import * as roles from "../roles/roles.service"
+import * as customers from "../customers/customers.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -254,6 +255,29 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
         c.req.valid("json"),
       )
       return c.json(response.success(role))
+    },
+  },
+
+  /**
+   * Customers. No scope anywhere — customers are company-wide, the permission
+   * is the whole guard. `activate` is the one write and it takes no body: the
+   * whole point of the override is that it needs nothing the caller does not
+   * already know.
+   */
+  customers: {
+    list: async (c) => {
+      const page = await customers.listCustomers(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const customer = await customers.getCustomer(c, c.req.valid("param").id)
+      return c.json(response.success(customer))
+    },
+
+    activate: async (c) => {
+      const customer = await customers.activateCustomer(c, c.req.valid("param").id)
+      return c.json(response.success(customer))
     },
   },
 

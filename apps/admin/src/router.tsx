@@ -6,6 +6,8 @@ import { queryClient } from "@/lib/query-client"
 import {
   appRoute,
   branchesRoute,
+  customerDetailRoute,
+  customersRoute,
   dashboardRoute,
   hubsRoute,
   loginRoute,
@@ -39,6 +41,8 @@ const routeTree = rootRoute.addChildren([
     hubsRoute,
     usersRoute,
     rolesRoute,
+    customersRoute,
+    customerDetailRoute,
     zonesRoute,
     vehiclesRoute,
     pricingRulesRoute,

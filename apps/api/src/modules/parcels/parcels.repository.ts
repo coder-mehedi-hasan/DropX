@@ -35,6 +35,7 @@ export type ListParcelsFilter = {
   paymentType?: PaymentType | undefined
   search?: string | undefined
   searchFields?: readonly string[]
+  customerId?: string | undefined
 }
 
 function escapeLike(value: string): string {
@@ -80,6 +81,12 @@ export function applyFilters(filter: ListParcelsFilter): Clause {
   if (filter.status) clauses.push({ text: "p.status = ?", params: [filter.status] })
   if (filter.hubId) clauses.push({ text: "p.current_hub_id = ?", params: [filter.hubId] })
   if (filter.paymentType) clauses.push({ text: "p.payment_type = ?", params: [filter.paymentType] })
+  if (filter.customerId) {
+    clauses.push({
+      text: "(p.sender_customer_id = ? OR p.receiver_customer_id = ?)",
+      params: [filter.customerId, filter.customerId],
+    })
+  }
   if (filter.search && filter.searchFields) {
     const like = `%${escapeLike(filter.search)}%`
     clauses.push({

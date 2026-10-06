@@ -32,6 +32,7 @@ export const listParcelsQuerySchema = z.object({
   status: z.enum(PARCEL_STATUSES).optional(),
   hubId: id.optional(),
   paymentType: z.enum(PAYMENT_TYPES).optional(),
+  customerId: id.optional(),
 })
 
 export type ListParcelsQuery = z.infer<typeof listParcelsQuerySchema>

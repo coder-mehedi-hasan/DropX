@@ -107,6 +107,12 @@ import {
   roleDetailResponseSchema as roleDetailResponse,
   roleResponseSchema as roleResponse,
 } from "../roles/roles.dto"
+import {
+  customerIdParamSchema as customerIdParam,
+  customerResponseSchema as customerResponse,
+  customerWithAddressesResponseSchema as customerWithAddressesResponse,
+  listCustomersQuerySchema as listCustomersQuery,
+} from "../customers/customers.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
 import {
   listRiderApplicationsQuerySchema,
@@ -894,6 +900,58 @@ export const ADMIN_SURFACE = defineSurface({
             409: "This is the last role granting users.manage, and no other role reaches it.",
             422: "A named permission key does not exist in the static catalog.",
           },
+        },
+      },
+    },
+
+    /**
+     * Customers — the support surface Batch 3 adds. Reads are company-wide and
+     * gated by `customers.view`; the only write is `activate`, the support
+     * override that flips a TEMP customer to ACTIVE without a code, gated by
+     * `customers.manage`. There is deliberately no edit: customer details and
+     * addresses are owned by the OTP portal, and staff never writes them.
+     */
+    customers: {
+      tag: "customers",
+      tagDescription:
+        "Customers: who books parcels. Company-wide reads gated by customers.view; the one write is the activate override.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/customers",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_VIEW] },
+          summary: "List customers",
+          successDescription: "A page of customers.",
+          description:
+            "Company-wide — customers are not scoped to a branch or hub. TEMP rows appear with their status so support can spot consents that never verified a code.",
+          query: listCustomersQuery,
+          listNodes: customerResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/customers/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_VIEW] },
+          summary: "Read a customer",
+          successDescription: "The customer, with its address book.",
+          description:
+            "Addresses ride along in the same response — `customer_addresses` is owned by the OTP portal, so staff reads it and never gets an operation that writes it. The parcel history is the parcels list filtered by this customer, not a second op.",
+          params: customerIdParam,
+          paramDescriptions: { id: "Customer id." },
+          response: customerWithAddressesResponse,
+          errors: { 404: "No such customer." },
+        },
+        activate: {
+          method: "POST",
+          path: "/customers/:id/activate",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.CUSTOMERS_MANAGE] },
+          summary: "Activate a customer",
+          description:
+            "Support override: marks a TEMP customer ACTIVE without a code. Idempotent — an ACTIVE customer passes through untouched, so a retried POST is harmless. Emits the same customer.activated event as OTP verification.",
+          successDescription: "Activated.",
+          params: customerIdParam,
+          paramDescriptions: { id: "Customer id." },
+          response: customerResponse,
+          errors: { 404: "No such customer." },
         },
       },
     },

@@ -30,7 +30,9 @@ import type {
   CreateTransferBody,
   CreateZoneBody,
   CreateUserBody,
+  Customer,
   CustomerOption,
+  CustomerWithAddresses,
   DeliveryQuote,
   Hub,
   HubOption,
@@ -92,6 +94,7 @@ import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-param
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
 import type { RolesSearch } from "@/routes/roles-search-params"
+import type { CustomersSearch } from "@/routes/customers-search-params"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -116,6 +119,7 @@ export function listParcels(params: ParcelListParams, signal?: AbortSignal) {
       status: params.status,
       hubId: params.hubId,
       paymentType: params.paymentType,
+      ...(params.customerId ? { customerId: params.customerId } : {}),
     },
     ...(signal ? { signal } : {}),
   })
@@ -434,6 +438,30 @@ export function replaceRolePermissions(roleId: string, body: ReplacePermissionsB
   return api.put<RoleDetail>(`/admin/roles/${roleId}/permissions`, body)
 }
 
+/**
+ * Customers — the support surface. Addresses ride along in the read (the OTP
+ * portal owns them, staff never writes them), so the read type is
+ * `CustomerWithAddresses` and the list is the plain `Customer`. `activate` is
+ * the one write, against a TEMP row only.
+ */
+export function listCustomers(params: CustomersSearch, signal?: AbortSignal) {
+  return api.get<Page<Customer>>("/admin/customers", {
+    query: customersQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function getCustomer(customerId: string, signal?: AbortSignal) {
+  return api.get<CustomerWithAddresses>(
+    `/admin/customers/${customerId}`,
+    signal ? { signal } : undefined,
+  )
+}
+
+export function activateCustomer(customerId: string) {
+  return api.post<Customer>(`/admin/customers/${customerId}/activate`)
+}
+
 export function listPickups(params: PickupsSearch) {
   return api.get<Page<Pickup>>("/admin/pickups", { query: pickupQuery(params) })
 }
@@ -636,6 +664,17 @@ function rolesQuery(params: RolesSearch) {
     sortBy: params.sortBy,
     sort: params.sort,
     ...(params.search ? { search: params.search } : {}),
+  }
+}
+
+function customersQuery(params: CustomersSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
   }
 }
 

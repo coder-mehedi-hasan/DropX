@@ -23,8 +23,11 @@ import {
 } from "@dropx/types"
 import { ZONE_STATUSES, RECORD_STATUSES } from "@dropx/types"
 import type {
+  Customer,
+  CustomerAddress,
   CustomerStatus,
   CustomerType,
+  CustomerWithAddresses,
   HubStatus,
   HubType,
   HubRef,
@@ -102,6 +105,11 @@ export type TransferWithManifest = Transfer & {
 }
 
 export type {
+  Customer,
+  CustomerAddress,
+  CustomerStatus,
+  CustomerType,
+  CustomerWithAddresses,
   HubRef,
   Id,
   Page,
