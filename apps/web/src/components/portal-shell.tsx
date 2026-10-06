@@ -73,14 +73,31 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur-xl">
-        <div className="max-w-page mx-auto flex h-16 w-full items-center gap-4 px-4">
-          <Link href="/dashboard" className="text-foreground hover:text-foreground shrink-0">
-            <DropXLogo size="sm" />
+    <div className="min-h-screen bg-[#F7F8FA] lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+      <a
+        href="#portal-content"
+        className="focus:bg-card focus:text-foreground fixed top-3 left-3 z-50 -translate-y-20 rounded-lg px-4 py-2 text-sm font-semibold shadow-lg transition-transform focus:translate-y-0"
+      >
+        Skip to content
+      </a>
+
+      <aside className="sticky top-0 hidden h-screen overflow-hidden bg-[#0D0F12] text-white lg:flex lg:flex-col">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top_left,rgba(255,85,0,.22),transparent_66%)]" />
+        <div className="relative flex h-full flex-col px-4 py-6">
+          <Link
+            href="/dashboard"
+            className="rounded-lg px-3 py-2 text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#FF5500] focus-visible:outline-none"
+          >
+            <DropXLogo size="md" className="text-white" />
           </Link>
 
-          <nav className="hidden items-center gap-1 text-sm font-medium sm:flex">
+          <div className="mt-10 px-3">
+            <p className="text-[0.65rem] font-semibold tracking-[0.18em] text-white/45 uppercase">
+              Customer workspace
+            </p>
+          </div>
+
+          <nav className="mt-3 grid gap-1.5" aria-label="Customer portal">
             {NAV.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
               return (
@@ -89,10 +106,93 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 transition-colors",
+                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
                     active
-                      ? "bg-primary/10 text-accent-ink"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                      ? "bg-white text-[#0D0F12] shadow-[0_10px_30px_-16px_rgba(0,0,0,.8)]"
+                      : "text-white/65 hover:bg-white/8 hover:text-white",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-lg transition-colors",
+                      active ? "bg-[#FF5500] text-white" : "bg-white/7 group-hover:bg-white/12",
+                    )}
+                  >
+                    <item.icon className="size-4" aria-hidden />
+                  </span>
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="mt-auto grid min-w-0 grid-cols-1 gap-3">
+            {/* <Link
+              href="/"
+              className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <span className="truncate">Visit DropX website</span>
+              <ArrowUpRightIcon className="size-4" aria-hidden />
+            </Link> */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-center gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5500] text-sm font-bold text-white">
+                  {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {customer?.name || "DropX customer"}
+                  </p>
+                  <p className="truncate text-xs text-white/45">
+                    {customer?.email || customer?.phone || "Verified account"}
+                  </p>
+                </div>
+              </div>
+              <LoadingButton
+                variant="ghost"
+                size="sm"
+                className="mt-3 min-w-0 w-full justify-start text-white/60 hover:bg-white/8 hover:text-white"
+                onClick={onSignOut}
+                loading={signingOut}
+              >
+                <LogOutIcon aria-hidden />
+                Sign out
+              </LoadingButton>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex min-h-screen min-w-0 flex-col">
+        <header className="sticky top-0 z-40 border-b border-black/5 bg-[#F7F8FA]/90 backdrop-blur-xl lg:hidden">
+          <div className="flex h-16 items-center gap-3 px-4">
+            <Link href="/dashboard" className="text-foreground shrink-0">
+              <DropXLogo size="sm" />
+            </Link>
+            <span className="ml-auto flex size-8 items-center justify-center rounded-lg bg-[#0D0F12] text-xs font-bold text-white">
+              {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
+            </span>
+            <LoadingButton variant="ghost" size="sm" onClick={onSignOut} loading={signingOut}>
+              <LogOutIcon aria-hidden />
+              <span className="sr-only sm:not-sr-only">Sign out</span>
+            </LoadingButton>
+          </div>
+          <nav
+            className="flex items-center gap-1 overflow-x-auto px-4 pb-3 text-sm font-medium"
+            aria-label="Customer portal"
+          >
+            {NAV.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 whitespace-nowrap transition-colors",
+                    active
+                      ? "bg-[#0D0F12] text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white",
                   )}
                 >
                   <item.icon className="size-4" aria-hidden />
@@ -101,51 +201,25 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               )
             })}
           </nav>
+        </header>
 
-          <div className="ml-auto flex items-center gap-3">
-            <span className="bg-foreground text-background hidden size-8 items-center justify-center rounded-full text-xs font-semibold sm:flex">
-              {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
-            </span>
-            <LoadingButton variant="outline" size="sm" onClick={onSignOut} loading={signingOut}>
-              <LogOutIcon aria-hidden />
-              Sign out
-            </LoadingButton>
+        <main
+          id="portal-content"
+          className="max-w-page relative isolate mx-auto w-full flex-1 overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-10 xl:px-10"
+        >
+          <div className="pointer-events-none absolute top-0 right-0 -z-10 h-96 w-96 translate-x-1/3 -translate-y-1/3 rounded-full bg-[#FF5500]/8 blur-3xl" />
+          {children}
+        </main>
+
+        <footer className="px-4 pb-6 sm:px-6 lg:px-8 xl:px-10">
+          <div className="text-muted-foreground max-w-page mx-auto flex w-full items-center justify-between border-t border-black/6 pt-5 text-xs">
+            <p>DropX customer portal</p>
+            <Link href="/" className="hover:text-foreground font-medium transition-colors">
+              Back to site
+            </Link>
           </div>
-        </div>
-
-        <nav className="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 text-sm font-medium sm:hidden">
-          {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-1.5 whitespace-nowrap transition-colors",
-                  active
-                    ? "bg-primary/10 text-accent-ink"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <item.icon className="size-4" aria-hidden />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-      </header>
-
-      <main className="max-w-page mx-auto w-full flex-1 px-4 py-10">{children}</main>
-
-      <footer className="bg-card border-t">
-        <div className="text-muted-foreground max-w-page mx-auto flex w-full items-center justify-between px-4 py-6 text-sm">
-          <p>DropX customer portal</p>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/">Back to site</Link>
-          </Button>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   )
 }

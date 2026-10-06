@@ -317,7 +317,7 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
                 }
               />
             }
-            rowActions={parcelRowActions}
+            rowActions={(parcel) => <ParcelRowActions parcel={parcel} />}
             onPageChange={(page) => patch({ page }, { keepPage: true })}
             onPageSizeChange={(limit) => patch({ limit })}
             onSortChange={(sortBy, sort) => patch({ sortBy: sortBy as ParcelSortColumn, sort })}
@@ -334,7 +334,7 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
   )
 }
 
-function parcelRowActions(parcel: Parcel) {
+function ParcelRowActions({ parcel }: { parcel: Parcel }) {
   const navigate = useNavigate()
 
   function copyTracking() {

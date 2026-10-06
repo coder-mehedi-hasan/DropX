@@ -304,7 +304,7 @@ const DENSITY: Record<DataTableDensity, { head: string; cell: string; text: stri
     // 13px is off the type scale on purpose: at `text-xs` a dense table stops
     // being readable, and at `text-sm` it stops being dense.
     compact: { head: "h-9", cell: "py-1.5", text: "text-[13px]", pad: "px-3" },
-    default: { head: "h-11", cell: "py-2.5", text: "text-sm", pad: "px-4" },
+    default: { head: "h-12", cell: "py-3.5", text: "text-sm", pad: "px-5" },
     relaxed: { head: "h-12", cell: "py-4", text: "text-sm", pad: "px-5" },
   }
 

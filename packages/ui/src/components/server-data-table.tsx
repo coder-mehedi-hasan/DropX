@@ -121,7 +121,7 @@ export function ServerDataTable<T>({
   const last = limit === 0 ? 0 : Math.min(page * limit, total)
 
   return (
-    <div className="space-y-3" data-slot="server-data-table">
+    <div className="space-y-3 p-4" data-slot="server-data-table">
       <DataTable
         {...rest}
         data={data}
@@ -133,7 +133,7 @@ export function ServerDataTable<T>({
       />
 
       {hidePagination || !meta ? null : (
-        <div className="flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
+        <div className="flex flex-col-reverse items-center justify-between gap-3 px-5 sm:flex-row">
           <div className="text-muted-foreground flex items-center gap-3 text-sm">
             <span>
               {total === 0

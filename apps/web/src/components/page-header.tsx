@@ -21,16 +21,21 @@ export function PageHeader({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-wrap items-end justify-between gap-4", className)}>
-      <div className="grid max-w-2xl gap-2">
+    <div className={cn("flex flex-wrap items-end justify-between gap-5", className)}>
+      <div className="grid max-w-2xl gap-2.5">
         {eyebrow ? (
-          <p className="text-accent-ink text-xs font-semibold tracking-[0.16em] uppercase">
-            {eyebrow}
+          <p className="text-accent-ink flex items-center gap-2 text-xs font-semibold tracking-[0.14em] uppercase">
+            <span className="bg-primary h-px w-5" aria-hidden />
+            <span>{eyebrow}</span>
           </p>
         ) : null}
-        <h1 className="text-3xl font-bold tracking-tight text-balance">{title}</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.035em] text-balance sm:text-4xl lg:text-[2.75rem] lg:leading-[1.08]">
+          {title}
+        </h1>
         {description ? (
-          <p className="text-muted-foreground text-sm leading-6 sm:text-base">{description}</p>
+          <p className="text-muted-foreground max-w-[62ch] text-sm leading-6 sm:text-base">
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
