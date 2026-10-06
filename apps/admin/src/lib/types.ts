@@ -21,7 +21,7 @@ import {
   VEHICLE_STATUSES,
   VEHICLE_TYPES,
 } from "@dropx/types"
-import { ZONE_STATUSES, RECORD_STATUSES } from "@dropx/types"
+import { LOCATION_SERVICE_TYPES, RECORD_STATUSES, ZONE_STATUSES } from "@dropx/types"
 import type {
   Customer,
   CustomerAddress,
@@ -35,6 +35,7 @@ import type {
   Parcel,
   ParcelAddress,
   ParcelAddressInput,
+  ParcelAddressType,
   ParcelEventSummary,
   ParcelEventType,
   ParcelItem,
@@ -48,7 +49,10 @@ import type {
   PaymentState,
   Pickup,
   PickupStatus,
+  PricingLane,
+  PricingLaneWithSlabs,
   PricingRule,
+  PricingSlab,
   RecordStatus,
   Rider,
   RiderLocation,
@@ -130,6 +134,7 @@ export type {
   Parcel,
   ParcelAddress,
   ParcelAddressInput,
+  ParcelAddressType,
   ParcelEventSummary,
   ParcelEventType,
   ParcelItem,
@@ -143,7 +148,10 @@ export type {
   PaymentState,
   Pickup,
   PickupStatus,
+  PricingLane,
+  PricingLaneWithSlabs,
   PricingRule,
+  PricingSlab,
   RecordStatus,
   Rider,
   RiderLocation,
@@ -571,6 +579,79 @@ export const createPricingRuleSchema = z.object({
   expressFee: z.coerce.number().nonnegative().max(999999),
   status: z.enum(RECORD_STATUSES).default("ACTIVE"),
 })
+
+export const createCitySchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .refine((value) => /^[A-Z0-9-]+$/.test(value), {
+      message: "Use uppercase letters, numbers and hyphens only",
+    }),
+  serviceType: z.enum(LOCATION_SERVICE_TYPES),
+  status: z.enum(RECORD_STATUSES).default("ACTIVE"),
+})
+export type CreateCityBody = z.infer<typeof createCitySchema>
+export type UpdateCityBody = Partial<CreateCityBody>
+
+export const createServiceZoneSchema = z.object({
+  cityId: z.string().trim().min(1, "Pick a city"),
+  name: z.string().trim().min(1).max(150),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .refine((value) => /^[A-Z0-9-]+$/.test(value), {
+      message: "Use uppercase letters, numbers and hyphens only",
+    }),
+  status: z.enum(RECORD_STATUSES).default("ACTIVE"),
+})
+export type CreateServiceZoneBody = z.infer<typeof createServiceZoneSchema>
+export type UpdateServiceZoneBody = Partial<CreateServiceZoneBody>
+
+export const createServiceAreaSchema = z.object({
+  zoneId: z.string().trim().min(1, "Pick a zone"),
+  name: z.string().trim().min(1).max(150),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .refine((value) => /^[A-Z0-9-]+$/.test(value), {
+      message: "Use uppercase letters, numbers and hyphens only",
+    }),
+  status: z.enum(RECORD_STATUSES).default("ACTIVE"),
+})
+export type CreateServiceAreaBody = z.infer<typeof createServiceAreaSchema>
+export type UpdateServiceAreaBody = Partial<CreateServiceAreaBody>
+
+export const createSlabSchema = z
+  .object({
+    minWeightGrams: z.coerce.number().int().min(0).max(1_000_000),
+    maxWeightGrams: z.coerce.number().int().min(1).max(1_000_000),
+    baseFee: z.coerce.number().nonnegative().max(1_000_000),
+    extraKgFee: z.coerce.number().nonnegative().max(1_000_000),
+    codPercentage: z.coerce.number().nonnegative().max(100),
+    codFixedFee: z.coerce.number().nonnegative().max(1_000_000),
+    status: z.enum(RECORD_STATUSES).default("ACTIVE"),
+  })
+  .refine((value) => value.maxWeightGrams > value.minWeightGrams, {
+    message: "Max weight must be above min weight",
+    path: ["maxWeightGrams"],
+  })
+export type CreateSlabBody = z.infer<typeof createSlabSchema>
+export type UpdateSlabBody = Partial<CreateSlabBody>
+
+export const codSettingsSchema = z.object({
+  codPercentage: z.coerce.number().nonnegative().max(100),
+  codFixedFee: z.coerce.number().nonnegative().max(1_000_000),
+})
+export type CodSettingsBody = z.infer<typeof codSettingsSchema>
+
+export type UpdatePricingLaneBody = { status: RecordStatus }
 
 export const createRouteSchema = z
   .object({

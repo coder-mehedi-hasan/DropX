@@ -3,9 +3,11 @@ import {
   Bike,
   Building2,
   Car,
+  Gauge,
   Globe,
   Handshake,
   FileCheck,
+  Layers,
   LayoutDashboard,
   MapPin,
   Package,
@@ -27,6 +29,14 @@ import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH, DEFAULT_PARCELS_SEARCH } 
 import { DEFAULT_VEHICLES_SEARCH_PARAMS } from "@/routes/vehicles-search-params"
 import { DEFAULT_ZONES_SEARCH_PARAMS } from "@/routes/zones-search-params"
 import { DEFAULT_PRICING_RULES_SEARCH_PARAMS } from "@/routes/pricing-rules-search-params"
+import { DEFAULT_CITIES_SEARCH_PARAMS } from "@/routes/locations-search-params"
+import type {
+  ServiceCitiesSearch,
+  ServiceAreasSearch,
+  ServiceZonesSearch,
+} from "@/routes/locations-search-params"
+import { DEFAULT_PRICING_LANES_SEARCH_PARAMS } from "@/routes/pricing-lanes-search-params"
+import type { PricingLanesSearch } from "@/routes/pricing-lanes-search-params"
 import type { BranchesSearch, HubsSearch, ParcelListSearch } from "@/lib/parcels"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
@@ -72,8 +82,12 @@ export type NavItem = {
     | "/payments"
     | "/settlements"
     | "/zones"
+    | "/locations/cities"
+    | "/locations/zones"
+    | "/locations/areas"
     | "/vehicles"
     | "/pricing-rules"
+    | "/pricing/matrix"
     | "/routes"
     | "/riders"
     | "/rider-locations"
@@ -92,8 +106,12 @@ export type NavItem = {
     | PaymentsSearch
     | SettlementsSearch
     | ZonesSearch
+    | ServiceCitiesSearch
+    | ServiceZonesSearch
+    | ServiceAreasSearch
     | VehiclesSearch
     | PricingRulesSearch
+    | PricingLanesSearch
     | RoutesSearch
     | RidersSearch
     | RiderLocationsSearch
@@ -169,6 +187,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Globe,
     permission: "zones.view",
   },
+  // The legacy flat-zones screen above stays until the flat tables are retired;
+  // Locations is the city → zone → area territory staff book parcels against.
+  {
+    label: "Locations",
+    to: "/locations/cities",
+    search: DEFAULT_CITIES_SEARCH_PARAMS,
+    icon: Layers,
+    permission: "locations.view",
+  },
   {
     label: "Vehicles",
     to: "/vehicles",
@@ -181,6 +208,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: "/pricing-rules",
     search: DEFAULT_PRICING_RULES_SEARCH_PARAMS,
     icon: Package,
+    permission: "pricing.view",
+  },
+  // The legacy rules screen above stays until Phase 11 removes it; the matrix is
+  // what quotes now run on — one row per pickup-to-delivery lane with its bands.
+  {
+    label: "Pricing matrix",
+    to: "/pricing/matrix",
+    search: DEFAULT_PRICING_LANES_SEARCH_PARAMS,
+    icon: Gauge,
     permission: "pricing.view",
   },
   {

@@ -79,13 +79,35 @@ import type {
   UpdateDeliveryStatusBody,
   DeliveryRow,
   DeliveryProofRow,
+  ServiceArea,
+  ServiceCity,
+  ServiceZone,
   RefundPaymentBody,
   RecordRemittanceBody,
   PaymentListItem,
   CreateSettlementBody,
   SetSettlementStatusBody,
   SettlementListItem,
+  CodSettingsBody,
+  CreateCityBody,
+  CreateServiceAreaBody,
+  CreateServiceZoneBody,
+  CreateSlabBody,
+  PricingLane,
+  PricingLaneWithSlabs,
+  PricingSlab,
+  UpdateCityBody,
+  UpdateServiceAreaBody,
+  UpdateServiceZoneBody,
+  UpdateSlabBody,
+  UpdatePricingLaneBody,
 } from "./types"
+import type {
+  ServiceCitiesSearch,
+  ServiceZonesSearch,
+  ServiceAreasSearch,
+} from "@/routes/locations-search-params"
+import type { PricingLanesSearch } from "@/routes/pricing-lanes-search-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
@@ -160,11 +182,12 @@ export function trackParcel(trackingNumber: string, signal?: AbortSignal) {
 export function quoteDeliveryFee(params: QuoteParams, signal?: AbortSignal) {
   return api.get<DeliveryQuote>("/pricing/quote", {
     query: {
-      originZoneId: params.originZoneId,
-      destinationZoneId: params.destinationZoneId,
-      weightKg: params.weightKg,
+      pickupCityId: params.pickupCityId,
+      pickupZoneId: params.pickupZoneId,
+      deliveryCityId: params.deliveryCityId,
+      deliveryZoneId: params.deliveryZoneId,
+      weightGrams: params.weightGrams,
       codAmount: params.codAmount,
-      express: params.express,
     },
     ...(signal ? { signal } : {}),
   })
@@ -200,6 +223,116 @@ export function listZonesForPicker(params: ReferenceListParams, signal?: AbortSi
     query: referenceQuery(params),
     ...(signal ? { signal } : {}),
   })
+}
+
+/*
+ * The booking cascade's pickers, backed by the service-* module rather than the
+ * reference module: these are the city → zone → area rows bookings key on, not
+ * the legacy `admin.reference.zones` projection the pricing-rule sheet still
+ * uses. The zone and area lists take the parent id so a picker only ever offers
+ * rows under the row already chosen.
+ */
+export function listCitiesForPicker(params: ReferenceListParams, signal?: AbortSignal) {
+  return api.get<Page<ServiceCity>>("/admin/service-cities", {
+    query: referenceQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function listCityZonesForPicker(
+  params: ReferenceListParams,
+  cityId: string,
+  signal?: AbortSignal,
+) {
+  return api.get<Page<ServiceZone>>("/admin/service-zones", {
+    query: { ...referenceQuery(params), ...(cityId ? { cityId } : {}) },
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function listZoneAreasForPicker(
+  params: ReferenceListParams,
+  zoneId: string,
+  signal?: AbortSignal,
+) {
+  return api.get<Page<ServiceArea>>("/admin/service-areas", {
+    query: { ...referenceQuery(params), ...(zoneId ? { zoneId } : {}) },
+    ...(signal ? { signal } : {}),
+  })
+}
+
+/**
+ * Locations CRUD — the management surface over the same service-* module the
+ * pickers read. The picker functions above stay separate on purpose: they page
+ * only ACTIVE rows for booking forms, while these page the full catalog
+ * (legacy `zones.view` routes are untouched until the flat tables are retired).
+ */
+export function listServiceCities(params: ServiceCitiesSearch) {
+  return api.get<Page<ServiceCity>>("/admin/service-cities", { query: locationQuery(params) })
+}
+
+export function createServiceCity(body: CreateCityBody) {
+  return api.post<ServiceCity>("/admin/service-cities", body)
+}
+
+export function updateServiceCity(cityId: string, body: UpdateCityBody) {
+  return api.patch<ServiceCity>(`/admin/service-cities/${cityId}`, body)
+}
+
+export function listServiceZones(params: ServiceZonesSearch) {
+  return api.get<Page<ServiceZone>>("/admin/service-zones", { query: locationQuery(params) })
+}
+
+export function createServiceZone(body: CreateServiceZoneBody) {
+  return api.post<ServiceZone>("/admin/service-zones", body)
+}
+
+export function updateServiceZone(zoneId: string, body: UpdateServiceZoneBody) {
+  return api.patch<ServiceZone>(`/admin/service-zones/${zoneId}`, body)
+}
+
+export function listServiceAreas(params: ServiceAreasSearch) {
+  return api.get<Page<ServiceArea>>("/admin/service-areas", { query: locationQuery(params) })
+}
+
+export function createServiceArea(body: CreateServiceAreaBody) {
+  return api.post<ServiceArea>("/admin/service-areas", body)
+}
+
+export function updateServiceArea(areaId: string, body: UpdateServiceAreaBody) {
+  return api.patch<ServiceArea>(`/admin/service-areas/${areaId}`, body)
+}
+
+/** The lane matrix. Slabs come attached, so a lane row is the whole story. */
+export function listPricingLanes(params: PricingLanesSearch) {
+  return api.get<Page<PricingLaneWithSlabs>>("/admin/pricing/lanes", {
+    query: {
+      page: params.page,
+      limit: params.limit,
+      sortBy: params.sortBy,
+      sort: params.sort,
+      ...(params.status ? { status: params.status } : {}),
+    },
+  })
+}
+
+export function updatePricingLane(pricingLaneId: string, body: UpdatePricingLaneBody) {
+  return api.patch<PricingLane>(`/admin/pricing/lanes/${pricingLaneId}`, body)
+}
+
+export function createPricingSlab(pricingLaneId: string, body: CreateSlabBody) {
+  return api.post<PricingSlab>(`/admin/pricing/lanes/${pricingLaneId}/slabs`, body)
+}
+
+export function updatePricingSlab(pricingSlabId: string, body: UpdateSlabBody) {
+  return api.patch<PricingSlab>(`/admin/pricing/slabs/${pricingSlabId}`, body)
+}
+
+export function updateCodSettings(body: CodSettingsBody) {
+  return api.patch<{ codPercentage: number; codFixedFee: number; slabsUpdated: number }>(
+    "/admin/pricing/cod-settings",
+    body,
+  )
 }
 
 export function searchCustomersForPicker(params: ReferenceListParams, signal?: AbortSignal) {
@@ -714,6 +847,28 @@ function usersQuery(params: UsersSearch) {
     ...(params.search ? { search: params.search } : {}),
     ...(params.status ? { status: params.status } : {}),
     ...(params.branchId ? { branchId: params.branchId } : {}),
+  }
+}
+
+function locationQuery(params: {
+  page: number
+  limit: number
+  sortBy: string
+  sort: "asc" | "desc"
+  search: string
+  status?: string
+  cityId?: string
+  zoneId?: string
+}) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.status ? { status: params.status } : {}),
+    ...(params.cityId ? { cityId: params.cityId } : {}),
+    ...(params.zoneId ? { zoneId: params.zoneId } : {}),
   }
 }
 

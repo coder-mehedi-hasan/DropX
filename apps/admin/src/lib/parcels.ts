@@ -123,8 +123,8 @@ export type CreateParcelBody = {
   senderCustomerId: string
   originHubId: string
   destinationHubId: string
-  originZoneId: string
-  destinationZoneId: string
+  pickupAddress: ParcelAddressInput
+  deliveryAddress: ParcelAddressInput
   weight: number
   length?: number | undefined
   width?: number | undefined
@@ -144,9 +144,10 @@ export type UpdateParcelStatusBody = {
 export type CancelParcelBody = { reason: string }
 
 export type QuoteParams = {
-  originZoneId: string
-  destinationZoneId: string
-  weightKg: number
+  pickupCityId: string
+  pickupZoneId: string
+  deliveryCityId: string
+  deliveryZoneId: string
+  weightGrams: number
   codAmount: number
-  express: boolean
 }

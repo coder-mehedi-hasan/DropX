@@ -9,6 +9,12 @@ import { loginSearchSchema, parcelsSearchSchema, trackingSearchSchema } from "./
 import { vehiclesSearchSchema } from "./vehicles-search-params"
 import { zonesSearchSchema } from "./zones-search-params"
 import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
+import { pricingLanesSearchSchema } from "./pricing-lanes-search-params"
+import {
+  citiesSearchSchema,
+  serviceAreasSearchSchema,
+  serviceZonesSearchSchema,
+} from "./locations-search-params"
 import { routesSearchSchema } from "./routes-search-params"
 import { ridersSearchSchema } from "./riders-search-params"
 import { usersSearchSchema } from "./users-search-params"
@@ -57,6 +63,18 @@ const ZonesListPage = lazyRouteComponent(
   () => import("@/features/zones/zones-list-page"),
   "ZonesListPage",
 )
+const CitiesListPage = lazyRouteComponent(
+  () => import("@/features/locations/cities-list-page"),
+  "CitiesListPage",
+)
+const ServiceZonesListPage = lazyRouteComponent(
+  () => import("@/features/locations/service-zones-list-page"),
+  "ServiceZonesListPage",
+)
+const ServiceAreasListPage = lazyRouteComponent(
+  () => import("@/features/locations/service-areas-list-page"),
+  "ServiceAreasListPage",
+)
 const VehiclesListPage = lazyRouteComponent(
   () => import("@/features/vehicles/vehicles-list-page"),
   "VehiclesListPage",
@@ -64,6 +82,10 @@ const VehiclesListPage = lazyRouteComponent(
 const PricingRulesListPage = lazyRouteComponent(
   () => import("@/features/pricing/pricing-rules-list-page"),
   "PricingRulesListPage",
+)
+const PricingMatrixPage = lazyRouteComponent(
+  () => import("@/features/pricing/pricing-matrix-page"),
+  "PricingMatrixPage",
 )
 const RoutesListPage = lazyRouteComponent(
   () => import("@/features/routes/routes-list-page"),
@@ -227,6 +249,27 @@ export const zonesRoute = createRoute({
   component: ZonesListPageRoute,
 })
 
+export const citiesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/locations/cities",
+  validateSearch: citiesSearchSchema,
+  component: CitiesListPageRoute,
+})
+
+export const serviceZonesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/locations/zones",
+  validateSearch: serviceZonesSearchSchema,
+  component: ServiceZonesListPageRoute,
+})
+
+export const serviceAreasRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/locations/areas",
+  validateSearch: serviceAreasSearchSchema,
+  component: ServiceAreasListPageRoute,
+})
+
 export const vehiclesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/vehicles",
@@ -239,6 +282,13 @@ export const pricingRulesRoute = createRoute({
   path: "/pricing-rules",
   validateSearch: pricingRulesSearchSchema,
   component: PricingRulesListPageRoute,
+})
+
+export const pricingMatrixRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/pricing/matrix",
+  validateSearch: pricingLanesSearchSchema,
+  component: PricingMatrixPageRoute,
 })
 
 export const routesRoute = createRoute({
@@ -410,6 +460,33 @@ function ZonesListPageRoute() {
   )
 }
 
+function CitiesListPageRoute() {
+  const search = citiesRoute.useSearch()
+  return (
+    <RequirePermission permission="locations.view">
+      <CitiesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function ServiceZonesListPageRoute() {
+  const search = serviceZonesRoute.useSearch()
+  return (
+    <RequirePermission permission="locations.view">
+      <ServiceZonesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function ServiceAreasListPageRoute() {
+  const search = serviceAreasRoute.useSearch()
+  return (
+    <RequirePermission permission="locations.view">
+      <ServiceAreasListPage search={search} />
+    </RequirePermission>
+  )
+}
+
 function VehiclesListPageRoute() {
   const search = vehiclesRoute.useSearch()
   return (
@@ -424,6 +501,15 @@ function PricingRulesListPageRoute() {
   return (
     <RequirePermission permission="pricing.view">
       <PricingRulesListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function PricingMatrixPageRoute() {
+  const search = pricingMatrixRoute.useSearch()
+  return (
+    <RequirePermission permission="pricing.view">
+      <PricingMatrixPage search={search} />
     </RequirePermission>
   )
 }

@@ -60,6 +60,7 @@ import { cancelParcel, getParcel, trackParcel, updateParcelStatus } from "@/lib/
 import { formatDateTime, formatDimensions, formatMoney, formatNumber } from "@/lib/format"
 import { DEFAULT_PARCELS_SEARCH, nextStatuses } from "@/lib/parcels"
 import type { ParcelDetail, ParcelStatus } from "@/lib/parcels"
+import type { ParcelAddress, ParcelAddressType } from "@/lib/types"
 import { EventTimeline } from "@/features/tracking/event-timeline"
 
 const statusChangeSchema = z.object({
@@ -182,7 +183,12 @@ export function ParcelDetailPage({ parcelId }: { parcelId: string }) {
               <DetailRow label="Current hub">
                 {data.currentHubId ? `#${data.currentHubId}` : "—"}
               </DetailRow>
-              <DetailRow label="Destination zone">#{data.destinationZoneId}</DetailRow>
+              <DetailRow label="Pickup address">
+                {addressSummary(data.addresses, "PICKUP")}
+              </DetailRow>
+              <DetailRow label="Delivery address">
+                {addressSummary(data.addresses, "DELIVERY")}
+              </DetailRow>
               <DetailRow label="Weight">{formatNumber(data.weight)} kg</DetailRow>
               <DetailRow label="Dimensions">
                 {formatDimensions(data.length, data.width, data.height)}
@@ -312,6 +318,19 @@ export function ParcelDetailPage({ parcelId }: { parcelId: string }) {
       />
     </div>
   )
+}
+
+/**
+ * The structured end of a booking, rendered from the booking-time name
+ * snapshots — a historical read must not rejoin `service_*` and silently get a
+ * zone that has since been renamed.
+ */
+function addressSummary(addresses: readonly ParcelAddress[], type: ParcelAddressType): string {
+  const address = addresses.find((row) => row.type === type)
+  if (!address) return "—"
+  return [address.addressLine, address.areaName, address.zoneName, address.cityName]
+    .filter((part): part is string => Boolean(part))
+    .join(", ")
 }
 
 function BackLink() {

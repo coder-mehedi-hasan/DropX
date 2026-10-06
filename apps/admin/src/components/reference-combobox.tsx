@@ -18,11 +18,14 @@ import {
 
 import {
   listBranchesForPicker,
+  listCitiesForPicker,
+  listCityZonesForPicker,
   listHubsForPicker,
   listParcels,
   listRidersForPicker,
   listRoutes,
   listVehicles,
+  listZoneAreasForPicker,
   listZonesForPicker,
   searchCustomersForPicker,
 } from "@/lib/endpoints"
@@ -33,6 +36,9 @@ import type {
   Parcel,
   Rider,
   Route,
+  ServiceArea,
+  ServiceCity,
+  ServiceZone,
   Vehicle,
   ZoneOption,
 } from "@/lib/types"
@@ -66,7 +72,17 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
  * for the same rows.
  */
 export type PickerSource =
-  "branches" | "hubs" | "zones" | "customers" | "riders" | "vehicles" | "routes" | "parcels"
+  | "branches"
+  | "hubs"
+  | "zones"
+  | "customers"
+  | "riders"
+  | "vehicles"
+  | "routes"
+  | "parcels"
+  | "cities"
+  | "city-zones"
+  | "zone-areas"
 
 type Row = {
   id: string
@@ -109,6 +125,29 @@ function toHubRows(nodes: readonly HubOption[]): Row[] {
 
 function toZoneRows(nodes: readonly ZoneOption[]): Row[] {
   return nodes.map((zone) => ({ id: zone.id, label: zone.name, hint: zone.code }))
+}
+
+/**
+ * The booking cascade's rows are the service-* shapes, not the legacy zone
+ * projection. A city carries its service type as the distinguishing tag because
+ * two cities with the same name can be priced differently; zones and areas
+ * only need their code below the name.
+ */
+function toCityRows(nodes: readonly ServiceCity[]): Row[] {
+  return nodes.map((city) => ({
+    id: city.id,
+    label: city.name,
+    hint: city.code,
+    tags: [city.serviceType],
+  }))
+}
+
+function toServiceZoneRows(nodes: readonly ServiceZone[]): Row[] {
+  return nodes.map((zone) => ({ id: zone.id, label: zone.name, hint: zone.code }))
+}
+
+function toServiceAreaRows(nodes: readonly ServiceArea[]): Row[] {
+  return nodes.map((area) => ({ id: area.id, label: area.name, hint: area.code }))
 }
 
 function toCustomerRows(nodes: readonly CustomerOption[]): Row[] {
@@ -189,8 +228,33 @@ function useReferenceRows(
   source: PickerSource,
   search: string,
   enabled: boolean,
+  dependsOn: string,
 ): { rows: Row[]; isFetching: boolean; isError: boolean } {
   const params = { page: 1, limit: PAGE_SIZE, search: search || undefined }
+
+  const cities = useQuery({
+    queryKey: ["reference", "service-cities", params],
+    queryFn: ({ signal }) => listCitiesForPicker(params, signal),
+    enabled: enabled && source === "cities",
+    staleTime: 60_000,
+  })
+
+  // The zone and area pickers are children of a chosen row, so the parent id is
+  // part of both the query key and the request — a changed parent refetches
+  // rather than reusing the previous city's zones.
+  const cityZones = useQuery({
+    queryKey: ["reference", "service-zones", dependsOn, params],
+    queryFn: ({ signal }) => listCityZonesForPicker(params, dependsOn, signal),
+    enabled: enabled && source === "city-zones" && dependsOn.length > 0,
+    staleTime: 60_000,
+  })
+
+  const zoneAreas = useQuery({
+    queryKey: ["reference", "service-areas", dependsOn, params],
+    queryFn: ({ signal }) => listZoneAreasForPicker(params, dependsOn, signal),
+    enabled: enabled && source === "zone-areas" && dependsOn.length > 0,
+    staleTime: 60_000,
+  })
 
   const branches = useQuery({
     queryKey: ["reference", "branches", params],
@@ -290,6 +354,9 @@ function useReferenceRows(
     vehicleList,
     routeList,
     parcelList,
+    cities,
+    cityZones,
+    zoneAreas,
   }
   const active =
     source === "riders"
@@ -300,7 +367,11 @@ function useReferenceRows(
           ? routeList
           : source === "parcels"
             ? parcelList
-            : sources[source]
+            : source === "city-zones"
+              ? cityZones
+              : source === "zone-areas"
+                ? zoneAreas
+                : sources[source]
   const isFetching = active.isFetching
   const isError = active.isError
 
@@ -312,6 +383,9 @@ function useReferenceRows(
     if (source === "vehicles") return toVehicleRows(vehicleList.data?.nodes ?? [])
     if (source === "routes") return toRouteRows(routeList.data?.nodes ?? [])
     if (source === "parcels") return toParcelRows(parcelList.data?.nodes ?? [])
+    if (source === "cities") return toCityRows(cities.data?.nodes ?? [])
+    if (source === "city-zones") return toServiceZoneRows(cityZones.data?.nodes ?? [])
+    if (source === "zone-areas") return toServiceAreaRows(zoneAreas.data?.nodes ?? [])
     return toCustomerRows(customers.data?.nodes ?? [])
   }, [
     source,
@@ -323,6 +397,9 @@ function useReferenceRows(
     vehicleList.data,
     routeList.data,
     parcelList.data,
+    cities.data,
+    cityZones.data,
+    zoneAreas.data,
   ])
 
   return { rows, isFetching, isError }
@@ -334,6 +411,7 @@ export function ReferenceCombobox({
   source,
   placeholder,
   disabled,
+  dependsOn,
   id,
   invalid,
 }: {
@@ -343,6 +421,12 @@ export function ReferenceCombobox({
   source: PickerSource
   placeholder: string
   disabled?: boolean
+  /**
+   * Parent id the picker must wait for. Empty means the control is disabled
+   * (the cascade's parent has not been chosen yet), and a changed value
+   * refetches the rows under the new parent.
+   */
+  dependsOn?: string
   id?: string
   /** Paints the red border; the message itself belongs to the form field. */
   invalid?: boolean
@@ -351,7 +435,14 @@ export function ReferenceCombobox({
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search.trim(), 250)
 
-  const { rows, isFetching, isError } = useReferenceRows(source, debouncedSearch, open)
+  const blocked = disabled || (dependsOn !== undefined && dependsOn.length === 0)
+
+  const { rows, isFetching, isError } = useReferenceRows(
+    source,
+    debouncedSearch,
+    open && !blocked,
+    dependsOn ?? "",
+  )
 
   const selected = React.useMemo(() => rows.find((row) => row.id === value) ?? null, [rows, value])
 
@@ -391,7 +482,7 @@ export function ReferenceCombobox({
           role="combobox"
           aria-expanded={open}
           variant="outline"
-          disabled={disabled}
+          disabled={blocked}
           className={`w-full justify-between font-normal ${
             invalid ? "border-destructive focus-visible:ring-destructive/40" : ""
           }`}

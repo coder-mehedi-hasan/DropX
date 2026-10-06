@@ -33,6 +33,8 @@ const SECTIONS: { label: string; keys: PermissionKey[] }[] = [
     keys: [
       "customers.view",
       "customers.manage",
+      "locations.view",
+      "locations.manage",
       "zones.view",
       "zones.manage",
       "pricing.view",

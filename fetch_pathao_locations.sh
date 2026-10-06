@@ -8,7 +8,7 @@
 set -euo pipefail
 
 BASE_URL="https://api-hermes.pathao.com"
-ACCESS_TOKEN="${ACCESS_TOKEN:-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMTAyOTkiLCJhdWQiOlsiNTg0MiJdLCJleHAiOjE3OTkwOTczMzIsIm5iZiI6MTc5MTMyMTMzMiwiaWF0IjoxNzkxMzIxMzMyLCJqdGkiOiJiNWFjNGQ0YjVkMGViN2E5NDBiM2FmN2Y1NWQ3ODIwMzIyZGM1OGM0OWQ2MTlmZTZmYzgxNDdiZmNiYTUxODAwIiwibWVyY2hhbnRfaWQiOiJZUmRHWllFNWJEIiwic2NvcGVzIjpbXX0.siX92JmqIfUuJR41rxxFdk20MXxafr9DdScOOX2me0pS0MLEeXTJSZp0hq2N45Tjo6iYSu2r786b3g17hltVW9gHFIODQ9fUdoJB4pbisJPmpJSu5YwrAr4RWHHjcKcm3wE3pT_Kf06Kg4F_OAnfMYLwgcA687RWt_fgIPdYtd_Rk_75Teu1dwEydHlAHgFHYjwLhssRY4VWbhbNC1rg2EQ_bVheD2OSNRxtz-Kt4clghDL1OEtaz21kXbrT3Ky6s3Y93qSJqlcoWiqEDvhmnHbIPldkqpXfZbeuDk_Qm5xYGcrg9Nv2ZtPfpl-WvWersRAhKDT9Qv7bjEUsqz-YreS4aU1QRvzKVY3exlXGWwomhx05ktyp9of-e0FmFj4_G6P1E9WWn47bbtmC1av1e3MGk4wzke_kef6vjYW_ZaBEaKTX8wLft1-EiUv6Kvzpu78WQIk-Scl9PMWdtKTpMmV3l0xCFXjpdfsIj6mHsafXWzmqAHLyTOgRlLw6X6mWk72fVSnWjbS9CiwVZkr-DnQeyKEVzZCwHo2Cr_Ocnqy1dHZymGsBH98qcs7JHRs-YwV4tx4ThlodjxsEEma_Hbu4g0Trq9-uMcVL1LEtXRvXjMFp4FMCZC1ybgtJpVM4_ScZJvcrwHXuJt1nRnE72Q94-5Sl9FGTaBFgiPIJ7zc}"
+ACCESS_TOKEN="${ACCESS_TOKEN:-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMTAyOTkiLCJhdWQiOlsiNTg0MiJdLCJleHAiOjE3OTkwOTk0MzEsIm5iZiI6MTc5MTMyMzQzMSwiaWF0IjoxNzkxMzIzNDMxLCJqdGkiOiJhZDExYWZhOTEwZTAwZGU2MjRhZDIzYTNkZWVhYzY1YzA0ZTdhY2FhYjJmMWQzNTEzNzc5MDM2ZWUwODgzOWJiIiwibWVyY2hhbnRfaWQiOiJZUmRHWllFNWJEIiwic2NvcGVzIjpbXX0.KO3_SvWHhb7RWVj2TKOTMlHwnjL9KI5xEj8E-BUQ3-2EvKGl-9jELpoaMYrBkI5LpBMcHdY05Ywgtthr6fq5fBP3wa549JNDimxAc80bX_cNIoJrLxdzOzVn6vCOpSAKyPAX7WGhWzRxg3GuFZ0CZezH7SN7xa5Hv4hBGPVU4L363VVvuLtiKiSrUjkm9b3RpDlq0uwvSDMd5_I1MAkOot9uJOBqqewaLBrs8j8_-fR6Muq_oZ7nx9nQBMQCGnwYpj_ffIQlzFWYZfSiER20R1oGFFM7DRYdWAEisgUVAnJWwsy_4CNuhf6Tu8Wpi0isRWLSkvNd37BSkr5MyVgkd3gIqLmBg4uQnCc6mnNjNjlLbZwcZm1yqqnSx5FC-Q2ZBAUke2Ln6-sSYujp2cFhZbhSU3xNBtnF5hoGtKKcwBmn6IJxceJrYSZh3gLMzi4fPFOVaQ0ZG3geYKqPfn4982YMYwUIU9VpVx2p2lOWLEh8uzC2tG109boSa87zA650xQ9ro36GdVX5f4Ff3APQLplDcarrwDDgDjx2-OJgpOrK1lecy2IbXG9UlTQfbSRp6UqzmiM2Bghch7pLQbCpNCRCrEgkhEaAW4eNCJbFAf7RTN73PRGGNRspt1-KoaopK8HnHjIQfnDtRVkMIJs0vqGQxL1KHU48PuFSAD5HdXo}"
 OUTPUT_FILE="locations.json"
 ACTION=""
 
@@ -66,45 +66,45 @@ fi
 [[ -f "$OUTPUT_FILE" ]] || { echo "$OUTPUT_FILE not found — run -a=city first" >&2; exit 1; }
 RESULT=$(cat "$OUTPUT_FILE")
 
+PARALLEL=3
+
 # ── zone ──────────────────────────────────────────────────────────────────────
 if [[ "$ACTION" == "zone" ]]; then
-  CITY_IDS=$(echo "$RESULT" | jq '.[].city_id')
-  for CITY_ID in $CITY_IDS; do
-    CITY_NAME=$(echo "$RESULT" | jq -r --argjson id "$CITY_ID" '.[] | select(.city_id==$id) | .city_name')
-    echo "  [+] City: ${CITY_NAME} (id=${CITY_ID})"
-
-    ZONES_JSON=$(api_get "${BASE_URL}/aladdin/api/v1/cities/${CITY_ID}/zone-list") || { echo "    ! failed, skipping"; continue; }
-    sleep 1
-    ZONES=$(echo "$ZONES_JSON" | jq '[.data.data[] | {zone_id, zone_name}]')
-
+  TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+  export -f api_get; export BASE_URL ACCESS_TOKEN TMP
+  echo "$RESULT" | jq -r '.[].city_id' | \
+    xargs -P "$PARALLEL" -I{} bash -c '
+      out=$(api_get "${BASE_URL}/aladdin/api/v1/cities/{}/zone-list") \
+        && echo "$out" | jq "[.data.data[] | {zone_id, zone_name}]" > "$TMP/{}.json"
+      sleep 0.5' || true
+  while read -r CITY_ID; do
+    [[ -f "$TMP/$CITY_ID.json" ]] || continue
+    ZONES=$(cat "$TMP/$CITY_ID.json")
     RESULT=$(echo "$RESULT" | jq --argjson id "$CITY_ID" --argjson zones "$ZONES" \
       'map(if .city_id==$id then . + {zones: $zones} else . end)')
     save "$RESULT"
-    echo "    [✓] zones: $(echo "$ZONES" | jq 'length')"
-  done
+    echo "  [✓] city $CITY_ID zones: $(echo "$ZONES" | jq 'length')"
+  done < <(echo "$RESULT" | jq -r '.[].city_id')
   exit 0
 fi
 
 # ── area ──────────────────────────────────────────────────────────────────────
 if [[ "$ACTION" == "area" ]]; then
-  CITY_IDS=$(echo "$RESULT" | jq '.[].city_id')
-  for CITY_ID in $CITY_IDS; do
-    ZONE_IDS=$(echo "$RESULT" | jq --argjson id "$CITY_ID" '.[] | select(.city_id==$id) | .zones[]?.zone_id // empty')
-    [[ -z "$ZONE_IDS" ]] && continue
-    for ZONE_ID in $ZONE_IDS; do
-      ZONE_NAME=$(echo "$RESULT" | jq -r --argjson cid "$CITY_ID" --argjson zid "$ZONE_ID" \
-        '.[] | select(.city_id==$cid) | .zones[] | select(.zone_id==$zid) | .zone_name')
-      echo "  [+] Zone: ${ZONE_NAME} (id=${ZONE_ID})"
-
-      AREAS_JSON=$(api_get "${BASE_URL}/aladdin/api/v1/zones/${ZONE_ID}/area-list") || { echo "    ! failed, skipping"; continue; }
-      sleep 1
-      AREAS=$(echo "$AREAS_JSON" | jq '[.data.data[] | {area_id, area_name}]')
-
-      RESULT=$(echo "$RESULT" | jq --argjson cid "$CITY_ID" --argjson zid "$ZONE_ID" --argjson areas "$AREAS" \
-        'map(if .city_id==$cid then .zones |= map(if .zone_id==$zid then . + {areas: $areas} else . end) else . end)')
-      save "$RESULT"
-      echo "    [✓] areas: $(echo "$AREAS" | jq 'length')"
-    done
-  done
+  TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+  export -f api_get; export BASE_URL ACCESS_TOKEN TMP
+  echo "$RESULT" | jq -r '.[] | .city_id as $c | .zones[]? | "\($c) \(.zone_id)"' | \
+    xargs -P "$PARALLEL" -n2 bash -c '
+      cid=$0; zid=$1
+      out=$(api_get "${BASE_URL}/aladdin/api/v1/zones/${zid}/area-list") \
+        && echo "$out" | jq "[.data.data[] | {area_id, area_name}]" > "$TMP/${cid}_${zid}.json"
+      sleep 0.5' || true
+  while read -r CITY_ID ZONE_ID; do
+    [[ -f "$TMP/${CITY_ID}_${ZONE_ID}.json" ]] || continue
+    AREAS=$(cat "$TMP/${CITY_ID}_${ZONE_ID}.json")
+    RESULT=$(echo "$RESULT" | jq --argjson cid "$CITY_ID" --argjson zid "$ZONE_ID" --argjson areas "$AREAS" \
+      'map(if .city_id==$cid then .zones |= map(if .zone_id==$zid then . + {areas: $areas} else . end) else . end)')
+    save "$RESULT"
+    echo "  [✓] zone $ZONE_ID areas: $(echo "$AREAS" | jq 'length')"
+  done < <(echo "$RESULT" | jq -r '.[] | .city_id as $c | .zones[]? | "\($c) \(.zone_id)"')
   exit 0
 fi

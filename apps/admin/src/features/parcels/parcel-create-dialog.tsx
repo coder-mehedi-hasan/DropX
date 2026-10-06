@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2 } from "lucide-react"
 import type { ReactNode } from "react"
-import { useFieldArray, useForm } from "react-hook-form"
+import { useFieldArray, useForm, useFormContext } from "react-hook-form"
 import { z } from "zod"
 import {
   Alert,
@@ -122,6 +122,13 @@ const itemSchema = z.object({
   unitPrice: moneyString(),
 })
 
+const addressFields = {
+  cityId: z.string().trim().min(1, "Choose a city"),
+  zoneId: z.string().trim().min(1, "Choose a zone"),
+  areaId: z.string().trim(),
+  addressLine: z.string().trim().min(1, "Address line is required").max(300),
+}
+
 const createParcelSchema = z
   .object({
     senderCustomerId: z.string().trim().min(1, "Pick the customer sending the parcel"),
@@ -130,8 +137,14 @@ const createParcelSchema = z
     receiverPhone: z.string().trim().min(6, "Enter a valid phone number").max(30),
     originHubId: z.string().trim().min(1, "Pick an origin hub"),
     destinationHubId: z.string().trim().min(1, "Pick a destination hub"),
-    originZoneId: z.string().trim().min(1, "Pick an origin zone"),
-    destinationZoneId: z.string().trim().min(1, "Pick a destination zone"),
+    pickupCityId: addressFields.cityId,
+    pickupZoneId: addressFields.zoneId,
+    pickupAreaId: addressFields.areaId,
+    pickupAddressLine: addressFields.addressLine,
+    deliveryCityId: addressFields.cityId,
+    deliveryZoneId: addressFields.zoneId,
+    deliveryAreaId: addressFields.areaId,
+    deliveryAddressLine: addressFields.addressLine,
     weight: decimalString(9999, { positive: true }),
     length: optionalDecimalString(9999),
     width: optionalDecimalString(9999),
@@ -163,8 +176,14 @@ const DEFAULT_VALUES: CreateParcelValues = {
   receiverPhone: "",
   originHubId: "",
   destinationHubId: "",
-  originZoneId: "",
-  destinationZoneId: "",
+  pickupCityId: "",
+  pickupZoneId: "",
+  pickupAreaId: "",
+  pickupAddressLine: "",
+  deliveryCityId: "",
+  deliveryZoneId: "",
+  deliveryAreaId: "",
+  deliveryAddressLine: "",
   weight: "1",
   length: "",
   width: "",
@@ -212,9 +231,10 @@ export function ParcelCreateDialog({
   const weight = Number(watched.weight)
   const codAmount = Number(watched.codAmount) || 0
   const canQuote =
-    watched.originZoneId.length > 0 &&
-    watched.destinationZoneId.length > 0 &&
-    watched.originZoneId !== watched.destinationZoneId &&
+    watched.pickupCityId.length > 0 &&
+    watched.pickupZoneId.length > 0 &&
+    watched.deliveryCityId.length > 0 &&
+    watched.deliveryZoneId.length > 0 &&
     Number.isFinite(weight) &&
     weight > 0
 
@@ -222,19 +242,22 @@ export function ParcelCreateDialog({
     queryKey: [
       "pricing",
       "quote",
-      watched.originZoneId,
-      watched.destinationZoneId,
+      watched.pickupCityId,
+      watched.pickupZoneId,
+      watched.deliveryCityId,
+      watched.deliveryZoneId,
       weight,
       codAmount,
     ],
     queryFn: ({ signal }) =>
       quoteDeliveryFee(
         {
-          originZoneId: watched.originZoneId,
-          destinationZoneId: watched.destinationZoneId,
-          weightKg: weight,
+          pickupCityId: watched.pickupCityId,
+          pickupZoneId: watched.pickupZoneId,
+          deliveryCityId: watched.deliveryCityId,
+          deliveryZoneId: watched.deliveryZoneId,
+          weightGrams: Math.round(weight * 1000),
           codAmount,
-          express: false,
         },
         signal,
       ),
@@ -403,48 +426,10 @@ export function ParcelCreateDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="originZoneId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Origin zone</FormLabel>
-                  <FormControl>
-                    <ReferenceCombobox
-                      source="zones"
-                      placeholder="Search zones"
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={mutation.isPending}
-                      invalid={Boolean(form.formState.errors.originZoneId)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="destinationZoneId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Destination zone</FormLabel>
-                  <FormControl>
-                    <ReferenceCombobox
-                      source="zones"
-                      placeholder="Search zones"
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={mutation.isPending}
-                      invalid={Boolean(form.formState.errors.destinationZoneId)}
-                    />
-                  </FormControl>
-                  <FormDescription>Fees are anchored on the destination zone.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
+
+          <AddressFields prefix="pickup" title="Pickup address" disabled={mutation.isPending} />
+          <AddressFields prefix="delivery" title="Delivery address" disabled={mutation.isPending} />
         </section>
 
         <Separator />
@@ -621,8 +606,10 @@ export function ParcelCreateDialog({
                 <AlertTitle>{formatMoney(quote.data.total)}</AlertTitle>
                 <AlertDescription>
                   <p>
-                    Base {formatMoney(quote.data.basePrice)} + weight{" "}
-                    {formatMoney(quote.data.weightCharge)}
+                    Base {formatMoney(quote.data.baseFee)}
+                    {quote.data.extraWeightFee > 0
+                      ? ` + extra weight ${formatMoney(quote.data.extraWeightFee)}`
+                      : ""}
                     {quote.data.codFee > 0 ? ` + COD ${formatMoney(quote.data.codFee)}` : ""}. The
                     API recomputes this when the parcel is booked.
                   </p>
@@ -631,7 +618,7 @@ export function ParcelCreateDialog({
             )
           ) : (
             <p className="text-muted-foreground text-sm">
-              Choose an origin and destination zone to preview the delivery fee.
+              Choose pickup and delivery cities and zones to preview the delivery fee.
             </p>
           )}
         </section>
@@ -763,6 +750,125 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return <p className="text-sm font-semibold">{children}</p>
 }
 
+/**
+ * One end of the booking: city with no parent, zone under that city, optional
+ * area under that zone, then the free-text street line the API keeps as the
+ * receiver address. Changing a parent clears its children so the form can never
+ * send a zone from the previous city.
+ */
+function AddressFields({
+  prefix,
+  title,
+  disabled,
+}: {
+  prefix: "pickup" | "delivery"
+  title: string
+  disabled: boolean
+}) {
+  const form = useFormContext<CreateParcelValues>()
+  const errors = form.formState.errors
+  const names = {
+    cityId: `${prefix}CityId`,
+    zoneId: `${prefix}ZoneId`,
+    areaId: `${prefix}AreaId`,
+    addressLine: `${prefix}AddressLine`,
+  } as const
+
+  const cityId = form.watch(names.cityId)
+  const zoneId = form.watch(names.zoneId)
+
+  return (
+    <div className="space-y-3">
+      <SectionLabel>{title}</SectionLabel>
+      <div className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2">
+        <FormField
+          control={form.control}
+          name={names.cityId}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>City</FormLabel>
+              <FormControl>
+                <ReferenceCombobox
+                  source="cities"
+                  placeholder="Search cities"
+                  value={field.value}
+                  onChange={(next) => {
+                    field.onChange(next)
+                    form.setValue(names.zoneId, "", { shouldDirty: true })
+                    form.setValue(names.areaId, "", { shouldDirty: true })
+                  }}
+                  disabled={disabled}
+                  invalid={Boolean(errors[names.cityId])}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={names.zoneId}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Zone</FormLabel>
+              <FormControl>
+                <ReferenceCombobox
+                  source="city-zones"
+                  placeholder="Search zones in this city"
+                  value={field.value}
+                  onChange={(next) => {
+                    field.onChange(next)
+                    form.setValue(names.areaId, "", { shouldDirty: true })
+                  }}
+                  dependsOn={cityId}
+                  disabled={disabled}
+                  invalid={Boolean(errors[names.zoneId])}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={names.areaId}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Area</FormLabel>
+              <FormControl>
+                <ReferenceCombobox
+                  source="zone-areas"
+                  placeholder="Search areas in this zone"
+                  value={field.value}
+                  onChange={field.onChange}
+                  dependsOn={zoneId}
+                  disabled={disabled}
+                  invalid={Boolean(errors[names.areaId])}
+                />
+              </FormControl>
+              <FormDescription>Optional</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={names.addressLine}
+          render={({ field }) => (
+            <FormItem className="sm:col-span-2">
+              <FormLabel>Street address</FormLabel>
+              <FormControl>
+                <Input placeholder="House, building, road" disabled={disabled} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+
 /** Blank item rows are dropped: the dialog starts with none and adds on demand. */
 function toCreateBody(values: CreateParcelValues): CreateParcelBody {
   return {
@@ -772,8 +878,8 @@ function toCreateBody(values: CreateParcelValues): CreateParcelBody {
     senderCustomerId: values.senderCustomerId.trim(),
     originHubId: values.originHubId.trim(),
     destinationHubId: values.destinationHubId.trim(),
-    originZoneId: values.originZoneId.trim(),
-    destinationZoneId: values.destinationZoneId.trim(),
+    pickupAddress: toAddress(values, "pickup"),
+    deliveryAddress: toAddress(values, "delivery"),
     weight: Number(values.weight),
     length: optionalNumber(values.length),
     width: optionalNumber(values.width),
@@ -789,6 +895,16 @@ function toCreateBody(values: CreateParcelValues): CreateParcelBody {
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
       })),
+  }
+}
+
+function toAddress(values: CreateParcelValues, prefix: "pickup" | "delivery") {
+  const areaId = values[`${prefix}AreaId`].trim()
+  return {
+    cityId: values[`${prefix}CityId`].trim(),
+    zoneId: values[`${prefix}ZoneId`].trim(),
+    ...(areaId.length > 0 ? { areaId } : {}),
+    addressLine: values[`${prefix}AddressLine`].trim(),
   }
 }
 
