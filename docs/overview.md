@@ -59,6 +59,13 @@ than deleted. The last active `ADMIN` cannot be suspended.
 
 Hub-scoped staff are linked via **`user_hubs`** (many hubs per user). Branch scope still uses `users.branch_id`.
 
+Roles and their grants are managed from the admin **Roles** screen (`/roles`, `roles.view` /
+`roles.manage`): a role is created with a name and description, then given a set of permission
+keys in the permission matrix. Saving replaces the whole key set. The API refuses a save that
+would strip `users.manage` from every role that grants it — the last administrator who can undo
+the change cannot be locked out by the screen that exists to change it. The catalog itself is
+never edited at runtime: a role can only hold the keys the code defines and the screen renders.
+
 ### Rider (`apps/riders`)
 
 Same password login as staff. Each rider has `riders.user_id` → `users` and the `RIDER` role. A user **may** also hold admin roles (e.g. rider + hub operator) — allowed.

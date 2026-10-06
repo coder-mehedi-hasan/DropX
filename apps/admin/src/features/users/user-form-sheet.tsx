@@ -20,7 +20,7 @@ import { ReferenceCombobox } from "@/components/reference-combobox"
 import {
   createUser,
   listHubsForPicker,
-  listRolesForPicker,
+  listRoles,
   resetUserPassword,
   updateUser,
 } from "@/lib/endpoints"
@@ -82,7 +82,7 @@ export function UserFormSheet({
 function useAssignmentOptions() {
   const roles = useQuery({
     queryKey: ["roles", "assignment-picker"],
-    queryFn: () => listRolesForPicker({ page: 1, limit: 100 }),
+    queryFn: () => listRoles({ page: 1, limit: 100, sortBy: "name", sort: "asc", search: "" }),
     staleTime: 5 * 60_000,
   })
   const hubs = useQuery({

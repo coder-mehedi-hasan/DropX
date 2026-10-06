@@ -873,6 +873,11 @@ cases.push(
     run: () => roles.selectRoles(pool, { ...listParams, sortBy }, {}),
   })),
   { name: "roles.selectRole", run: () => roles.selectRole(pool, "1") },
+  { name: "roles.selectRolePermissions", run: () => roles.selectRolePermissions(pool, "1") },
+  {
+    name: "roles.countActiveHoldersExcludingRole",
+    run: () => roles.countActiveHoldersExcludingRole(pool, "users.manage", "1"),
+  },
 )
 
 let failures = 0

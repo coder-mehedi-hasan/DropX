@@ -236,6 +236,25 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
       const page = await roles.listRoles(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
+
+    read: async (c) => {
+      const role = await roles.getRole(c, c.req.valid("param").id)
+      return c.json(response.success(role))
+    },
+
+    create: async (c) => {
+      const role = await roles.createRole(c, c.req.valid("json"))
+      return c.json(response.success(role), 201)
+    },
+
+    replacePermissions: async (c) => {
+      const role = await roles.replaceRolePermissions(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(role))
+    },
   },
 
   bootstrap: {
