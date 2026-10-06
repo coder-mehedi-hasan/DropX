@@ -239,12 +239,9 @@ type CreateParcelRecord = {
   receiverName: string
   receiverPhone: string
   receiverSecondaryPhone?: string | undefined
-  receiverAddress?: string | undefined
   originHubId: string
   destinationHubId: string
   currentHubId: string | null
-  /** Nullable: the pre-migration pricing anchor, not written by new bookings. */
-  destinationZoneId: string | null
   weight: number
   length?: number | undefined
   width?: number | undefined
@@ -274,11 +271,9 @@ export async function insertParcel(
   push("receiver_name", record.receiverName)
   push("receiver_phone", record.receiverPhone)
   push("receiver_secondary_phone", record.receiverSecondaryPhone)
-  push("receiver_address", record.receiverAddress)
   push("origin_hub_id", record.originHubId)
   push("destination_hub_id", record.destinationHubId)
   push("current_hub_id", record.currentHubId)
-  push("destination_zone_id", record.destinationZoneId)
   push("weight", record.weight)
   push("length", record.length)
   push("width", record.width)
@@ -382,25 +377,23 @@ export async function listParcelAddresses(
     [parcelId],
   )
 
-  return rows.map(
-    (row): ParcelAddress => ({
-      id: String(row.id),
-      parcelId: String(row.parcel_id),
-      type: row.type as ParcelAddressType,
-      cityId: String(row.city_id),
-      zoneId: String(row.zone_id),
-      areaId: toNullableId(row.area_id),
-      cityName: row.city_name,
-      zoneName: row.zone_name,
-      areaName: toStringOrNull(row.area_name),
-      addressLine: row.address_line,
-      landmark: toStringOrNull(row.landmark),
-      latitude: row.latitude === null ? null : Number(row.latitude),
-      longitude: row.longitude === null ? null : Number(row.longitude),
-      createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
-      updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
-    }),
-  )
+  return rows.map((row): ParcelAddress => ({
+    id: String(row.id),
+    parcelId: String(row.parcel_id),
+    type: row.type as ParcelAddressType,
+    cityId: String(row.city_id),
+    zoneId: String(row.zone_id),
+    areaId: toNullableId(row.area_id),
+    cityName: row.city_name,
+    zoneName: row.zone_name,
+    areaName: toStringOrNull(row.area_name),
+    addressLine: row.address_line,
+    landmark: toStringOrNull(row.landmark),
+    latitude: row.latitude === null ? null : Number(row.latitude),
+    longitude: row.longitude === null ? null : Number(row.longitude),
+    createdAt: toUtcDate(row.created_at as string | Date).toISOString(),
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
+  }))
 }
 
 /**

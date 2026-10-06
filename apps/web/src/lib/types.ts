@@ -157,8 +157,9 @@ export type CreateParcelItemInput = {
  * `createOwnParcelSchema`: the staff create input minus `senderCustomerId`,
  * which the API stamps from the session.
  *
- * Addresses are the booking cascade's picks: the API resolves ids to name
- * snapshots and derives `receiverAddress` from the delivery line.
+ * Both address ends are the booking cascade's picks — they are stored structered
+ * on `parcel_addresses`; the legacy `receiver_address`/`destination_zone_id`
+ * columns on `parcels` are no longer written.
  */
 export type CreateParcelRequest = {
   /** The receiver is not required to have a DropX account. */

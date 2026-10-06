@@ -809,23 +809,52 @@ export type DeliveryProof = EntityBase &
  * moves it in the same transaction — so a screen that shows one of them as "the"
  * status is misleading.
  */
+/**
+ * One end of the parcel a job moves, read from `parcel_addresses`.
+ *
+ * Every field is nullable because a job on a parcel booked before the
+ * structured-address migration has no row to read: the flat `delivery.address`
+ * snapshot is then the only address there is. Field names mirror the
+ * `parcel_addresses` columns so this projection stays a rename.
+ */
+export type JobAddress = {
+  addressLine: Nullable<string>
+  areaName: Nullable<string>
+  zoneName: Nullable<string>
+  cityName: Nullable<string>
+  landmark: Nullable<string>
+}
+
 export type Job = {
   /**
    * The rider's leg of the work. Spelled out rather than picked from `Delivery`,
    * because the projection renames `deliveryAddress` to `address` — the parcel is
-   * the thing being delivered, so the address is the address.
+   * the thing being delivered, so the address is the address. `address` is the
+   * snapshot dispatch planned against and is always present; the structured
+   * fields below back it with the area/city/landmark the rider reads at the door
+   * and are null on parcels that predate the migration.
    */
   delivery: {
     id: Id
     attemptNo: number
     status: DeliveryStatus
     address: string
+    addressLine: Nullable<string>
+    areaName: Nullable<string>
+    zoneName: Nullable<string>
+    cityName: Nullable<string>
+    landmark: Nullable<string>
     failureReason: Nullable<string>
     recipientName: Nullable<string>
     recipientPhone: Nullable<string>
     outForDeliveryAt: Nullable<string>
     deliveredAt: Nullable<string>
   }
+  /**
+   * The structured pickup address, present for return or failed-delivery work
+   * when the parcel was booked structured.
+   */
+  pickup: JobAddress
   /**
    * A narrow slice of the parcel projection, so a rider job carries no hub, zone
    * or customer id that a rider has no use for on the road.

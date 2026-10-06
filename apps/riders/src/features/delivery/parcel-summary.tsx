@@ -31,6 +31,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+function areaChain(address: {
+  areaName?: string | null
+  zoneName?: string | null
+  cityName?: string | null
+}): string {
+  return [address.areaName, address.zoneName, address.cityName].filter(Boolean).join(" · ")
+}
+
 /**
  * The job a rider is holding: the parcel the customer is tracking, the attempt
  * they are acting on, and the drop those two legs share.
@@ -94,8 +102,18 @@ export function ParcelSummary({ job }: { job: JobDetail }) {
           </p>
           <p className="flex items-start gap-2 text-sm">
             <MapPin className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
-            <span className="min-w-0 break-words">{job.delivery.address}</span>
+            <span className="min-w-0 break-words">
+              {job.delivery.addressLine ?? job.delivery.address}
+            </span>
           </p>
+          {areaChain(job.delivery) ? (
+            <p className="text-muted-foreground pl-6 text-sm">{areaChain(job.delivery)}</p>
+          ) : null}
+          {job.delivery.landmark ? (
+            <p className="text-muted-foreground pl-6 text-sm break-words">
+              Landmark — {job.delivery.landmark}
+            </p>
+          ) : null}
           {job.delivery.recipientPhone ? (
             <Button asChild variant="outline" size="lg" className="tap-target w-full">
               <a href={`tel:${job.delivery.recipientPhone}`}>
@@ -106,6 +124,29 @@ export function ParcelSummary({ job }: { job: JobDetail }) {
           ) : null}
         </CardContent>
       </Card>
+
+      {job.pickup.addressLine ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Where to pick up</CardTitle>
+            <CardDescription>For returns or a parcel that comes back.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-1">
+            <p className="flex items-start gap-2 text-sm">
+              <MapPin className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 break-words">{job.pickup.addressLine}</span>
+            </p>
+            {areaChain(job.pickup) ? (
+              <p className="text-muted-foreground pl-6 text-sm">{areaChain(job.pickup)}</p>
+            ) : null}
+            {job.pickup.landmark ? (
+              <p className="text-muted-foreground pl-6 text-sm break-words">
+                Landmark — {job.pickup.landmark}
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

@@ -50,18 +50,37 @@ export type UpdateJobStatusInput = z.infer<typeof updateJobStatusSchema>
 
 // --- Response bodies -------------------------------------------------------
 
+/**
+ * One end of the parcel a job moves. Nullable: a parcel booked before the
+ * structured-address migration has no `parcel_addresses` row, and the flat
+ * `delivery.address` snapshot is the only address there is.
+ */
+export const jobAddressResponseSchema = z.object({
+  addressLine: z.string().nullable(),
+  areaName: z.string().nullable(),
+  zoneName: z.string().nullable(),
+  cityName: z.string().nullable(),
+  landmark: z.string().nullable(),
+})
+
 export const jobResponseSchema = z.object({
   delivery: z.object({
     id: z.string(),
     attemptNo: z.number(),
     status: z.enum(DELIVERY_STATUSES),
     address: z.string(),
+    addressLine: z.string().nullable(),
+    areaName: z.string().nullable(),
+    zoneName: z.string().nullable(),
+    cityName: z.string().nullable(),
+    landmark: z.string().nullable(),
     failureReason: z.string().nullable(),
     recipientName: z.string().nullable(),
     recipientPhone: z.string().nullable(),
     outForDeliveryAt: z.iso.datetime().nullable(),
     deliveredAt: z.iso.datetime().nullable(),
   }),
+  pickup: jobAddressResponseSchema,
   parcel: z.object({
     id: z.string(),
     trackingNumber: z.string(),

@@ -193,16 +193,15 @@ export async function createParcel(
         ...(input.receiverSecondaryPhone
           ? { receiverSecondaryPhone: input.receiverSecondaryPhone }
           : {}),
-        // The snapshot column a legacy screen still reads, derived from the
-        // structured address rather than sent by the client.
-        receiverAddress: input.deliveryAddress.addressLine,
+        /* The legacy `receiver_address` and `destination_zone_id` columns are no
+         * longer written: their foreign key points at the old flat `zones` table,
+         * and the lane that priced this parcel lives on `parcel_addresses`. Rows
+         * fall back to the column default NULL — historical parcels that
+         * predate the migration keep their values for the reads that still use
+         * them until those reads are removed. */
         originHubId: input.originHubId,
         destinationHubId: input.destinationHubId,
         currentHubId: input.originHubId,
-        // Left NULL: this column's foreign key points at the old flat `zones`
-        // table, and a `service_zones` id does not belong there. The lane that
-        // priced the parcel lives on `parcel_addresses`.
-        destinationZoneId: null,
         weight: input.weight,
         length: input.length,
         width: input.width,

@@ -16,6 +16,16 @@ type JobRow = {
   attempt_no: number
   delivery_status: DeliveryStatus
   delivery_address: string
+  deli_address_line: string | null
+  deli_area_name: string | null
+  deli_zone_name: string | null
+  deli_city_name: string | null
+  deli_landmark: string | null
+  pick_address_line: string | null
+  pick_area_name: string | null
+  pick_zone_name: string | null
+  pick_city_name: string | null
+  pick_landmark: string | null
   failure_reason: string | null
   recipient_name: string | null
   recipient_phone: string | null
@@ -30,12 +40,28 @@ type JobRow = {
   created_at: string
 }
 
+/*
+ * The two structured address ends ride along from `parcel_addresses`, joined by
+ * type so each end resolves to its own row (`uq_parcel_addresses_parcel_type`
+ * guarantees at most one per type). A parcel booked before the migration has no
+ * row, so the joins are LEFT and the structured fields decode to null — the
+ * flat `d.delivery_address` snapshot remains the always-present fallback.
+ */
 const JOB_COLUMNS = `
   d.id AS delivery_id, d.attempt_no, d.status AS delivery_status, d.delivery_address,
+  da.address_line AS deli_address_line, da.area_name AS deli_area_name,
+  da.zone_name AS deli_zone_name, da.city_name AS deli_city_name, da.landmark AS deli_landmark,
+  pa.address_line AS pick_address_line, pa.area_name AS pick_area_name,
+  pa.zone_name AS pick_zone_name, pa.city_name AS pick_city_name, pa.landmark AS pick_landmark,
   d.failure_reason, d.recipient_name, d.recipient_phone,
   d.out_for_delivery_at, d.delivered_at,
   p.id AS parcel_id, p.tracking_number, p.status AS parcel_status, p.weight,
   p.cod_amount, p.payment_type, p.created_at
+`
+
+const JOB_JOINS = `
+  LEFT JOIN parcel_addresses AS da ON da.parcel_id = p.id AND da.type = 'DELIVERY'
+  LEFT JOIN parcel_addresses AS pa ON pa.parcel_id = p.id AND pa.type = 'PICKUP'
 `
 
 function escapeLike(value: string): string {
@@ -54,11 +80,23 @@ export function decodeJob(row: unknown): Job {
       attemptNo: r.attempt_no,
       status: r.delivery_status,
       address: r.delivery_address,
+      addressLine: toStringOrNull(r.deli_address_line),
+      areaName: toStringOrNull(r.deli_area_name),
+      zoneName: toStringOrNull(r.deli_zone_name),
+      cityName: toStringOrNull(r.deli_city_name),
+      landmark: toStringOrNull(r.deli_landmark),
       failureReason: toStringOrNull(r.failure_reason),
       recipientName: toStringOrNull(r.recipient_name),
       recipientPhone: toStringOrNull(r.recipient_phone),
       outForDeliveryAt: toDate(r.out_for_delivery_at)?.toISOString() ?? null,
       deliveredAt: toDate(r.delivered_at)?.toISOString() ?? null,
+    },
+    pickup: {
+      addressLine: toStringOrNull(r.pick_address_line),
+      areaName: toStringOrNull(r.pick_area_name),
+      zoneName: toStringOrNull(r.pick_zone_name),
+      cityName: toStringOrNull(r.pick_city_name),
+      landmark: toStringOrNull(r.pick_landmark),
     },
     parcel: {
       id: String(r.parcel_id),
@@ -118,7 +156,7 @@ export async function listJobsForRider(
   const whereParams = clauses.flatMap((c) => c.params)
 
   const countSql = `SELECT COUNT(*) AS count FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""}`
-  const pageSql = `SELECT ${JOB_COLUMNS} FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${where ? " " + where : ""} ORDER BY d.attempt_no DESC, d.id DESC LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${JOB_COLUMNS} FROM deliveries AS d INNER JOIN parcels AS p ON p.id = d.parcel_id${JOB_JOINS}${where ? " " + where : ""} ORDER BY d.attempt_no DESC, d.id DESC LIMIT ? OFFSET ?`
 
   return pageJobRows(
     db,
@@ -136,7 +174,7 @@ export async function findJobForRider(
   parcelId: string,
 ): Promise<Job | null> {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT ${JOB_COLUMNS} FROM deliveries AS d JOIN parcels AS p ON p.id = d.parcel_id WHERE d.rider_id = ? AND d.parcel_id = ? ORDER BY d.attempt_no DESC LIMIT 1`,
+    `SELECT ${JOB_COLUMNS} FROM deliveries AS d JOIN parcels AS p ON p.id = d.parcel_id${JOB_JOINS} WHERE d.rider_id = ? AND d.parcel_id = ? ORDER BY d.attempt_no DESC LIMIT 1`,
     [riderId, parcelId],
   )
   return rows[0] ? decodeJob(rows[0] as JobRow) : null

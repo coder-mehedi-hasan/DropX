@@ -39,9 +39,22 @@ export function JobCard({ job }: { job: Job }) {
               <p className="truncate text-base font-semibold">
                 {job.delivery.recipientName ?? "No recipient name on file"}
               </p>
+              {/*
+                The structured address line is the primary drop; the dispatch
+                snapshot is the fallback for parcels booked before the structured
+                migration. Area and city ride beneath so a rider can read the
+                drop at a glance without opening the job.
+              */}
               <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">
-                {job.delivery.address}
+                {job.delivery.addressLine ?? job.delivery.address}
               </p>
+              {job.delivery.areaName || job.delivery.cityName ? (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {[job.delivery.areaName, job.delivery.zoneName, job.delivery.cityName]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
             </div>
             <ChevronRight className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden />
           </div>
