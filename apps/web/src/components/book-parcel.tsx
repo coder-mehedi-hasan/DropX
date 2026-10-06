@@ -143,7 +143,9 @@ const bookParcelSchema = z
       .trim()
       .max(30)
       .refine((value) => value === "" || value.length >= 6, "Enter a valid phone number"),
-    receiverAddress: z.string().trim().min(1, "Receiver address is required").max(300),
+    receiverCity: z.string().trim().min(1, "Select or enter a city").max(100),
+    receiverArea: z.string().trim().max(100, "Area is too long"),
+    receiverAddress: z.string().trim().min(1, "Enter the house, building or flat details").max(300),
     originHubId: z.string().trim().min(1, "Pick the hub we collect from"),
     destinationHubId: z.string().trim().min(1, "Pick the hub we deliver from"),
     originZoneId: z.string().trim().min(1, "Pick the origin zone"),
@@ -205,8 +207,16 @@ const PAYMENT_TYPE_OPTIONS = {
 >
 
 const STEP_FIELDS = [
-  ["receiverName", "receiverPhone", "receiverSecondaryPhone", "receiverAddress"],
-  ["originHubId", "destinationHubId", "originZoneId", "destinationZoneId"],
+  [
+    "receiverName",
+    "receiverPhone",
+    "receiverSecondaryPhone",
+    "receiverCity",
+    "receiverArea",
+    "receiverAddress",
+    "destinationZoneId",
+  ],
+  ["originHubId", "destinationHubId", "originZoneId"],
   ["parcelType", "weight", "length", "width", "height"],
   ["paymentType", "codAmount", "items"],
 ] as const
@@ -216,6 +226,15 @@ const EMPTY_ITEM = { name: "", description: "", quantity: "1", unitPrice: "0" } 
 /** A dimension the sender left blank is absent from the body, not zero. */
 function toMeasurement(value: string): number | undefined {
   return value === "" ? undefined : Number(value)
+}
+
+function formatDeliveryAddress(
+  values: Pick<BookParcelValues, "receiverAddress" | "receiverArea" | "receiverCity">,
+): string {
+  return [values.receiverAddress, values.receiverArea, values.receiverCity]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ")
 }
 
 /** The one place that converts validated text into the API's numeric fields. */
@@ -230,7 +249,7 @@ function toCreateRequest(values: BookParcelValues): CreateParcelRequest {
     ...(values.receiverSecondaryPhone
       ? { receiverSecondaryPhone: values.receiverSecondaryPhone }
       : {}),
-    receiverAddress: values.receiverAddress,
+    receiverAddress: formatDeliveryAddress(values),
     originHubId: values.originHubId,
     destinationHubId: values.destinationHubId,
     originZoneId: values.originZoneId,
@@ -262,6 +281,8 @@ export function BookParcel() {
       receiverName: "",
       receiverPhone: "",
       receiverSecondaryPhone: "",
+      receiverCity: "",
+      receiverArea: "",
       receiverAddress: "",
       originHubId: "",
       destinationHubId: "",
@@ -350,7 +371,8 @@ export function BookParcel() {
       description: (
         <span className="grid gap-1.5">
           <span>
-            Sending to {values.receiverName} ({values.receiverPhone}), at {values.receiverAddress}.
+            Sending to {values.receiverName} ({values.receiverPhone}), at{" "}
+            {formatDeliveryAddress(values)}.
           </span>
           {quoted ? <span>Estimated fee {formatMoney(quoted.total, quoted.currency)}.</span> : null}
           {codOnDelivery ? <span>Collected on delivery: {codOnDelivery}.</span> : null}
@@ -540,27 +562,104 @@ export function BookParcel() {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="receiverAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Delivery address</FormLabel>
-                          <FormDescription>
-                            Where the rider hands the parcel over. Include the area, landmark and
-                            house details.
-                          </FormDescription>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              rows={3}
-                              placeholder="House 12, Road 7, Dhanmondi, Dhaka"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="rounded-2xl bg-[#F6F8FB] p-4 sm:p-5">
+                      <div className="mb-5 flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FFF0EB] text-[#E64D00]">
+                          <MapPinIcon className="size-5" aria-hidden />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-[#1A1D24]">Delivery address</p>
+                          <p className="text-muted-foreground text-xs">
+                            Tell the rider exactly where to go
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-5">
+                        <FormField
+                          control={form.control}
+                          name="receiverCity"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="e.g. Dhaka"
+                                  autoComplete="address-level2"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="destinationZoneId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Selected zone</FormLabel>
+                              <ReferenceSelect
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                options={zoneOptions}
+                                source="zones"
+                                placeholder="Select a zone under your city"
+                              />
+                              <FormDescription>
+                                The delivery fee is calculated from this zone.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="receiverArea"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Select area{" "}
+                                <span className="text-muted-foreground font-normal">
+                                  (optional)
+                                </span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="e.g. Dhanmondi, Nikunja 2"
+                                  autoComplete="address-level3"
+                                  className="rounded-full bg-white px-5"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="receiverAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Address line</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  rows={3}
+                                  placeholder="House / Building / Flat number, road and landmark"
+                                  className="bg-white"
+                                  autoComplete="street-address"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               ) : null}
@@ -628,27 +727,6 @@ export function BookParcel() {
                             source="zones"
                             placeholder="Pick the origin zone"
                           />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="destinationZoneId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Destination zone</FormLabel>
-                          <ReferenceSelect
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            options={zoneOptions}
-                            source="zones"
-                            placeholder="Pick the destination zone"
-                          />
-                          <FormDescription>
-                            The delivery fee is calculated from this zone.
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1067,15 +1145,15 @@ export function BookParcel() {
                   </Button>
                 ) : null}
                 {step < STEPS.length ? (
-      <Button
-        type="button"
-        onClick={() => void goNext()}
-        className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
-        disabled={step > 1 && !referenceDataReady}
-      >
-        Continue
-        <ArrowRightIcon aria-hidden />
-      </Button>
+                  <Button
+                    type="button"
+                    onClick={() => void goNext()}
+                    className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
+                    disabled={step > 1 && !referenceDataReady}
+                  >
+                    Continue
+                    <ArrowRightIcon aria-hidden />
+                  </Button>
                 ) : (
                   <LoadingButton
                     type="submit"
