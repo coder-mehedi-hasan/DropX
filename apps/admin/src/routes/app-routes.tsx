@@ -12,6 +12,7 @@ import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
 import { routesSearchSchema } from "./routes-search-params"
 import { ridersSearchSchema } from "./riders-search-params"
 import { usersSearchSchema } from "./users-search-params"
+import { rolesSearchSchema } from "./roles-search-params"
 import { riderLocationsSearchSchema } from "./rider-locations-search-params"
 import { riderApplicationsSearchSchema } from "./rider-applications-search-params"
 import { pickupsSearchSchema } from "./pickups-search-params"
@@ -72,6 +73,10 @@ const RidersListPage = lazyRouteComponent(
 const UsersListPage = lazyRouteComponent(
   () => import("@/features/users/users-list-page"),
   "UsersListPage",
+)
+const RolesListPage = lazyRouteComponent(
+  () => import("@/features/roles/roles-list-page"),
+  "RolesListPage",
 )
 const RiderLocationsListPage = lazyRouteComponent(
   () => import("@/features/riders/rider-locations-list-page"),
@@ -160,6 +165,13 @@ export const usersRoute = createRoute({
   path: "/users",
   validateSearch: usersSearchSchema,
   component: UsersListPageRoute,
+})
+
+export const rolesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/roles",
+  validateSearch: rolesSearchSchema,
+  component: RolesListPageRoute,
 })
 
 export const zonesRoute = createRoute({
@@ -294,6 +306,15 @@ function UsersListPageRoute() {
   return (
     <RequirePermission permission="users.view">
       <UsersListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function RolesListPageRoute() {
+  const search = rolesRoute.useSearch()
+  return (
+    <RequirePermission permission="roles.view">
+      <RolesListPage search={search} />
     </RequirePermission>
   )
 }

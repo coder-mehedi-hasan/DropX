@@ -12,6 +12,7 @@ import {
   PackageCheck,
   PackageSearch,
   Route,
+  ShieldCheck,
   Truck,
   Users,
   Warehouse,
@@ -34,6 +35,8 @@ import { DEFAULT_RIDERS_SEARCH_PARAMS } from "@/routes/riders-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import { DEFAULT_USERS_SEARCH_PARAMS } from "@/routes/users-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
+import { DEFAULT_ROLES_SEARCH_PARAMS } from "@/routes/roles-search-params"
+import type { RolesSearch } from "@/routes/roles-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import { DEFAULT_RIDER_APPLICATIONS_SEARCH } from "@/routes/rider-applications-search-params"
@@ -56,6 +59,7 @@ export type NavItem = {
     | "/branches"
     | "/hubs"
     | "/users"
+    | "/roles"
     | "/zones"
     | "/vehicles"
     | "/pricing-rules"
@@ -72,6 +76,7 @@ export type NavItem = {
     | BranchesSearch
     | HubsSearch
     | UsersSearch
+    | RolesSearch
     | ZonesSearch
     | VehiclesSearch
     | PricingRulesSearch
@@ -121,6 +126,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_USERS_SEARCH_PARAMS,
     icon: Users,
     permission: "users.view",
+  },
+  // Right after Users: the roles those users hold, and the permission grid that
+  // decides what each role is for. Account and role are one screen pair in the
+  // RBAC doc, so they sit next to each other here.
+  {
+    label: "Roles",
+    to: "/roles",
+    search: DEFAULT_ROLES_SEARCH_PARAMS,
+    icon: ShieldCheck,
+    permission: "roles.view",
   },
   {
     label: "Zones",

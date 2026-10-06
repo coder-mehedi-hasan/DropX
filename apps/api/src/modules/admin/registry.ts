@@ -100,7 +100,11 @@ import {
   userResponseSchema as userResponse,
 } from "../users/users.dto"
 import {
+  createRoleSchema as createRoleBody,
   listRolesQuerySchema as listRolesQuery,
+  replacePermissionsSchema as replacePermissionsBody,
+  roleIdParamSchema as roleIdParam,
+  roleDetailResponseSchema as roleDetailResponse,
   roleResponseSchema as roleResponse,
 } from "../roles/roles.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
@@ -826,16 +830,16 @@ export const ADMIN_SURFACE = defineSurface({
     },
 
     /**
-     * Roles. Batch 1 ships the list read only — it is what makes the user
-     * form's role picker more than a hard-coded guess — and Batch 2 extends
-     * this same feature with `read`, `create` and `replacePermissions` for the
-     * permission matrix, so there is one tag, one module and one policy
+     * Roles, and the permission matrix built on them: Batch 1's list read is
+     * what makes the user form's role picker more than a hard-coded guess;
+     * Batch 2 adds `read`, `create` and `replacePermissions` for the screen
+     * that edits a role's key set — one tag, one module, one policy
      * declaration for the whole RBAC surface.
      */
     roles: {
       tag: "roles",
       tagDescription:
-        "Roles and the permission keys they grant — what a staff account is allowed to do. Management of the set lands with the permission matrix in Batch 2.",
+        "Roles and the permission keys they grant — what a staff account is allowed to do.",
       operations: {
         list: {
           method: "GET",
@@ -845,6 +849,51 @@ export const ADMIN_SURFACE = defineSurface({
           successDescription: "A page of roles.",
           query: listRolesQuery,
           listNodes: roleResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/roles/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_VIEW] },
+          summary: "Read a role's permissions",
+          successDescription:
+            "The role, with every static permission key and whether it is granted.",
+          description:
+            "One row per key in the static catalog, so the permission matrix renders from a single response rather than a detail read stitched to a separate grants read.",
+          params: roleIdParam,
+          paramDescriptions: { id: "Role id." },
+          response: roleDetailResponse,
+          errors: { 404: "No such role." },
+        },
+        create: {
+          method: "POST",
+          path: "/roles",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_MANAGE] },
+          summary: "Create a role",
+          successDescription: "Created.",
+          description:
+            "Creates the role empty; granting its keys is `PUT /roles/:id/permissions`' job, so the response is the plain projection rather than a detail full of ungranted keys.",
+          body: createRoleBody,
+          response: roleResponse,
+          successStatus: 201,
+          errors: { 409: "A role with that name already exists." },
+        },
+        replacePermissions: {
+          method: "PUT",
+          path: "/roles/:id/permissions",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_MANAGE] },
+          summary: "Replace a role's permissions",
+          successDescription: "The role with its new key set.",
+          description:
+            "The whole set, replaced — add and remove in one body beats two operations that race each other, the same shape `PUT /transfers/:id/parcels` uses. Rejected when it would leave no active account able to manage users: the screen that can undo this change must never be locked by this change.",
+          params: roleIdParam,
+          paramDescriptions: { id: "Role id." },
+          body: replacePermissionsBody,
+          response: roleDetailResponse,
+          errors: {
+            404: "No such role.",
+            409: "This is the last role granting users.manage, and no other role reaches it.",
+            422: "A named permission key does not exist in the static catalog.",
+          },
         },
       },
     },

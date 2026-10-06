@@ -19,6 +19,8 @@ import {
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import { DEFAULT_USERS_SEARCH_PARAMS, usersSearchSchema } from "@/routes/users-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
+import { DEFAULT_ROLES_SEARCH_PARAMS, rolesSearchSchema } from "@/routes/roles-search-params"
+import type { RolesSearch } from "@/routes/roles-search-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
@@ -70,6 +72,7 @@ export type AdminDestination =
   | { to: "/branches"; search: BranchesSearch }
   | { to: "/hubs"; search: HubsSearch }
   | { to: "/users"; search: UsersSearch }
+  | { to: "/roles"; search: RolesSearch }
   | { to: "/zones"; search: ZonesSearch }
   | { to: "/vehicles"; search: VehiclesSearch }
   | { to: "/pricing-rules"; search: PricingRulesSearch }
@@ -126,6 +129,13 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
     return {
       to: "/users",
       search: resolveListSearch(usersSearchSchema, DEFAULT_USERS_SEARCH_PARAMS, url.searchParams),
+    }
+  }
+
+  if (path === "/roles") {
+    return {
+      to: "/roles",
+      search: resolveListSearch(rolesSearchSchema, DEFAULT_ROLES_SEARCH_PARAMS, url.searchParams),
     }
   }
 

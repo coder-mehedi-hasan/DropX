@@ -2,9 +2,10 @@
 
 ## Status
 
-**Batch 1 (staff users) is implemented** — 7 ops live (`admin.users.*` ×6 plus
-`admin.roles.list`, pulled forward from Batch 2 for the role picker), so 96 operations are
-registered (89 at the end of P0). Batches 2–7 below are plan only. Scope comes from
+**Batches 1–2 (staff users + roles/permission matrix) are implemented** — 10 ops live
+(`admin.users.*` ×6 and `admin.roles.{list,read,create,replacePermissions}`), so 99 operations
+are registered in the admin registry (96 at the end of Batch 1) and 104 on the running server
+with the five hand-written fragments. Batches 3–7 below are plan only. Scope comes from
 `docs/remaining-features.md`
 Priority-1 groups (Organization & People + Money & Support): the unbuilt half of admin-plan
 Phase 1 plus Phase 4 minus `stats`.
@@ -22,14 +23,15 @@ Decisions taken before writing this plan:
 Checklist:
 
 - [x] **Batch 1 — Staff users** — 6 ops (`admin.users.{list,read,create,update,resetPassword,setStatus}`) + `admin.roles.list` pulled forward
-- [ ] **Batch 2 — Roles + permission matrix** — 4 ops (`admin.roles.{list,read,create,replacePermissions}`)
+- [x] **Batch 2 — Roles + permission matrix** — 4 ops (`admin.roles.{list,read,create,replacePermissions}`)
 - [ ] **Batch 3 — Customer management** — 3 ops (`admin.customers.{list,read,activate}`)
 - [ ] **Batch 4 — Payments & COD** — 4 ops (`admin.payments.{list,read,record,refund}`)
 - [ ] **Batch 5 — Settlements** — 4 ops (`admin.settlements.{list,read,create,setStatus}`)
 - [ ] **Batch 6 — Support tickets** — 5 ops (`admin.support.{list,read,create,assign,updateStatus}`)
 - [ ] **Batch 7 — Notifications outbox** — 2 ops (`admin.notifications.{list,retry}`) + event-bus writer
 
-**Total: 28 planned ops → ~117 registered** (89 at the end of P0; 96 after Batch 1).
+**Total: 28 planned ops → ~122 registered** (104 live today — 99 in the admin registry plus five
+hand-written fragments — against 89 at the end of P0).
 
 ## How batches are built
 
@@ -137,9 +139,47 @@ admin-plan Phase 1 gate, and it is the P1 end-gate item this batch alone satisfi
 ## Batch 2 — Roles + permission matrix (4 ops)
 
 `admin.roles.{list,read,create,replacePermissions}` — served at `/api/v1/admin/roles`.
-**`list` shipped with Batch 1** (see above): `roles.{dto,repository,service}.ts` already exist
-with the list read, the registry carries the `roles` feature and tag, and this batch extends
-them — three new ops, not four.
+**Shipped.** `list` shipped with Batch 1: `roles.{dto,repository,service}.ts` already carried the
+list read, the registry the `roles` feature and tag. This batch added `read`, `create` and
+`replacePermissions` (3 new ops; 99 registered after both batches, 104 on the server), the
+permission matrix screen, and the `users.manage` lockout guard.
+
+**Deviations from the decisions below (all intentional):**
+
+- **Guard is the global invariant, not the planned narrower one.** The plan guarded "the last
+  role whose holders include a member of the `ADMIN` role". The shipped guard fires whenever a
+  replace drops `users.manage` from a role that currently holds it and **no other role grants it
+  to any active staff** — a superset that also covers an `ADMIN` whose members hold a second,
+  manage-granting role. 409 `INVALID_STATE_TRANSITION`, thrown inside the transaction before the
+  write; verified by attempting to strip `users.manage` from `ADMIN` (the only holder) and
+  asserting the 409 writes nothing.
+- **No name/description edit.** The three-op scope has no `update`; "reuse by edit" under the
+  `create` decision was aspirational. A role's profile is set at create and only its grants
+  change afterwards. Matches the ops list — recorded so the delete line is not read as promising
+  a rename.
+- **Catalog is 44 keys, not ~48, and rider keys ride along.** `roles.read` returns all 44 with a
+  granted flag (the 4 `rider.*` keys included, always false for staff); the admin matrix renders
+  only the 40 non-rider keys. An unknown key in the PUT body is a 422 whose `details` names the
+  field.
+- **Matrix sheet reads on open.** The screen fetches `GET /roles/:id` when it opens — the list
+  carries no grants — one request per open, cached, per "renders from one request". It is
+  `FormSheetShell` + local checkbox state, not the RHF `FormSheet`, because the detail read
+  resolves after mount and a resolver-bound form would reset to empty.
+- **Picker consolidated.** Batch 1's `listRolesForPicker` became `listRoles`; the user form's role
+  checkbox group and the roles screen share one endpoint function and one query helper.
+
+**Verification.** Gates: typecheck (6 workspaces), `check:read-paths` 231/231, prettier, admin
+build, boot with 104 registered ops + OpenAPI for the three new ones, unauth 401 on
+GET/POST/PUT `/api/v1/admin/roles...`. Then the plan's gate verbatim in an authenticated smoke
+(23/23 checks): create 201 + duplicate 409 + null-safe description; read gives a 44-key catalog
+with granted flags and 404s on an unknown id; unknown-key and duplicate-key replaces are 422s;
+the lockout guard 409 writes nothing (`ADMIN` unchanged); flip `BRANCH_MANAGER` `parcels.view`
+off → the manager's **next** request 403s (`MISSING_PERMISSION`), and `roles.view`/`roles.manage`
+never existed for it, so both matrix reads and writes 403 → restore → reachable again; an empty
+key set is allowed for a role that never held `users.manage`. DB restored to pre-test state
+afterwards.
+
+Decisions (as planned):
 
 | File                                                                              | Action   |
 | --------------------------------------------------------------------------------- | -------- |
@@ -424,13 +464,13 @@ One authenticated browser session proving:
 
 ## Summary
 
-| Batch     | Features        | New API Ops | New Admin Screens | Status           |
-| --------- | --------------- | ----------- | ----------------- | ---------------- |
-| 1         | Staff users     | 6           | 2 + action        | planned          |
-| 2         | Roles + matrix  | 4           | 2                 | planned          |
-| 3         | Customers       | 3           | 2                 | planned          |
-| 4         | Payments & COD  | 4           | 2                 | planned          |
-| 5         | Settlements     | 4           | 2                 | planned          |
-| 6         | Support tickets | 5           | 3                 | planned          |
-| 7         | Notifications   | 2 + writer  | 1                 | planned          |
-| **Total** | **7 features**  | **28 ops**  | **14 screens**    | **0 of 28 done** |
+| Batch     | Features        | New API Ops | New Admin Screens | Status            |
+| --------- | --------------- | ----------- | ----------------- | ----------------- |
+| 1         | Staff users     | 6           | 2 + action        | implemented       |
+| 2         | Roles + matrix  | 4           | 2                 | implemented       |
+| 3         | Customers       | 3           | 2                 | planned           |
+| 4         | Payments & COD  | 4           | 2                 | planned           |
+| 5         | Settlements     | 4           | 2                 | planned           |
+| 6         | Support tickets | 5           | 3                 | planned           |
+| 7         | Notifications   | 2 + writer  | 1                 | planned           |
+| **Total** | **7 features**  | **28 ops**  | **14 screens**    | **10 of 28 done** |

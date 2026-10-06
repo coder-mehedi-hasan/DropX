@@ -175,15 +175,32 @@ export type StaffUser = {
 }
 
 /**
- * One role, as the user form's picker reads it. Batch 2's permission matrix
- * will read the same endpoint with its own projection; this is the row the
- * checkbox group needs and nothing more.
+ * One role, as the user form's picker and the roles list read it. The
+ * permission matrix's own projection is `RoleDetail` below — the list row
+ * carries no grants, because rendering them per row would be one query per
+ * role for a number the screen never shows.
  */
 export type RoleOption = {
   id: Id
   name: string
   description: string | null
   createdAt: string
+}
+
+/**
+ * One key of the static catalog and whether the role holds it — the matrix's
+ * render unit. `key` is a plain string rather than `PermissionKey` because the
+ * API is the source of truth for what exists: a key the client has not heard
+ * of still has to appear (and render) rather than vanish.
+ */
+export type PermissionGrant = {
+  key: string
+  granted: boolean
+}
+
+/** A role with its full grant set — `GET /admin/roles/:id`. */
+export type RoleDetail = RoleOption & {
+  permissions: PermissionGrant[]
 }
 
 /** A branch as the admin sees it. Mirrors `branchResponseSchema` in the API. */
@@ -560,6 +577,24 @@ export const resetPasswordSchema = z.object({
 export type CreateUserBody = z.infer<typeof createUserSchema>
 export type UpdateUserBody = z.infer<typeof updateUserSchema>
 export type ResetPasswordBody = z.infer<typeof resetPasswordSchema>
+
+/**
+ * Creating a role names it and nothing else — granting keys is the matrix's
+ * own PUT, so the create sheet is a two-field form rather than a stub of the
+ * permission grid. Empty description is blank-means-null on submit, like the
+ * other optional strings.
+ */
+export const createRoleSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100),
+  description: z.string().trim().max(255).nullish(),
+})
+
+export type CreateRoleBody = z.infer<typeof createRoleSchema>
+
+/** The full key set, replaced — validated and grouped by the matrix sheet. */
+export type ReplacePermissionsBody = {
+  permissionKeys: string[]
+}
 
 /**
  * `parcelId` is typed as a string the human types, then handed to the API as-is.

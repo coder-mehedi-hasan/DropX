@@ -25,6 +25,7 @@ import type {
   AssignPickupBody,
   CreatePickupBody,
   CreateRiderBody,
+  CreateRoleBody,
   CreateRouteBody,
   CreateTransferBody,
   CreateZoneBody,
@@ -40,6 +41,7 @@ import type {
   UpdatePricingRuleBody,
   ReferenceListParams,
   ResetPasswordBody,
+  RoleDetail,
   RoleOption,
   Pickup,
   Rider,
@@ -69,6 +71,7 @@ import type {
   Zone,
   ZoneOption,
   ReplaceTransferManifestBody,
+  ReplacePermissionsBody,
   CreateDeliveryBody,
   ReassignDeliveryBody,
   UpdateDeliveryStatusBody,
@@ -88,6 +91,7 @@ import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
 import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
+import type { RolesSearch } from "@/routes/roles-search-params"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -408,19 +412,26 @@ export function setUserStatus(userId: string, status: UserStatus) {
 }
 
 /**
- * Roles for the user form's checkbox group. A picker read rather than the
- * Batch 2 management screen's own list: the form asks for a page of names and
- * nothing else, and Batch 2 will extend the same operation rather than add a
- * second role endpoint.
+ * Roles, one endpoint function for both readers: the user form's picker asks
+ * for a page of names in checkbox order, the roles screen for a paged list —
+ * `rolesQuery` below covers both shapes rather than two functions drifting on
+ * one path. `getRole` is the matrix's detail read, the one carrying the grant
+ * set, and `replaceRolePermissions` is its write: the whole key set, PUT.
  */
-export function listRolesForPicker(
-  params: { page: number; limit: number; search?: string },
-  signal?: AbortSignal,
-) {
-  return api.get<Page<RoleOption>>("/admin/roles", {
-    query: params,
-    ...(signal ? { signal } : {}),
-  })
+export function listRoles(params: RolesSearch) {
+  return api.get<Page<RoleOption>>("/admin/roles", { query: rolesQuery(params) })
+}
+
+export function getRole(roleId: string, signal?: AbortSignal) {
+  return api.get<RoleDetail>(`/admin/roles/${roleId}`, signal ? { signal } : undefined)
+}
+
+export function createRole(body: CreateRoleBody) {
+  return api.post<RoleOption>("/admin/roles", body)
+}
+
+export function replaceRolePermissions(roleId: string, body: ReplacePermissionsBody) {
+  return api.put<RoleDetail>(`/admin/roles/${roleId}/permissions`, body)
 }
 
 export function listPickups(params: PickupsSearch) {
@@ -615,6 +626,16 @@ function usersQuery(params: UsersSearch) {
     ...(params.search ? { search: params.search } : {}),
     ...(params.status ? { status: params.status } : {}),
     ...(params.branchId ? { branchId: params.branchId } : {}),
+  }
+}
+
+function rolesQuery(params: RolesSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.search ? { search: params.search } : {}),
   }
 }
 
