@@ -2,11 +2,11 @@
 
 ## Status
 
-**Batches 1–3 (staff users, roles/permission matrix, customer management) are implemented** — 13 ops
-live (`admin.users.*` ×6, `admin.roles.{list,read,create,replacePermissions}`, and
-`admin.customers.{list,read,activate}`), so 102 operations are registered in the admin registry
-(99 at the end of Batch 2) and 107 on the running server with the five hand-written fragments.
-Batches 4–7 below are plan only. Scope comes from
+**Batches 1–4 (staff users, roles/permission matrix, customer management, payments & COD) are implemented** —
+17 ops live (`admin.users.*` ×6, `admin.roles.{list,read,create,replacePermissions}`,
+`admin.customers.{list,read,activate}`, and `admin.payments.{list,read,record,refund}`), so 106
+operations are registered in the admin registry (99 at the end of Batch 2) and 111 on the running
+server with the five hand-written fragments. Batches 5–7 below are plan only. Scope comes from
 `docs/remaining-features.md`
 Priority-1 groups (Organization & People + Money & Support): the unbuilt half of admin-plan
 Phase 1 plus Phase 4 minus `stats`.
@@ -26,12 +26,12 @@ Checklist:
 - [x] **Batch 1 — Staff users** — 6 ops (`admin.users.{list,read,create,update,resetPassword,setStatus}`) + `admin.roles.list` pulled forward
 - [x] **Batch 2 — Roles + permission matrix** — 4 ops (`admin.roles.{list,read,create,replacePermissions}`)
 - [x] **Batch 3 — Customer management** — 3 ops (`admin.customers.{list,read,activate}`)
-- [ ] **Batch 4 — Payments & COD** — 4 ops (`admin.payments.{list,read,record,refund}`)
+- [x] **Batch 4 — Payments & COD** — 4 ops (`admin.payments.{list,read,record,refund}`)
 - [ ] **Batch 5 — Settlements** — 4 ops (`admin.settlements.{list,read,create,setStatus}`)
 - [ ] **Batch 6 — Support tickets** — 5 ops (`admin.support.{list,read,create,assign,updateStatus}`)
 - [ ] **Batch 7 — Notifications outbox** — 2 ops (`admin.notifications.{list,retry}`) + event-bus writer
 
-**Total: 28 planned ops → ~122 registered** (107 live today — 102 in the admin registry plus five
+**Total: 28 planned ops → ~122 registered** (111 live today — 106 in the admin registry plus five
 hand-written fragments — against 89 at the end of P0).
 
 ## How batches are built
@@ -300,7 +300,7 @@ history) render without a 403 for a `BRANCH_MANAGER`.
 
 ---
 
-## Batch 4 — Payments & COD (4 ops)
+## Batch 4 — Payments & COD (4 ops) — **shipped, narrowed to cash-only**
 
 `admin.payments.{list,read,record,refund}` — served at `/api/v1/admin/payments`.
 
@@ -310,29 +310,74 @@ history) render without a 403 for a `BRANCH_MANAGER`.
 | `apps/api/src/modules/payments/payments.repository.ts`                            | **new**                                                  |
 | `apps/api/src/modules/payments/payments.service.ts`                               | **new**                                                  |
 | `packages/types/src/index.ts`                                                     | **edit** — `PAYMENT_TRANSITIONS`, `canTransitionPayment` |
+| `apps/api/src/shared/events/bus.ts`                                               | **edit** — `payment.recorded`, `payment.refunded` emits  |
 | `apps/api/src/modules/admin/registry.ts`                                          | **edit**                                                 |
 | `apps/api/src/modules/admin/handlers.ts`                                          | **edit**                                                 |
 | `apps/admin/src/features/payments/payments-list-page.tsx`                         | **new**                                                  |
 | `apps/admin/src/features/payments/payment-record-sheet.tsx`                       | **new**                                                  |
+| `apps/admin/src/features/payments/payment-refund-sheet.tsx`                       | **new**                                                  |
 | `apps/admin/src/routes/payments-search-params.ts`                                 | **new**                                                  |
 | `apps/admin/src/lib/{endpoints,types,navigation}.ts`                              | **edit**                                                 |
 | `apps/admin/src/{router.tsx,routes/app-routes.tsx,components/layout/sidebar.tsx}` | **edit**                                                 |
-| `apps/api/scripts/check-read-paths.ts`                                            | **edit**                                                 |
+| `apps/admin/src/components/reference-combobox.tsx`                                | **edit** — `parcels` picker source, COD-amount hint      |
+| `apps/api/scripts/check-read-paths.ts`                                            | **edit** — payments cases + parcels search case          |
 
-Decisions:
+### Scope
+
+Cash-only in this batch. `record` is the finance clerk's remittance of a cash COD collection and
+writes a `CASH` row straight to `PAID`; `refund` writes a `REFUND` row against the parcel's paid
+COD balance, flipping the parcel's COD rows to `REFUNDED` when the balance reaches zero. The
+`PENDING` lifecycle and every non-CASH method are deferred to the **Online payments (deferred from
+P1)** track, logged as P2 in `docs/remaining-features.md` alongside the `transaction_reference`
+schema change — `PAYMENT_TRANSITIONS` already includes `PENDING`, so the backlog is pure additive.
+
+### Decisions (as shipped)
 
 - **`record` writes the `payments` row only** — it does not move the parcel. Payment is bookkeeping
   against a parcel (`parcel_id NOT NULL`), not a lifecycle stage; `parcel_events` stay for
-  operational transitions.
+  operational transitions. No `DELIVERED` gate: a remittance can be recorded as soon as the parcel
+  is COD (`payment_type = 'COD'`), matching how the original Phase 4 spec treated booking-time COD.
 - **`refund` is a new `REFUND` row, not an edit of the original** — the original `PAID` row is the
   record of money received; a refund is a separate `type=REFUND` entry referencing the same parcel.
-  Status `REFUNDED` on the original is stamped in the same transaction so the two can never
-  disagree. Amount ≤ the refundable balance for that parcel, enforced server-side.
-- **`PAYMENT_TRANSITIONS` in `@dropx/types`** — `PENDING → PAID` (record), `PAID → REFUNDED`
-  (refund), `PENDING → FAILED`. The admin sheet offers exactly what the API enforces, mirroring
-  `PICKUP_/TRANSFER_/DELIVERY_TRANSITIONS`.
-- **Money is `DECIMAL(12,2)` on the wire as a string** — the repository returns MySQL's decimal
-  string; no `Number()` round-trips through JSON.
+  The **balance is parcel-level** — collected `COD` `PAID` minus `REFUND` `PAID` — because the
+  schema has no original-payment link. When the balance reaches zero the parcel's open COD rows are
+  stamped `REFUNDED` in the same transaction, so display and balance can never disagree.
+- **Money is `DECIMAL(12,2)`, travelling as a JSON number.** The pool's `decimalNumbers` handling
+  converts on the way out (`toDecimal`), matching `parcels.codAmount`/`deliveryFee` and the
+  `Parcel` projection. The plan's string hypothesis was dropped: a string that parses identically
+  to a number brings nothing but a second parsing path. Arithmetic is done in integer cents
+  (`toCents`/`roundMoney`) so the balance checks are exact even at 2dp boundaries.
+- **`PAYMENT_TRANSITIONS` in `@dropx/types`** — `PENDING → PAID`, `PAID → REFUNDED`,
+  `PENDING → FAILED`; `FAILED`/`REFUNDED` terminal. The shared vocabulary is the source the admin
+  UI imports for its filter and badges.
+- **Permissions are the whole guard.** Payments are company-wide (no branch/hub scope), guarded by
+  `payments.view` (reads) and `payments.manage` (record/refund). Seed grants FINANCE both;
+  BRANCH_MANAGER holds view only by default.
+- **Responses carry the parcel's `trackingNumber`** — the money rows a finance clerk recognises are
+  keyed by tracking number, not by the parcel id the base `Payment` entity exposes. It is an
+  app-local projection in `admin/src/lib/types.ts` (`PaymentListItem`), not a wire-contract change.
+- **One event per side effect, after commit** — `payment.recorded` / `payment.refunded` are emitted
+  with no listeners yet; the settlements batch (5) subscribes them.
+
+### Verification
+
+- `check:read-paths` — **252/252** (10 new payments cases). Also added a parcels **search** case
+  that passes `searchFields`: with the search clause active it caught a pre-existing bug — both
+  count and page queries ran without the `customers r` join that `PARCEL_SEARCH_COLUMNS` references,
+  so `GET /admin/parcels?search=…` 500ed for **every** caller. The `filtered` case passed before
+  because it never passed `searchFields`, so the clause was silently skipped. Fixed in
+  `parcels.repository.ts` by joining `r` in both queries (the customer-portal list had the same
+  latent bug).
+- Boot + OpenAPI — 111 operations registered, all four payment paths in `/openapi.json` with the
+  `payments` tag; `/health`, `/docs`, unauth 401 all correct.
+- Typecheck — green across all six workspaces; admin production build passes.
+- Smoke (38 assertions, all green): FINANCE records 900 on a COD parcel → `201` `CASH`/`COD`/`PAID`;
+  over-balance record → `409 INVALID_STATE_TRANSITION` with a field-scoped `amount` detail; prepaid
+  parcel → `422`; input-shape/range/precision rejects; unknown parcel/payment → `404`; list filters,
+  allowlisted sorts and junk rejection; partial refund leaves the COD row `PAID`, a zeroing refund
+  flips it `REFUNDED`, re-refund → `409`; BRANCH_MANAGER (view-only) reads but gets `403
+MISSING_PERMISSION` on both writes. Fixtures were removed after the run and the database returned
+  to its pre-batch state.
 
 **Gate:** record a COD payment against a delivered parcel, see it in the list with `PAID`, attempt
 a refund above the balance (409), then refund a valid amount and see both rows.
@@ -510,9 +555,9 @@ One authenticated browser session proving:
 | --------- | --------------- | ----------- | ----------------- | ----------------- |
 | 1         | Staff users     | 6           | 2 + action        | implemented       |
 | 2         | Roles + matrix  | 4           | 2                 | implemented       |
-| 3         | Customers       | 3           | 2                 | planned           |
-| 4         | Payments & COD  | 4           | 2                 | planned           |
+| 3         | Customers       | 3           | 2                 | implemented       |
+| 4         | Payments & COD  | 4           | 2                 | implemented       |
 | 5         | Settlements     | 4           | 2                 | planned           |
 | 6         | Support tickets | 5           | 3                 | planned           |
 | 7         | Notifications   | 2 + writer  | 1                 | planned           |
-| **Total** | **7 features**  | **28 ops**  | **14 screens**    | **10 of 28 done** |
+| **Total** | **7 features**  | **28 ops**  | **14 screens**    | **17 of 28 done** |

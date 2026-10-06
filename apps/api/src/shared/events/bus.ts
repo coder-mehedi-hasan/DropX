@@ -27,6 +27,8 @@ export type DomainEventMap = {
   "transfer.arrived": { transferId: Id; toHubId: Id }
   "delivery.assigned": { deliveryId: Id; riderId: Id; attemptNo: number }
   "customer.activated": { customerId: Id }
+  "payment.recorded": { paymentId: Id; parcelId: Id; amount: number }
+  "payment.refunded": { paymentId: Id; parcelId: Id; amount: number }
 }
 
 export type DomainEventName = keyof DomainEventMap

@@ -18,6 +18,7 @@ import * as riderApplications from "../rider-applications/rider-applications.ser
 import * as users from "../users/users.service"
 import * as roles from "../roles/roles.service"
 import * as customers from "../customers/customers.service"
+import * as payments from "../payments/payments.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -278,6 +279,33 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     activate: async (c) => {
       const customer = await customers.activateCustomer(c, c.req.valid("param").id)
       return c.json(response.success(customer))
+    },
+  },
+
+  /**
+   * Payments. Company-wide like customers, so the permission is the whole
+   * guard. `record`/`refund` are the cash-COD writes: nothing else in the
+   * method enum is reachable this batch.
+   */
+  payments: {
+    list: async (c) => {
+      const page = await payments.listPayments(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const payment = await payments.getPayment(c, c.req.valid("param").id)
+      return c.json(response.success(payment))
+    },
+
+    record: async (c) => {
+      const payment = await payments.recordPayment(c, c.req.valid("json"))
+      return c.json(response.success(payment), 201)
+    },
+
+    refund: async (c) => {
+      const payment = await payments.refundPayment(c, c.req.valid("param").id, c.req.valid("json"))
+      return c.json(response.success(payment))
     },
   },
 

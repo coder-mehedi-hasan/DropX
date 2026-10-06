@@ -101,6 +101,8 @@ function baseSql(): string {
   return `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN customers AS r ON r.id = p.receiver_customer_id LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON}`
 }
 
+const PARCEL_JOINS = ` LEFT JOIN customers AS r ON r.id = p.receiver_customer_id LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON}`
+
 async function pageOf<T>(
   db: Pool | Connection,
   sql: string,
@@ -137,13 +139,18 @@ export async function listParcels(
   // list 500s for every branch manager and hub-scoped dispatcher while working
   // perfectly for an ADMIN. `check:read-paths` now runs this query scoped for
   // exactly that reason.
-  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON}${where ? " " + where : ""}`
+  //
+  // `customers r` rides along too: the search columns reference `r.name` and
+  // `r.phone`, so leaving the join off 500s the *all* callers the moment a
+  // search is typed (ADMIN included). Same defence — `check:read-paths` runs a
+  // search case against the real schema.
+  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${PARCEL_JOINS}${where ? " " + where : ""}`
   const sortColumn = params.sortBy ? sortColumnByKey[params.sortBy] : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p${PARCEL_JOINS} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)
@@ -210,13 +217,13 @@ export async function listParcelsForCustomer(
   const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
   const whereParams = clauses.flatMap((c) => c.params)
 
-  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${where ? " " + where : ""}`
+  const countSql = `SELECT COUNT(*) AS count FROM parcels AS p${PARCEL_JOINS}${where ? " " + where : ""}`
   const sortColumn = params.sortBy ? sortColumnByKey[params.sortBy] : undefined
   const orderByClause = sortColumn
     ? `${sortColumn} ${params.sort.toUpperCase()}, p.created_at DESC, p.id DESC`
     : `p.created_at DESC, p.id DESC`
 
-  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p LEFT JOIN hubs AS scope_hub ON ${SCOPE_JOIN_ON} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
+  const pageSql = `SELECT ${SELECT_COLUMNS} FROM parcels AS p${PARCEL_JOINS} ${where} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
   const pageParams = [...whereParams, params.limit, params.offset]
 
   return pageOf(db, pageSql, pageParams, countSql, whereParams, decodeParcel)

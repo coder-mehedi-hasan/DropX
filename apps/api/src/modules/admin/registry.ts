@@ -113,6 +113,13 @@ import {
   customerWithAddressesResponseSchema as customerWithAddressesResponse,
   listCustomersQuerySchema as listCustomersQuery,
 } from "../customers/customers.dto"
+import {
+  listPaymentsQuerySchema as listPaymentsQuery,
+  paymentIdParamSchema as paymentIdParam,
+  paymentResponseSchema as paymentResponse,
+  recordPaymentSchema as recordPaymentBody,
+  refundPaymentSchema as refundPaymentBody,
+} from "../payments/payments.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
 import {
   listRiderApplicationsQuerySchema,
@@ -952,6 +959,79 @@ export const ADMIN_SURFACE = defineSurface({
           paramDescriptions: { id: "Customer id." },
           response: customerResponse,
           errors: { 404: "No such customer." },
+        },
+      },
+    },
+
+    /**
+     * Payments — money against parcels. Batch 4 is deliberately cash-only:
+     * `record` is the finance clerk's remittance of a cash COD collection and
+     * writes a CASH row straight to PAID; `refund` writes a REFUND row against
+     * the parcel's paid COD balance. Methods beyond CASH and a PENDING
+     * lifecycle belong to the online-payments P2 track. Company-wide like
+     * customers — the permission is the whole guard.
+     */
+    payments: {
+      tag: "payments",
+      tagDescription:
+        "Cash COD collections remitted to the company, and refunds against them. Cash-only in this batch; digital methods are a P2 track.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/payments",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_VIEW] },
+          summary: "List payments",
+          successDescription: "A page of payments.",
+          description:
+            "Company-wide — payments are not scoped to a branch or hub. Every row carries its parcel's tracking number.",
+          query: listPaymentsQuery,
+          listNodes: paymentResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/payments/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_VIEW] },
+          summary: "Read a payment",
+          successDescription: "The payment.",
+          description: "One payment, with its parcel's tracking number.",
+          params: paymentIdParam,
+          paramDescriptions: { id: "Payment id." },
+          response: paymentResponse,
+          errors: { 404: "No such payment." },
+        },
+        record: {
+          method: "POST",
+          path: "/payments",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_MANAGE] },
+          summary: "Record a COD remittance",
+          successDescription: "Recorded.",
+          description:
+            "The finance clerk's remittance of a cash COD collection: a CASH row written straight to PAID. Refused when the parcel does not collect on delivery, or when the amount exceeds what is still outstanding on it.",
+          body: recordPaymentBody,
+          response: paymentResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such parcel.",
+            409: "The amount exceeds the COD still outstanding on the parcel.",
+            422: "The parcel does not collect on delivery.",
+          },
+        },
+        refund: {
+          method: "POST",
+          path: "/payments/:id/refund",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.PAYMENTS_MANAGE] },
+          summary: "Refund a COD collection",
+          successDescription: "Refunded.",
+          description:
+            "Writes a REFUND row against the parcel's remaining COD balance. When the balance reaches zero the parcel's paid COD rows are stamped REFUNDED. Cash is the only method in this batch.",
+          params: paymentIdParam,
+          paramDescriptions: { id: "The COD payment being refunded." },
+          body: refundPaymentBody,
+          response: paymentResponse,
+          errors: {
+            404: "No such payment or parcel.",
+            409: "The refund exceeds the refundable balance, or the payment is not a paid COD collection.",
+          },
         },
       },
     },

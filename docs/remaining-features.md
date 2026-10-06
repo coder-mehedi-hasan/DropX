@@ -5,6 +5,7 @@ Verified against codebase. Built = has real implementation. Missing = table/key 
 ---
 
 ## Organization & People
+
 > Priority - 1
 
 - [ ] **Staff user management** — create/edit users, reset passwords, activate/deactivate, assign roles, hub scoping via `user_hubs`
@@ -12,6 +13,7 @@ Verified against codebase. Built = has real implementation. Missing = table/key 
 - [ ] **Customer management** — list, detail with addresses and parcel history, TEMP→ACTIVE activation
 
 ## Network & Pricing
+
 > Priority - 0
 
 - [x] **Zone management** — CRUD for geographic pricing areas (read-only reference endpoint exists)
@@ -20,11 +22,14 @@ Verified against codebase. Built = has real implementation. Missing = table/key 
 - [ ] **Route & stop management** — hub-to-hub routes with ordered stops, distance, ETA
 
 ## Fleet & Riders
+
 > Priority - 0
+
 - [ ] **Rider management** — rider profiles linked to users, home hub, compensation type, status
 - [ ] **Rider location tracking** — push and store live rider locations (`rider_locations` table, `rider.location.update` key — nothing built)
 
 ## Operations Execution
+
 > Priority - 0
 
 - [ ] **Pickup operations** — assign riders to pickups, pickup status tracking (table + 3 permission keys exist, zero code)
@@ -33,19 +38,34 @@ Verified against codebase. Built = has real implementation. Missing = table/key 
 - [ ] **Delivery proof submission** — rider submits signature/photo/OTP proof (`rider.proof.submit` key exists, `proof-placeholder.tsx` is a stub, no API)
 
 ## Money & Support
+
 > Priority - 1
-- [ ] **Payments & COD** — record COD remittances, refunds, payment tracking (table + 2 keys exist, zero code)
+
+- [x] **Payments & COD** — record COD remittances, refunds, payment tracking. Batch 4 shipped **cash-only** under `/admin/payments` (list/read/record/refund); digital methods and the PENDING lifecycle are deferred to the P2 group below.
 - [ ] **Settlements** — period payouts to customers, PENDING→PAID workflow (table + 2 keys exist, zero code)
 - [ ] **Support tickets** — list, assign to staff, resolve (table + 2 keys exist, zero code)
 - [ ] **Notifications** — outbox viewer with retry for SMS/email/push (table + 1 key exist, zero code; event bus emits but has no handlers)
 
+## Online payments (deferred from P1)
+
+> Priority - 2
+
+- [ ] **Digital methods on COD settlement** — `POST /admin/payments` hardcodes `CASH` today; accept BKASH/NAGAD/CARD/BANK/ONLINE.
+- [ ] **PENDING lifecycle** — nothing in batch 4 creates a `PENDING` row; add a digital path that does and advances it PAID/FAILED on gateway confirmation (`PAYMENT_TRANSITIONS`/`canTransitionPayment` in `packages/types` are declared but not yet exercised).
+- [ ] **Gateway integration** — provider adapter behind an interface, webhook-as-source-of-truth for PAID/FAILED, reconciliation of failed webhooks.
+- [ ] **Pay-at-booking for customers** — online payment in the web portal at parcel creation (`PAYMENT_KINDS` already includes `DELIVERY_FEE`).
+- [ ] **Payment reference field** — the `payments` table has no `transaction_reference`; add a schema + `migrate.sql` change (first money-table migration since Batch 4 shipped).
+
 ## Oversight
+
 > Priority - 2
 
 - [ ] **Dashboard KPIs** — replace getting-started screen with real metrics (parcels by status, COD outstanding, unsettled balance)
 - [ ] **Audit logging** — write `audit_logs` on every staff mutation (table + key exist, zero code; sidebar already claims this works)
 
 ## Cross-Cutting
+
 > Priority - 3
+
 - [ ] **Test suite** — vitest + service-level tests (zero test files in the entire repo)
 - [ ] **Browser E2E** — verify sheets, pickers, and role-based 403s in a real browser with a live database

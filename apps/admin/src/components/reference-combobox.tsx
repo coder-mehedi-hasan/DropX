@@ -19,6 +19,7 @@ import {
 import {
   listBranchesForPicker,
   listHubsForPicker,
+  listParcels,
   listRidersForPicker,
   listRoutes,
   listVehicles,
@@ -29,11 +30,13 @@ import type {
   BranchOption,
   CustomerOption,
   HubOption,
+  Parcel,
   Rider,
   Route,
   Vehicle,
   ZoneOption,
 } from "@/lib/types"
+import { formatMoney } from "@/lib/format"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 
 /**
@@ -63,13 +66,7 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
  * for the same rows.
  */
 export type PickerSource =
-  | "branches"
-  | "hubs"
-  | "zones"
-  | "customers"
-  | "riders"
-  | "vehicles"
-  | "routes"
+  "branches" | "hubs" | "zones" | "customers" | "riders" | "vehicles" | "routes" | "parcels"
 
 type Row = {
   id: string
@@ -169,6 +166,25 @@ function toRouteRows(nodes: readonly Route[]): Row[] {
   }))
 }
 
+/**
+ * `parcels` is backed by the parcels list like `riders`/`vehicles`/`routes` are:
+ * it is a first-class scoped list with its own screen, not a reference shape.
+ * The remittance picker needs it because a finance clerk recognises the money
+ * they are settling by tracking number — and the hint carries the COD amount so
+ * the clerk does not have to open the parcel to see what they are recording.
+ */
+function toParcelRows(nodes: readonly Parcel[]): Row[] {
+  return nodes.map((parcel) => ({
+    id: parcel.id,
+    label: parcel.trackingNumber,
+    hint:
+      parcel.paymentType === "COD"
+        ? `Collects ${formatMoney(parcel.codAmount)} on delivery`
+        : "Prepaid",
+    status: parcel.status,
+  }))
+}
+
 function useReferenceRows(
   source: PickerSource,
   search: string,
@@ -244,11 +260,37 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
+  const parcelList = useQuery({
+    queryKey: ["reference", "parcels", params],
+    queryFn: ({ signal }) =>
+      listParcels(
+        {
+          page: params.page,
+          limit: params.limit,
+          search: params.search ?? "",
+          sortBy: "createdAt",
+          sort: "desc",
+        },
+        signal,
+      ),
+    enabled: enabled && source === "parcels",
+    staleTime: 60_000,
+  })
+
   // Only the matching query is enabled, so the others never hold data.
   // Their pending flags are read anyway: an unused query is
   // `isFetching === false`, which is exactly the answer wanted for a source
   // that is not in play.
-  const sources = { branches, hubs, zones, customers, riderList, vehicleList, routeList }
+  const sources = {
+    branches,
+    hubs,
+    zones,
+    customers,
+    riderList,
+    vehicleList,
+    routeList,
+    parcelList,
+  }
   const active =
     source === "riders"
       ? riderList
@@ -256,7 +298,9 @@ function useReferenceRows(
         ? vehicleList
         : source === "routes"
           ? routeList
-          : sources[source]
+          : source === "parcels"
+            ? parcelList
+            : sources[source]
   const isFetching = active.isFetching
   const isError = active.isError
 
@@ -267,6 +311,7 @@ function useReferenceRows(
     if (source === "riders") return toRiderRows(riderList.data?.nodes ?? [])
     if (source === "vehicles") return toVehicleRows(vehicleList.data?.nodes ?? [])
     if (source === "routes") return toRouteRows(routeList.data?.nodes ?? [])
+    if (source === "parcels") return toParcelRows(parcelList.data?.nodes ?? [])
     return toCustomerRows(customers.data?.nodes ?? [])
   }, [
     source,
@@ -277,6 +322,7 @@ function useReferenceRows(
     riderList.data,
     vehicleList.data,
     routeList.data,
+    parcelList.data,
   ])
 
   return { rows, isFetching, isError }

@@ -55,6 +55,11 @@ import {
   customersSearchSchema,
 } from "@/routes/customers-search-params"
 import type { CustomersSearch } from "@/routes/customers-search-params"
+import {
+  DEFAULT_PAYMENTS_SEARCH_PARAMS,
+  paymentsSearchSchema,
+} from "@/routes/payments-search-params"
+import type { PaymentsSearch } from "@/routes/payments-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -80,6 +85,7 @@ export type AdminDestination =
   | { to: "/roles"; search: RolesSearch }
   | { to: "/customers"; search: CustomersSearch }
   | { to: "/customers/$customerId"; params: { customerId: string } }
+  | { to: "/payments"; search: PaymentsSearch }
   | { to: "/zones"; search: ZonesSearch }
   | { to: "/vehicles"; search: VehiclesSearch }
   | { to: "/pricing-rules"; search: PricingRulesSearch }
@@ -163,6 +169,17 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       return { to: "/customers/$customerId", params: { customerId } }
     }
     return { to: "/" }
+  }
+
+  if (path === "/payments") {
+    return {
+      to: "/payments",
+      search: resolveListSearch(
+        paymentsSearchSchema,
+        DEFAULT_PAYMENTS_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
   }
 
   if (path === "/zones") {
