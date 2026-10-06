@@ -21,6 +21,7 @@ import {
   transfersRoute,
   deliveriesRoute,
   deliveryProofsRoute,
+  usersRoute,
   vehiclesRoute,
   zonesRoute,
 } from "./routes/app-routes"
@@ -35,6 +36,7 @@ const routeTree = rootRoute.addChildren([
     trackingRoute,
     branchesRoute,
     hubsRoute,
+    usersRoute,
     zonesRoute,
     vehiclesRoute,
     pricingRulesRoute,

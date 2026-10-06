@@ -56,6 +56,8 @@ const pickups = await import("../src/modules/pickups/pickups.repository")
 const deliveries = await import("../src/modules/deliveries/deliveries.repository")
 const deliveryProofs = await import("../src/modules/deliveries/delivery-proofs.repository")
 const transfers = await import("../src/modules/transfers/transfers.repository")
+const users = await import("../src/modules/users/users.repository")
+const roles = await import("../src/modules/roles/roles.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -806,6 +808,71 @@ cases.push(
     name: "deliveryProofs.selectAttemptForProof",
     run: () => deliveryProofs.selectAttemptForProof(pool, "1", "1"),
   },
+
+  { name: "users.selectUsers", run: () => users.selectUsers(pool, scope, listParams, {}) },
+  {
+    name: "users.selectUsers(status)",
+    run: () => users.selectUsers(pool, scope, listParams, { status: "ACTIVE" }),
+  },
+  {
+    name: "users.selectUsers(branchId)",
+    run: () => users.selectUsers(pool, scope, listParams, { branchId: "1" }),
+  },
+  {
+    name: "users.selectUsers(search)",
+    run: () => users.selectUsers(pool, scope, listParams, { search: "admin" }),
+  },
+  ...(["name", "email", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `users.selectUsers(sortBy=${sortBy})`,
+    run: () => users.selectUsers(pool, scope, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "users.selectUsers(branch-scoped)",
+    run: () =>
+      users.selectUsers(pool, { ...scope, isCompanyWide: false, branchId: "1" }, listParams, {}),
+  },
+  {
+    name: "users.selectUsers(hub-scoped)",
+    run: () =>
+      users.selectUsers(pool, { ...scope, isCompanyWide: false, hubIds: ["1"] }, listParams, {}),
+  },
+  { name: "users.selectUser", run: () => users.selectUser(pool, scope, "1") },
+  {
+    name: "users.selectUser(branch-scoped)",
+    run: () => users.selectUser(pool, { ...scope, isCompanyWide: false, branchId: "1" }, "1"),
+  },
+  { name: "users.selectUserRoles", run: () => users.selectUserRoles(pool, ["1"]) },
+  { name: "users.selectUserRoles(empty)", run: () => users.selectUserRoles(pool, []) },
+  { name: "users.selectUserHubs", run: () => users.selectUserHubs(pool, ["1"]) },
+  { name: "users.selectRoleIdsForUser", run: () => users.selectRoleIdsForUser(pool, "1") },
+  { name: "users.selectRoleIdByName", run: () => users.selectRoleIdByName(pool, "ADMIN") },
+  {
+    name: "users.countActiveAdminsExcluding",
+    run: () => users.countActiveAdminsExcluding(pool, "1"),
+  },
+  {
+    name: "users.selectExistingIds(roles)",
+    run: () => users.selectExistingIds(pool, "roles", ["1"]),
+  },
+  {
+    name: "users.selectExistingIds(hubs)",
+    run: () => users.selectExistingIds(pool, "hubs", ["1"]),
+  },
+  {
+    name: "users.selectExistingIds(branches)",
+    run: () => users.selectExistingIds(pool, "branches", ["1"]),
+  },
+
+  { name: "roles.selectRoles", run: () => roles.selectRoles(pool, listParams, {}) },
+  {
+    name: "roles.selectRoles(search)",
+    run: () => roles.selectRoles(pool, listParams, { search: "admin" }),
+  },
+  ...(["name", "createdAt"] as const).map((sortBy) => ({
+    name: `roles.selectRoles(sortBy=${sortBy})`,
+    run: () => roles.selectRoles(pool, { ...listParams, sortBy }, {}),
+  })),
+  { name: "roles.selectRole", run: () => roles.selectRole(pool, "1") },
 )
 
 let failures = 0

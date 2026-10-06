@@ -2,7 +2,10 @@
 
 ## Status
 
-Plan only — nothing in it is implemented. Scope comes from `docs/remaining-features.md`
+**Batch 1 (staff users) is implemented** — 7 ops live (`admin.users.*` ×6 plus
+`admin.roles.list`, pulled forward from Batch 2 for the role picker), so 96 operations are
+registered (89 at the end of P0). Batches 2–7 below are plan only. Scope comes from
+`docs/remaining-features.md`
 Priority-1 groups (Organization & People + Money & Support): the unbuilt half of admin-plan
 Phase 1 plus Phase 4 minus `stats`.
 
@@ -18,7 +21,7 @@ Decisions taken before writing this plan:
 
 Checklist:
 
-- [ ] **Batch 1 — Staff users** — 6 ops (`admin.users.{list,read,create,update,resetPassword,setStatus}`)
+- [x] **Batch 1 — Staff users** — 6 ops (`admin.users.{list,read,create,update,resetPassword,setStatus}`) + `admin.roles.list` pulled forward
 - [ ] **Batch 2 — Roles + permission matrix** — 4 ops (`admin.roles.{list,read,create,replacePermissions}`)
 - [ ] **Batch 3 — Customer management** — 3 ops (`admin.customers.{list,read,activate}`)
 - [ ] **Batch 4 — Payments & COD** — 4 ops (`admin.payments.{list,read,record,refund}`)
@@ -26,7 +29,7 @@ Checklist:
 - [ ] **Batch 6 — Support tickets** — 5 ops (`admin.support.{list,read,create,assign,updateStatus}`)
 - [ ] **Batch 7 — Notifications outbox** — 2 ops (`admin.notifications.{list,retry}`) + event-bus writer
 
-**Total: 28 planned ops → ~117 registered** (89 at the end of P0).
+**Total: 28 planned ops → ~117 registered** (89 at the end of P0; 96 after Batch 1).
 
 ## How batches are built
 
@@ -110,11 +113,33 @@ Decisions:
 `/login`, and their `GET /admin/parcels` result set is demonstrably narrowed — this is the
 admin-plan Phase 1 gate, and it is the P1 end-gate item this batch alone satisfies.
 
+**Shipped — deviations from the plan above:**
+
+- **`admin.roles.list` was pulled forward** into this batch (the user form's role picker needs
+  it), so `apps/api/src/modules/roles/` exists as a list-only skeleton and Batch 2 ships three
+  new ops (`read`, `create`, `replacePermissions`) against the same feature, tag and module.
+- **`resetPassword` takes an admin-supplied password**, not a server-generated one: the request
+  body requires it, and the sheet has a password field.
+- **Open gap — `must_change_password` is not enforced for staff.** The flag is written `TRUE` on
+  create and reset, but `auth.service.ts:145` reports it only for the `riders` audience and the
+  admin app has no change-password gate, so the "staff reuse it" assumption in the decision
+  above is not yet true. The API's OpenAPI text and the reset sheet say what actually happens
+  (the new password works immediately). A staff change-password gate belongs with a later batch.
+- **Verified:** 24-check authenticated smoke over HTTP (create/409 duplicate/422 bad ref/login
+  of the new account/reset/suspend/sign-in refusal/filter/403 for a role without
+  `users.manage`), the end-gate above with two hub-scoped managers whose parcel and user lists
+  diverge as scoped (out-of-scope read 404, not 403), `check:read-paths` 229/229, and both
+  apps' typecheck/build. The last-ADMIN 409 could not be exercised without touching the one
+  real admin account; its query is covered by the read-path check.
+
 ---
 
 ## Batch 2 — Roles + permission matrix (4 ops)
 
 `admin.roles.{list,read,create,replacePermissions}` — served at `/api/v1/admin/roles`.
+**`list` shipped with Batch 1** (see above): `roles.{dto,repository,service}.ts` already exist
+with the list read, the registry carries the `roles` feature and tag, and this batch extends
+them — three new ops, not four.
 
 | File                                                                              | Action   |
 | --------------------------------------------------------------------------------- | -------- |

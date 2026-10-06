@@ -90,6 +90,19 @@ import {
   setRiderStatusSchema as setRiderStatusBody,
   updateRiderSchema as updateRiderBody,
 } from "../riders/riders.dto"
+import {
+  createUserSchema as createUserBody,
+  listUsersQuerySchema as listUsersQuery,
+  resetPasswordSchema as resetPasswordBody,
+  setUserStatusSchema as setUserStatusBody,
+  userIdParamSchema as userIdParam,
+  updateUserSchema as updateUserBody,
+  userResponseSchema as userResponse,
+} from "../users/users.dto"
+import {
+  listRolesQuerySchema as listRolesQuery,
+  roleResponseSchema as roleResponse,
+} from "../roles/roles.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
 import {
   listRiderApplicationsQuerySchema,
@@ -700,6 +713,138 @@ export const ADMIN_SURFACE = defineSurface({
           body: updateHubBody,
           response: hubResponse,
           errors: { 404: "No such hub.", 409: "A hub with that code already exists." },
+        },
+      },
+    },
+
+    /**
+     * Staff accounts, and the first writer of a `users` row other than the
+     * one-shot bootstrap: a staff member is the account, the roles it holds,
+     * and the hub scope that decides which records it may see, so `create` and
+     * `update` write all three in one transaction.
+     *
+     * Reads are scope-narrowed (branch via `users.branch_id`, hub via
+     * `user_hubs`) exactly as the parcel guard narrows its data — one `Scope`,
+     * one reading of it — so a branch manager's own-branch rule in
+     * `docs/rbac.md` is enforced here and not only in the sidebar.
+     *
+     * `email` and `password` are create-only, `resetPassword` is its own
+     * operation, and `setStatus` carries the last-ADMIN guard. That last one is
+     * why availability has its own endpoint: flipping it from a list row should
+     * not require knowing which other fields exist.
+     */
+    users: {
+      tag: "users",
+      tagDescription:
+        "Staff accounts: the `users` row, the roles that grant what it may do, and the hub scope that decides which records it may see.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/users",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_VIEW] },
+          summary: "List staff users",
+          successDescription: "A page of staff accounts, each carrying its roles and hub scope.",
+          query: listUsersQuery,
+          listNodes: userResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/users/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_VIEW] },
+          summary: "Read a staff user",
+          successDescription: "The account, with its roles and hub scope.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          response: userResponse,
+          errors: { 404: "No such user, or outside the caller's branch/hub scope." },
+        },
+        create: {
+          method: "POST",
+          path: "/users",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Create a staff user",
+          description:
+            "Writes the account, its roles and its hub scope in one transaction — none of the three is useful alone. The temporary password becomes a bcrypt hash and `must_change_password` starts TRUE.",
+          successDescription: "Created.",
+          body: createUserBody,
+          response: userResponse,
+          successStatus: 201,
+          errors: {
+            409: "An account with that email already exists.",
+            422: "A named role, hub or branch does not exist.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/users/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Update a staff user",
+          description:
+            "Profile columns, and when supplied a full replacement of both assignment sets. `email` and `password` are not accepted here — they are create-only, so two surfaces never write one account row. `branchId: null` clears the branch restriction.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          body: updateUserBody,
+          response: userResponse,
+          errors: {
+            404: "No such user, or outside the caller's branch/hub scope.",
+            409: "This is the last active ADMIN account, and this write would leave none.",
+            422: "A named role, hub or branch does not exist.",
+          },
+        },
+        resetPassword: {
+          method: "POST",
+          path: "/users/:id/reset-password",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Reset a staff user's password",
+          description:
+            "Its own operation rather than a PATCH field: it is the only write that cannot be safely retried from a stale screen. Sets the temporary hash and flips `must_change_password` in the same statement. The flag is stored for a staff change-password gate that does not exist yet — `auth.service` reports it only for the riders audience, so today the new password is simply the account's password.",
+          successDescription: "Password reset. The account signs in with the new password.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          body: resetPasswordBody,
+          response: userResponse,
+          errors: { 404: "No such user, or outside the caller's branch/hub scope." },
+        },
+        setStatus: {
+          method: "POST",
+          path: "/users/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.USERS_MANAGE] },
+          summary: "Set a staff user's status",
+          description:
+            "Its own operation, mirroring `admin.riders.setStatus`. `SUSPENDED` is terminal — a user with delivery history is never deleted — and the last active ADMIN cannot be suspended.",
+          successDescription: "Updated.",
+          params: userIdParam,
+          paramDescriptions: { id: "User id." },
+          body: setUserStatusBody,
+          response: userResponse,
+          errors: {
+            404: "No such user, or outside the caller's branch/hub scope.",
+            409: "This is the last active ADMIN account.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Roles. Batch 1 ships the list read only — it is what makes the user
+     * form's role picker more than a hard-coded guess — and Batch 2 extends
+     * this same feature with `read`, `create` and `replacePermissions` for the
+     * permission matrix, so there is one tag, one module and one policy
+     * declaration for the whole RBAC surface.
+     */
+    roles: {
+      tag: "roles",
+      tagDescription:
+        "Roles and the permission keys they grant — what a staff account is allowed to do. Management of the set lands with the permission matrix in Batch 2.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/roles",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.ROLES_VIEW] },
+          summary: "List roles",
+          successDescription: "A page of roles.",
+          query: listRolesQuery,
+          listNodes: roleResponse,
         },
       },
     },

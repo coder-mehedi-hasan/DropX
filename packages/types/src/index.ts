@@ -91,7 +91,8 @@ export const ROLE_NAMES = [
 export type KnownRoleName = (typeof ROLE_NAMES)[number]
 export type RoleName = KnownRoleName
 
-export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED"
+export const USER_STATUSES = ["ACTIVE", "INACTIVE", "SUSPENDED"] as const
+export type UserStatus = (typeof USER_STATUSES)[number]
 
 export type User = EntityBase &
   Timestamped & {
