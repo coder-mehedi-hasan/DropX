@@ -173,7 +173,10 @@ export function ParcelDetailPage({ parcelId }: { parcelId: string }) {
           <CardContent className="px-4">
             <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
               <DetailRow label="Sender customer">#{data.senderCustomerId}</DetailRow>
-              <DetailRow label="Receiver customer">#{data.receiverCustomerId}</DetailRow>
+              <DetailRow label="Receiver">
+                {data.receiverName ||
+                  (data.receiverCustomerId ? `Customer #${data.receiverCustomerId}` : "—")}
+              </DetailRow>
               <DetailRow label="Origin hub">#{data.originHubId}</DetailRow>
               <DetailRow label="Destination hub">#{data.destinationHubId}</DetailRow>
               <DetailRow label="Current hub">

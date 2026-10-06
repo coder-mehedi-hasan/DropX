@@ -136,11 +136,12 @@ export function ParcelsListPage({ search }: { search: ParcelsSearch }) {
         cell: (parcel) => (
           <span className="text-muted-foreground block max-w-52 truncate text-sm">
             <span className="text-foreground block font-medium">
-              Customer #{parcel.receiverCustomerId}
+              {parcel.receiverName ||
+                (parcel.receiverCustomerId ? `Customer #${parcel.receiverCustomerId}` : "—")}
             </span>
           </span>
         ),
-        value: (parcel) => parcel.receiverCustomerId,
+        value: (parcel) => parcel.receiverName ?? parcel.receiverCustomerId ?? "",
       },
       {
         id: "parcelType",

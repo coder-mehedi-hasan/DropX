@@ -22,6 +22,7 @@ import type { Scope } from "@/shared/auth/auth-context"
 
 const SELECT_COLUMNS = `
   p.id, p.tracking_number, p.sender_customer_id, p.receiver_customer_id,
+  p.receiver_name, p.receiver_phone, p.receiver_secondary_phone, p.receiver_address,
   p.origin_hub_id, p.destination_hub_id, p.current_hub_id, p.destination_zone_id,
   p.weight, p.length, p.width, p.height, p.parcel_type, p.payment_type,
   p.cod_amount, p.delivery_fee, p.status, p.created_at, p.updated_at
@@ -232,7 +233,11 @@ export async function listParcelsForCustomer(
 type CreateParcelRecord = {
   trackingNumber: string
   senderCustomerId: string
-  receiverCustomerId: string
+  receiverCustomerId: string | null
+  receiverName: string
+  receiverPhone: string
+  receiverSecondaryPhone?: string | undefined
+  receiverAddress?: string | undefined
   originHubId: string
   destinationHubId: string
   currentHubId: string | null
@@ -263,6 +268,10 @@ export async function insertParcel(
   push("tracking_number", record.trackingNumber)
   push("sender_customer_id", record.senderCustomerId)
   push("receiver_customer_id", record.receiverCustomerId)
+  push("receiver_name", record.receiverName)
+  push("receiver_phone", record.receiverPhone)
+  push("receiver_secondary_phone", record.receiverSecondaryPhone)
+  push("receiver_address", record.receiverAddress)
   push("origin_hub_id", record.originHubId)
   push("destination_hub_id", record.destinationHubId)
   push("current_hub_id", record.currentHubId)
@@ -427,7 +436,11 @@ type ParcelRow = {
   id: string
   tracking_number: string
   sender_customer_id: string
-  receiver_customer_id: string
+  receiver_customer_id: string | null
+  receiver_name: string
+  receiver_phone: string
+  receiver_secondary_phone: string | null
+  receiver_address: string | null
   origin_hub_id: string
   destination_hub_id: string
   current_hub_id: string | null
@@ -470,7 +483,11 @@ export function decodeParcel(row: unknown): Parcel {
     id: String(r.id),
     trackingNumber: r.tracking_number,
     senderCustomerId: String(r.sender_customer_id),
-    receiverCustomerId: String(r.receiver_customer_id),
+    receiverCustomerId: toNullableId(r.receiver_customer_id),
+    receiverName: r.receiver_name,
+    receiverPhone: r.receiver_phone,
+    receiverSecondaryPhone: toStringOrNull(r.receiver_secondary_phone),
+    receiverAddress: toStringOrNull(r.receiver_address),
     originHubId: String(r.origin_hub_id),
     destinationHubId: String(r.destination_hub_id),
     currentHubId: toNullableId(r.current_hub_id),

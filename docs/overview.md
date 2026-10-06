@@ -121,7 +121,7 @@ CREATED → PICKED_UP → IN_TRANSIT / AT_HUB → OUT_FOR_DELIVERY → DELIVERED
                                                                     ↘ FAILED / CANCELLED / RETURNED
 ```
 
-1. **Create** — by **customer** (`apps/web`) or **staff** (`apps/admin`); sender/receiver, hubs, destination zone, weight, prepaid or COD.
+1. **Create** — by **customer** (`apps/web`) or **staff** (`apps/admin`); sender, receiver details (name, phone, secondary phone, delivery address — the receiver need **not** hold a DropX account), hubs, destination zone, weight, prepaid or COD.
 2. **Pickup** — assign rider; track pickup status.
 3. **Transfer** — load onto hub-to-hub transfer (vehicle, route, **staff driver**).
 4. **Delivery** — last-mile from destination hub; proof (signature, photo, OTP, identity). **Retries allowed** — new `deliveries` row with next `attempt_no` after FAILED/CANCELLED.

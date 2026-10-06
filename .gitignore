@@ -8,7 +8,8 @@ build/
 out/
 *.tsbuildinfo
 
-# env — .env is intentionally tracked in this repo; keep local extras ignored
+# env — app config holds secrets; only the non-secret examples are tracked
+.env
 .env.local
 .env.*.local
 !.env.example

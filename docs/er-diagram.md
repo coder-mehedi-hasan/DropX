@@ -153,6 +153,10 @@ erDiagram
         varchar tracking_number UK
         bigint sender_customer_id FK
         bigint receiver_customer_id FK
+        varchar receiver_name
+        varchar receiver_phone
+        varchar receiver_secondary_phone
+        varchar receiver_address
         bigint origin_hub_id FK
         bigint destination_hub_id FK
         bigint current_hub_id FK

@@ -47,9 +47,11 @@ export const parcelItemInputSchema = z.object({
 })
 
 export const createParcelSchema = z.object({
-  receiverCustomerId: id,
+  receiverCustomerId: id.optional(),
   receiverName: z.string().trim().min(1, "Receiver name is required").max(150),
   receiverPhone: z.string().trim().min(6).max(30),
+  receiverSecondaryPhone: z.string().trim().max(30).optional(),
+  receiverAddress: z.string().trim().max(300).optional(),
   senderCustomerId: id.optional(),
   originHubId: id,
   destinationHubId: id,
@@ -112,8 +114,15 @@ export const PARCEL_SORT_COLUMN_BY_KEY: Readonly<Record<ParcelSortKey, string>> 
   weight: "p.weight",
 }
 
-/** Columns searched by the list `search` param. */
-export const PARCEL_SEARCH_COLUMNS = ["p.tracking_number", "r.name", "r.phone"] as const
+/** Columns searched by the list `search` param — the parcel's own receiver
+ * fields cover non-account receivers, and `r.*` still matches account holders. */
+export const PARCEL_SEARCH_COLUMNS = [
+  "p.tracking_number",
+  "p.receiver_name",
+  "p.receiver_phone",
+  "r.name",
+  "r.phone",
+] as const
 
 // --- Response bodies -------------------------------------------------------
 
@@ -121,7 +130,11 @@ export const parcelResponseSchema = z.object({
   id: z.string(),
   trackingNumber: z.string(),
   senderCustomerId: z.string(),
-  receiverCustomerId: z.string(),
+  receiverCustomerId: z.string().nullable(),
+  receiverName: z.string(),
+  receiverPhone: z.string(),
+  receiverSecondaryPhone: z.string().nullable(),
+  receiverAddress: z.string().nullable(),
   originHubId: z.string(),
   destinationHubId: z.string(),
   currentHubId: z.string().nullable(),

@@ -162,9 +162,12 @@ export type CreateParcelItemInput = {
  * which the API stamps from the session.
  */
 export type CreateParcelRequest = {
-  receiverCustomerId: string
+  /** The receiver is not required to have a DropX account. */
+  receiverCustomerId?: string
   receiverName: string
   receiverPhone: string
+  receiverSecondaryPhone?: string
+  receiverAddress: string
   originHubId: string
   destinationHubId: string
   originZoneId: string

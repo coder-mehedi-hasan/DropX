@@ -340,7 +340,12 @@ CREATE TABLE IF NOT EXISTS parcels (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     tracking_number VARCHAR(50) NOT NULL,
     sender_customer_id BIGINT UNSIGNED NOT NULL,
-    receiver_customer_id BIGINT UNSIGNED NOT NULL,
+    -- The receiver may or may not be a DropX account holder.
+    receiver_customer_id BIGINT UNSIGNED NULL,
+    receiver_name VARCHAR(150) NOT NULL,
+    receiver_phone VARCHAR(30) NOT NULL,
+    receiver_secondary_phone VARCHAR(30) NULL,
+    receiver_address VARCHAR(300) NULL,
     origin_hub_id BIGINT UNSIGNED NOT NULL,
     destination_hub_id BIGINT UNSIGNED NOT NULL,
     current_hub_id BIGINT UNSIGNED NULL,
@@ -382,7 +387,7 @@ CREATE TABLE IF NOT EXISTS parcels (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_parcels_receiver
         FOREIGN KEY (receiver_customer_id) REFERENCES customers(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT fk_parcels_origin_hub
         FOREIGN KEY (origin_hub_id) REFERENCES hubs(id)
         ON UPDATE CASCADE ON DELETE RESTRICT,

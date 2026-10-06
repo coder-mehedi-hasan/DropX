@@ -109,6 +109,9 @@ export function splitStatements(sql: string): string[] {
 
 async function dropAllTables(pool: mysql.Pool): Promise<void> {
   console.log("· dropping existing tables")
+  // DROP order does not matter for FK references, so disable the checks rather
+  // than trying to topologically sort information_schema output.
+  await pool.query("SET FOREIGN_KEY_CHECKS = 0")
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()",
   )
@@ -116,6 +119,7 @@ async function dropAllTables(pool: mysql.Pool): Promise<void> {
   for (const { TABLE_NAME: table } of rows) {
     await pool.execute(`DROP TABLE IF EXISTS \`${table}\``)
   }
+  await pool.query("SET FOREIGN_KEY_CHECKS = 1")
   console.log(`  dropped ${rows.length} table(s)`)
 }
 
@@ -146,7 +150,9 @@ async function main(): Promise<void> {
       } catch (error) {
         const preview = statement.replace(/\s+/g, " ").slice(0, 90)
         if (error != null && typeof error === "object" && "errno" in error) {
-          console.error(`\n✗ mysql error code ${error.errno}: ${(error as { sqlMessage?: string }).sqlMessage}\n  statement: ${preview}…`)
+          console.error(
+            `\n✗ mysql error code ${error.errno}: ${(error as { sqlMessage?: string }).sqlMessage}\n  statement: ${preview}…`,
+          )
         } else {
           console.error(`\n✗ migration failed\n  statement: ${preview}…`)
         }

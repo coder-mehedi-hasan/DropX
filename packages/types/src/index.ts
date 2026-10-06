@@ -359,7 +359,12 @@ export type Parcel = EntityBase &
   Timestamped & {
     trackingNumber: string
     senderCustomerId: Id
-    receiverCustomerId: Id
+    /** The receiver is not required to have an account. */
+    receiverCustomerId: Nullable<Id>
+    receiverName: string
+    receiverPhone: string
+    receiverSecondaryPhone: Nullable<string>
+    receiverAddress: Nullable<string>
     originHubId: Id
     destinationHubId: Id
     currentHubId: Nullable<Id>

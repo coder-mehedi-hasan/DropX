@@ -60,7 +60,7 @@ import { PageHeader } from "@/components/page-header"
 import { ReferenceSelect } from "@/components/reference-select"
 import { isApiError } from "@/lib/api-client"
 import { formatMoney } from "@/lib/format"
-import { useCreateParcel, useFeeQuote, useHubs, useRecipients, useZones } from "@/lib/queries"
+import { useCreateParcel, useFeeQuote, useHubs, useZones } from "@/lib/queries"
 import { type ReferenceOption } from "@/lib/reference-data"
 import {
   PARCEL_TYPES,
@@ -136,9 +136,14 @@ const itemSchema = z.object({
 
 const bookParcelSchema = z
   .object({
-    receiverCustomerId: z.string().trim().min(1, "Pick the receiving customer"),
     receiverName: z.string().trim().min(1, "Receiver name is required").max(150),
     receiverPhone: z.string().trim().min(6, "Enter a valid phone number").max(30),
+    receiverSecondaryPhone: z
+      .string()
+      .trim()
+      .max(30)
+      .refine((value) => value === "" || value.length >= 6, "Enter a valid phone number"),
+    receiverAddress: z.string().trim().min(1, "Receiver address is required").max(300),
     originHubId: z.string().trim().min(1, "Pick the hub we collect from"),
     destinationHubId: z.string().trim().min(1, "Pick the hub we deliver from"),
     originZoneId: z.string().trim().min(1, "Pick the origin zone"),
@@ -200,7 +205,7 @@ const PAYMENT_TYPE_OPTIONS = {
 >
 
 const STEP_FIELDS = [
-  ["receiverCustomerId", "receiverName", "receiverPhone"],
+  ["receiverName", "receiverPhone", "receiverSecondaryPhone", "receiverAddress"],
   ["originHubId", "destinationHubId", "originZoneId", "destinationZoneId"],
   ["parcelType", "weight", "length", "width", "height"],
   ["paymentType", "codAmount", "items"],
@@ -220,9 +225,12 @@ function toCreateRequest(values: BookParcelValues): CreateParcelRequest {
   const height = toMeasurement(values.height)
 
   return {
-    receiverCustomerId: values.receiverCustomerId,
     receiverName: values.receiverName,
     receiverPhone: values.receiverPhone,
+    ...(values.receiverSecondaryPhone
+      ? { receiverSecondaryPhone: values.receiverSecondaryPhone }
+      : {}),
+    receiverAddress: values.receiverAddress,
     originHubId: values.originHubId,
     destinationHubId: values.destinationHubId,
     originZoneId: values.originZoneId,
@@ -251,9 +259,10 @@ export function BookParcel() {
     resolver: zodResolver(bookParcelSchema),
     mode: "onBlur",
     defaultValues: {
-      receiverCustomerId: "",
       receiverName: "",
       receiverPhone: "",
+      receiverSecondaryPhone: "",
+      receiverAddress: "",
       originHubId: "",
       destinationHubId: "",
       originZoneId: "",
@@ -306,23 +315,15 @@ export function BookParcel() {
 
   const hubs = useHubs()
   const zones = useZones()
-  const recipients = useRecipients()
 
   const hubOptions = hubs.data ?? []
   const zoneOptions = zones.data ?? []
-  const recipientOptions = recipients.data ?? []
 
   /**
-   * Booking is impossible until the API can be asked which hubs, zones and
+   * Booking is impossible until the API can be asked which hubs and zones
+   * exist — a hard-coded id would post a real parcel to a hub nobody chose.
    */
-  /**
-   * customers exist — a hard-coded id would post a real parcel to a hub nobody
-   */
-  /**
-   * chose.
-   */
-  const referenceDataReady =
-    hubOptions.length > 0 && zoneOptions.length > 0 && recipientOptions.length > 0
+  const referenceDataReady = hubOptions.length > 0 && zoneOptions.length > 0
 
   async function goNext() {
     setServerError(null)
@@ -349,7 +350,7 @@ export function BookParcel() {
       description: (
         <span className="grid gap-1.5">
           <span>
-            Sending to {values.receiverName} ({values.receiverPhone}).
+            Sending to {values.receiverName} ({values.receiverPhone}), at {values.receiverAddress}.
           </span>
           {quoted ? <span>Estimated fee {formatMoney(quoted.total, quoted.currency)}.</span> : null}
           {codOnDelivery ? <span>Collected on delivery: {codOnDelivery}.</span> : null}
@@ -477,35 +478,18 @@ export function BookParcel() {
                   <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
                     <BookingCardTitle icon={UserRoundIcon} step="01" title="Receiver details" />
                     <CardDescription>
-                      Who the parcel is going to, and how the rider will reach them.
+                      Who the parcel is going to, and how the rider will reach them. The receiver
+                      does not need a DropX account.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-6 px-5 py-6 sm:px-7 sm:py-7">
-                    <FormField
-                      control={form.control}
-                      name="receiverCustomerId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Recipient account</FormLabel>
-                          <ReferenceSelect
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            options={recipientOptions}
-                            source="recipients"
-                            placeholder="Choose who receives the parcel"
-                          />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
                     <div className="grid gap-5 sm:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="receiverName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Receiver name</FormLabel>
+                            <FormLabel>Receiver full name</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="Karim Uddin" autoComplete="off" />
                             </FormControl>
@@ -532,7 +516,51 @@ export function BookParcel() {
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={form.control}
+                        name="receiverSecondaryPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Secondary phone</FormLabel>
+                            <FormDescription>
+                              Optional — a backup way to reach them.
+                            </FormDescription>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="01812345678"
+                                inputMode="tel"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name="receiverAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Delivery address</FormLabel>
+                          <FormDescription>
+                            Where the rider hands the parcel over. Include the area, landmark and
+                            house details.
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              rows={3}
+                              placeholder="House 12, Road 7, Dhanmondi, Dhaka"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               ) : null}
@@ -943,7 +971,6 @@ export function BookParcel() {
                   values={form.getValues()}
                   hubOptions={hubOptions}
                   zoneOptions={zoneOptions}
-                  recipientOptions={recipientOptions}
                   quote={quote.data}
                 />
               ) : null}
@@ -1174,13 +1201,11 @@ function ReviewCard({
   values,
   hubOptions,
   zoneOptions,
-  recipientOptions,
   quote,
 }: {
   values: BookParcelValues
   hubOptions: ReferenceOption[]
   zoneOptions: ReferenceOption[]
-  recipientOptions: ReferenceOption[]
   quote: DeliveryQuote | undefined
 }) {
   const labelFor = (options: ReferenceOption[], id: string) =>
@@ -1195,12 +1220,12 @@ function ReviewCard({
       <CardContent className="grid gap-5 px-5 py-6 sm:px-7 sm:py-7">
         <div className="grid gap-4 sm:grid-cols-2">
           <ReviewGroup title="Receiver" icon={UserRoundIcon}>
-            <ReviewRow
-              label="Customer"
-              value={labelFor(recipientOptions, values.receiverCustomerId)}
-            />
             <ReviewRow label="Name" value={values.receiverName} />
             <ReviewRow label="Phone" value={values.receiverPhone} />
+            {values.receiverSecondaryPhone ? (
+              <ReviewRow label="Secondary phone" value={values.receiverSecondaryPhone} />
+            ) : null}
+            <ReviewRow label="Address" value={values.receiverAddress} />
           </ReviewGroup>
           <ReviewGroup title="Route" icon={MapPinIcon}>
             <ReviewRow label="From" value={labelFor(hubOptions, values.originHubId)} />

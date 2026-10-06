@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { parcelsApi, pricingApi, trackingApi } from "@/lib/api"
-import { listHubs, listRecipients, listZones } from "@/lib/reference-data"
+import { listHubs, listZones } from "@/lib/reference-data"
 import type { CreateParcelRequest, ListQueryParams, QuoteRequest } from "@/lib/types"
 
 /**
@@ -17,7 +17,6 @@ export const queryKeys = {
   quote: (request: QuoteRequest) => ["pricing", "quote", request] as const,
   hubs: () => ["reference", "hubs"] as const,
   zones: () => ["reference", "zones"] as const,
-  recipients: () => ["reference", "recipients"] as const,
 }
 
 export function useMyParcels(params: ListQueryParams) {
@@ -91,12 +90,4 @@ export function useHubs() {
 
 export function useZones() {
   return useQuery({ queryKey: queryKeys.zones(), queryFn: listZones, staleTime: Infinity })
-}
-
-export function useRecipients() {
-  return useQuery({
-    queryKey: queryKeys.recipients(),
-    queryFn: listRecipients,
-    staleTime: Infinity,
-  })
 }

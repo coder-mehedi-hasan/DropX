@@ -124,7 +124,9 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
           <Card>
             <CardHeader>
               <CardTitle>Parcel</CardTitle>
-              <CardDescription>Route and size. The delivery fee is fixed at booking.</CardDescription>
+              <CardDescription>
+                Route and size. The delivery fee is fixed at booking.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="grid gap-4 sm:grid-cols-2">
@@ -140,12 +142,12 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
                   label="Current hub"
                   value={parcel.currentHubId ? `#${parcel.currentHubId}` : "—"}
                 />
-                <Fact label="Receiver" value={`#${parcel.receiverCustomerId}`} />
+                <Fact label="Receiver" value={parcel.receiverName || "—"} />
               </dl>
 
               <p className="text-muted-foreground mt-4 text-xs">
-                Hub, zone and receiver names are shown on the tracking view — the API does not
-                resolve them in this response.
+                Hub and zone names are shown on the tracking view — the API does not resolve them in
+                this response.
               </p>
             </CardContent>
           </Card>

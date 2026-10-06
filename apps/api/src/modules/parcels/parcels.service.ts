@@ -105,13 +105,21 @@ export async function listParcelsForCustomerPortal(
   return buildPage(nodes, totalCount, params)
 }
 
-export async function getParcelForStaff(c: Context<AppEnv>, scope: Scope, parcelId: Id): Promise<Parcel> {
+export async function getParcelForStaff(
+  c: Context<AppEnv>,
+  scope: Scope,
+  parcelId: Id,
+): Promise<Parcel> {
   const parcel = await findParcelById(c.get("db")!, scope, parcelId)
   if (!parcel) throw notFound("Parcel not found")
   return parcel
 }
 
-export async function getParcelForCustomer(c: Context<AppEnv>, customerId: Id, parcelId: Id): Promise<Parcel> {
+export async function getParcelForCustomer(
+  c: Context<AppEnv>,
+  customerId: Id,
+  parcelId: Id,
+): Promise<Parcel> {
   const parcel = await findParcelForCustomer(c.get("db")!, parcelId, customerId)
   if (!parcel) throw notFound("Parcel not found")
   return parcel
@@ -128,7 +136,10 @@ export type CreateParcelCommand = {
   actorId: Id | null
 }
 
-export async function createParcel(c: Context<AppEnv>, command: CreateParcelCommand): Promise<Parcel> {
+export async function createParcel(
+  c: Context<AppEnv>,
+  command: CreateParcelCommand,
+): Promise<Parcel> {
   const { input, senderCustomerId, actorId: actor } = command
 
   if (input.originHubId === input.destinationHubId) {
@@ -158,7 +169,13 @@ export async function createParcel(c: Context<AppEnv>, command: CreateParcelComm
       const id = await insertParcel(tx, {
         trackingNumber,
         senderCustomerId,
-        receiverCustomerId: input.receiverCustomerId,
+        receiverCustomerId: input.receiverCustomerId ?? null,
+        receiverName: input.receiverName,
+        receiverPhone: input.receiverPhone,
+        ...(input.receiverSecondaryPhone
+          ? { receiverSecondaryPhone: input.receiverSecondaryPhone }
+          : {}),
+        ...(input.receiverAddress ? { receiverAddress: input.receiverAddress } : {}),
         originHubId: input.originHubId,
         destinationHubId: input.destinationHubId,
         currentHubId: input.originHubId,
@@ -225,7 +242,10 @@ const STATUS_EVENT: Readonly<Record<Parcel["status"], string>> = {
   RETURNED: "RETURNED",
 }
 
-export async function updateParcelStatus(c: Context<AppEnv>, command: UpdateStatusCommand): Promise<Parcel> {
+export async function updateParcelStatus(
+  c: Context<AppEnv>,
+  command: UpdateStatusCommand,
+): Promise<Parcel> {
   const current = await findParcelById(c.get("db")!, command.scope, command.parcelId)
   if (!current) throw notFound("Parcel not found")
 
