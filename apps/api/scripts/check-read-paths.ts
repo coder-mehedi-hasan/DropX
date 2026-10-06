@@ -58,6 +58,7 @@ const deliveryProofs = await import("../src/modules/deliveries/delivery-proofs.r
 const transfers = await import("../src/modules/transfers/transfers.repository")
 const users = await import("../src/modules/users/users.repository")
 const roles = await import("../src/modules/roles/roles.repository")
+const customers = await import("../src/modules/customers/customers.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -113,7 +114,7 @@ cases.push(
         pool,
         scope,
         { ...listParams, sortBy: "createdAt" },
-        { status: "CREATED", search: "DX", hubId: "1", paymentType: "COD" },
+        { status: "CREATED", search: "DX", hubId: "1", paymentType: "COD", customerId: "1" },
         parcelSortByKey,
       ),
   },
@@ -877,6 +878,43 @@ cases.push(
   {
     name: "roles.countActiveHoldersExcludingRole",
     run: () => roles.countActiveHoldersExcludingRole(pool, "users.manage", "1"),
+  },
+
+  // --- Customers (Batch 3) ---------------------------------------------------
+  // Company-wide, so there is no scoped variant to exercise — but the filters
+  // and every sort key still are: `status` puts a column in the count WHERE,
+  // `search` exercises the LIKE clauses, and each sort key proves the published
+  // allowlist maps to a column the schema actually has.
+  { name: "customers.selectCustomers", run: () => customers.selectCustomers(pool, listParams, {}) },
+  {
+    name: "customers.selectCustomers(status)",
+    run: () => customers.selectCustomers(pool, listParams, { status: "TEMP" }),
+  },
+  {
+    name: "customers.selectCustomers(search)",
+    run: () => customers.selectCustomers(pool, listParams, { search: "a%" }),
+  },
+  {
+    name: "customers.selectCustomers(status+search)",
+    run: () => customers.selectCustomers(pool, listParams, { status: "ACTIVE", search: "a" }),
+  },
+  ...(["name", "phone", "status", "createdAt"] as const).map((sortBy) => ({
+    name: `customers.selectCustomers(sortBy=${sortBy})`,
+    run: () => customers.selectCustomers(pool, { ...listParams, sortBy }, {}),
+  })),
+  {
+    name: "customers.selectCustomers(status+search+sortBy)",
+    run: () =>
+      customers.selectCustomers(
+        pool,
+        { ...listParams, sortBy: "name", sort: "desc" as const },
+        { status: "TEMP", search: "a" },
+      ),
+  },
+  { name: "customers.selectCustomer", run: () => customers.selectCustomer(pool, "1") },
+  {
+    name: "customers.selectCustomerAddresses",
+    run: () => customers.selectCustomerAddresses(pool, "1"),
   },
 )
 

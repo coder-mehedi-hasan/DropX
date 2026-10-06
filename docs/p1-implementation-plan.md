@@ -2,10 +2,11 @@
 
 ## Status
 
-**Batches 1–2 (staff users + roles/permission matrix) are implemented** — 10 ops live
-(`admin.users.*` ×6 and `admin.roles.{list,read,create,replacePermissions}`), so 99 operations
-are registered in the admin registry (96 at the end of Batch 1) and 104 on the running server
-with the five hand-written fragments. Batches 3–7 below are plan only. Scope comes from
+**Batches 1–3 (staff users, roles/permission matrix, customer management) are implemented** — 13 ops
+live (`admin.users.*` ×6, `admin.roles.{list,read,create,replacePermissions}`, and
+`admin.customers.{list,read,activate}`), so 102 operations are registered in the admin registry
+(99 at the end of Batch 2) and 107 on the running server with the five hand-written fragments.
+Batches 4–7 below are plan only. Scope comes from
 `docs/remaining-features.md`
 Priority-1 groups (Organization & People + Money & Support): the unbuilt half of admin-plan
 Phase 1 plus Phase 4 minus `stats`.
@@ -24,13 +25,13 @@ Checklist:
 
 - [x] **Batch 1 — Staff users** — 6 ops (`admin.users.{list,read,create,update,resetPassword,setStatus}`) + `admin.roles.list` pulled forward
 - [x] **Batch 2 — Roles + permission matrix** — 4 ops (`admin.roles.{list,read,create,replacePermissions}`)
-- [ ] **Batch 3 — Customer management** — 3 ops (`admin.customers.{list,read,activate}`)
+- [x] **Batch 3 — Customer management** — 3 ops (`admin.customers.{list,read,activate}`)
 - [ ] **Batch 4 — Payments & COD** — 4 ops (`admin.payments.{list,read,record,refund}`)
 - [ ] **Batch 5 — Settlements** — 4 ops (`admin.settlements.{list,read,create,setStatus}`)
 - [ ] **Batch 6 — Support tickets** — 5 ops (`admin.support.{list,read,create,assign,updateStatus}`)
 - [ ] **Batch 7 — Notifications outbox** — 2 ops (`admin.notifications.{list,retry}`) + event-bus writer
 
-**Total: 28 planned ops → ~122 registered** (104 live today — 99 in the admin registry plus five
+**Total: 28 planned ops → ~122 registered** (107 live today — 102 in the admin registry plus five
 hand-written fragments — against 89 at the end of P0).
 
 ## How batches are built
@@ -222,20 +223,61 @@ next request — verified by a second session or a token refresh, not by the UI'
 ## Batch 3 — Customer management (3 ops)
 
 `admin.customers.{list,read,activate}` — served at `/api/v1/admin/customers`.
+**Shipped.** The `customers` feature is a registry entry + one module
+(`customers.{dto,repository,service}.ts` — addresses embed in `read`, `activate` is the only
+write), plus the `customerId` filter that got **added to `parcels.list`** (matched against both
+sender and receiver) so the detail screen's parcel history is the existing list with one more
+query param, not a duplicate implementation. The admin ships a list screen and a detail screen
+(account card, addresses card, parcel history table, activate button behind
+`customers.manage`).
 
-| File                                                                              | Action   |
-| --------------------------------------------------------------------------------- | -------- |
-| `apps/api/src/modules/customers/customers.dto.ts`                                 | **new**  |
-| `apps/api/src/modules/customers/customers.repository.ts`                          | **new**  |
-| `apps/api/src/modules/customers/customers.service.ts`                             | **new**  |
-| `apps/api/src/modules/admin/registry.ts`                                          | **edit** |
-| `apps/api/src/modules/admin/handlers.ts`                                          | **edit** |
-| `apps/admin/src/features/customers/customers-list-page.tsx`                       | **new**  |
-| `apps/admin/src/features/customers/customer-detail-page.tsx`                      | **new**  |
-| `apps/admin/src/routes/customers-search-params.ts`                                | **new**  |
-| `apps/admin/src/lib/{endpoints,types,navigation}.ts`                              | **edit** |
-| `apps/admin/src/{router.tsx,routes/app-routes.tsx,components/layout/sidebar.tsx}` | **edit** |
-| `apps/api/scripts/check-read-paths.ts`                                            | **edit** |
+**Deviations from the decisions below (all intentional):**
+
+- **`activate` is idempotent and emits once.** The update runs with `WHERE status='TEMP'`
+  (`UPDATE ... SET status='ACTIVE', activated_at=CURRENT_TIMESTAMP`), so a re-sent or repeated
+  request returns the ACTIVE row unchanged instead of a 409/500, and `customer.activated` fires
+  only when a transition actually happened — a double-fired button does not double-fire
+  subscribers. `activated_at` is stamped on the admin path (OTP activation's EventWriter would
+  carry its own meaning).
+- **Wire-parity fix on the address shape.** `customer_addresses` response carries `customerId`
+  so the route's DTO matches `@dropx/types` `CustomerAddress` (the declared type has the field;
+  without the fix the mapper could never satisfy it). Addresses also come back ordered
+  `is_default DESC, id ASC`, so a screen can render the default first without re-sorting.
+- **`list` sort allowlist is `name, phone, status, createdAt` defaulting to `createdAt`** — the
+  plan named no default; `status` is a genuine filter on this screen (support triages TEMP rows)
+  so it is sortable like the users list sorts by status.
+
+**Verification.** Gates: typecheck (6 workspaces), `check:read-paths` 242/242 (five customer
+reads + a parcels `customerId` read), prettier, admin `build` (530ms), boot with 107 registered
+ops + OpenAPI for all three new routes, unauth 401 on `/api/v1/admin/customers`. Then an
+authenticated smoke (27/27 checks): search and `status=TEMP` filters both surface a TEMP fixture
+— including to a **hub-scoped BRANCH_MANAGER**, proving customers are company-wide (no scope
+leak out of the users/hubs tables); all four sort keys 200, bogus `sortBy`/`status` are 422s,
+unknown id 404; detail embeds two addresses default-first with `customerId` echoed on each, and
+an address-less customer returns `addresses: []`; the BRANCH_MANAGER activates the fixture (200,
+`ACTIVE`, `activated_at` set) and a second activate is an idempotent 200; the activated customer
+drops out of the `status=TEMP` filter; a **HUB_OPERATOR** — grants asserted to hold
+`customers.view` but not `customers.manage` — reads the same customer 200 but activating it 403s
+`MISSING_PERMISSION` and writes nothing (still TEMP); `parcels.list?customerId=<a real sender>`
+returns exactly that customer's parcels (sender or receiver match) and an id with no history
+returns an empty page. DB restored to pre-test state afterwards.
+
+Decisions (as planned):
+
+| File                                                                              | Action                         |
+| --------------------------------------------------------------------------------- | ------------------------------ |
+| `apps/api/src/modules/customers/customers.dto.ts`                                 | **new**                        |
+| `apps/api/src/modules/customers/customers.repository.ts`                          | **new**                        |
+| `apps/api/src/modules/customers/customers.service.ts`                             | **new**                        |
+| `apps/api/src/modules/admin/registry.ts`                                          | **edit**                       |
+| `apps/api/src/modules/admin/handlers.ts`                                          | **edit**                       |
+| `apps/api/src/modules/parcels/parcels.{dto,repository}.ts`                        | **edit** — `customerId` filter |
+| `apps/admin/src/features/customers/customers-list-page.tsx`                       | **new**                        |
+| `apps/admin/src/features/customers/customer-detail-page.tsx`                      | **new**                        |
+| `apps/admin/src/routes/customers-search-params.ts`                                | **new**                        |
+| `apps/admin/src/lib/{endpoints,types,navigation,parcels}.ts`                      | **edit**                       |
+| `apps/admin/src/{router.tsx,routes/app-routes.tsx,components/layout/sidebar.tsx}` | **edit**                       |
+| `apps/api/scripts/check-read-paths.ts`                                            | **edit**                       |
 
 Decisions:
 

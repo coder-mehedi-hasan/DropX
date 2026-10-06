@@ -50,6 +50,11 @@ import {
   deliveryProofsSearchSchema,
 } from "@/routes/delivery-proofs-search-params"
 import type { DeliveryProofsSearch } from "@/routes/delivery-proofs-search-params"
+import {
+  DEFAULT_CUSTOMERS_SEARCH_PARAMS,
+  customersSearchSchema,
+} from "@/routes/customers-search-params"
+import type { CustomersSearch } from "@/routes/customers-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -73,6 +78,8 @@ export type AdminDestination =
   | { to: "/hubs"; search: HubsSearch }
   | { to: "/users"; search: UsersSearch }
   | { to: "/roles"; search: RolesSearch }
+  | { to: "/customers"; search: CustomersSearch }
+  | { to: "/customers/$customerId"; params: { customerId: string } }
   | { to: "/zones"; search: ZonesSearch }
   | { to: "/vehicles"; search: VehiclesSearch }
   | { to: "/pricing-rules"; search: PricingRulesSearch }
@@ -137,6 +144,25 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       to: "/roles",
       search: resolveListSearch(rolesSearchSchema, DEFAULT_ROLES_SEARCH_PARAMS, url.searchParams),
     }
+  }
+
+  if (path === "/customers") {
+    return {
+      to: "/customers",
+      search: resolveListSearch(
+        customersSearchSchema,
+        DEFAULT_CUSTOMERS_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
+  }
+
+  if (path.startsWith("/customers/")) {
+    const customerId = decodeURIComponent(path.slice("/customers/".length))
+    if (PARCEL_ID.test(customerId)) {
+      return { to: "/customers/$customerId", params: { customerId } }
+    }
+    return { to: "/" }
   }
 
   if (path === "/zones") {

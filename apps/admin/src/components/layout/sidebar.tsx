@@ -14,6 +14,7 @@ import {
   Route,
   ShieldCheck,
   Truck,
+  UserRound,
   Users,
   Warehouse,
 } from "lucide-react"
@@ -37,6 +38,8 @@ import { DEFAULT_USERS_SEARCH_PARAMS } from "@/routes/users-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
 import { DEFAULT_ROLES_SEARCH_PARAMS } from "@/routes/roles-search-params"
 import type { RolesSearch } from "@/routes/roles-search-params"
+import { DEFAULT_CUSTOMERS_SEARCH_PARAMS } from "@/routes/customers-search-params"
+import type { CustomersSearch } from "@/routes/customers-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import { DEFAULT_RIDER_APPLICATIONS_SEARCH } from "@/routes/rider-applications-search-params"
@@ -60,6 +63,7 @@ export type NavItem = {
     | "/hubs"
     | "/users"
     | "/roles"
+    | "/customers"
     | "/zones"
     | "/vehicles"
     | "/pricing-rules"
@@ -77,6 +81,7 @@ export type NavItem = {
     | HubsSearch
     | UsersSearch
     | RolesSearch
+    | CustomersSearch
     | ZonesSearch
     | VehiclesSearch
     | PricingRulesSearch
@@ -136,6 +141,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_ROLES_SEARCH_PARAMS,
     icon: ShieldCheck,
     permission: "roles.view",
+  },
+  // After Roles: the customers those roles are for. Support reads a customer
+  // that never verified a code, and the activate override is the one write —
+  // gated by customers.manage which is why the nav item itself only needs
+  // customers.view.
+  {
+    label: "Customers",
+    to: "/customers",
+    search: DEFAULT_CUSTOMERS_SEARCH_PARAMS,
+    icon: UserRound,
+    permission: "customers.view",
   },
   {
     label: "Zones",

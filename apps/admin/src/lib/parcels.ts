@@ -95,6 +95,7 @@ export type ParcelListParams = {
   status?: ParcelStatus | undefined
   hubId?: string | undefined
   paymentType?: PaymentType | undefined
+  customerId?: string | undefined
 }
 
 export type CreateParcelItemInput = {
