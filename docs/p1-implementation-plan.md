@@ -2,11 +2,12 @@
 
 ## Status
 
-**Batches 1–4 (staff users, roles/permission matrix, customer management, payments & COD) are implemented** —
-17 ops live (`admin.users.*` ×6, `admin.roles.{list,read,create,replacePermissions}`,
-`admin.customers.{list,read,activate}`, and `admin.payments.{list,read,record,refund}`), so 106
-operations are registered in the admin registry (99 at the end of Batch 2) and 111 on the running
-server with the five hand-written fragments. Batches 5–7 below are plan only. Scope comes from
+**Batches 1–5 (staff users, roles/permission matrix, customer management, payments & COD, settlements) are implemented** —
+21 ops live (`admin.users.*` ×6, `admin.roles.{list,read,create,replacePermissions}`,
+`admin.customers.{list,read,activate}`, `admin.payments.{list,read,record,refund}`, and
+`admin.settlements.{list,read,create,setStatus}`), so 110
+operations are registered in the admin registry (106 at the end of Batch 4) and 115 on the running
+server with the five hand-written fragments. Batches 6–7 below are plan only. Scope comes from
 `docs/remaining-features.md`
 Priority-1 groups (Organization & People + Money & Support): the unbuilt half of admin-plan
 Phase 1 plus Phase 4 minus `stats`.
@@ -27,11 +28,11 @@ Checklist:
 - [x] **Batch 2 — Roles + permission matrix** — 4 ops (`admin.roles.{list,read,create,replacePermissions}`)
 - [x] **Batch 3 — Customer management** — 3 ops (`admin.customers.{list,read,activate}`)
 - [x] **Batch 4 — Payments & COD** — 4 ops (`admin.payments.{list,read,record,refund}`)
-- [ ] **Batch 5 — Settlements** — 4 ops (`admin.settlements.{list,read,create,setStatus}`)
+- [x] **Batch 5 — Settlements** — 4 ops (`admin.settlements.{list,read,create,setStatus}`)
 - [ ] **Batch 6 — Support tickets** — 5 ops (`admin.support.{list,read,create,assign,updateStatus}`)
 - [ ] **Batch 7 — Notifications outbox** — 2 ops (`admin.notifications.{list,retry}`) + event-bus writer
 
-**Total: 28 planned ops → ~122 registered** (111 live today — 106 in the admin registry plus five
+**Total: 28 planned ops → ~122 registered** (115 live today — 110 in the admin registry plus five
 hand-written fragments — against 89 at the end of P0).
 
 ## How batches are built
@@ -384,7 +385,7 @@ a refund above the balance (409), then refund a valid amount and see both rows.
 
 ---
 
-## Batch 5 — Settlements (4 ops)
+## Batch 5 — Settlements (4 ops) — shipped
 
 `admin.settlements.{list,read,create,setStatus}` — served at `/api/v1/admin/settlements`.
 
@@ -393,9 +394,10 @@ a refund above the balance (409), then refund a valid amount and see both rows.
 | `apps/api/src/modules/settlements/settlements.dto.ts`                             | **new**                                                        |
 | `apps/api/src/modules/settlements/settlements.repository.ts`                      | **new**                                                        |
 | `apps/api/src/modules/settlements/settlements.service.ts`                         | **new**                                                        |
-| `packages/types/src/index.ts`                                                     | **edit** — `SETTLEMENT_TRANSITIONS`, `canTransitionSettlement` |
+| `packages/types/src/index.ts`                                                     | **edit** — `SETTLEMENT_TRANSITIONS`, `canTransitionSettlement`; `Settlement` now `EntityBase & CreatedAt` (the table has no `updated_at`, write-once-then-transition like `Payment`) |
 | `apps/api/src/modules/admin/registry.ts`                                          | **edit**                                                       |
 | `apps/api/src/modules/admin/handlers.ts`                                          | **edit**                                                       |
+| `apps/api/src/shared/events/bus.ts`                                               | **edit** — `settlement.created`, `settlement.status_changed`   |
 | `apps/admin/src/features/settlements/settlements-list-page.tsx`                   | **new**                                                        |
 | `apps/admin/src/features/settlements/settlement-form-sheet.tsx`                   | **new**                                                        |
 | `apps/admin/src/routes/settlements-search-params.ts`                              | **new**                                                        |
@@ -403,19 +405,54 @@ a refund above the balance (409), then refund a valid amount and see both rows.
 | `apps/admin/src/{router.tsx,routes/app-routes.tsx,components/layout/sidebar.tsx}` | **edit**                                                       |
 | `apps/api/scripts/check-read-paths.ts`                                            | **edit**                                                       |
 
-Decisions:
+Decisions — implemented as planned, with three rulings added:
 
 - **Totals are computed server-side, never accepted from the client.** `create` takes
   `customerId`, `periodStart`, `periodEnd`; the service aggregates `payments` for that customer in
   the period (`type=COD`, `status=PAID` → `total_cod`; `type=DELIVERY_FEE`, `status=PAID` →
   `delivery_charges`) and writes `net_amount` itself. Same rule as pricing (architecture rule 11):
   a client-typed total is the settlement lying.
+- **`net_amount` is what the company owes the merchant: `total_cod − delivery_charges`**
+  (`other_charges` stays `0`). Refunds already cancelled themselves out of the COD balance at
+  refund time (Batch 4 flips COD rows `REFUNDED` at zero), so REFUND rows are excluded from the
+  COD sum *and* never subtracted — they are the balance corrected already.
+- **A period that collected nothing is refused `422 VALIDATION_FAILED`.** Issuing a zero
+  statement is an accounting no-op, and accepting one teaches clients to pass totals in.
 - **`setStatus` follows the table's own vocabulary**: `PENDING → PROCESSING → PAID`, plus
-  `→ FAILED`, and `FAILED → PENDING` for a retry. `paid_at` is stamped on `PAID`.
+  `→ FAILED`, and `FAILED → PENDING` for a retry. `paid_at` is stamped exactly on `PAID` and
+  cleared on any other status. `PAID` is terminal — a PAID period is never reopened, the
+  correction is a new period's settlement.
 - **One settlement per `(customer_id, period_start, period_end)`** — enforced by locking the
   customer row before counting, the same `SELECT … FOR UPDATE` pattern as P0's one-open-attempt
-  rules, so two concurrent creates cannot both win.
+  rules, so two concurrent creates cannot both win. The guard is the exact period triple; an
+  overlapping-but-distinct period is a legitimately separate statement (verified in smoke).
 - **`SETTLEMENT_TRANSITIONS` in `@dropx/types`**, next to the others.
+- **Settlements are permission-only, company-wide, like payments** — no scope clause, the
+  `settlements.view`/`settlements.manage` keys are the whole guard. FINANCE holds both (it
+  already did from Batch 4 seed); BRANCH_MANAGER holds neither and is locked out entirely (403).
+- **The response joins the merchant's name and phone onto every row**, because a finance clerk
+  recognises a seller by name and phone, not by `customerId` — same envelope pattern as the
+  payment `trackingNumber`.
+- **No detail page.** The list row (merchant, period, three money columns, status) and the
+  status-advance row action are the whole screen; the form sheet creates (merchant picker +
+  date range) and the API returns the computed statement.
+
+**Verification:**
+
+- `check:read-paths` **264/264** (12 settlements cases: list ×8 incl. every sort key + status
+  filter, read, totals aggregation, customer lock, period-exists).
+- Boot gates: **115 operations registered**, `/health`, `/openapi.json`, `/docs` all 200,
+  unauthenticated `GET /admin/settlements` 401. Spec carries the three settlement paths
+  (GET+POST `/admin/settlements`, GET `/admin/settlements/{id}`, POST
+  `/admin/settlements/{id}/status`).
+- **Smoke `dropx-b5` 41/41 ALL PASS**: server-computed totals (in-period 900+200+live 300 =
+  1400, delivery fee 60, net 1340; a 100 REFUND row excluded; an out-of-period Sept 700
+  excluded), duplicate period 409, zero-collection 422, unknown customer 404, bad period/dates
+  422, overlapping-distinct period 201, full `PENDING → PROCESSING → PAID` with `paid_at`
+  stamped, terminal-PAID 409, skipped `PENDING → PAID` 409, `FAILED → PENDING → PROCESSING`
+  retry 200, list reads/filters/sorts, and BRANCH_MANAGER 403 on list + create + status.
+- Root typecheck 6/6, prettier clean, admin production build passes.
+- Smoke fixtures deleted and the DB restored to its pre-Batch-5 state; nothing committed.
 
 **Gate:** given recorded COD payments, create a period settlement and verify `total_cod` equals the
 sum of that customer's in-period paid COD rows (not a number anyone typed), then carry it
@@ -483,9 +520,10 @@ subscriber that writes `notifications` rows.
 
 Decisions:
 
-- **Writer and viewer ship together.** `apps/api/src/shared/events/bus.ts` already has 8 `emit()`
+- **Writer and viewer ship together.** `apps/api/src/shared/events/bus.ts` already has 10 `emit()`
   calls (`parcel.created`, `parcel.status_changed`, `pickup.assigned`, `delivery.assigned`,
-  `transfer.created/departed/arrived`, `customer.activated`) and zero subscribers. The subscriber
+  `transfer.created/departed/arrived`, `customer.activated`, `payment.recorded/refunded`,
+  `settlement.created`, `settlement.status_changed`) and zero subscribers. The subscriber
   maps each event to a `notifications` row (`channel`, `event_type`, `recipient`, `message`,
   `status=PENDING`). This is the minimum that makes the outbox screen show real data on day one.
 - **Recipient resolution is best-effort per event** — customer events resolve to the customer's
@@ -557,7 +595,7 @@ One authenticated browser session proving:
 | 2         | Roles + matrix  | 4           | 2                 | implemented       |
 | 3         | Customers       | 3           | 2                 | implemented       |
 | 4         | Payments & COD  | 4           | 2                 | implemented       |
-| 5         | Settlements     | 4           | 2                 | planned           |
+| 5         | Settlements     | 4           | 2                 | implemented       |
 | 6         | Support tickets | 5           | 3                 | planned           |
 | 7         | Notifications   | 2 + writer  | 1                 | planned           |
-| **Total** | **7 features**  | **28 ops**  | **14 screens**    | **17 of 28 done** |
+| **Total** | **7 features**  | **28 ops**  | **14 screens**    | **21 of 28 done** |

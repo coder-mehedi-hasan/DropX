@@ -704,11 +704,35 @@ export function canTransitionPayment(from: PaymentState, to: PaymentState): bool
   return (PAYMENT_TRANSITIONS[from] as readonly string[]).includes(to)
 }
 
+/**
+ * Valid settlement status transitions: `PENDING → PROCESSING → PAID` is the
+ * happy path a `paid_at` stamp rides on, `FAILED` is reachable from either
+ * open status (a payout bounced), and `FAILED → PENDING` re-arms it for a
+ * retry. `PAID` is terminal — a settled period is never reopened, the
+ * correction is a new period's settlement.
+ */
+export const SETTLEMENT_TRANSITIONS: Readonly<
+  Record<SettlementStatus, readonly SettlementStatus[]>
+> = {
+  PENDING: ["PROCESSING", "FAILED"],
+  PROCESSING: ["PAID", "FAILED"],
+  PAID: [],
+  FAILED: ["PENDING"],
+}
+
+export function canTransitionSettlement(from: SettlementStatus, to: SettlementStatus): boolean {
+  return (SETTLEMENT_TRANSITIONS[from] as readonly string[]).includes(to)
+}
+
 export const SETTLEMENT_STATUSES = ["PENDING", "PROCESSING", "PAID", "FAILED"] as const
 export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number]
 
+/**
+ * The settlement row is write-once then status-transitioned, like `Payment`,
+ * so `CreatedAt` — the table has no `updated_at` column.
+ */
 export type Settlement = EntityBase &
-  Timestamped & {
+  CreatedAt & {
     customerId: Id
     periodStart: string
     periodEnd: string

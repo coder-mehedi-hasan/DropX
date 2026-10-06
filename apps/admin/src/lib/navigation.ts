@@ -60,6 +60,11 @@ import {
   paymentsSearchSchema,
 } from "@/routes/payments-search-params"
 import type { PaymentsSearch } from "@/routes/payments-search-params"
+import {
+  DEFAULT_SETTLEMENTS_SEARCH_PARAMS,
+  settlementsSearchSchema,
+} from "@/routes/settlements-search-params"
+import type { SettlementsSearch } from "@/routes/settlements-search-params"
 
 /**
  * Where a signed-in user may be sent after login.
@@ -86,6 +91,7 @@ export type AdminDestination =
   | { to: "/customers"; search: CustomersSearch }
   | { to: "/customers/$customerId"; params: { customerId: string } }
   | { to: "/payments"; search: PaymentsSearch }
+  | { to: "/settlements"; search: SettlementsSearch }
   | { to: "/zones"; search: ZonesSearch }
   | { to: "/vehicles"; search: VehiclesSearch }
   | { to: "/pricing-rules"; search: PricingRulesSearch }
@@ -177,6 +183,17 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
       search: resolveListSearch(
         paymentsSearchSchema,
         DEFAULT_PAYMENTS_SEARCH_PARAMS,
+        url.searchParams,
+      ),
+    }
+  }
+
+  if (path === "/settlements") {
+    return {
+      to: "/settlements",
+      search: resolveListSearch(
+        settlementsSearchSchema,
+        DEFAULT_SETTLEMENTS_SEARCH_PARAMS,
         url.searchParams,
       ),
     }

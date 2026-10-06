@@ -82,6 +82,9 @@ import type {
   RefundPaymentBody,
   RecordRemittanceBody,
   PaymentListItem,
+  CreateSettlementBody,
+  SetSettlementStatusBody,
+  SettlementListItem,
 } from "./types"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
 import type { ZonesSearch } from "@/routes/zones-search-params"
@@ -99,6 +102,7 @@ import type { UsersSearch } from "@/routes/users-search-params"
 import type { RolesSearch } from "@/routes/roles-search-params"
 import type { CustomersSearch } from "@/routes/customers-search-params"
 import type { PaymentsSearch } from "@/routes/payments-search-params"
+import type { SettlementsSearch } from "@/routes/settlements-search-params"
 
 export function loginWithPassword(email: string, password: string) {
   return api.post<LoginResult>("/auth/admin/login", { email, password }, { anonymous: true })
@@ -490,6 +494,34 @@ export function refundPayment(paymentId: string, body: RefundPaymentBody) {
   return api.post<PaymentListItem>(`/admin/payments/${paymentId}/refund`, body)
 }
 
+/**
+ * Settlements — the disbursement half of the money surface. `create` takes only
+ * a merchant and a period; the API aggregates the merchant's paid COD and
+ * delivery-fee payments and writes the statement total itself. `setSettlementStatus`
+ * drives PENDING → PROCESSING → PAID, with FAILED and FAILED → PENDING for a retry.
+ */
+export function listSettlements(params: SettlementsSearch, signal?: AbortSignal) {
+  return api.get<Page<SettlementListItem>>("/admin/settlements", {
+    query: settlementsQuery(params),
+    ...(signal ? { signal } : {}),
+  })
+}
+
+export function getSettlement(settlementId: string, signal?: AbortSignal) {
+  return api.get<SettlementListItem>(
+    `/admin/settlements/${settlementId}`,
+    signal ? { signal } : undefined,
+  )
+}
+
+export function createSettlement(body: CreateSettlementBody) {
+  return api.post<SettlementListItem>("/admin/settlements", body)
+}
+
+export function setSettlementStatus(settlementId: string, body: SetSettlementStatusBody) {
+  return api.post<SettlementListItem>(`/admin/settlements/${settlementId}/status`, body)
+}
+
 export function listPickups(params: PickupsSearch) {
   return api.get<Page<Pickup>>("/admin/pickups", { query: pickupQuery(params) })
 }
@@ -707,6 +739,16 @@ function customersQuery(params: CustomersSearch) {
 }
 
 function paymentsQuery(params: PaymentsSearch) {
+  return {
+    page: params.page,
+    limit: params.limit,
+    sortBy: params.sortBy,
+    sort: params.sort,
+    ...(params.status ? { status: params.status } : {}),
+  }
+}
+
+function settlementsQuery(params: SettlementsSearch) {
   return {
     page: params.page,
     limit: params.limit,

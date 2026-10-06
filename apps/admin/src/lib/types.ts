@@ -50,6 +50,8 @@ import type {
   Rider,
   RiderLocation,
   RiderStatus,
+  Settlement,
+  SettlementStatus,
   CompensationType,
   Delivery,
   DeliveryStatus,
@@ -137,6 +139,8 @@ export type {
   Rider,
   RiderLocation,
   RiderStatus,
+  Settlement,
+  SettlementStatus,
   CompensationType,
   Route,
   RouteStop,
@@ -170,6 +174,27 @@ export type RecordRemittanceBody = {
 
 export type RefundPaymentBody = {
   amount: number
+}
+
+/**
+ * A settlement as the admin surface reads it. The base `Settlement` entity
+ * carries the customer id; a money screen recognises the merchant by name and
+ * phone, so the API joins `customers` onto every settlement response.
+ */
+export type SettlementListItem = Settlement & {
+  customerName: string
+  customerPhone: string
+}
+
+/** The create takes only the merchant and the period — totals are server-side. */
+export type CreateSettlementBody = {
+  customerId: string
+  periodStart: string
+  periodEnd: string
+}
+
+export type SetSettlementStatusBody = {
+  status: SettlementStatus
 }
 
 /** `GET /auth/me` for an `admin` audience token. */

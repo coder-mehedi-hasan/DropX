@@ -43,6 +43,8 @@ import { DEFAULT_CUSTOMERS_SEARCH_PARAMS } from "@/routes/customers-search-param
 import type { CustomersSearch } from "@/routes/customers-search-params"
 import { DEFAULT_PAYMENTS_SEARCH_PARAMS } from "@/routes/payments-search-params"
 import type { PaymentsSearch } from "@/routes/payments-search-params"
+import { DEFAULT_SETTLEMENTS_SEARCH_PARAMS } from "@/routes/settlements-search-params"
+import type { SettlementsSearch } from "@/routes/settlements-search-params"
 import { DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS } from "@/routes/rider-locations-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
 import { DEFAULT_RIDER_APPLICATIONS_SEARCH } from "@/routes/rider-applications-search-params"
@@ -68,6 +70,7 @@ export type NavItem = {
     | "/roles"
     | "/customers"
     | "/payments"
+    | "/settlements"
     | "/zones"
     | "/vehicles"
     | "/pricing-rules"
@@ -87,6 +90,7 @@ export type NavItem = {
     | RolesSearch
     | CustomersSearch
     | PaymentsSearch
+    | SettlementsSearch
     | ZonesSearch
     | VehiclesSearch
     | PricingRulesSearch
@@ -250,6 +254,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     search: DEFAULT_PAYMENTS_SEARCH_PARAMS,
     icon: Wallet,
     permission: "payments.view",
+  },
+  // After the money collected: the statement of what the company now owes the
+  // merchant. `create` needs settlements.manage (it writes the statement
+  // totals), so the nav item only requires the read key and the screen gates
+  // the writes.
+  {
+    label: "Settlements",
+    to: "/settlements",
+    search: DEFAULT_SETTLEMENTS_SEARCH_PARAMS,
+    icon: Handshake,
+    permission: "settlements.view",
   },
 ]
 

@@ -42,7 +42,7 @@ Verified against codebase. Built = has real implementation. Missing = table/key 
 > Priority - 1
 
 - [x] **Payments & COD** — record COD remittances, refunds, payment tracking. Batch 4 shipped **cash-only** under `/admin/payments` (list/read/record/refund); digital methods and the PENDING lifecycle are deferred to the P2 group below.
-- [ ] **Settlements** — period payouts to customers, PENDING→PAID workflow (table + 2 keys exist, zero code)
+- [x] **Settlements** — period payouts to merchants. Batch 5 shipped `/admin/settlements` (list/read/create/setStatus): server-computed totals (COD collected minus delivery fees, refunds already netted), PENDING → PROCESSING → PAID with FAILED retry, cash-only. The online-payments P2 group below is the digital half.
 - [ ] **Support tickets** — list, assign to staff, resolve (table + 2 keys exist, zero code)
 - [ ] **Notifications** — outbox viewer with retry for SMS/email/push (table + 1 key exist, zero code; event bus emits but has no handlers)
 

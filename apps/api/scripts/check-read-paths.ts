@@ -60,6 +60,7 @@ const users = await import("../src/modules/users/users.repository")
 const roles = await import("../src/modules/roles/roles.repository")
 const customers = await import("../src/modules/customers/customers.repository")
 const payments = await import("../src/modules/payments/payments.repository")
+const settlements = await import("../src/modules/settlements/settlements.repository")
 
 const scope: Scope = {
   userId: "1",
@@ -951,6 +952,38 @@ cases.push(
   },
   { name: "payments.sumTypedPaid(COD)", run: () => payments.sumTypedPaid(pool, "1", "COD") },
   { name: "payments.sumTypedPaid(REFUND)", run: () => payments.sumTypedPaid(pool, "1", "REFUND") },
+
+  // Settlements join `customers` (identity on every row) and `parcels`
+  // (aggregation), and the filter puts a status column in the count WHERE.
+  // `lockCustomerForSettlement` is a SELECT ... FOR UPDATE — fine to run;
+  // outside an explicit transaction the lock is a no-op.
+  {
+    name: "settlements.selectSettlements",
+    run: () => settlements.selectSettlements(pool, listParams, {}),
+  },
+  {
+    name: "settlements.selectSettlements(status)",
+    run: () => settlements.selectSettlements(pool, listParams, { status: "PENDING" }),
+  },
+  ...(["createdAt", "periodStart", "periodEnd", "totalCod", "netAmount", "status"] as const).map(
+    (sortBy) => ({
+      name: `settlements.selectSettlements(sortBy=${sortBy})`,
+      run: () => settlements.selectSettlements(pool, { ...listParams, sortBy }, {}),
+    }),
+  ),
+  { name: "settlements.selectSettlement", run: () => settlements.selectSettlement(pool, "1") },
+  {
+    name: "settlements.selectCustomerSettlementTotals",
+    run: () => settlements.selectCustomerSettlementTotals(pool, "1", "2026-01-01", "2026-01-31"),
+  },
+  {
+    name: "settlements.lockCustomerForSettlement",
+    run: () => settlements.lockCustomerForSettlement(pool, "1"),
+  },
+  {
+    name: "settlements.settlementPeriodExists",
+    run: () => settlements.settlementPeriodExists(pool, "1", "2026-01-01", "2026-01-31"),
+  },
 )
 
 let failures = 0
