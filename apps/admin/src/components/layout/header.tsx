@@ -19,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  useConfirmation,
 } from "@dropx/ui"
 
 import { NAV_ITEMS } from "@/components/layout/sidebar"
@@ -31,6 +32,16 @@ export function Header() {
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { confirm, confirmationDialog } = useConfirmation()
+
+  async function onSignOut() {
+    const ok = await confirm({
+      title: "Sign out?",
+      description: "You will need your email and password to sign back in.",
+      confirmLabel: "Sign out",
+    })
+    if (ok) await logout().then(() => navigate({ to: "/login" }))
+  }
 
   const items = NAV_ITEMS.filter(
     (item) => item.permission === null || hasPermission(item.permission),
@@ -113,17 +124,13 @@ export function Header() {
             )}
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={() => {
-              void logout().then(() => navigate({ to: "/login" }))
-            }}
-          >
+          <DropdownMenuItem variant="destructive" onSelect={() => void onSignOut()}>
             <LogOut />
             Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {confirmationDialog}
     </header>
   )
 }

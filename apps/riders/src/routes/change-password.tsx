@@ -13,6 +13,7 @@ import {
   FormInput,
   FormPasswordInput,
   LoadingButton,
+  useConfirmation,
 } from "@dropx/ui"
 
 import { describeApiError } from "../components/feedback"
@@ -41,6 +42,7 @@ function ChangePasswordScreen() {
   const { changePassword, logout, rider } = useAuth()
   const navigate = useNavigate()
   const [serverError, setServerError] = useState<string | null>(null)
+  const { confirm, confirmationDialog } = useConfirmation()
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { newPassword: "", confirmPassword: "" },
@@ -57,12 +59,19 @@ function ChangePasswordScreen() {
   })
 
   async function onSignOut() {
+    const ok = await confirm({
+      title: "Sign out of DropX Rider?",
+      description: "Any job you were looking at will be closed. Unsent status changes are lost.",
+      confirmLabel: "Sign out",
+    })
+    if (!ok) return
     await logout()
     await navigate({ to: "/login", replace: true })
   }
 
   return (
     <main className="bg-background text-foreground flex min-h-dvh items-center justify-center px-4 py-10">
+      {confirmationDialog}
       <Card className="rounded-feature w-full max-w-md p-6 shadow-sm sm:p-8">
         <DropXLogo size="md" />
         <p className="text-accent-ink mt-8 text-xs font-semibold tracking-[0.16em] uppercase">

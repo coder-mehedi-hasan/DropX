@@ -2,7 +2,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router"
 import { ShieldAlert } from "lucide-react"
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import { Alert, AlertDescription, AlertTitle, Button, Skeleton } from "@dropx/ui"
+import { Alert, AlertDescription, AlertTitle, Button, Skeleton, useConfirmation } from "@dropx/ui"
 
 import { ApiError, onUnauthorized, readTokens, setTokens } from "./api-client"
 import { fetchCurrentStaff, loginWithPassword, logout as logoutRequest } from "./endpoints"
@@ -180,10 +180,12 @@ export function RequirePermission({
   children: ReactNode
 }) {
   const { hasPermission, displayName, logout } = useAuth()
+  const { confirm, confirmationDialog } = useConfirmation()
 
   if (!hasPermission(permission)) {
     return (
       <div className="mx-auto w-full max-w-2xl py-10">
+        {confirmationDialog}
         <Alert variant="warning">
           <ShieldAlert />
           <AlertTitle>You do not have access to this screen</AlertTitle>
@@ -192,7 +194,19 @@ export function RequirePermission({
               Your roles do not include <code className="font-mono text-xs">{permission}</code>. Ask
               an administrator to grant it, or sign in with a different account.
             </p>
-            <Button variant="outline" size="sm" onClick={() => void logout()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void confirm({
+                  title: "Sign out?",
+                  description: "You will need your email and password to sign back in.",
+                  confirmLabel: "Sign out",
+                }).then((ok) => {
+                  if (ok) void logout()
+                })
+              }}
+            >
               Sign out {displayName ? `(${displayName})` : ""}
             </Button>
           </AlertDescription>

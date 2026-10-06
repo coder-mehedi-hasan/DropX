@@ -26,6 +26,7 @@ import {
   Skeleton,
   Textarea,
   cn,
+  useConfirmation,
 } from "@dropx/ui"
 import {
   ArrowLeftIcon,
@@ -60,7 +61,7 @@ import { ReferenceSelect } from "@/components/reference-select"
 import { isApiError } from "@/lib/api-client"
 import { formatMoney } from "@/lib/format"
 import { useCreateParcel, useFeeQuote, useHubs, useRecipients, useZones } from "@/lib/queries"
-import { REFERENCE_ENDPOINTS, type ReferenceOption } from "@/lib/reference-data"
+import { type ReferenceOption } from "@/lib/reference-data"
 import {
   PARCEL_TYPES,
   PAYMENT_TYPES,
@@ -270,6 +271,7 @@ export function BookParcel() {
 
   const items = useFieldArray({ control: form.control, name: "items" })
   const createParcel = useCreateParcel()
+  const { confirm, confirmationDialog } = useConfirmation()
 
   const [serverError, setServerError] = React.useState<string | null>(null)
 
@@ -336,6 +338,29 @@ export function BookParcel() {
   async function onSubmit(values: BookParcelValues) {
     setServerError(null)
 
+    const quoted = quote.data
+    const codOnDelivery =
+      values.paymentType === "COD" && Number(values.codAmount) > 0
+        ? formatMoney(Number(values.codAmount), quoted?.currency)
+        : null
+
+    const ok = await confirm({
+      title: "Book this parcel?",
+      description: (
+        <span className="grid gap-1.5">
+          <span>
+            Sending to {values.receiverName} ({values.receiverPhone}).
+          </span>
+          {quoted ? <span>Estimated fee {formatMoney(quoted.total, quoted.currency)}.</span> : null}
+          {codOnDelivery ? <span>Collected on delivery: {codOnDelivery}.</span> : null}
+          <span>The server recalculates the final fee when the parcel is created.</span>
+        </span>
+      ),
+      confirmLabel: "Book parcel",
+      destructive: false,
+    })
+    if (!ok) return
+
     try {
       const parcel = await createParcel.mutateAsync(toCreateRequest(values))
       toast.success(`Booked — tracking number ${parcel.trackingNumber}`)
@@ -358,6 +383,7 @@ export function BookParcel() {
 
   return (
     <div className="max-w-page mx-auto grid w-full gap-7">
+      {confirmationDialog}
       <PageHeader
         eyebrow="New shipment"
         title="Book a parcel with confidence."

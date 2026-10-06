@@ -9,6 +9,7 @@ import {
   LoadingButton,
   Skeleton,
   cn,
+  useConfirmation,
 } from "@dropx/ui"
 import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
@@ -66,14 +67,22 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const { customer, signOut } = useAuth()
   const pathname = usePathname()
   const [signingOut, setSigningOut] = React.useState(false)
+  const { confirm, confirmationDialog } = useConfirmation()
 
   async function onSignOut() {
+    const ok = await confirm({
+      title: "Sign out of DropX?",
+      description: "You will need a one-time code sent to your phone or email to sign back in.",
+      confirmLabel: "Sign out",
+    })
+    if (!ok) return
     setSigningOut(true)
     await signOut()
   }
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+      {confirmationDialog}
       <a
         href="#portal-content"
         className="focus:bg-card focus:text-foreground fixed top-3 left-3 z-50 -translate-y-20 rounded-lg px-4 py-2 text-sm font-semibold shadow-lg transition-transform focus:translate-y-0"
@@ -151,7 +160,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               <LoadingButton
                 variant="ghost"
                 size="sm"
-                className="mt-3 min-w-0 w-full justify-start text-white/60 hover:bg-white/8 hover:text-white"
+                className="mt-3 w-full min-w-0 justify-start text-white/60 hover:bg-white/8 hover:text-white"
                 onClick={onSignOut}
                 loading={signingOut}
               >
