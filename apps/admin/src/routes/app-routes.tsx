@@ -15,6 +15,7 @@ import { usersSearchSchema } from "./users-search-params"
 import { rolesSearchSchema } from "./roles-search-params"
 import { customersSearchSchema } from "./customers-search-params"
 import { paymentsSearchSchema } from "./payments-search-params"
+import { settlementsSearchSchema } from "./settlements-search-params"
 import { riderLocationsSearchSchema } from "./rider-locations-search-params"
 import { riderApplicationsSearchSchema } from "./rider-applications-search-params"
 import { pickupsSearchSchema } from "./pickups-search-params"
@@ -91,6 +92,10 @@ const CustomerDetailPage = lazyRouteComponent(
 const PaymentsListPage = lazyRouteComponent(
   () => import("@/features/payments/payments-list-page"),
   "PaymentsListPage",
+)
+const SettlementsListPage = lazyRouteComponent(
+  () => import("@/features/settlements/settlements-list-page"),
+  "SettlementsListPage",
 )
 const RiderLocationsListPage = lazyRouteComponent(
   () => import("@/features/riders/rider-locations-list-page"),
@@ -206,6 +211,13 @@ export const paymentsRoute = createRoute({
   path: "/payments",
   validateSearch: paymentsSearchSchema,
   component: PaymentsListPageRoute,
+})
+
+export const settlementsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/settlements",
+  validateSearch: settlementsSearchSchema,
+  component: SettlementsListPageRoute,
 })
 
 export const zonesRoute = createRoute({
@@ -376,6 +388,15 @@ function PaymentsListPageRoute() {
   return (
     <RequirePermission permission="payments.view">
       <PaymentsListPage search={search} />
+    </RequirePermission>
+  )
+}
+
+function SettlementsListPageRoute() {
+  const search = settlementsRoute.useSearch()
+  return (
+    <RequirePermission permission="settlements.view">
+      <SettlementsListPage search={search} />
     </RequirePermission>
   )
 }

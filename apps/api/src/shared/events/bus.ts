@@ -29,6 +29,21 @@ export type DomainEventMap = {
   "customer.activated": { customerId: Id }
   "payment.recorded": { paymentId: Id; parcelId: Id; amount: number }
   "payment.refunded": { paymentId: Id; parcelId: Id; amount: number }
+  "settlement.created": {
+    settlementId: Id
+    customerId: Id
+    periodStart: string
+    periodEnd: string
+    totalCod: number
+    deliveryCharges: number
+    netAmount: number
+  }
+  "settlement.status_changed": {
+    settlementId: Id
+    customerId: Id
+    from: string
+    to: string
+  }
 }
 
 export type DomainEventName = keyof DomainEventMap

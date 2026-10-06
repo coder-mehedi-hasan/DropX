@@ -19,6 +19,7 @@ import * as users from "../users/users.service"
 import * as roles from "../roles/roles.service"
 import * as customers from "../customers/customers.service"
 import * as payments from "../payments/payments.service"
+import * as settlements from "../settlements/settlements.service"
 import * as bootstrap from "./bootstrap.service"
 import type { ADMIN_SURFACE } from "./registry"
 
@@ -306,6 +307,37 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     refund: async (c) => {
       const payment = await payments.refundPayment(c, c.req.valid("param").id, c.req.valid("json"))
       return c.json(response.success(payment))
+    },
+  },
+
+  /**
+   * Settlements. Finance's period statements to merchants: `create` computes
+   * the totals server-side from the customer's paid payments, `setStatus`
+   * drives the PENDING → PROCESSING → PAID disbursement lifecycle.
+   */
+  settlements: {
+    list: async (c) => {
+      const page = await settlements.listSettlements(c, c.req.valid("query"))
+      return c.json(response.success(page))
+    },
+
+    read: async (c) => {
+      const settlement = await settlements.getSettlement(c, c.req.valid("param").id)
+      return c.json(response.success(settlement))
+    },
+
+    create: async (c) => {
+      const settlement = await settlements.createSettlement(c, c.req.valid("json"))
+      return c.json(response.success(settlement), 201)
+    },
+
+    setStatus: async (c) => {
+      const settlement = await settlements.setSettlementStatus(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(settlement))
     },
   },
 

@@ -120,6 +120,13 @@ import {
   recordPaymentSchema as recordPaymentBody,
   refundPaymentSchema as refundPaymentBody,
 } from "../payments/payments.dto"
+import {
+  createSettlementSchema as createSettlementBody,
+  listSettlementsQuerySchema as listSettlementsQuery,
+  setSettlementStatusSchema as setSettlementStatusBody,
+  settlementIdParamSchema as settlementIdParam,
+  settlementResponseSchema as settlementResponse,
+} from "../settlements/settlements.dto"
 import { bootstrapAdminResponseSchema, bootstrapAdminSchema } from "./bootstrap.dto"
 import {
   listRiderApplicationsQuerySchema,
@@ -1031,6 +1038,80 @@ export const ADMIN_SURFACE = defineSurface({
           errors: {
             404: "No such payment or parcel.",
             409: "The refund exceeds the refundable balance, or the payment is not a paid COD collection.",
+          },
+        },
+      },
+    },
+
+    /**
+     * Settlements. The finance clerk's period statement to a merchant: how
+     * much COD the company collected on their parcels inside the period, the
+     * delivery fees earned, and the net the company will disburse. The money
+     * is aggregated server-side from the customer's paid payments — `create`
+     * accepts only the customer and the period, and the statement is refused
+     * when nothing was collected in it. Company-wide like payments: the
+     * permission is the whole guard, and the finance role owns it.
+     */
+    settlements: {
+      tag: "settlements",
+      tagDescription:
+        "Period statements of COD collected per merchant, and the PENDING → PROCESSING → PAID lifecycle of the disbursement against them.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/settlements",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_VIEW] },
+          summary: "List settlements",
+          successDescription: "A page of settlement statements.",
+          description:
+            "Company-wide. Each statement carries the merchant's name and phone plus the period and the computed total, fee, and net figures.",
+          query: listSettlementsQuery,
+          listNodes: settlementResponse,
+        },
+        read: {
+          method: "GET",
+          path: "/settlements/:id",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_VIEW] },
+          summary: "Read a settlement",
+          successDescription: "The settlement statement.",
+          description: "One settlement statement, with the merchant's identity.",
+          params: settlementIdParam,
+          paramDescriptions: { id: "Settlement id." },
+          response: settlementResponse,
+          errors: { 404: "No such settlement." },
+        },
+        create: {
+          method: "POST",
+          path: "/settlements",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_MANAGE] },
+          summary: "Create a settlement",
+          successDescription: "Created.",
+          description:
+            "Raises a period statement for a merchant. Takes only the customer and a `YYYY-MM-DD` period; total_cod, delivery_charges and net_amount are computed server-side from the customer's paid COD and delivery-fee payments in the period. Refused when the customer or period is unknown, when a statement already exists for that exact period, or when nothing was collected in it.",
+          body: createSettlementBody,
+          response: settlementResponse,
+          successStatus: 201,
+          errors: {
+            404: "No such customer.",
+            409: "A settlement already exists for this customer and period.",
+            422: "The period is invalid, or nothing was collected for the customer in it.",
+          },
+        },
+        setStatus: {
+          method: "POST",
+          path: "/settlements/:id/status",
+          policy: { audience: ["admin"], permissions: [PERMISSIONS.SETTLEMENTS_MANAGE] },
+          summary: "Update settlement status",
+          successDescription: "Updated.",
+          description:
+            "Drives the disbursement through PENDING → PROCESSING → PAID, stamps a paid_at when it lands on PAID, with FAILED and FAILED → PENDING for a retry. PAID is terminal.",
+          params: settlementIdParam,
+          paramDescriptions: { id: "Settlement id." },
+          body: setSettlementStatusBody,
+          response: settlementResponse,
+          errors: {
+            404: "No such settlement.",
+            409: "The status cannot move from where it now is.",
           },
         },
       },
