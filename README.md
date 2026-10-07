@@ -14,7 +14,7 @@ cp compose.env.example .env
 
 Replace the example database passwords in `.env`. Because Compose uses `MYSQL_PASSWORD` inside a connection URL, use a URL-safe password containing letters, numbers, hyphens, or underscores.
 
-The default `REDIS_URL` is `redis://host.docker.internal:6379`, which reaches the Redis port published by `sbx-redis-staging`. If that Redis instance requires authentication, set `REDIS_URL` to `redis://:password@host.docker.internal:6379` instead. The Compose file also maps `host.docker.internal` on Linux.
+Compose uses `redis://host.docker.internal:6379`, which reaches the unauthenticated Redis port published by `sbx-redis-staging`. The Compose file also maps `host.docker.internal` on Linux.
 
 Create the API environment file:
 
@@ -31,7 +31,7 @@ Set the production values in `apps/api/.env`, including:
 - `MAIL_BRAND_ASSET_URL` — a public HTTPS URL for the email logo.
 - `BOOTSTRAP_TOKEN` — an optional one-time token for creating the first administrator.
 
-Compose supplies `NODE_ENV=production`, `API_PORT=8005`, the internal `DATABASE_URL`, and the root `.env` value for `REDIS_URL`; those values do not need to be changed in `apps/api/.env`.
+Compose supplies `NODE_ENV=production`, `API_PORT=8005`, the internal `DATABASE_URL`, and `REDIS_URL`; those values do not need to be changed in `apps/api/.env`.
 
 ### 2. Build the API image
 
