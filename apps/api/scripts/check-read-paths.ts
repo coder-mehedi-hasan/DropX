@@ -46,11 +46,9 @@ const actors = await import("../src/shared/auth/actor-loader")
 const pricing = await import("../src/modules/pricing/pricing.service")
 const reference = await import("../src/modules/reference/reference.repository")
 const org = await import("../src/modules/org/org.repository")
-const zones = await import("../src/modules/zones/zones.repository")
 const locations = await import("../src/modules/locations/locations.repository")
 const pricingLanes = await import("../src/modules/pricing/pricing-lanes.repository")
 const vehicles = await import("../src/modules/vehicles/vehicles.repository")
-const pricingRules = await import("../src/modules/pricing/pricing-rules.repository")
 const routes = await import("../src/modules/routes/routes.repository")
 const riders = await import("../src/modules/riders/riders.repository")
 const riderLocations = await import("../src/modules/riders/rider-locations.repository")
@@ -245,11 +243,6 @@ cases.push(
         {},
       ),
   },
-  { name: "reference.listZoneRefs", run: () => reference.listZoneRefs(pool, listParams, {}) },
-  {
-    name: "reference.listZoneRefs(search)",
-    run: () => reference.listZoneRefs(pool, listParams, { search: "a" }),
-  },
   {
     name: "reference.searchCustomerRefs",
     run: () => reference.searchCustomerRefs(pool, listParams, {}),
@@ -263,10 +256,6 @@ cases.push(
   ...(["name", "code", "type", "status"] as const).map((sortBy) => ({
     name: `reference.listHubRefs(sortBy=${sortBy})`,
     run: () => reference.listHubRefs(pool, scope, { ...listParams, sortBy }, {}),
-  })),
-  ...(["name", "code", "status"] as const).map((sortBy) => ({
-    name: `reference.listZoneRefs(sortBy=${sortBy})`,
-    run: () => reference.listZoneRefs(pool, { ...listParams, sortBy }, {}),
   })),
   ...(["name", "phone", "createdAt"] as const).map((sortBy) => ({
     name: `reference.searchCustomerRefs(sortBy=${sortBy})`,
@@ -326,43 +315,6 @@ cases.push(
   })),
   { name: "org.selectHub", run: () => org.selectHub(pool, "1") },
 
-  // --- Network: zones --------------------------------------------------------
-  //
-  // The filters are exercised too, not just the unfiltered list: each filter
-  // adds a clause, and a clause naming a column the FROM clause did not alias is
-  // a 500 that an unfiltered run never sees.
-  { name: "zones.selectZones", run: () => zones.selectZones(pool, listParams, {}) },
-  {
-    name: "zones.selectZones(status)",
-    run: () => zones.selectZones(pool, listParams, { status: "ACTIVE" }),
-  },
-  {
-    name: "zones.selectZones(search)",
-    run: () => zones.selectZones(pool, listParams, { search: "100%" }),
-  },
-  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
-    name: `zones.selectZones(sortBy=${sortBy})`,
-    run: () => zones.selectZones(pool, { ...listParams, sortBy }, {}),
-  })),
-  // A filter and a sort in the same query. Neither alone is enough: the filter is
-  // what puts an aliased column in the count query's WHERE, and the sort is what
-  // puts an aliased column in ORDER BY, so running them separately leaves the exact
-  // query a user produces by typing in the search box *and* clicking a column header
-  // unexercised.
-  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
-    name: `zones.selectZones(status+search+sortBy=${sortBy})`,
-    run: () =>
-      zones.selectZones(
-        pool,
-        { ...listParams, sortBy, sort: "desc" as const },
-        {
-          status: "ACTIVE",
-          search: "100%",
-        },
-      ),
-  })),
-  { name: "zones.selectZone", run: () => zones.selectZone(pool, "1") },
-
   // --- Locations: cities, zones, areas --------------------------------------
   {
     name: "locations.selectServiceCities",
@@ -418,13 +370,11 @@ cases.push(
   { name: "locations.selectServiceArea", run: () => locations.selectServiceArea(pool, "1") },
   {
     name: "locations.codeExistsUnderParent(zones)",
-    run: () =>
-      locations.codeExistsUnderParent(pool, "service_zones", { cityId: "1" }, "DHANMONDI"),
+    run: () => locations.codeExistsUnderParent(pool, "service_zones", { cityId: "1" }, "DHANMONDI"),
   },
   {
     name: "locations.codeExistsUnderParent(areas)",
-    run: () =>
-      locations.codeExistsUnderParent(pool, "service_areas", { zoneId: "1" }, "BADAMTOLA"),
+    run: () => locations.codeExistsUnderParent(pool, "service_areas", { zoneId: "1" }, "BADAMTOLA"),
   },
 
   // --- Pricing lanes and slabs ----------------------------------------------
@@ -435,11 +385,7 @@ cases.push(
   {
     name: "pricingLanes.selectPricingLanes(status+sort)",
     run: () =>
-      pricingLanes.selectPricingLanes(
-        pool,
-        { ...listParams, sort: "asc" },
-        { status: "ACTIVE" },
-      ),
+      pricingLanes.selectPricingLanes(pool, { ...listParams, sort: "asc" }, { status: "ACTIVE" }),
   },
   ...(["pickupType", "deliveryType", "status", "createdAt"] as const).map((sortBy) => ({
     name: `pricingLanes.selectPricingLanes(sortBy=${sortBy})`,
@@ -494,27 +440,6 @@ cases.push(
     }),
   ),
   { name: "vehicles.selectVehicle", run: () => vehicles.selectVehicle(pool, "1") },
-
-  // --- Pricing rules ---------------------------------------------------------
-  {
-    name: "pricingRules.selectPricingRules",
-    run: () => pricingRules.selectPricingRules(pool, listParams, {}),
-  },
-  {
-    name: "pricingRules.selectPricingRules(status)",
-    run: () => pricingRules.selectPricingRules(pool, listParams, { status: "ACTIVE" }),
-  },
-  {
-    name: "pricingRules.selectPricingRules(search)",
-    run: () => pricingRules.selectPricingRules(pool, listParams, { search: "DHAKA" }),
-  },
-  ...(["name", "originZone", "destinationZone", "minWeight", "createdAt"] as const).map(
-    (sortBy) => ({
-      name: `pricingRules.selectPricingRules(sortBy=${sortBy})`,
-      run: () => pricingRules.selectPricingRules(pool, { ...listParams, sortBy }, {}),
-    }),
-  ),
-  { name: "pricingRules.selectPricingRule", run: () => pricingRules.selectPricingRule(pool, "1") },
 
   // --- Routes ---------------------------------------------------------------
   { name: "routes.selectRoutes", run: () => routes.selectRoutes(pool, listParams, {}) },

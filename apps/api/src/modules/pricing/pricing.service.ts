@@ -4,7 +4,12 @@ import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
 
 import { ERROR_CODES, DomainError } from "../../core"
-import type { FeeQuote, LocationServiceType, PricingDeliveryType, PricingPickupType } from "@dropx/types"
+import type {
+  FeeQuote,
+  LocationServiceType,
+  PricingDeliveryType,
+  PricingPickupType,
+} from "@dropx/types"
 import { selectServiceCity, selectServiceZone } from "../locations/locations.repository"
 import { selectLaneSlabs } from "./pricing-lanes.repository"
 
@@ -164,7 +169,10 @@ function pickSlab(
   slabs: Awaited<ReturnType<typeof selectLaneSlabs>>,
 ): { slab: (typeof slabs)[number]; extraWeightFee: number } {
   const band = slabs.find(
-    (slab) => slab.status === "ACTIVE" && weightGrams >= slab.minWeightGrams && weightGrams <= slab.maxWeightGrams,
+    (slab) =>
+      slab.status === "ACTIVE" &&
+      weightGrams >= slab.minWeightGrams &&
+      weightGrams <= slab.maxWeightGrams,
   )
   if (band) return { slab: band, extraWeightFee: 0 }
 
@@ -226,30 +234,4 @@ export async function quoteDeliveryFee(c: Context<AppEnv>, input: QuoteInput): P
       maxWeightGrams: slab.maxWeightGrams,
     },
   }
-}
-
-// --- Legacy per-zone rules --------------------------------------------------
-
-/**
- * The pre-migration `pricing_rules` lookup, kept because the admin's rule-match
- * preview and the rule CRUD still speak zone-to-zone. It is not used by
- * `quoteDeliveryFee` and goes away with the rules themselves.
- */
-export async function findMatchingRule(
-  c: Context<AppEnv>,
-  input: { originZoneId: Id; destinationZoneId: Id; weightKg: number },
-): Promise<RowDataPacket | null> {
-  const [rows] = await c.get("db")!.query<(RowDataPacket & Record<string, unknown>)[]>(
-    `SELECT id
-       FROM pricing_rules
-      WHERE status = 'ACTIVE'
-        AND origin_zone_id = ?
-        AND destination_zone_id = ?
-        AND min_weight <= ?
-        AND (max_weight IS NULL OR max_weight >= ?)
-      ORDER BY min_weight DESC
-      LIMIT 1`,
-    [input.originZoneId, input.destinationZoneId, input.weightKg, input.weightKg],
-  )
-  return rows[0] ?? null
 }

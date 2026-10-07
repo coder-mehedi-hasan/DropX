@@ -3,9 +3,7 @@ import {
   customerRefResponseSchema,
   hubRefResponseSchema,
   listHubsQuerySchema,
-  listZonesQuerySchema,
   searchCustomersQuerySchema,
-  zoneRefResponseSchema,
 } from "../reference/reference.dto"
 import {
   areaRefResponseSchema,
@@ -61,7 +59,7 @@ export const CUSTOMER_SURFACE = defineSurface({
   features: {
     reference: {
       tag: "customer-reference",
-      tagDescription: "Bookable hubs, pricing zones, and recipient customers.",
+      tagDescription: "Bookable hubs and recipient customers.",
       operations: {
         listHubs: {
           method: "GET",
@@ -71,15 +69,6 @@ export const CUSTOMER_SURFACE = defineSurface({
           successDescription: "A page of active hubs.",
           query: listHubsQuerySchema,
           listNodes: hubRefResponseSchema,
-        },
-        listZones: {
-          method: "GET",
-          path: "/reference/zones",
-          policy: { audience: ["web"], requiresActiveCustomer: true },
-          summary: "List bookable zones",
-          successDescription: "A page of active pricing zones.",
-          query: listZonesQuerySchema,
-          listNodes: zoneRefResponseSchema,
         },
         searchRecipients: {
           method: "GET",

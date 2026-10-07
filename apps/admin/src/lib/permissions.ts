@@ -19,8 +19,6 @@ export const PERMISSIONS = {
 
   CUSTOMERS_VIEW: "customers.view",
   CUSTOMERS_MANAGE: "customers.manage",
-  ZONES_VIEW: "zones.view",
-  ZONES_MANAGE: "zones.manage",
   LOCATIONS_VIEW: "locations.view",
   LOCATIONS_MANAGE: "locations.manage",
   PRICING_VIEW: "pricing.view",

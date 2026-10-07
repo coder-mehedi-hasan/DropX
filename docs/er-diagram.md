@@ -20,10 +20,6 @@ erDiagram
     customers ||--o{ support_tickets : opens
     customers ||--o{ notifications : notified
 
-    zones ||--o{ pricing_rules : "origin"
-    zones ||--o{ pricing_rules : "destination"
-    zones ||--o{ parcels : "destination zone"
-
     hubs ||--o{ routes : "origin"
     hubs ||--o{ routes : "destination"
     routes ||--o{ route_stops : includes
@@ -107,15 +103,6 @@ erDiagram
         bigint id PK
         bigint customer_id FK
     }
-    zones {
-        bigint id PK
-        varchar code UK
-    }
-    pricing_rules {
-        bigint id PK
-        bigint origin_zone_id FK
-        bigint destination_zone_id FK
-    }
     vehicles {
         bigint id PK
         varchar registration_number UK
@@ -156,11 +143,9 @@ erDiagram
         varchar receiver_name
         varchar receiver_phone
         varchar receiver_secondary_phone
-        varchar receiver_address
         bigint origin_hub_id FK
         bigint destination_hub_id FK
         bigint current_hub_id FK
-        bigint destination_zone_id FK
         enum status
     }
     parcel_items {

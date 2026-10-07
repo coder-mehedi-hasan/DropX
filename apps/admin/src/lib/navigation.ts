@@ -11,21 +11,14 @@ import {
   DEFAULT_VEHICLES_SEARCH_PARAMS,
   vehiclesSearchSchema,
 } from "@/routes/vehicles-search-params"
-import { DEFAULT_ZONES_SEARCH_PARAMS, zonesSearchSchema } from "@/routes/zones-search-params"
-import {
-  DEFAULT_PRICING_RULES_SEARCH_PARAMS,
-  pricingRulesSearchSchema,
-} from "@/routes/pricing-rules-search-params"
 import type { BranchesSearch, HubsSearch } from "@/routes/org-search-params"
 import { DEFAULT_USERS_SEARCH_PARAMS, usersSearchSchema } from "@/routes/users-search-params"
 import type { UsersSearch } from "@/routes/users-search-params"
 import { DEFAULT_ROLES_SEARCH_PARAMS, rolesSearchSchema } from "@/routes/roles-search-params"
 import type { RolesSearch } from "@/routes/roles-search-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
-import type { ZonesSearch } from "@/routes/zones-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
-import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import { DEFAULT_ROUTES_SEARCH_PARAMS, routesSearchSchema } from "@/routes/routes-search-params"
 import { DEFAULT_RIDERS_SEARCH_PARAMS, ridersSearchSchema } from "@/routes/riders-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
@@ -92,9 +85,7 @@ export type AdminDestination =
   | { to: "/customers/$customerId"; params: { customerId: string } }
   | { to: "/payments"; search: PaymentsSearch }
   | { to: "/settlements"; search: SettlementsSearch }
-  | { to: "/zones"; search: ZonesSearch }
   | { to: "/vehicles"; search: VehiclesSearch }
-  | { to: "/pricing-rules"; search: PricingRulesSearch }
   | { to: "/routes"; search: RoutesSearch }
   | { to: "/riders"; search: RidersSearch }
   | { to: "/rider-locations"; search: RiderLocationsSearch }
@@ -199,30 +190,12 @@ export function resolveRedirect(raw: string | undefined): AdminDestination {
     }
   }
 
-  if (path === "/zones") {
-    return {
-      to: "/zones",
-      search: resolveListSearch(zonesSearchSchema, DEFAULT_ZONES_SEARCH_PARAMS, url.searchParams),
-    }
-  }
-
   if (path === "/vehicles") {
     return {
       to: "/vehicles",
       search: resolveListSearch(
         vehiclesSearchSchema,
         DEFAULT_VEHICLES_SEARCH_PARAMS,
-        url.searchParams,
-      ),
-    }
-  }
-
-  if (path === "/pricing-rules") {
-    return {
-      to: "/pricing-rules",
-      search: resolveListSearch(
-        pricingRulesSearchSchema,
-        DEFAULT_PRICING_RULES_SEARCH_PARAMS,
         url.searchParams,
       ),
     }

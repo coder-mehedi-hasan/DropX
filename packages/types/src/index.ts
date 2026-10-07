@@ -221,34 +221,6 @@ export type CustomerWithAddresses = Customer & {
 export const RECORD_STATUSES = ["ACTIVE", "INACTIVE"] as const
 export type RecordStatus = (typeof RECORD_STATUSES)[number]
 
-/** Alias kept for readability at the zones call sites, where the bare name
- *  `RecordStatus` says nothing about which table it belongs to. */
-export const ZONE_STATUSES = RECORD_STATUSES
-export type ZoneStatus = RecordStatus
-
-export type Zone = EntityBase &
-  Timestamped & {
-    name: string
-    code: string
-    description: Nullable<string>
-    status: RecordStatus
-  }
-
-export type PricingRule = EntityBase &
-  Timestamped & {
-    name: string
-    originZoneId: Id
-    destinationZoneId: Id
-    minWeight: number
-    maxWeight: Nullable<number>
-    basePrice: number
-    pricePerKg: number
-    codPercentage: number
-    codFixedFee: number
-    expressFee: number
-    status: RecordStatus
-  }
-
 // ---------------------------------------------------------------------------
 // Service locations (city -> zone -> area)
 // ---------------------------------------------------------------------------
@@ -487,16 +459,9 @@ export type Parcel = EntityBase &
     receiverName: string
     receiverPhone: string
     receiverSecondaryPhone: Nullable<string>
-    receiverAddress: Nullable<string>
     originHubId: Id
     destinationHubId: Id
     currentHubId: Nullable<Id>
-    /**
-     * Legacy pricing anchor from the flat `zones` model. New bookings quote from
-     * `addresses` and the lane matrix, so this is `null` for anything booked
-     * after the migration; older rows keep the zone they were quoted against.
-     */
-    destinationZoneId: Nullable<Id>
     weight: number
     length: Nullable<number>
     width: Nullable<number>

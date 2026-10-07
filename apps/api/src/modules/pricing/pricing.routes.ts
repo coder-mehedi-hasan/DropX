@@ -6,7 +6,6 @@ import { Hono } from "hono"
 
 import { quoteSchema } from "./pricing.dto"
 import { quoteDeliveryFee } from "./pricing.service"
-import pricingRules from "./pricing-rules.routes"
 
 /**
  * `GET /pricing/quote` — available to the admin and the customer portal so a
@@ -16,8 +15,6 @@ import pricingRules from "./pricing-rules.routes"
  * ignores anything sent with the booking.
  */
 const router = new Hono<AppEnv>()
-
-router.route("", pricingRules)
 
 router.get(
   "/quote",

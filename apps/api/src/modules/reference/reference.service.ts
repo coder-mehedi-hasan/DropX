@@ -5,23 +5,16 @@ import type { AppEnv } from "../../types/env"
 
 import type { Scope } from "../../shared/auth/auth-context"
 import type { CustomerStatus } from "../../db/models"
-import type {
-  ListBranchesQuery,
-  ListHubsQuery,
-  ListZonesQuery,
-  SearchCustomersQuery,
-} from "./reference.dto"
+import type { ListBranchesQuery, ListHubsQuery, SearchCustomersQuery } from "./reference.dto"
 import {
   listBranchRefs,
   listHubRefs,
-  listZoneRefs,
   searchCustomerRefs,
   type BranchRef,
   type CustomerRef,
   type HubRef,
   type ListHubRefsFilter,
   type ListBranchesFilter,
-  type ZoneRef,
 } from "./reference.repository"
 
 /**
@@ -65,17 +58,6 @@ export async function listHubs(
     status: query.status,
     search: params.search,
   } satisfies ListHubRefsFilter)
-
-  return buildPage(nodes, totalCount, params)
-}
-
-export async function listZones(c: Context<AppEnv>, query: ListZonesQuery): Promise<Page<ZoneRef>> {
-  const params = pickerParams(query)
-
-  const { nodes, totalCount } = await listZoneRefs(c.get("db")!, params, {
-    search: params.search,
-    status: "ACTIVE",
-  })
 
   return buildPage(nodes, totalCount, params)
 }

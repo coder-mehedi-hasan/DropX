@@ -17,7 +17,6 @@ import {
   paymentsRoute,
   pickupsRoute,
   pricingMatrixRoute,
-  pricingRulesRoute,
   riderLocationsRoute,
   riderApplicationsRoute,
   ridersRoute,
@@ -32,7 +31,6 @@ import {
   deliveryProofsRoute,
   usersRoute,
   vehiclesRoute,
-  zonesRoute,
 } from "./routes/app-routes"
 import { rootRoute } from "./routes/root"
 
@@ -51,12 +49,10 @@ const routeTree = rootRoute.addChildren([
     customerDetailRoute,
     paymentsRoute,
     settlementsRoute,
-    zonesRoute,
     citiesRoute,
     serviceZonesRoute,
     serviceAreasRoute,
     vehiclesRoute,
-    pricingRulesRoute,
     pricingMatrixRoute,
     ridersRoute,
     riderLocationsRoute,

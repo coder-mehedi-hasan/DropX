@@ -58,10 +58,10 @@ Static constants used by `apps/api` and assigned to roles.
 | ------------------ | ------------------------------------- |
 | `customers.view`   | View customers                        |
 | `customers.manage` | Create/update customers and addresses |
-| `zones.view`       | View zones                            |
-| `zones.manage`     | Create/update zones                   |
-| `pricing.view`     | View pricing rules                    |
-| `pricing.manage`   | Create/update pricing rules           |
+| `locations.view`   | View the city → zone → area hierarchy |
+| `locations.manage` | Create/update locations               |
+| `pricing.view`     | View the pricing matrix               |
+| `pricing.manage`   | Reprice lanes, slabs, and COD          |
 
 ### Fleet & network
 
@@ -128,7 +128,7 @@ All keys except rider-only keys are optional; typically **every** admin key incl
 Scoped to `users.branch_id`.
 
 - `hubs.view`, `hubs.manage` (own branch)
-- `zones.view` — company-wide reference data, needed to set `originZoneId` / `destinationZoneId` when booking a parcel. Read only; `zones.manage` is pricing configuration and stays with `ADMIN`.
+- `locations.view` — company-wide reference data, needed for the city/zone/area pickers when booking a parcel. Read only; `locations.manage` is territory configuration and stays with `ADMIN`.
 - `users.view` (own branch)
 - `riders.view`, `riders.manage` (hubs in branch)
 - `parcels.view`, `parcels.create`, `parcels.update`, `parcels.cancel`

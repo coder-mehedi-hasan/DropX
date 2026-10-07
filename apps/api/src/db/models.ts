@@ -32,8 +32,6 @@ export const TABLES = {
   serviceCities: "service_cities",
   serviceZones: "service_zones",
   serviceAreas: "service_areas",
-  zones: "zones",
-  pricingRules: "pricing_rules",
   pricingLanes: "pricing_lanes",
   pricingSlabs: "pricing_slabs",
   vehicles: "vehicles",

@@ -1,11 +1,4 @@
-import type {
-  CustomerStatus,
-  CustomerType,
-  HubStatus,
-  HubType,
-  ListParams,
-  RecordStatus,
-} from "@/db/models"
+import type { CustomerStatus, CustomerType, HubStatus, HubType, ListParams } from "@/db/models"
 import type { Scope } from "@/shared/auth/auth-context"
 import type { Pool, RowDataPacket } from "mysql2/promise"
 
@@ -39,13 +32,6 @@ export type BranchRef = {
   status: "ACTIVE" | "INACTIVE"
 }
 
-export type ZoneRef = {
-  id: string
-  name: string
-  code: string
-  status: RecordStatus
-}
-
 export type CustomerRef = {
   id: string
   name: string
@@ -56,11 +42,9 @@ export type CustomerRef = {
 }
 
 const HUB_COLUMNS = "h.id, h.name, h.code, h.type, h.district, h.status"
-const ZONE_COLUMNS = "z.id, z.name, z.code, z.status"
 const CUSTOMER_COLUMNS = "c.id, c.name, c.phone, c.email, c.type, c.status"
 
 const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status"] as const
-const ZONE_SORT_COLUMNS = ["z.name", "z.code", "z.status"] as const
 const CUSTOMER_SORT_COLUMNS = ["c.name", "c.phone", "c.created_at", "c.id"] as const
 const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status"] as const
 
@@ -215,54 +199,6 @@ export async function listHubRefs(
     whereParams,
     decodeHubRef,
   )
-}
-
-export async function listZoneRefs(
-  db: Pool,
-  params: ListParams,
-  filter: { search?: string | undefined; status?: RecordStatus | undefined },
-): Promise<{ nodes: ZoneRef[]; totalCount: number }> {
-  const clauses: Clause[] = []
-  if (filter.search) {
-    const like = `%${escapeLike(filter.search)}%`
-    clauses.push({
-      text: `(${["z.name", "z.code"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
-      params: [like, like],
-    })
-  }
-  if (filter.status) clauses.push({ text: "z.status = ?", params: [filter.status] })
-  const where = clauses.length ? `WHERE (${clauses.map((c) => c.text).join(") AND (")})` : ""
-  const whereParams = clauses.flatMap((c) => c.params)
-
-  const countSql = `SELECT COUNT(*) AS count FROM zones AS z${where ? " " + where : ""}`
-  const sortColumn =
-    params.sortBy && (ZONE_SORT_COLUMNS as readonly string[]).includes(params.sortBy)
-      ? params.sortBy
-      : undefined
-  const orderByClause = sortColumn
-    ? `${sortColumn} ${params.sort.toUpperCase()}, z.name ASC, z.id ASC`
-    : `z.name ASC, z.id ASC`
-
-  const pageSql = `SELECT ${ZONE_COLUMNS} FROM zones AS z${where ? " " + where : ""} ORDER BY ${orderByClause} LIMIT ? OFFSET ?`
-
-  return pageOf(
-    db,
-    pageSql,
-    [...whereParams, params.limit, params.offset],
-    countSql,
-    whereParams,
-    decodeZoneRef,
-  )
-}
-
-function decodeZoneRef(row: unknown): ZoneRef {
-  const r = row as Record<string, unknown>
-  return {
-    id: String(r.id),
-    name: String(r.name),
-    code: String(r.code),
-    status: r.status as RecordStatus,
-  }
 }
 
 export async function searchCustomerRefs(

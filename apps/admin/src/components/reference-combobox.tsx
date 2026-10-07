@@ -26,7 +26,6 @@ import {
   listRoutes,
   listVehicles,
   listZoneAreasForPicker,
-  listZonesForPicker,
   searchCustomersForPicker,
 } from "@/lib/endpoints"
 import type {
@@ -40,7 +39,6 @@ import type {
   ServiceCity,
   ServiceZone,
   Vehicle,
-  ZoneOption,
 } from "@/lib/types"
 import { formatMoney } from "@/lib/format"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
@@ -74,7 +72,6 @@ import { useDebouncedValue } from "@/lib/use-debounced-value"
 export type PickerSource =
   | "branches"
   | "hubs"
-  | "zones"
   | "customers"
   | "riders"
   | "vehicles"
@@ -100,8 +97,8 @@ const PAGE_SIZE = 25
 /**
  * One mapper per source, each taking its own option type.
  *
- * Deliberately not a single mapper over a `HubOption | ZoneOption | CustomerOption`
- * union: the three shapes have nothing in common beyond `id`, so a union forces
+ * Deliberately not a single mapper over a `HubOption | CustomerOption`
+ * union: the two shapes have nothing in common beyond `id`, so a union forces
  * casts, and a cast here would compile while quietly reading `code` off a
  * customer. Narrowing on `source` is what makes these type-safe.
  */
@@ -121,10 +118,6 @@ function toHubRows(nodes: readonly HubOption[]): Row[] {
     hint: hub.district ?? hub.code,
     tags: [hub.code, hub.type],
   }))
-}
-
-function toZoneRows(nodes: readonly ZoneOption[]): Row[] {
-  return nodes.map((zone) => ({ id: zone.id, label: zone.name, hint: zone.code }))
 }
 
 /**
@@ -270,13 +263,6 @@ function useReferenceRows(
     staleTime: 60_000,
   })
 
-  const zones = useQuery({
-    queryKey: ["reference", "zones", params],
-    queryFn: ({ signal }) => listZonesForPicker(params, signal),
-    enabled: enabled && source === "zones",
-    staleTime: 60_000,
-  })
-
   const customers = useQuery({
     queryKey: ["reference", "customers", params],
     queryFn: ({ signal }) => searchCustomersForPicker(params, signal),
@@ -348,7 +334,6 @@ function useReferenceRows(
   const sources = {
     branches,
     hubs,
-    zones,
     customers,
     riderList,
     vehicleList,
@@ -378,7 +363,6 @@ function useReferenceRows(
   const rows = React.useMemo(() => {
     if (source === "branches") return toBranchRows(branches.data?.nodes ?? [])
     if (source === "hubs") return toHubRows(hubs.data?.nodes ?? [])
-    if (source === "zones") return toZoneRows(zones.data?.nodes ?? [])
     if (source === "riders") return toRiderRows(riderList.data?.nodes ?? [])
     if (source === "vehicles") return toVehicleRows(vehicleList.data?.nodes ?? [])
     if (source === "routes") return toRouteRows(routeList.data?.nodes ?? [])
@@ -391,7 +375,6 @@ function useReferenceRows(
     source,
     branches.data,
     hubs.data,
-    zones.data,
     customers.data,
     riderList.data,
     vehicleList.data,

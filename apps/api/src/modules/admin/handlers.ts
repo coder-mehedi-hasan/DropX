@@ -10,7 +10,6 @@ import * as deliveries from "../deliveries/deliveries.service"
 import * as deliveryProofs from "../deliveries/delivery-proofs.service"
 import * as transfers from "../transfers/transfers.service"
 import * as reference from "../reference/reference.service"
-import * as zones from "../zones/zones.service"
 import * as locations from "../locations/locations.service"
 import * as pricingLanes from "../pricing/pricing-lanes.service"
 import * as vehicles from "../vehicles/vehicles.service"
@@ -122,11 +121,6 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
 
     listHubs: async (c) => {
       const page = await reference.listHubs(c, scopeFromAuth(c.get("auth")), c.req.valid("query"))
-      return c.json(response.success(page))
-    },
-
-    listZones: async (c) => {
-      const page = await reference.listZones(c, c.req.valid("query"))
       return c.json(response.success(page))
     },
 
@@ -352,33 +346,6 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     },
   },
 
-  zones: {
-    list: async (c) => {
-      const page = await zones.listZones(c, c.req.valid("query"))
-      return c.json(response.success(page))
-    },
-
-    read: async (c) => {
-      const zone = await zones.getZone(c, c.req.valid("param").id)
-      return c.json(response.success(zone))
-    },
-
-    create: async (c) => {
-      const zone = await zones.createZone(c, c.req.valid("json"))
-      return c.json(response.success(zone), 201)
-    },
-
-    update: async (c) => {
-      const zone = await zones.updateZone(c, c.req.valid("param").id, c.req.valid("json"))
-      return c.json(response.success(zone))
-    },
-  },
-
-  /**
-   * Locations. The parent id on a create or a move is validated by the service,
-   * not here — the handler stays one line per operation so the relationship rule
-   * has exactly one home.
-   */
   locations: {
     listCities: async (c) => {
       const page = await locations.listServiceCities(c, c.req.valid("query"))
@@ -391,7 +358,11 @@ export const adminHandlers: SurfaceHandlers<typeof ADMIN_SURFACE> = {
     },
 
     updateCity: async (c) => {
-      const city = await locations.updateServiceCity(c, c.req.valid("param").id, c.req.valid("json"))
+      const city = await locations.updateServiceCity(
+        c,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
       return c.json(response.success(city))
     },
 

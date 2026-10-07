@@ -152,16 +152,9 @@ export const parcelResponseSchema = z.object({
   receiverName: z.string(),
   receiverPhone: z.string(),
   receiverSecondaryPhone: z.string().nullable(),
-  receiverAddress: z.string().nullable(),
   originHubId: z.string(),
   destinationHubId: z.string(),
   currentHubId: z.string().nullable(),
-  /**
-   * Nullable because it is the pre-migration pricing anchor. A parcel booked
-   * under the lane matrix quotes from `parcel_addresses` and stores nothing
-   * here; older rows keep the zone they were priced against.
-   */
-  destinationZoneId: z.string().nullable(),
   weight: z.number(),
   length: z.number().nullable(),
   width: z.number().nullable(),

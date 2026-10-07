@@ -21,7 +21,7 @@ import {
   VEHICLE_STATUSES,
   VEHICLE_TYPES,
 } from "@dropx/types"
-import { LOCATION_SERVICE_TYPES, RECORD_STATUSES, ZONE_STATUSES } from "@dropx/types"
+import { LOCATION_SERVICE_TYPES, RECORD_STATUSES } from "@dropx/types"
 import type {
   Customer,
   CustomerAddress,
@@ -51,7 +51,6 @@ import type {
   PickupStatus,
   PricingLane,
   PricingLaneWithSlabs,
-  PricingRule,
   PricingSlab,
   RecordStatus,
   Rider,
@@ -74,7 +73,6 @@ import type {
   Vehicle,
   VehicleStatus,
   VehicleType,
-  Zone,
 } from "@dropx/types"
 import type { Id, Nullable, Page, PageMeta } from "@dropx/types"
 
@@ -150,7 +148,6 @@ export type {
   PickupStatus,
   PricingLane,
   PricingLaneWithSlabs,
-  PricingRule,
   PricingSlab,
   RecordStatus,
   Rider,
@@ -170,7 +167,6 @@ export type {
   Vehicle,
   VehicleStatus,
   VehicleType,
-  Zone,
 }
 
 /**
@@ -354,12 +350,6 @@ export type CreateHubBody = {
   status: HubStatus
 }
 export type UpdateHubBody = Partial<CreateHubBody>
-
-export type CreateZoneBody = Omit<Zone, "id" | "createdAt" | "updatedAt">
-export type UpdateZoneBody = Partial<CreateZoneBody>
-
-export type CreatePricingRuleBody = Omit<PricingRule, "id" | "createdAt" | "updatedAt">
-export type UpdatePricingRuleBody = Partial<CreatePricingRuleBody>
 
 export type CreateVehicleBody = Omit<Vehicle, "id" | "createdAt" | "updatedAt">
 export type UpdateVehicleBody = Partial<CreateVehicleBody>
@@ -545,39 +535,11 @@ export const createHubSchema = z.object({
   status: z.enum(HUB_STATUSES).default("ACTIVE"),
 })
 
-export const createZoneSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  code: z
-    .string()
-    .trim()
-    .min(1)
-    .max(50)
-    .refine((value) => /^[A-Z0-9-]+$/.test(value), {
-      message: "Use uppercase letters, numbers and hyphens only",
-    }),
-  description: z.string().trim().max(255).nullish(),
-  status: z.enum(ZONE_STATUSES).default("ACTIVE"),
-})
-
 export const createVehicleSchema = z.object({
   registrationNumber: z.string().trim().min(1).max(50),
   type: z.enum(VEHICLE_TYPES),
   capacityKg: z.coerce.number().min(0).max(100_000),
   status: z.enum(VEHICLE_STATUSES).default("AVAILABLE"),
-})
-
-export const createPricingRuleSchema = z.object({
-  name: z.string().trim().min(1).max(150),
-  originZoneId: z.string().trim().min(1),
-  destinationZoneId: z.string().trim().min(1),
-  minWeight: z.coerce.number().nonnegative().max(9999),
-  maxWeight: z.coerce.number().nonnegative().max(9999).nullish(),
-  basePrice: z.coerce.number().nonnegative().max(999999),
-  pricePerKg: z.coerce.number().nonnegative().max(999999),
-  codPercentage: z.coerce.number().nonnegative().max(100),
-  codFixedFee: z.coerce.number().nonnegative().max(999999),
-  expressFee: z.coerce.number().nonnegative().max(999999),
-  status: z.enum(RECORD_STATUSES).default("ACTIVE"),
 })
 
 export const createCitySchema = z.object({
@@ -898,13 +860,6 @@ export type HubOption = {
   type: HubType
   district: string | null
   status: HubStatus
-}
-
-export type ZoneOption = {
-  id: Id
-  name: string
-  code: string
-  status: "ACTIVE" | "INACTIVE"
 }
 
 export type CustomerOption = {

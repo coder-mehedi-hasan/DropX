@@ -31,8 +31,6 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
           }),
         ),
       ),
-    listZones: async (c) =>
-      c.json(response.success(await reference.listZones(c, c.req.valid("query")))),
     searchRecipients: async (c) =>
       c.json(response.success(await reference.searchCustomers(c, c.req.valid("query"), "ACTIVE"))),
   },
@@ -43,11 +41,7 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
     listZones: async (c) =>
       c.json(
         response.success(
-          await locations.listZonesForCity(
-            c,
-            c.req.valid("param").cityId,
-            c.req.valid("query"),
-          ),
+          await locations.listZonesForCity(c, c.req.valid("param").cityId, c.req.valid("query")),
         ),
       ),
     listAreas: async (c) =>

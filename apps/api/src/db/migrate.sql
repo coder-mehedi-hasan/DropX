@@ -229,52 +229,14 @@ CREATE TABLE IF NOT EXISTS service_areas (
 );
 
 -- ============================================================
--- Zones & Pricing
+-- Pricing
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS zones (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) NOT NULL,
-    description VARCHAR(255) NULL,
-    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_zones_code (code)
-);
-
-CREATE TABLE IF NOT EXISTS pricing_rules (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(150) NOT NULL,
-    origin_zone_id BIGINT UNSIGNED NOT NULL,
-    destination_zone_id BIGINT UNSIGNED NOT NULL,
-    min_weight DECIMAL(10,2) NOT NULL DEFAULT 0,
-    max_weight DECIMAL(10,2) NULL,
-    base_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-    price_per_kg DECIMAL(12,2) NOT NULL DEFAULT 0,
-    cod_percentage DECIMAL(5,2) NOT NULL DEFAULT 0,
-    cod_fixed_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-    express_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    KEY idx_pricing_rules_origin_zone (origin_zone_id),
-    KEY idx_pricing_rules_destination_zone (destination_zone_id),
-    KEY idx_pricing_rules_status (status),
-    CONSTRAINT fk_pricing_rules_origin_zone
-        FOREIGN KEY (origin_zone_id) REFERENCES zones(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_pricing_rules_destination_zone
-        FOREIGN KEY (destination_zone_id) REFERENCES zones(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
-);
-
--- The lane matrix replaces the origin/destination zone lookup above. A lane is
--- one row of the pricing matrix — the pickup service type, the delivery service
--- type, and whether the two ends are in the same city — and `pricing_slabs`
--- hangs off it with one row per weight band.
+-- The lane matrix is the pricing model: a lane is one row of the matrix — the
+-- pickup service type, the delivery service type, and whether the two ends are
+-- in the same city — and `pricing_slabs` hangs off it with one row per weight
+-- band. The legacy flat `zones` and `pricing_rules` tables are gone; a booking
+-- quotes from the lane matrix keyed on the two cities' service types.
 
 CREATE TABLE IF NOT EXISTS pricing_lanes (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -460,14 +422,9 @@ CREATE TABLE IF NOT EXISTS parcels (
     receiver_name VARCHAR(150) NOT NULL,
     receiver_phone VARCHAR(30) NOT NULL,
     receiver_secondary_phone VARCHAR(30) NULL,
-    receiver_address VARCHAR(300) NULL,
     origin_hub_id BIGINT UNSIGNED NOT NULL,
     destination_hub_id BIGINT UNSIGNED NOT NULL,
     current_hub_id BIGINT UNSIGNED NULL,
-    -- Legacy pricing anchor. New bookings quote from `parcel_addresses` and
-    -- the lane matrix, and write NULL here; rows booked under the old flat
-    -- zone model keep their value so the compatibility layer still reads.
-    destination_zone_id BIGINT UNSIGNED NULL,
     weight DECIMAL(10,2) NOT NULL,
     length DECIMAL(10,2) NULL,
     width DECIMAL(10,2) NULL,
@@ -496,7 +453,6 @@ CREATE TABLE IF NOT EXISTS parcels (
     KEY idx_parcels_origin_hub (origin_hub_id),
     KEY idx_parcels_destination_hub (destination_hub_id),
     KEY idx_parcels_current_hub (current_hub_id),
-    KEY idx_parcels_destination_zone (destination_zone_id),
     KEY idx_parcels_status (status),
     KEY idx_parcels_created_at (created_at),
     CONSTRAINT fk_parcels_sender
@@ -513,10 +469,7 @@ CREATE TABLE IF NOT EXISTS parcels (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_parcels_current_hub
         FOREIGN KEY (current_hub_id) REFERENCES hubs(id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_parcels_destination_zone
-        FOREIGN KEY (destination_zone_id) REFERENCES zones(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS parcel_items (

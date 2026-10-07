@@ -101,9 +101,9 @@ receive the admin `parcels.*` keys, so a rider token cannot reach `/api/v1/parce
 
 ## Zones & Pricing
 
-- **Zones** — geographic pricing areas.
-- **Pricing rules** — origin/destination zone, weight band, fees.
-- On each parcel, **`destination_zone_id`** is required; fee calculation uses the destination zone (with weight and COD rules).
+- **Locations** — the city → zone → area hierarchy bookings key on.
+- **Pricing matrix** — one lane per pickup type × delivery type × same-city, with weight slabs under each row.
+- On each parcel, the two structured addresses (`pickupAddress`, `deliveryAddress`) carry the city/zone/area ids; fee calculation uses the lane matrix keyed on the two cities' service types (with weight-band and COD rules).
 
 ---
 

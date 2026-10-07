@@ -34,10 +34,6 @@ export const listHubsQuerySchema = referenceListQuery.extend({
   status: z.enum(HUB_STATUSES).optional(),
 })
 
-export const listZonesQuerySchema = referenceListQuery.extend({
-  sortBy: z.enum(["name", "code", "status"]).default("name"),
-})
-
 /**
  * Branches for the hub-create picker. Narrow projection: a dropdown shows a
  * name and its code; it never needs city, coordinates or phone.
@@ -58,7 +54,6 @@ export const searchCustomersQuerySchema = referenceListQuery.extend({
 })
 
 export type ListHubsQuery = z.infer<typeof listHubsQuerySchema>
-export type ListZonesQuery = z.infer<typeof listZonesQuerySchema>
 export type SearchCustomersQuery = z.infer<typeof searchCustomersQuerySchema>
 export type ListBranchesQuery = z.infer<typeof listBranchesQuerySchema>
 
@@ -69,13 +64,6 @@ export const hubRefResponseSchema = z.object({
   type: z.enum(HUB_TYPES),
   district: z.string().nullable(),
   status: z.enum(HUB_STATUSES),
-})
-
-export const zoneRefResponseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  code: z.string(),
-  status: z.enum(["ACTIVE", "INACTIVE"]),
 })
 
 export const customerRefResponseSchema = z.object({

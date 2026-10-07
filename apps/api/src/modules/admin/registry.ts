@@ -6,17 +6,8 @@ import {
   hubRefResponseSchema,
   listBranchesQuerySchema,
   listHubsQuerySchema,
-  listZonesQuerySchema,
   searchCustomersQuerySchema,
-  zoneRefResponseSchema,
 } from "../reference/reference.dto"
-import {
-  createZoneSchema as createZoneBody,
-  listZonesQuerySchema as listZonesQuery,
-  updateZoneSchema as updateZoneBody,
-  zoneIdParamSchema as zoneIdParam,
-  zoneResponseSchema as zoneResponse,
-} from "../zones/zones.dto"
 import {
   createServiceAreaSchema as createServiceAreaBody,
   createServiceCitySchema as createServiceCityBody,
@@ -1154,8 +1145,8 @@ export const ADMIN_SURFACE = defineSurface({
      * parcel-create dialog has six free-text id fields today, and this is what
      * turns them into comboboxes.
      *
-     * Three endpoints, not seven, because three is what the gate needs —
-     * customers, hubs, zones. Branches, users, riders, and vehicles are not
+     * Three endpoints, because three is what the gate needs —
+     * branches, hubs, customers. Users, riders, and vehicles are not
      * declared until a screen asks for one; adding an entry here is a registry
      * change plus a handler, and the registry is what makes that cheap.
      *
@@ -1166,7 +1157,7 @@ export const ADMIN_SURFACE = defineSurface({
     reference: {
       tag: "reference",
       tagDescription:
-        "Read-only lookups that populate pickers: branches, hubs, zones, and customer search. Narrow projections for comboboxes, not table dumps.",
+        "Read-only lookups that populate pickers: branches, hubs, and customer search. Narrow projections for comboboxes, not table dumps.",
       operations: {
         listBranches: {
           method: "GET",
@@ -1189,17 +1180,6 @@ export const ADMIN_SURFACE = defineSurface({
             "Branch-scoped hub lookup for pickers. A non-company-wide caller sees only their own branch's hubs, narrowed further to their assigned hubs where the role says so. Only the fields a combobox renders are returned — no coordinates, no capacity.",
           query: listHubsQuerySchema,
           listNodes: hubRefResponseSchema,
-        },
-        listZones: {
-          method: "GET",
-          path: "/reference/zones",
-          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_VIEW] },
-          summary: "List zones (picker)",
-          successDescription: "A page of zones.",
-          description:
-            "Delivery zones for pickers. Zones are company-wide rather than branch-scoped, so this is not filtered by the caller's branch.",
-          query: listZonesQuerySchema,
-          listNodes: zoneRefResponseSchema,
         },
         searchCustomers: {
           method: "GET",
@@ -1239,57 +1219,6 @@ export const ADMIN_SURFACE = defineSurface({
             403: "`BOOTSTRAP_TOKEN` is not configured, so bootstrap is disabled.",
             409: "An administrator already exists, no roles are seeded, or the email is taken.",
           },
-        },
-      },
-    },
-
-    zones: {
-      tag: "zones",
-      tagDescription:
-        "Geographic pricing zones and the pricing rules that hang off them. Zones are company-wide reference data.",
-      operations: {
-        list: {
-          method: "GET",
-          path: "/zones",
-          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_VIEW] },
-          summary: "List zones",
-          successDescription: "A page of zones.",
-          query: listZonesQuery,
-          listNodes: zoneResponse,
-        },
-        read: {
-          method: "GET",
-          path: "/zones/:id",
-          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_VIEW] },
-          summary: "Read a zone",
-          successDescription: "The zone.",
-          params: zoneIdParam,
-          paramDescriptions: { id: "Zone id." },
-          response: zoneResponse,
-          errors: { 404: "No such zone." },
-        },
-        create: {
-          method: "POST",
-          path: "/zones",
-          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_MANAGE] },
-          summary: "Create a zone",
-          successDescription: "Created.",
-          body: createZoneBody,
-          response: zoneResponse,
-          successStatus: 201,
-          errors: { 409: "A zone with that code already exists." },
-        },
-        update: {
-          method: "PATCH",
-          path: "/zones/:id",
-          policy: { audience: ["admin"], permissions: [PERMISSIONS.ZONES_MANAGE] },
-          summary: "Update a zone",
-          successDescription: "Updated.",
-          params: zoneIdParam,
-          paramDescriptions: { id: "Zone id." },
-          body: updateZoneBody,
-          response: zoneResponse,
-          errors: { 404: "No such zone.", 409: "A zone with that code already exists." },
         },
       },
     },

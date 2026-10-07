@@ -7,8 +7,6 @@ import { rootRoute } from "./root"
 import { branchesSearchSchema, hubsSearchSchema } from "./org-search-params"
 import { loginSearchSchema, parcelsSearchSchema, trackingSearchSchema } from "./search-params"
 import { vehiclesSearchSchema } from "./vehicles-search-params"
-import { zonesSearchSchema } from "./zones-search-params"
-import { pricingRulesSearchSchema } from "./pricing-rules-search-params"
 import { pricingLanesSearchSchema } from "./pricing-lanes-search-params"
 import {
   citiesSearchSchema,
@@ -59,10 +57,6 @@ const HubsListPage = lazyRouteComponent(
   () => import("@/features/org/hubs-list-page"),
   "HubsListPage",
 )
-const ZonesListPage = lazyRouteComponent(
-  () => import("@/features/zones/zones-list-page"),
-  "ZonesListPage",
-)
 const CitiesListPage = lazyRouteComponent(
   () => import("@/features/locations/cities-list-page"),
   "CitiesListPage",
@@ -78,10 +72,6 @@ const ServiceAreasListPage = lazyRouteComponent(
 const VehiclesListPage = lazyRouteComponent(
   () => import("@/features/vehicles/vehicles-list-page"),
   "VehiclesListPage",
-)
-const PricingRulesListPage = lazyRouteComponent(
-  () => import("@/features/pricing/pricing-rules-list-page"),
-  "PricingRulesListPage",
 )
 const PricingMatrixPage = lazyRouteComponent(
   () => import("@/features/pricing/pricing-matrix-page"),
@@ -242,13 +232,6 @@ export const settlementsRoute = createRoute({
   component: SettlementsListPageRoute,
 })
 
-export const zonesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/zones",
-  validateSearch: zonesSearchSchema,
-  component: ZonesListPageRoute,
-})
-
 export const citiesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/locations/cities",
@@ -275,13 +258,6 @@ export const vehiclesRoute = createRoute({
   path: "/vehicles",
   validateSearch: vehiclesSearchSchema,
   component: VehiclesListPageRoute,
-})
-
-export const pricingRulesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/pricing-rules",
-  validateSearch: pricingRulesSearchSchema,
-  component: PricingRulesListPageRoute,
 })
 
 export const pricingMatrixRoute = createRoute({
@@ -451,15 +427,6 @@ function SettlementsListPageRoute() {
   )
 }
 
-function ZonesListPageRoute() {
-  const search = zonesRoute.useSearch()
-  return (
-    <RequirePermission permission="zones.view">
-      <ZonesListPage search={search} />
-    </RequirePermission>
-  )
-}
-
 function CitiesListPageRoute() {
   const search = citiesRoute.useSearch()
   return (
@@ -492,15 +459,6 @@ function VehiclesListPageRoute() {
   return (
     <RequirePermission permission="vehicles.view">
       <VehiclesListPage search={search} />
-    </RequirePermission>
-  )
-}
-
-function PricingRulesListPageRoute() {
-  const search = pricingRulesRoute.useSearch()
-  return (
-    <RequirePermission permission="pricing.view">
-      <PricingRulesListPage search={search} />
     </RequirePermission>
   )
 }

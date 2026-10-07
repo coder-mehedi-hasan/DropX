@@ -28,7 +28,6 @@ import type {
   CreateRoleBody,
   CreateRouteBody,
   CreateTransferBody,
-  CreateZoneBody,
   CreateUserBody,
   Customer,
   CustomerOption,
@@ -38,9 +37,6 @@ import type {
   HubOption,
   LoginResult,
   ParcelTracking,
-  PricingRule,
-  CreatePricingRuleBody,
-  UpdatePricingRuleBody,
   ReferenceListParams,
   ResetPasswordBody,
   RoleDetail,
@@ -67,11 +63,8 @@ import type {
   UpdateRouteBody,
   UpdateUserBody,
   UpdateVehicleBody,
-  UpdateZoneBody,
   UserStatus,
   Vehicle,
-  Zone,
-  ZoneOption,
   ReplaceTransferManifestBody,
   ReplacePermissionsBody,
   CreateDeliveryBody,
@@ -109,8 +102,6 @@ import type {
 } from "@/routes/locations-search-params"
 import type { PricingLanesSearch } from "@/routes/pricing-lanes-search-params"
 import type { VehiclesSearch } from "@/routes/vehicles-search-params"
-import type { ZonesSearch } from "@/routes/zones-search-params"
-import type { PricingRulesSearch } from "@/routes/pricing-rules-search-params"
 import type { RoutesSearch } from "@/routes/routes-search-params"
 import type { RidersSearch } from "@/routes/riders-search-params"
 import type { RiderLocationsSearch } from "@/routes/rider-locations-search-params"
@@ -218,19 +209,11 @@ export function listHubsForPicker(params: ReferenceListParams, signal?: AbortSig
   })
 }
 
-export function listZonesForPicker(params: ReferenceListParams, signal?: AbortSignal) {
-  return api.get<Page<ZoneOption>>("/admin/reference/zones", {
-    query: referenceQuery(params),
-    ...(signal ? { signal } : {}),
-  })
-}
-
 /*
  * The booking cascade's pickers, backed by the service-* module rather than the
- * reference module: these are the city → zone → area rows bookings key on, not
- * the legacy `admin.reference.zones` projection the pricing-rule sheet still
- * uses. The zone and area lists take the parent id so a picker only ever offers
- * rows under the row already chosen.
+ * reference module: these are the city → zone → area rows bookings key on. The
+ * zone and area lists take the parent id so a picker only ever offers rows under
+ * the row already chosen.
  */
 export function listCitiesForPicker(params: ReferenceListParams, signal?: AbortSignal) {
   return api.get<Page<ServiceCity>>("/admin/service-cities", {
@@ -392,22 +375,6 @@ export function updateHub(hubId: string, body: UpdateHubBody) {
   return api.patch<Hub>(`/admin/hubs/${hubId}`, body)
 }
 
-export function listZones(params: ZonesSearch) {
-  return api.get<Page<Zone>>("/admin/zones", { query: zoneQuery(params) })
-}
-
-export function getZone(zoneId: string, signal?: AbortSignal) {
-  return api.get<Zone>(`/admin/zones/${zoneId}`, signal ? { signal } : undefined)
-}
-
-export function createZone(body: CreateZoneBody) {
-  return api.post<Zone>("/admin/zones", body)
-}
-
-export function updateZone(zoneId: string, body: UpdateZoneBody) {
-  return api.patch<Zone>(`/admin/zones/${zoneId}`, body)
-}
-
 export function listVehicles(params: VehiclesSearch) {
   return api.get<Page<Vehicle>>("/admin/vehicles", { query: vehicleQuery(params) })
 }
@@ -429,26 +396,6 @@ export function updateVehicle(vehicleId: string, body: UpdateVehicleBody) {
  *  INACTIVE, and an already-inactive one comes back as 409. */
 export function deactivateVehicle(vehicleId: string) {
   return api.post<Vehicle>(`/admin/vehicles/${vehicleId}/deactivate`)
-}
-
-export function listPricingRules(params: PricingRulesSearch) {
-  return api.get<Page<PricingRule>>("/pricing/rules", { query: pricingRuleQuery(params) })
-}
-
-export function getPricingRule(pricingRuleId: string, signal?: AbortSignal) {
-  return api.get<PricingRule>(`/pricing/rules/${pricingRuleId}`, signal ? { signal } : undefined)
-}
-
-export function createPricingRule(body: CreatePricingRuleBody) {
-  return api.post<PricingRule>("/pricing/rules", body)
-}
-
-export function updatePricingRule(pricingRuleId: string, body: UpdatePricingRuleBody) {
-  return api.patch<PricingRule>(`/pricing/rules/${pricingRuleId}`, body)
-}
-
-export function deletePricingRule(pricingRuleId: string) {
-  return api.delete<void>(`/pricing/rules/${pricingRuleId}`)
 }
 
 export function listRiders(params: RidersSearch) {
@@ -786,42 +733,6 @@ function orgQuery(params: {
     ...(params.status ? { status: params.status } : {}),
     ...(params.type ? { type: params.type } : {}),
     ...(params.branchId ? { branchId: params.branchId } : {}),
-  }
-}
-
-function zoneQuery(params: {
-  page: number
-  limit: number
-  sortBy: string
-  sort: "asc" | "desc"
-  search: string
-  status?: string
-}) {
-  return {
-    page: params.page,
-    limit: params.limit,
-    sortBy: params.sortBy,
-    sort: params.sort,
-    ...(params.search ? { search: params.search } : {}),
-    ...(params.status ? { status: params.status } : {}),
-  }
-}
-
-function pricingRuleQuery(params: {
-  page: number
-  limit: number
-  sortBy: string
-  sort: "asc" | "desc"
-  search: string
-  status?: string
-}) {
-  return {
-    page: params.page,
-    limit: params.limit,
-    sortBy: params.sortBy,
-    sort: params.sort,
-    ...(params.search ? { search: params.search } : {}),
-    ...(params.status ? { status: params.status } : {}),
   }
 }
 
