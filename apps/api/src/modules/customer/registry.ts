@@ -22,6 +22,12 @@ import {
   parcelDetailResponseSchema,
   createParcelSchema,
 } from "../parcels/parcels.dto"
+import {
+  createCustomerAddressSchema,
+  customerAddressIdParamSchema,
+  customerAddressResponseSchema,
+  updateCustomerAddressSchema,
+} from "../customer-addresses/customer-addresses.dto"
 
 /**
  * Customer self-service create.
@@ -175,6 +181,71 @@ export const CUSTOMER_SURFACE = defineSurface({
           errors: {
             422: "Validation failed, or the price list covers neither the route nor the weight.",
           },
+        },
+      },
+    },
+
+    /**
+     * The customer's saved-address book.
+     *
+     * Structured like one end of a booking so a saved address can prefill the
+     * booking cascade without a translation layer. Every operation is scoped to
+     * the session's own customer id, and the location cascade is re-validated
+     * server-side on write — a saved address that cannot prefill a booking is a
+     * dead row.
+     */
+    addresses: {
+      tag: "customer-addresses",
+      tagDescription:
+        "The signed-in customer's saved addresses, structured to prefill the booking cascade.",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/addresses",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List my saved addresses",
+          successDescription: "The saved addresses.",
+          response: customerAddressResponseSchema,
+        },
+        create: {
+          method: "POST",
+          path: "/addresses",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Save an address",
+          successDescription: "Saved.",
+          description:
+            "Stores a structured address — the same city/zone/area cascade a booking end uses — so it can prefill the booking form.",
+          body: createCustomerAddressSchema,
+          response: customerAddressResponseSchema,
+          successStatus: 201,
+          errors: {
+            422: "Validation failed, or the zone does not belong to the city.",
+          },
+        },
+        update: {
+          method: "PATCH",
+          path: "/addresses/:id",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Edit a saved address",
+          successDescription: "Updated.",
+          params: customerAddressIdParamSchema,
+          paramDescriptions: { id: "Saved address id." },
+          body: updateCustomerAddressSchema,
+          response: customerAddressResponseSchema,
+          errors: {
+            404: "No such saved address.",
+            422: "Validation failed, or the zone does not belong to the city.",
+          },
+        },
+        delete: {
+          method: "DELETE",
+          path: "/addresses/:id",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Delete a saved address",
+          successDescription: "Deleted.",
+          params: customerAddressIdParamSchema,
+          paramDescriptions: { id: "Saved address id." },
+          errors: { 404: "No such saved address." },
         },
       },
     },

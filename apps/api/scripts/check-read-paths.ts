@@ -59,6 +59,8 @@ const transfers = await import("../src/modules/transfers/transfers.repository")
 const users = await import("../src/modules/users/users.repository")
 const roles = await import("../src/modules/roles/roles.repository")
 const customers = await import("../src/modules/customers/customers.repository")
+const customerAddresses =
+  await import("../src/modules/customer-addresses/customer-addresses.repository")
 const payments = await import("../src/modules/payments/payments.repository")
 const settlements = await import("../src/modules/settlements/settlements.repository")
 
@@ -956,6 +958,17 @@ cases.push(
   {
     name: "customers.selectCustomerAddresses",
     run: () => customers.selectCustomerAddresses(pool, "1"),
+  },
+
+  // The saved-address book: the list and the scoped single read both join the
+  // service-* tables for names, so a broken join or a renamed column is caught here.
+  {
+    name: "customerAddresses.listCustomerAddresses",
+    run: () => customerAddresses.listCustomerAddresses(pool, "1"),
+  },
+  {
+    name: "customerAddresses.selectCustomerAddress",
+    run: () => customerAddresses.selectCustomerAddress(pool, "1", "1"),
   },
 
   // Payments join `parcels`, so they exercise both tables; the status filter

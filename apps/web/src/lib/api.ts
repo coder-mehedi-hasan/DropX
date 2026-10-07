@@ -1,6 +1,8 @@
 import { apiRequest } from "@/lib/api-client"
 import type {
+  CreateCustomerAddressInput,
   CreateParcelRequest,
+  CustomerAddress,
   CustomerSession,
   FeeQuote,
   ListQueryParams,
@@ -13,6 +15,7 @@ import type {
   QuoteRequest,
   SessionMe,
   TokenPair,
+  UpdateCustomerAddressInput,
 } from "@/lib/types"
 
 /**
@@ -62,6 +65,27 @@ export const parcelsApi = {
 
   createOwn(payload: CreateParcelRequest): Promise<Parcel> {
     return apiRequest<Parcel>("/customer/parcels", { method: "POST", body: payload })
+  },
+}
+
+export const addressesApi = {
+  list(): Promise<CustomerAddress[]> {
+    return apiRequest<CustomerAddress[]>("/customer/addresses")
+  },
+
+  create(payload: CreateCustomerAddressInput): Promise<CustomerAddress> {
+    return apiRequest<CustomerAddress>("/customer/addresses", { method: "POST", body: payload })
+  },
+
+  update(id: string, payload: UpdateCustomerAddressInput): Promise<CustomerAddress> {
+    return apiRequest<CustomerAddress>(`/customer/addresses/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: payload,
+    })
+  },
+
+  remove(id: string): Promise<void> {
+    return apiRequest<void>(`/customer/addresses/${encodeURIComponent(id)}`, { method: "DELETE" })
   },
 }
 

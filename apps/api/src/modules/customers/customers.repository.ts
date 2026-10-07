@@ -113,17 +113,25 @@ export async function selectCustomer(
  * The whole address book for one customer, newest first. No N+1: `read` calls
  * this once and `list` never needs it (the list row is a support summary, not
  * an address book).
+ *
+ * The location names are joined from the service-* tables so the support screen
+ * shows where an address is without a second round of lookups.
  */
 export async function selectCustomerAddresses(
   db: Pool | Connection,
   customerId: string,
 ): Promise<AddressRecord[]> {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT id, customer_id, label, address_line, city, district, postal_code, latitude, longitude,
-            is_default, created_at, updated_at
-       FROM customer_addresses
-      WHERE customer_id = ?
-      ORDER BY is_default DESC, id ASC`,
+    `SELECT a.id, a.customer_id, a.label, a.city_id, a.zone_id, a.area_id,
+            a.address_line, a.landmark, a.latitude, a.longitude,
+            a.is_default, a.created_at, a.updated_at,
+            city.name AS city_name, zone.name AS zone_name, area.name AS area_name
+       FROM customer_addresses AS a
+       JOIN service_cities AS city ON city.id = a.city_id
+       JOIN service_zones AS zone ON zone.id = a.zone_id
+       LEFT JOIN service_areas AS area ON area.id = a.area_id
+      WHERE a.customer_id = ?
+      ORDER BY a.is_default DESC, a.id ASC`,
     [customerId],
   )
   return rows.map(addressRow)
@@ -133,10 +141,14 @@ export type AddressRecord = {
   id: string
   customerId: string
   label: string | null
+  cityId: string
+  zoneId: string
+  areaId: string | null
+  cityName: string
+  zoneName: string
+  areaName: string | null
   addressLine: string
-  city: string | null
-  district: string | null
-  postalCode: string | null
+  landmark: string | null
   latitude: number | null
   longitude: number | null
   isDefault: boolean
@@ -149,10 +161,14 @@ function addressRow(row: Record<string, unknown>): AddressRecord {
     id: String(row.id),
     customerId: String(row.customer_id),
     label: row.label === null ? null : String(row.label),
+    cityId: String(row.city_id),
+    zoneId: String(row.zone_id),
+    areaId: row.area_id === null ? null : String(row.area_id),
+    cityName: String(row.city_name),
+    zoneName: String(row.zone_name),
+    areaName: row.area_name === null ? null : String(row.area_name),
     addressLine: String(row.address_line),
-    city: row.city === null ? null : String(row.city),
-    district: row.district === null ? null : String(row.district),
-    postalCode: row.postal_code === null ? null : String(row.postal_code),
+    landmark: row.landmark === null ? null : String(row.landmark),
     latitude: row.latitude === null ? null : Number(row.latitude),
     longitude: row.longitude === null ? null : Number(row.longitude),
     isDefault: Boolean(row.is_default),

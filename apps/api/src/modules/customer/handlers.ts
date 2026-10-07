@@ -3,6 +3,7 @@ import { response } from "../../core/http"
 import { isCustomer, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
 import * as parcels from "../parcels/parcels.service"
+import * as addresses from "../customer-addresses/customer-addresses.service"
 import * as reference from "../reference/reference.service"
 import * as locations from "../locations/locations.service"
 import type { CUSTOMER_SURFACE } from "./registry"
@@ -103,6 +104,48 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
       const items = await parcels.getParcelItems(c, parcel.id)
       const addresses = await parcels.getParcelAddresses(c, parcel.id)
       return c.json(response.success({ ...parcel, items, addresses }, 201), 201)
+    },
+  },
+
+  addresses: {
+    list: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      return c.json(response.success(await addresses.listAddresses(c, auth.actor.customerId)))
+    },
+
+    create: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      const saved = await addresses.createAddress(c, auth.actor.customerId, c.req.valid("json"))
+      return c.json(response.success(saved), 201)
+    },
+
+    update: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      const saved = await addresses.updateAddress(
+        c,
+        auth.actor.customerId,
+        c.req.valid("param").id,
+        c.req.valid("json"),
+      )
+      return c.json(response.success(saved))
+    },
+
+    delete: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      await addresses.deleteAddress(c, auth.actor.customerId, c.req.valid("param").id)
+      return c.body(null, 204)
     },
   },
 }

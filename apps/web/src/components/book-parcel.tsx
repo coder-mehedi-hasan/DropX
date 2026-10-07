@@ -22,6 +22,11 @@ import {
   Input,
   LoadingButton,
   QuantityStepper,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Separator,
   Skeleton,
   Textarea,
@@ -66,6 +71,7 @@ import {
   useCreateParcel,
   useFeeQuote,
   useHubs,
+  useSavedAddresses,
   useZoneAreas,
 } from "@/lib/queries"
 import { type ReferenceOption } from "@/lib/reference-data"
@@ -382,6 +388,7 @@ export function BookParcel() {
 
   const hubs = useHubs()
   const cities = useCities()
+  const savedAddresses = useSavedAddresses()
   const pickupZones = useCityZones(pickedCityId)
   const pickupAreas = useZoneAreas(pickedZoneId)
   const deliveryZones = useCityZones(deliveredCityId)
@@ -389,10 +396,27 @@ export function BookParcel() {
 
   const hubOptions = hubs.data ?? []
   const cityOptions = cities.data ?? []
+  const savedAddressOptions = savedAddresses.data ?? []
   const pickupZoneOptions = pickupZones.data ?? []
   const pickupAreaOptions = pickupAreas.data ?? []
   const deliveryZoneOptions = deliveryZones.data ?? []
   const deliveryAreaOptions = deliveryAreas.data ?? []
+
+  /**
+   * Prefill one end's cascade from a saved address. The saved address carries the
+   * same city/zone/area ids a booking end does, so this is a straight copy — no
+   * translation, and the cascade's own parent-child rules are already satisfied
+   * because the address was validated when it was saved.
+   */
+  function applySavedAddress(end: "pickup" | "delivery", addressId: string) {
+    const address = savedAddressOptions.find((option) => option.id === addressId)
+    if (!address) return
+    const prefix = end === "pickup" ? "pickup" : "delivery"
+    form.setValue(`${prefix}CityId`, address.cityId, { shouldValidate: false })
+    form.setValue(`${prefix}ZoneId`, address.zoneId, { shouldValidate: false })
+    form.setValue(`${prefix}AreaId`, address.areaId ?? "", { shouldValidate: false })
+    form.setValue(`${prefix}AddressLine`, address.addressLine, { shouldValidate: false })
+  }
 
   /**
    * Booking is impossible until the API can be asked which hubs and cities
@@ -660,6 +684,35 @@ export function BookParcel() {
                         </div>
                       </div>
 
+                      {savedAddressOptions.length > 0 ? (
+                        <div className="mb-5">
+                          <Select
+                            value=""
+                            onValueChange={(value) => {
+                              if (value) applySavedAddress("delivery", value)
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Use a saved address" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {savedAddressOptions.map((address) => (
+                                <SelectItem key={address.id} value={address.id}>
+                                  <span className="grid gap-0.5">
+                                    <span>{address.label || address.addressLine}</span>
+                                    <span className="text-muted-foreground text-xs">
+                                      {[address.areaName, address.zoneName, address.cityName]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                    </span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : null}
+
                       <div className="grid gap-5">
                         <div className="grid gap-5 sm:grid-cols-2">
                           <FormField
@@ -815,6 +868,35 @@ export function BookParcel() {
                           </p>
                         </div>
                       </div>
+
+                      {savedAddressOptions.length > 0 ? (
+                        <div className="mb-5">
+                          <Select
+                            value=""
+                            onValueChange={(value) => {
+                              if (value) applySavedAddress("pickup", value)
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Use a saved address" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {savedAddressOptions.map((address) => (
+                                <SelectItem key={address.id} value={address.id}>
+                                  <span className="grid gap-0.5">
+                                    <span>{address.label || address.addressLine}</span>
+                                    <span className="text-muted-foreground text-xs">
+                                      {[address.areaName, address.zoneName, address.cityName]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                    </span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : null}
 
                       <div className="grid gap-5">
                         <div className="grid gap-5 sm:grid-cols-2">

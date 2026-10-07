@@ -148,10 +148,14 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     customer_id BIGINT UNSIGNED NOT NULL,
     label VARCHAR(50) NULL,
-    address_line VARCHAR(500) NOT NULL,
-    city VARCHAR(100) NULL,
-    district VARCHAR(100) NULL,
-    postal_code VARCHAR(20) NULL,
+    -- Structured to match the booking cascade: a saved address carries the same
+    -- city/zone/area ids a booking end does, so it can prefill the picker. The
+    -- old free-text `city`/`district`/`postal_code` columns are gone.
+    city_id BIGINT UNSIGNED NOT NULL,
+    zone_id BIGINT UNSIGNED NOT NULL,
+    area_id BIGINT UNSIGNED NULL,
+    address_line VARCHAR(300) NOT NULL,
+    landmark VARCHAR(255) NULL,
     latitude DECIMAL(10,7) NULL,
     longitude DECIMAL(10,7) NULL,
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
@@ -159,10 +163,21 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_customer_addresses_customer_id (customer_id),
-    KEY idx_customer_addresses_location (district, city),
+    KEY idx_customer_addresses_city (city_id),
+    KEY idx_customer_addresses_zone (zone_id),
+    KEY idx_customer_addresses_area (area_id),
     CONSTRAINT fk_customer_addresses_customer
         FOREIGN KEY (customer_id) REFERENCES customers(id)
-        ON UPDATE CASCADE ON DELETE CASCADE
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_customer_addresses_city
+        FOREIGN KEY (city_id) REFERENCES service_cities(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_customer_addresses_zone
+        FOREIGN KEY (zone_id) REFERENCES service_zones(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_customer_addresses_area
+        FOREIGN KEY (area_id) REFERENCES service_areas(id)
+        ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 -- ============================================================

@@ -2,9 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { parcelsApi, pricingApi, trackingApi } from "@/lib/api"
+import { addressesApi, parcelsApi, pricingApi, trackingApi } from "@/lib/api"
 import { listCities, listCityZones, listHubs, listZoneAreas } from "@/lib/reference-data"
-import type { CreateParcelRequest, ListQueryParams, QuoteRequest } from "@/lib/types"
+import type {
+  CreateCustomerAddressInput,
+  CreateParcelRequest,
+  ListQueryParams,
+  QuoteRequest,
+  UpdateCustomerAddressInput,
+} from "@/lib/types"
 
 /**
  * Query keys, centralised so an invalidation after a booking cannot drift from
@@ -19,6 +25,7 @@ export const queryKeys = {
   cities: () => ["reference", "cities"] as const,
   cityZones: (cityId: string) => ["reference", "cities", cityId, "zones"] as const,
   zoneAreas: (zoneId: string) => ["reference", "zones", zoneId, "areas"] as const,
+  savedAddresses: () => ["addresses", "mine"] as const,
 }
 
 export function useMyParcels(params: ListQueryParams) {
@@ -83,6 +90,48 @@ export function useCreateParcel() {
     mutationFn: (payload: CreateParcelRequest) => parcelsApi.createOwn(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["parcels"] })
+    },
+  })
+}
+
+export function useSavedAddresses() {
+  return useQuery({
+    queryKey: queryKeys.savedAddresses(),
+    queryFn: () => addressesApi.list(),
+    staleTime: 30_000,
+  })
+}
+
+export function useCreateAddress() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: CreateCustomerAddressInput) => addressesApi.create(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["addresses"] })
+    },
+  })
+}
+
+export function useUpdateAddress() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateCustomerAddressInput }) =>
+      addressesApi.update(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["addresses"] })
+    },
+  })
+}
+
+export function useDeleteAddress() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => addressesApi.remove(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["addresses"] })
     },
   })
 }

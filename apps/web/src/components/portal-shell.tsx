@@ -11,7 +11,7 @@ import {
   cn,
   useConfirmation,
 } from "@dropx/ui"
-import { LogOutIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { LogOutIcon, MapPinIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
@@ -60,6 +60,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 const NAV = [
   { href: "/dashboard", label: "My parcels", icon: PackageIcon },
   { href: "/book", label: "Book a parcel", icon: PlusIcon },
+  { href: "/addresses", label: "Saved addresses", icon: MapPinIcon },
   { href: "/dashboard/track", label: "Track", icon: SearchIcon },
 ] as const
 

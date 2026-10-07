@@ -182,6 +182,47 @@ export type CreateParcelRequest = {
 }
 
 /**
+ * One saved address in the customer's address book.
+ *
+ * Structured exactly like one end of a booking — the same city/zone/area cascade
+ * plus an address line — so selecting a saved address in the booking form can
+ * prefill the picker without a translation layer. The `cityName`/`zoneName`/
+ * `areaName` are the location's current names, resolved by the API.
+ */
+export type CustomerAddress = {
+  id: string
+  customerId: string
+  label: string | null
+  cityId: string
+  zoneId: string
+  areaId: string | null
+  cityName: string
+  zoneName: string
+  areaName: string | null
+  addressLine: string
+  landmark: string | null
+  latitude: number | null
+  longitude: number | null
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateCustomerAddressInput = {
+  label?: string | null
+  cityId: string
+  zoneId: string
+  areaId?: string
+  addressLine: string
+  landmark?: string | null
+  latitude?: number
+  longitude?: number
+  isDefault?: boolean
+}
+
+export type UpdateCustomerAddressInput = Partial<CreateCustomerAddressInput>
+
+/**
  * `quoteSchema` on the wire: grams, not kilograms, and the two city/zone pairs
  * the service resolves to a pricing lane.
  */
