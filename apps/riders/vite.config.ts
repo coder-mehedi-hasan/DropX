@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url"
 
+import { cloudflare } from "@cloudflare/vite-plugin"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
@@ -16,8 +17,14 @@ import { defineConfig } from "vite"
  * No proxy: the phone calls the API at its absolute `VITE_API_URL`, so the app
  * and the API share CORS rather than an origin rewrite.
  */
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(({ command }) => ({
+  plugins: [
+    ...(command === "build"
+      ? [cloudflare({ persistState: { path: "../../.wrangler/riders" } })]
+      : []),
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -32,7 +39,7 @@ export default defineConfig({
     strictPort: true,
   },
   build: {
-    outDir: "dist",
+    outDir: "dist/client",
     sourcemap: true,
   },
-})
+}))

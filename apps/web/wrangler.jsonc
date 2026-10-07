@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "dropx-web",
+  "compatibility_date": "2026-10-07",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "keep_vars": true,
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "dropx-web",
+    },
+  ],
+  "images": {
+    "binding": "IMAGES",
+  },
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true,
+    },
+  },
+}

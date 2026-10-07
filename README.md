@@ -1,5 +1,27 @@
 # DropX
 
+## Deploy the frontends to Cloudflare
+
+The customer web app deploys as an OpenNext Worker. The admin and rider SPAs
+deploy as Workers with static assets through the Cloudflare Vite plugin.
+
+Authenticate Wrangler once from the repository root:
+
+```bash
+bunx wrangler login
+```
+
+Set the public API URL in each app's production build environment, then deploy:
+
+```bash
+NEXT_PUBLIC_API_URL="https://api.example.com" bun run --cwd apps/web deploy
+VITE_API_URL="https://api.example.com" bun run --cwd apps/admin deploy
+VITE_API_URL="https://api.example.com" bun run --cwd apps/riders deploy
+```
+
+The Workers are named `dropx-web`, `dropx-admin`, and `dropx-riders`. Use
+`preview:worker` in an app workspace to build and preview its Worker locally.
+
 ## Deploy the API with Docker Compose
 
 The Compose stack runs the DropX API on port `8005` and MySQL 8.4 with persistent storage. MySQL is published on port `3306` for external clients. It reuses the existing `sbx-redis-staging` container through Redis port `6379`. SMTP remains an external service configured through the API environment file.
