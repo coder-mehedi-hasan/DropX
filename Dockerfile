@@ -13,7 +13,9 @@ COPY apps/riders/package.json apps/riders/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/types/package.json packages/types/package.json
 COPY packages/ui/package.json packages/ui/package.json
-RUN bun install --frozen-lockfile --production --filter @dropx/api
+RUN bun install --frozen-lockfile --production --filter @dropx/api --linker=hoisted \
+  && test -f node_modules/mysql2/package.json \
+  && test -f node_modules/redis/package.json
 
 FROM oven/bun:1.3.13-alpine AS runtime
 
