@@ -10,11 +10,14 @@ services:
       NODE_ENV: production
       API_PORT: 8005
       DATABASE_URL: mysql://${MYSQL_USER:-dropx}:${MYSQL_PASSWORD:-change-me}@mysql:3306/${MYSQL_DATABASE:-dropx}
+      REDIS_URL: ${REDIS_URL:-redis://host.docker.internal:6379}
     ports:
       - "${API_HOST_PORT:-8005}:8005"
     depends_on:
       mysql:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     init: true
     restart: unless-stopped
     stop_grace_period: 15s
