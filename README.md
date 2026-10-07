@@ -11,6 +11,14 @@ Authenticate Wrangler once from the repository root:
 bunx wrangler login
 ```
 
+Run these commands from the repository root:
+
+| App    | Path          | Build                                 | Deploy                             |
+| ------ | ------------- | ------------------------------------- | ---------------------------------- |
+| Web    | `apps/web`    | `bun run --cwd apps/web build:worker` | `bun run --cwd apps/web deploy`    |
+| Admin  | `apps/admin`  | `bun run --cwd apps/admin build`      | `bun run --cwd apps/admin deploy`  |
+| Riders | `apps/riders` | `bun run --cwd apps/riders build`     | `bun run --cwd apps/riders deploy` |
+
 Set the public API URL in each app's production build environment, then deploy:
 
 ```bash
