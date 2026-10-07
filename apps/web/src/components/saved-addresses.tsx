@@ -334,7 +334,7 @@ function AddressFormSheet({
 
         <Form {...form}>
           <form
-            className="grid gap-5 px-1 pt-2 pb-6"
+            className="grid gap-5 px-4 pt-2 pb-6"
             noValidate
             onSubmit={form.handleSubmit(onSubmit)}
           >

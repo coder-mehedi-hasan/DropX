@@ -49,8 +49,7 @@ export async function listCities(): Promise<ReferenceOption[]> {
   }>("/customer/locations/cities", { query: LIST_REFERENCE_QUERY })
   return page.nodes.map((city) => ({
     id: city.id,
-    label: `${city.name} (${city.code})`,
-    description: `${city.serviceType} service`,
+    label: city.name
   }))
 }
 
@@ -61,7 +60,7 @@ export async function listCityZones(cityId: string): Promise<ReferenceOption[]> 
   }>(`/customer/locations/cities/${encodeURIComponent(cityId)}/zones`, {
     query: LIST_REFERENCE_QUERY,
   })
-  return page.nodes.map((zone) => ({ id: zone.id, label: `${zone.name} (${zone.code})` }))
+  return page.nodes.map((zone) => ({ id: zone.id, label: zone.name }))
 }
 
 export async function listZoneAreas(zoneId: string): Promise<ReferenceOption[]> {
@@ -71,5 +70,5 @@ export async function listZoneAreas(zoneId: string): Promise<ReferenceOption[]> 
   }>(`/customer/locations/zones/${encodeURIComponent(zoneId)}/areas`, {
     query: LIST_REFERENCE_QUERY,
   })
-  return page.nodes.map((area) => ({ id: area.id, label: `${area.name} (${area.code})` }))
+  return page.nodes.map((area) => ({ id: area.id, label: area.name }))
 }

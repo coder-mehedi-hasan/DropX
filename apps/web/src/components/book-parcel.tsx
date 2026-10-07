@@ -557,7 +557,7 @@ export function BookParcel() {
   }
 
   return (
-    <div className="max-w-page mx-auto grid w-full gap-7">
+    <div className="mx-auto grid w-full gap-7">
       {confirmationDialog}
       <PageHeader
         eyebrow="New shipment"
@@ -1559,9 +1559,6 @@ function AddressSection({
                 placeholder="Pick an area, if listed"
                 emptyTitle="No areas in this zone yet"
               />
-              <FormDescription>
-                Optional — narrows the location so the rider finds the right door.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

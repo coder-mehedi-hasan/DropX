@@ -218,7 +218,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
         <main
           id="portal-content"
-          className="max-w-page relative isolate mx-auto w-full flex-1 overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-10 xl:px-10"
+          className="relative isolate mx-auto w-full flex-1 overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-10 xl:px-10"
         >
           <div className="pointer-events-none absolute top-0 right-0 -z-10 h-96 w-96 translate-x-1/3 -translate-y-1/3 rounded-full bg-[#FF5500]/8 blur-3xl" />
           {children}
