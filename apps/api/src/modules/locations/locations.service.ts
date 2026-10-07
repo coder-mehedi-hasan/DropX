@@ -95,7 +95,13 @@ export async function updateServiceCity(
 ): Promise<ServiceCity> {
   try {
     if (patch.code) {
-      const taken = await codeExistsUnderParent(c.get("db")!, "service_cities", {}, patch.code, cityId)
+      const taken = await codeExistsUnderParent(
+        c.get("db")!,
+        "service_cities",
+        {},
+        patch.code,
+        cityId,
+      )
       if (taken) {
         throw new DomainError(ERROR_CODES.ALREADY_EXISTS, "A city with that code already exists", {
           details: [{ field: "code", message: "Pick a different code" }],
@@ -295,7 +301,7 @@ export async function listZonesForCity(
   // has no zones yet", which sends a client back to the city picker to retry a
   // path segment that was simply wrong.
   const city = await selectServiceCity(c.get("db")!, cityId)
-  if (!city) throw notFound("No such city")
+  if (!city || city.status !== "ACTIVE") throw notFound("No such city")
 
   const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectServiceZones(c.get("db")!, params, {
@@ -312,7 +318,9 @@ export async function listAreasForZone(
   query: { page: number; limit: number; sort: "asc" | "desc"; search?: string | undefined },
 ): Promise<Page<ServiceArea>> {
   const zone = await selectServiceZone(c.get("db")!, zoneId)
-  if (!zone) throw notFound("No such zone")
+  if (!zone || zone.status !== "ACTIVE") throw notFound("No such zone")
+  const city = await selectServiceCity(c.get("db")!, zone.cityId)
+  if (!city || city.status !== "ACTIVE") throw notFound("No such zone")
 
   const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectServiceAreas(c.get("db")!, params, {

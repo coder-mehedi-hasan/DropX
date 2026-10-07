@@ -23,6 +23,7 @@ ENV NODE_ENV=production \
     API_PORT=8005
 
 COPY --from=dependencies --chown=bun:bun /app/node_modules ./node_modules
+COPY --chown=bun:bun locations.json ./locations.json
 COPY --chown=bun:bun apps/api/package.json ./apps/api/package.json
 COPY --chown=bun:bun apps/api/scripts ./apps/api/scripts
 COPY --chown=bun:bun apps/api/src ./apps/api/src
@@ -35,4 +36,4 @@ EXPOSE 8005
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -q -O /dev/null "http://127.0.0.1:${API_PORT}/health" || exit 1
 
-CMD ["sh", "-c", "bun run --cwd apps/api migrate && bun run --cwd apps/api seed && bun run --cwd apps/api seed:pricing && exec bun run --cwd apps/api start"]
+CMD ["sh", "-c", "bun run --cwd apps/api migrate && bun run --cwd apps/api seed && bun run --cwd apps/api seed:locations && bun run --cwd apps/api seed:pricing && exec bun run --cwd apps/api start"]

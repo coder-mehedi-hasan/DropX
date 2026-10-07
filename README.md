@@ -51,7 +51,9 @@ docker compose up -d mysql
 docker compose up -d api
 ```
 
-Before the API process starts, the container automatically applies the idempotent database migration, seeds roles and default permission grants, and ensures the initial location and pricing catalogs exist. Existing location and pricing records are preserved, so container restarts do not overwrite changes made by administrators. The container exits instead of starting the API if any setup step fails.
+Before the API process starts, the container automatically applies the idempotent database migration, seeds roles and default permission grants, imports the prepared `locations.json` city → zone → area catalog, and ensures the pricing matrix exists. Existing location and pricing records are preserved, so container restarts do not overwrite changes made by administrators. The container exits instead of starting the API if any setup step fails.
+
+The location importer accepts an optional `service_type` (`ISD`, `SUBURB`, or `OSD`) on each city. When it is omitted, Dhaka defaults to `ISD` and every other city defaults to `OSD`. Add `service_type: "SUBURB"` to any prepared city that should use suburb pricing.
 
 The API is available at:
 

@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo dist",
     "seed": "bun run ./scripts/seed.ts",
+    "seed:locations": "bun run ./scripts/seed-locations.ts",
+    "seed:locations:check": "bun run ./scripts/seed-locations.ts --check",
     "seed:demo": "bun run ./scripts/seed-demo.ts",
     "check:read-paths": "API_LOG_LEVEL=silent bun run ./scripts/check-read-paths.ts",
     "migrate": "bun run src/db/migrate.ts",

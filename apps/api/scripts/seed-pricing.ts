@@ -1,15 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Seeds the pricing discount catalog a fresh install needs: the location
- * hierarchy the booking cascade shows, and the twelve-lane × four-slab pricing
- * matrix from `docs/plans/migration-price-and-location.md` Phase 6.
+ * Seeds the twelve-lane × four-slab pricing matrix from
+ * `docs/plans/migration-price-and-location.md` Phase 6.
  *
- * Idempotent and non-destructive by construction: cities, zones, areas, lanes,
- * and slabs are inserted on their natural keys, while an existing row is left
- * unchanged. Re-running this at container startup therefore fills missing
- * defaults without undoing prices, statuses, names, or COD settings edited by
- * production staff. Cities and zones are *examples*, not a fixed catalog —
- * production staff extend the hierarchy in the admin.
+ * Idempotent and non-destructive by construction: lanes and slabs are inserted
+ * on their natural keys, while an existing row is left unchanged. Re-running
+ * this at container startup therefore fills missing defaults without undoing
+ * prices, statuses, or COD settings edited by production staff. The separate
+ * `seed:locations` command imports the prepared city -> zone -> area catalog.
  *
  * Honest about one seam: the twelfth lane (ISD_ON_DEMAND → SAME_CITY_ON_DEMAND)
  * is seeded because the plan seeds it, but nothing yet books on-demand parcels,
@@ -28,56 +26,6 @@ function requireId(rows: mysql.RowDataPacket[], what: string): string {
   if (!row) throw new Error(`Seeded ${what} not found`)
   return String(row.id)
 }
-
-type CitySeed = {
-  name: string
-  code: string
-  serviceType: "ISD" | "SUBURB" | "OSD"
-  zones: ZoneSeed[]
-}
-type ZoneSeed = { name: string; code: string; areas: { name: string; code: string }[] }
-
-const CITIES: CitySeed[] = [
-  {
-    name: "Dhaka",
-    code: "DHAKA",
-    serviceType: "ISD",
-    zones: [
-      {
-        name: "Dhanmondi",
-        code: "DHANMONDI",
-        areas: [],
-      },
-    ],
-  },
-  {
-    name: "Savar",
-    code: "SAVAR",
-    serviceType: "SUBURB",
-    zones: [
-      {
-        name: "Savar",
-        code: "SAVAR",
-        areas: [{ name: "Savar Bazar", code: "SAVAR_BAZAR" }],
-      },
-    ],
-  },
-  {
-    name: "Bagerhat",
-    code: "BAGERHAT",
-    serviceType: "OSD",
-    zones: [
-      {
-        name: "Bagerhat Sadar",
-        code: "BAGERHAT_SADAR",
-        areas: [
-          { name: "Badamtola", code: "BADAMTOLA" },
-          { name: "Bagerhat Stadium", code: "BAGERHAT_STADIUM" },
-        ],
-      },
-    ],
-  },
-]
 
 const BANDS: SlabBand[] = [
   { minWeightGrams: 0, maxWeightGrams: 200 },
@@ -124,18 +72,6 @@ const MATRIX: (LaneKey & { prices: number[] })[] = [
   },
 ]
 
-const UPSERT_CITY = `INSERT INTO service_cities (name, code, service_type, status)
-  VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE id = id`
-
-const UPSERT_ZONE = `INSERT INTO service_zones (city_id, name, code, status)
-  VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE id = id`
-
-const UPSERT_AREA = `INSERT INTO service_areas (zone_id, name, code, status)
-  VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE id = id`
-
 const UPSERT_LANE = `INSERT INTO pricing_lanes (pickup_type, delivery_type, same_city, status)
   VALUES (?, ?, ?, 'ACTIVE')
   ON DUPLICATE KEY UPDATE id = id`
@@ -170,35 +106,6 @@ function validateCatalog(): void {
     if (previous && band.minWeightGrams !== previous.maxWeightGrams + 1) {
       throw new Error(`Weight bands are not contiguous at ${band.minWeightGrams}g`)
     }
-  }
-}
-
-async function seedLocations(pool: mysql.Pool): Promise<void> {
-  for (const city of CITIES) {
-    await pool.execute(UPSERT_CITY, [city.name, city.code, city.serviceType])
-
-    const [cityRows] = await pool.query<mysql.RowDataPacket[]>(
-      `SELECT id FROM service_cities WHERE code = ?`,
-      [city.code],
-    )
-    const cityId = requireId(cityRows, `city ${city.code}`)
-
-    for (const zone of city.zones) {
-      await pool.execute(UPSERT_ZONE, [cityId, zone.name, zone.code])
-
-      const [zoneRows] = await pool.query<mysql.RowDataPacket[]>(
-        `SELECT id FROM service_zones WHERE city_id = ? AND code = ?`,
-        [cityId, zone.code],
-      )
-      const zoneId = requireId(zoneRows, `zone ${zone.code}`)
-
-      for (const area of zone.areas) {
-        await pool.execute(UPSERT_AREA, [zoneId, area.name, area.code])
-        console.log(`  · area ${area.name} (${area.code})`)
-      }
-      console.log(`  · zone ${zone.name} (${zone.code})`)
-    }
-    console.log(`· city ${city.name} (${city.code}) — ${city.serviceType}`)
   }
 }
 
@@ -258,8 +165,6 @@ async function main(): Promise<void> {
 
   const pool = mysql.createPool(DATABASE_URL)
   try {
-    console.log("· seeding locations")
-    await seedLocations(pool)
     console.log("· seeding pricing matrix")
     await seedMatrix(pool)
     console.log("✓ done")
