@@ -26,9 +26,11 @@ ENV NODE_ENV=production \
 
 COPY --from=dependencies --chown=bun:bun /app/node_modules ./node_modules
 COPY --chown=bun:bun locations.json ./locations.json
+COPY --chown=bun:bun tsconfig.base.json ./tsconfig.base.json
 COPY --chown=bun:bun apps/api/package.json ./apps/api/package.json
 COPY --chown=bun:bun apps/api/scripts ./apps/api/scripts
 COPY --chown=bun:bun apps/api/src ./apps/api/src
+COPY --chown=bun:bun apps/api/tsconfig.json ./apps/api/tsconfig.json
 COPY --chown=bun:bun packages/types ./packages/types
 
 USER bun
