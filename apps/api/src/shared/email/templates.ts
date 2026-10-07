@@ -46,11 +46,16 @@ export async function renderEmail(
   context: TemplateContext,
   options: EmailRenderOptions = {},
 ): Promise<RenderedEmail> {
-  const [source, brandSignature] = await Promise.all([loadTemplate(template), loadFile(brandAsset)])
+  const [source, brandSignatureSrc] = await Promise.all([
+    loadTemplate(template),
+    options.brandAssetUrl
+      ? Promise.resolve(options.brandAssetUrl)
+      : loadFile(brandAsset).then(svgDataUri),
+  ])
 
   const html = source
     .replace(/\{\{\s*code\s*\}\}/g, context.code)
-    .replace(/\{\{brandSignatureSrc\}\}/g, options.brandAssetUrl ?? svgDataUri(brandSignature))
+    .replace(/\{\{brandSignatureSrc\}\}/g, brandSignatureSrc)
   const { html: rendered } = await mjml2html(html)
   return {
     html: rendered,

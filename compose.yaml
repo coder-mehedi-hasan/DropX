@@ -1,0 +1,40 @@
+services:
+  api:
+    image: dropx-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - apps/api/.env
+    environment:
+      NODE_ENV: production
+      API_PORT: 8005
+      DATABASE_URL: mysql://${MYSQL_USER:-dropx}:${MYSQL_PASSWORD:-change-me}@mysql:3306/${MYSQL_DATABASE:-dropx}
+    ports:
+      - "${API_HOST_PORT:-8005}:8005"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dropx}
+      MYSQL_USER: ${MYSQL_USER:-dropx}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-root-me}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
