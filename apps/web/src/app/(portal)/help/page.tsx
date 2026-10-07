@@ -33,11 +33,11 @@ export const metadata: Metadata = {
 }
 
 /**
- * Contact details are placeholders until support publishes real ones — swap
- * the `support@dropx.example` / hotline values here and nowhere else.
+ * Support hours are a placeholder until support publishes real ones — swap
+ * them here and nowhere else.
  */
-const CONTACT_EMAIL = "support@dropx.example"
-const CONTACT_PHONE = "+880 1700-000000"
+const CONTACT_EMAIL = "dropx.com.bd@gmail.com"
+const CONTACT_PHONE = "+880 1913-382360"
 const CONTACT_HOURS = "Saturday – Thursday, 9:00 – 18:00 (Asia/Dhaka)"
 
 const GROUPS: {
