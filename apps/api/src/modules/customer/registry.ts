@@ -28,6 +28,7 @@ import {
   customerAddressResponseSchema,
   updateCustomerAddressSchema,
 } from "../customer-addresses/customer-addresses.dto"
+import { pricingLaneWithSlabsResponseSchema } from "../pricing/pricing-lanes.dto"
 
 /**
  * Customer self-service create.
@@ -145,6 +146,28 @@ export const CUSTOMER_SURFACE = defineSurface({
           query: listZoneAreasQuerySchema,
           listNodes: areaRefResponseSchema,
           errors: { 404: "No such zone." },
+        },
+      },
+    },
+
+    /**
+     * The published price list, so a customer can see what a lane costs before
+     * booking. Same matrix the quote and the parcel fee are computed from —
+     * read-only, `ACTIVE` rows only, served with the admin lanes shape under
+     * the shared `pricing-lanes` tag.
+     */
+    pricing: {
+      tag: "pricing-lanes",
+      operations: {
+        listPlans: {
+          method: "GET",
+          path: "/pricing/lanes",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "List pricing plans",
+          successDescription: "Every active pricing lane with its weight slabs.",
+          description:
+            "The whole published matrix — lane pairs with their slabs in weight order. Retired lanes are never returned, and there is nothing to page: the price list is one document.",
+          listNodes: pricingLaneWithSlabsResponseSchema,
         },
       },
     },

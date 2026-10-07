@@ -16,6 +16,14 @@ export type ReferenceOption = {
   id: string
   label: string
   description?: string
+  /**
+   * The row's own fields, for screens that show them apart from the label —
+   * the coverage explorer badges the code and spells out the service type
+   * instead of repeating the composed `label` string.
+   */
+  name?: string
+  code?: string
+  serviceType?: string
 }
 
 export type ReferenceSource = "hubs" | "cities" | "city-zones" | "zone-areas"
@@ -39,6 +47,8 @@ export async function listHubs(): Promise<ReferenceOption[]> {
     id: hub.id,
     label: `${hub.name} (${hub.code})`,
     description: hub.district ?? undefined,
+    name: hub.name,
+    code: hub.code,
   }))
 }
 
@@ -49,7 +59,11 @@ export async function listCities(): Promise<ReferenceOption[]> {
   }>("/customer/locations/cities", { query: LIST_REFERENCE_QUERY })
   return page.nodes.map((city) => ({
     id: city.id,
-    label: city.name
+    label: `${city.name} (${city.serviceType})`,
+    description: city.code,
+    name: city.name,
+    code: city.code,
+    serviceType: city.serviceType,
   }))
 }
 
@@ -60,7 +74,12 @@ export async function listCityZones(cityId: string): Promise<ReferenceOption[]> 
   }>(`/customer/locations/cities/${encodeURIComponent(cityId)}/zones`, {
     query: LIST_REFERENCE_QUERY,
   })
-  return page.nodes.map((zone) => ({ id: zone.id, label: zone.name }))
+  return page.nodes.map((zone) => ({
+    id: zone.id,
+    label: zone.name,
+    name: zone.name,
+    code: zone.code,
+  }))
 }
 
 export async function listZoneAreas(zoneId: string): Promise<ReferenceOption[]> {
@@ -70,5 +89,10 @@ export async function listZoneAreas(zoneId: string): Promise<ReferenceOption[]> 
   }>(`/customer/locations/zones/${encodeURIComponent(zoneId)}/areas`, {
     query: LIST_REFERENCE_QUERY,
   })
-  return page.nodes.map((area) => ({ id: area.id, label: area.name }))
+  return page.nodes.map((area) => ({
+    id: area.id,
+    label: area.name,
+    name: area.name,
+    code: area.code,
+  }))
 }

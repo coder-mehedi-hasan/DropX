@@ -94,7 +94,7 @@ receive the admin `parcels.*` keys, so a rider token cannot reach `/api/v1/parce
 - Individual or business; **unique phone**; **unique email** (email optional).
 - Status: `TEMP` (consented, awaiting OTP) → `ACTIVE` (verified).
 - Multiple addresses.
-- After OTP: create/book parcels, track own parcels, manage addresses, open tickets.
+- After OTP: create/book parcels, track own parcels, manage addresses, open tickets — plus four self-service screens: **Pricing plans** (live lane bands from `GET /customer/pricing/lanes`), **Coverage area** (city → zone → area explorer), **Price calculator** (same `GET /pricing/quote` as booking), and a static **Help center**.
 - Anyone (logged in or not) can **publicly track** by tracking number.
 
 ---

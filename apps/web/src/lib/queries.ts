@@ -21,6 +21,7 @@ export const queryKeys = {
   myParcel: (id: string) => ["parcels", "mine", id] as const,
   tracking: (trackingNumber: string) => ["tracking", trackingNumber] as const,
   quote: (request: QuoteRequest) => ["pricing", "quote", request] as const,
+  pricingPlans: () => ["pricing", "plans"] as const,
   cities: () => ["reference", "cities"] as const,
   cityZones: (cityId: string) => ["reference", "cities", cityId, "zones"] as const,
   zoneAreas: (zoneId: string) => ["reference", "zones", zoneId, "areas"] as const,
@@ -79,6 +80,15 @@ export function useFeeQuote(request: QuoteRequest | null) {
     },
     enabled: request !== null,
     retry: false,
+  })
+}
+
+/** The published price list. Rarely changes, so it is cached hard. */
+export function usePricingPlans() {
+  return useQuery({
+    queryKey: queryKeys.pricingPlans(),
+    queryFn: () => pricingApi.listPlans(),
+    staleTime: 10 * 60_000,
   })
 }
 

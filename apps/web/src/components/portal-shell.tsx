@@ -11,7 +11,17 @@ import {
   cn,
   useConfirmation,
 } from "@dropx/ui"
-import { LogOutIcon, MapPinIcon, PackageIcon, PlusIcon, SearchIcon } from "lucide-react"
+import {
+  CalculatorIcon,
+  LifeBuoyIcon,
+  LogOutIcon,
+  MapIcon,
+  MapPinIcon,
+  PackageIcon,
+  PlusIcon,
+  ReceiptIcon,
+  SearchIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
@@ -62,6 +72,10 @@ const NAV = [
   { href: "/book", label: "Book a parcel", icon: PlusIcon },
   { href: "/addresses", label: "Saved addresses", icon: MapPinIcon },
   { href: "/dashboard/track", label: "Track", icon: SearchIcon },
+  { href: "/pricing", label: "Pricing plans", icon: ReceiptIcon },
+  { href: "/coverage", label: "Coverage area", icon: MapIcon },
+  { href: "/calculator", label: "Price calculator", icon: CalculatorIcon },
+  { href: "/help", label: "Help center", icon: LifeBuoyIcon },
 ] as const
 
 export function PortalShell({ children }: { children: React.ReactNode }) {

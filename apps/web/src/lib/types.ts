@@ -35,6 +35,8 @@ export type {
   ParcelEventSummary,
   FeeQuote,
   LocationServiceType,
+  PricingLaneWithSlabs,
+  PricingSlab,
 } from "@dropx/types"
 
 export type ParcelTracking = {

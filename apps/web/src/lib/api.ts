@@ -12,6 +12,7 @@ import type {
   Parcel,
   ParcelDetail,
   ParcelTracking,
+  PricingLaneWithSlabs,
   QuoteRequest,
   SessionMe,
   TokenPair,
@@ -109,6 +110,12 @@ export const pricingApi = {
         codAmount: request.codAmount,
       },
     })
+  },
+
+  /** The published price list — every active lane with its slabs, one document. */
+  async listPlans(): Promise<PricingLaneWithSlabs[]> {
+    const page = await apiRequest<Page<PricingLaneWithSlabs>>("/customer/pricing/lanes")
+    return page.nodes
   },
 }
 

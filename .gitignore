@@ -28,6 +28,8 @@ bun-debug.log*
 .turbo/
 .eslintcache
 coverage/
+# …except the customer portal's /coverage route, which is product code
+!apps/web/src/app/(portal)/coverage/
 
 # os / editor
 .DS_Store

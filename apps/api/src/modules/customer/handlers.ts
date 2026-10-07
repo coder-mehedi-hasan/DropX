@@ -6,6 +6,7 @@ import * as parcels from "../parcels/parcels.service"
 import * as addresses from "../customer-addresses/customer-addresses.service"
 import * as reference from "../reference/reference.service"
 import * as locations from "../locations/locations.service"
+import * as pricingLanes from "../pricing/pricing-lanes.service"
 import type { CUSTOMER_SURFACE } from "./registry"
 
 /**
@@ -52,6 +53,21 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
         ),
       ),
   },
+  pricing: {
+    listPlans: async (c) =>
+      c.json(
+        response.success(
+          await pricingLanes.listPricingLanes(c, {
+            page: 1,
+            limit: 100,
+            sortBy: "pickupType",
+            sort: "asc",
+            status: "ACTIVE",
+          }),
+        ),
+      ),
+  },
+
   parcels: {
     list: async (c) => {
       const auth = c.get("auth")
