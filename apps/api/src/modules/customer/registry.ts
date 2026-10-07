@@ -37,8 +37,17 @@ import {
  * all, which is why this is a separate schema rather than the staff one with a
  * runtime check. A customer cannot book on someone else's behalf because the
  * shape of the request has nowhere to put the other party's id.
+ *
+ * Hubs go the same way: a portal booking is addressed, not routed. The service
+ * resolves origin and destination from the active hubs and the addresses' map
+ * coordinates (`resolveHubPair`), so neither id appears on this wire at all —
+ * and one sent anyway is stripped by the schema rather than honoured.
  */
-export const createOwnParcelSchema = createParcelSchema.omit({ senderCustomerId: true })
+export const createOwnParcelSchema = createParcelSchema.omit({
+  senderCustomerId: true,
+  originHubId: true,
+  destinationHubId: true,
+})
 
 /**
  * The customer surface — the portal's whole contract.
@@ -174,7 +183,7 @@ export const CUSTOMER_SURFACE = defineSurface({
           summary: "Book a parcel (customer)",
           successDescription: "Created.",
           description:
-            "Self-service booking. The sender is the session — `senderCustomerId` is not accepted on this input at all — and the delivery fee is quoted server-side from the lane matrix.",
+            "Self-service booking. The sender is the session and neither hub id is accepted — `senderCustomerId` is stamped from the session, and origin/destination hubs are resolved server-side from the address coordinates. The delivery fee is quoted from the lane matrix.",
           body: createOwnParcelSchema,
           response: parcelDetailResponseSchema,
           successStatus: 201,
@@ -245,6 +254,7 @@ export const CUSTOMER_SURFACE = defineSurface({
           successDescription: "Deleted.",
           params: customerAddressIdParamSchema,
           paramDescriptions: { id: "Saved address id." },
+          successStatus: 204,
           errors: { 404: "No such saved address." },
         },
       },

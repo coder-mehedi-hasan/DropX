@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { addressesApi, parcelsApi, pricingApi, trackingApi } from "@/lib/api"
-import { listCities, listCityZones, listHubs, listZoneAreas } from "@/lib/reference-data"
+import { listCities, listCityZones, listZoneAreas } from "@/lib/reference-data"
 import type {
   CreateCustomerAddressInput,
   CreateParcelRequest,
@@ -21,7 +21,6 @@ export const queryKeys = {
   myParcel: (id: string) => ["parcels", "mine", id] as const,
   tracking: (trackingNumber: string) => ["tracking", trackingNumber] as const,
   quote: (request: QuoteRequest) => ["pricing", "quote", request] as const,
-  hubs: () => ["reference", "hubs"] as const,
   cities: () => ["reference", "cities"] as const,
   cityZones: (cityId: string) => ["reference", "cities", cityId, "zones"] as const,
   zoneAreas: (zoneId: string) => ["reference", "zones", zoneId, "areas"] as const,
@@ -134,10 +133,6 @@ export function useDeleteAddress() {
       void queryClient.invalidateQueries({ queryKey: ["addresses"] })
     },
   })
-}
-
-export function useHubs() {
-  return useQuery({ queryKey: queryKeys.hubs(), queryFn: listHubs, staleTime: Infinity })
 }
 
 export function useCities() {

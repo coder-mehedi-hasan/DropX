@@ -253,6 +253,30 @@ type CreateParcelRecord = {
   status: ParcelStatus
 }
 
+export type RoutingHub = {
+  id: string
+  latitude: number | null
+  longitude: number | null
+}
+
+/**
+ * The ACTIVE hubs a booking can be routed through, with their coordinates.
+ *
+ * Ordered by id so every caller sees the same list: the nearest-hub pick in the
+ * service leans on that order for its tie-break, and a hub without coordinates
+ * falls back to a stable position instead of to whatever the database returned.
+ */
+export async function listActiveRoutingHubs(db: Pool | Connection): Promise<RoutingHub[]> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT id, latitude, longitude FROM hubs WHERE status = 'ACTIVE' ORDER BY id ASC",
+  )
+  return rows.map((row) => ({
+    id: String(row.id),
+    latitude: row.latitude === null ? null : Number(row.latitude),
+    longitude: row.longitude === null ? null : Number(row.longitude),
+  }))
+}
+
 export async function insertParcel(
   db: Pool | Connection,
   record: CreateParcelRecord,

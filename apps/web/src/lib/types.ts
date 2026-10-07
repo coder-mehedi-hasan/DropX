@@ -154,8 +154,10 @@ export type CreateParcelItemInput = {
 }
 
 /**
- * `createOwnParcelSchema`: the staff create input minus `senderCustomerId`,
- * which the API stamps from the session.
+ * `createOwnParcelSchema`: the staff create input minus `senderCustomerId`
+ * (which the API stamps from the session) and minus both hub ids — a portal
+ * booking is addressed, not routed, and the service resolves the hubs from the
+ * addresses' map coordinates.
  *
  * Both address ends are the booking cascade's picks — they are stored structered
  * on `parcel_addresses`; the legacy `receiver_address`/`destination_zone_id`
@@ -167,8 +169,6 @@ export type CreateParcelRequest = {
   receiverName: string
   receiverPhone: string
   receiverSecondaryPhone?: string
-  originHubId: string
-  destinationHubId: string
   pickupAddress: ParcelAddressInput
   deliveryAddress: ParcelAddressInput
   weight: number

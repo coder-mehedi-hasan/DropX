@@ -192,6 +192,7 @@ cases.push(
   },
   { name: "parcels.listParcelItems", run: () => parcels.listParcelItems(pool, "1") },
   { name: "parcels.listParcelAddresses", run: () => parcels.listParcelAddresses(pool, "1") },
+  { name: "parcels.listActiveRoutingHubs", run: () => parcels.listActiveRoutingHubs(pool) },
 
   {
     name: "auth.findUserByEmail",

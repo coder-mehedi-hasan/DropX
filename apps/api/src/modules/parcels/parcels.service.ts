@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto"
 
+import type { Pool } from "mysql2/promise"
 import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
 import { withTransaction } from "../../db/transaction"
@@ -27,12 +28,14 @@ import {
   insertParcelAddresses,
   insertParcelEvent,
   insertParcelItems,
+  listActiveRoutingHubs,
   listParcelAddresses,
   listParcelItems,
   listParcels,
   listParcelsForCustomer,
   updateParcelStatus as updateStatusRow,
   type ParcelAddressRecord,
+  type RoutingHub,
 } from "./parcels.repository"
 
 /**
@@ -133,10 +136,116 @@ export function getParcelItems(c: Context<AppEnv>, parcelId: Id) {
   return listParcelItems(c.get("db")!, parcelId)
 }
 
+/**
+ * The hub ids are required for staff — the admin schema keeps them required —
+ * and absent for customers: `createOwnParcelSchema` omits them, because a
+ * portal booking is addressed rather than routed. The pair is resolved before
+ * the insert, so a command arriving here without them is a normal case, not a
+ * hole in the contract.
+ */
+export type ParcelBookingInput = Omit<CreateParcelInput, "originHubId" | "destinationHubId"> & {
+  originHubId?: Id | undefined
+  destinationHubId?: Id | undefined
+}
+
 export type CreateParcelCommand = {
   senderCustomerId: Id
-  input: CreateParcelInput
+  input: ParcelBookingInput
   actorId: Id | null
+}
+
+type MapPoint = { latitude?: number | undefined; longitude?: number | undefined }
+
+function distanceKm(fromLat: number, fromLng: number, toLat: number, toLng: number): number {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180
+  const deltaLat = toRadians(toLat - fromLat)
+  const deltaLng = toRadians(toLng - fromLng)
+  const h =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRadians(fromLat)) * Math.cos(toRadians(toLat)) * Math.sin(deltaLng / 2) ** 2
+  return 2 * 6371 * Math.asin(Math.sqrt(h))
+}
+
+/**
+ * The closest hub carrying coordinates, or the first candidate (lowest id,
+ * because the list is ordered) when the address has no pin or no hub has any.
+ * Coordinates are a ranking, not a requirement: a depot that never filled in
+ * its location still books.
+ */
+function pickNearestHub(
+  hubs: readonly RoutingHub[],
+  point: MapPoint,
+  excludeId?: Id,
+): RoutingHub | undefined {
+  const candidates = hubs.filter((hub) => hub.id !== excludeId)
+  if (candidates.length === 0) return undefined
+
+  const hasPoint = typeof point.latitude === "number" && typeof point.longitude === "number"
+  if (!hasPoint) return candidates[0]
+
+  let nearest: RoutingHub | undefined
+  let nearestDistance = Number.POSITIVE_INFINITY
+  for (const hub of candidates) {
+    if (hub.latitude === null || hub.longitude === null) continue
+    const distance = distanceKm(point.latitude!, point.longitude!, hub.latitude, hub.longitude)
+    // Strictly-less keeps the lowest id on a tie, so the pick is deterministic.
+    if (distance < nearestDistance) {
+      nearest = hub
+      nearestDistance = distance
+    }
+  }
+  return nearest ?? candidates[0]
+}
+
+function hubMustDiffer(): DomainError {
+  return new DomainError(ERROR_CODES.VALIDATION_FAILED, "Origin and destination hub must differ", {
+    details: [{ field: "destinationHubId", message: "Pick a different destination hub" }],
+  })
+}
+
+/**
+ * Both ids in, both ids out — the staff path. Anything less is resolved from
+ * the active hubs and the addresses' map coordinates: nearest to the pickup for
+ * the origin, nearest to the delivery for the destination, never the same hub
+ * twice. The customer portal sends no ids at all, so this is the only place its
+ * parcel learns where it enters and leaves the network.
+ */
+async function resolveHubPair(
+  db: Pool,
+  input: ParcelBookingInput,
+): Promise<{ originHubId: Id; destinationHubId: Id }> {
+  const { originHubId, destinationHubId } = input
+  if (originHubId !== undefined && destinationHubId !== undefined) {
+    if (originHubId === destinationHubId) throw hubMustDiffer()
+    return { originHubId, destinationHubId }
+  }
+
+  const hubs = await listActiveRoutingHubs(db)
+  if (hubs.length === 0) {
+    throw new DomainError(
+      ERROR_CODES.VALIDATION_FAILED,
+      "No active hub is configured, so nothing can be collected or delivered",
+    )
+  }
+
+  const origin =
+    originHubId ??
+    pickNearestHub(hubs, {
+      latitude: input.pickupAddress.latitude,
+      longitude: input.pickupAddress.longitude,
+    })?.id
+  const destination =
+    destinationHubId ??
+    pickNearestHub(
+      hubs,
+      { latitude: input.deliveryAddress.latitude, longitude: input.deliveryAddress.longitude },
+      origin,
+    )?.id
+
+  if (origin === undefined || destination === undefined || origin === destination) {
+    throw hubMustDiffer()
+  }
+  return { originHubId: origin, destinationHubId: destination }
 }
 
 export async function createParcel(
@@ -145,11 +254,10 @@ export async function createParcel(
 ): Promise<Parcel> {
   const { input, senderCustomerId, actorId: actor } = command
 
-  if (input.originHubId === input.destinationHubId) {
-    throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "Origin and destination hub must differ", {
-      details: [{ field: "destinationHubId", message: "Pick a different destination hub" }],
-    })
-  }
+  // Resolved first, so a booking with no route fails before anything is quoted
+  // or written. Both ids supplied is the staff path and validates here; the
+  // customer path arrives with none and is routed from the address coordinates.
+  const { originHubId, destinationHubId } = await resolveHubPair(c.get("db")!, input)
 
   if (input.paymentType === "PREPAID" && input.codAmount > 0) {
     throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "COD amount only applies to COD parcels", {
@@ -199,9 +307,9 @@ export async function createParcel(
          * fall back to the column default NULL — historical parcels that
          * predate the migration keep their values for the reads that still use
          * them until those reads are removed. */
-        originHubId: input.originHubId,
-        destinationHubId: input.destinationHubId,
-        currentHubId: input.originHubId,
+        originHubId,
+        destinationHubId,
+        currentHubId: originHubId,
         weight: input.weight,
         length: input.length,
         width: input.width,
@@ -223,7 +331,7 @@ export async function createParcel(
       await insertParcelEvent(tx, {
         parcelId: id,
         eventType: "CREATED",
-        hubId: input.originHubId,
+        hubId: originHubId,
         userId: actor,
         description: `Booked with a delivery fee of ${quote.total} BDT`,
       })
