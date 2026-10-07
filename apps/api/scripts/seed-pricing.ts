@@ -4,11 +4,12 @@
  * hierarchy the booking cascade shows, and the twelve-lane × four-slab pricing
  * matrix from `docs/plans/migration-price-and-location.md` Phase 6.
  *
- * Idempotent by construction: cities/zones/areas/lanes/slabs are all upserted
- * on their natural keys, so a re-run refreshes prices instead of duplicating
- * rows. Cities and zones are *examples*, not a fixed catalog — production staff
- * extend the hierarchy in the admin; this script only guarantees the matrix and
- * the three cities the demo path quotes between.
+ * Idempotent and non-destructive by construction: cities, zones, areas, lanes,
+ * and slabs are inserted on their natural keys, while an existing row is left
+ * unchanged. Re-running this at container startup therefore fills missing
+ * defaults without undoing prices, statuses, names, or COD settings edited by
+ * production staff. Cities and zones are *examples*, not a fixed catalog —
+ * production staff extend the hierarchy in the admin.
  *
  * Honest about one seam: the twelfth lane (ISD_ON_DEMAND → SAME_CITY_ON_DEMAND)
  * is seeded because the plan seeds it, but nothing yet books on-demand parcels,
@@ -45,7 +46,7 @@ const CITIES: CitySeed[] = [
       {
         name: "Dhanmondi",
         code: "DHANMONDI",
-        areas: [{ name: "Badamtola", code: "BADAMTOLA" }],
+        areas: [],
       },
     ],
   },
@@ -69,7 +70,10 @@ const CITIES: CitySeed[] = [
       {
         name: "Bagerhat Sadar",
         code: "BAGERHAT_SADAR",
-        areas: [{ name: "Bagerhat Stadium", code: "BAGERHAT_STADIUM" }],
+        areas: [
+          { name: "Badamtola", code: "BADAMTOLA" },
+          { name: "Bagerhat Stadium", code: "BAGERHAT_STADIUM" },
+        ],
       },
     ],
   },
@@ -122,30 +126,52 @@ const MATRIX: (LaneKey & { prices: number[] })[] = [
 
 const UPSERT_CITY = `INSERT INTO service_cities (name, code, service_type, status)
   VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE name = VALUES(name), service_type = VALUES(service_type), status = 'ACTIVE'`
+  ON DUPLICATE KEY UPDATE id = id`
 
 const UPSERT_ZONE = `INSERT INTO service_zones (city_id, name, code, status)
   VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE name = VALUES(name), status = 'ACTIVE'`
+  ON DUPLICATE KEY UPDATE id = id`
 
 const UPSERT_AREA = `INSERT INTO service_areas (zone_id, name, code, status)
   VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE name = VALUES(name), status = 'ACTIVE'`
+  ON DUPLICATE KEY UPDATE id = id`
 
 const UPSERT_LANE = `INSERT INTO pricing_lanes (pickup_type, delivery_type, same_city, status)
   VALUES (?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE status = 'ACTIVE'`
+  ON DUPLICATE KEY UPDATE id = id`
 
 const UPSERT_SLAB = `INSERT INTO pricing_slabs
   (pricing_lane_id, min_weight_grams, max_weight_grams, base_fee, extra_kg_fee, cod_percentage, cod_fixed_fee, status)
   VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
-  ON DUPLICATE KEY UPDATE
-    max_weight_grams = VALUES(max_weight_grams),
-    base_fee = VALUES(base_fee),
-    extra_kg_fee = VALUES(extra_kg_fee),
-    cod_percentage = VALUES(cod_percentage),
-    cod_fixed_fee = VALUES(cod_fixed_fee),
-    status = 'ACTIVE'`
+  ON DUPLICATE KEY UPDATE id = id`
+
+function validateCatalog(): void {
+  if (MATRIX.length !== 12)
+    throw new Error(`Pricing matrix has ${MATRIX.length} lanes, expected 12`)
+
+  const laneKeys = new Set<string>()
+  for (const lane of MATRIX) {
+    const key = `${lane.pickupType}:${lane.deliveryType}:${lane.sameCity}`
+    if (laneKeys.has(key)) throw new Error(`Duplicate pricing lane ${key}`)
+    laneKeys.add(key)
+    if (lane.prices.length !== BANDS.length) {
+      throw new Error(
+        `Matrix row ${key} has ${lane.prices.length} prices, expected ${BANDS.length}`,
+      )
+    }
+  }
+
+  for (let index = 0; index < BANDS.length; index += 1) {
+    const band = BANDS[index]!
+    if (band.maxWeightGrams <= band.minWeightGrams) {
+      throw new Error(`Invalid weight band ${band.minWeightGrams}-${band.maxWeightGrams}g`)
+    }
+    const previous = BANDS[index - 1]
+    if (previous && band.minWeightGrams !== previous.maxWeightGrams + 1) {
+      throw new Error(`Weight bands are not contiguous at ${band.minWeightGrams}g`)
+    }
+  }
+}
 
 async function seedLocations(pool: mysql.Pool): Promise<void> {
   for (const city of CITIES) {
@@ -178,10 +204,6 @@ async function seedLocations(pool: mysql.Pool): Promise<void> {
 
 async function seedMatrix(pool: mysql.Pool): Promise<void> {
   for (const lane of MATRIX) {
-    if (lane.prices.length !== BANDS.length) {
-      throw new Error(`Matrix row has ${lane.prices.length} prices, expected ${BANDS.length}`)
-    }
-
     await pool.execute(UPSERT_LANE, [lane.pickupType, lane.deliveryType, lane.sameCity])
 
     const [laneRows] = await pool.query<mysql.RowDataPacket[]>(
@@ -206,6 +228,20 @@ async function seedMatrix(pool: mysql.Pool): Promise<void> {
         COD_PERCENTAGE,
         COD_FIXED_FEE,
       ])
+
+      const [slabRows] = await pool.query<mysql.RowDataPacket[]>(
+        `SELECT max_weight_grams
+           FROM pricing_slabs
+          WHERE pricing_lane_id = ? AND min_weight_grams = ?
+          LIMIT 1`,
+        [laneId, band.minWeightGrams],
+      )
+      const stored = slabRows[0]
+      if (!stored || Number(stored.max_weight_grams) !== band.maxWeightGrams) {
+        throw new Error(
+          `Pricing lane ${lane.pickupType}/${lane.deliveryType} has a conflicting slab at ${band.minWeightGrams}g`,
+        )
+      }
     }
 
     console.log(
@@ -217,6 +253,8 @@ async function seedMatrix(pool: mysql.Pool): Promise<void> {
 async function main(): Promise<void> {
   const DATABASE_URL = process.env.DATABASE_URL
   if (!DATABASE_URL) throw new Error("DATABASE_URL is not set")
+
+  validateCatalog()
 
   const pool = mysql.createPool(DATABASE_URL)
   try {

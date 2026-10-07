@@ -39,21 +39,19 @@ Compose supplies `NODE_ENV=production`, `API_PORT=8005`, the internal `DATABASE_
 docker compose build api
 ```
 
-### 3. Start MySQL and initialize the database
+### 3. Start MySQL
 
 ```bash
 docker compose up -d mysql
-docker compose run --rm api bun run --cwd apps/api migrate
-docker compose run --rm api bun run --cwd apps/api seed
 ```
-
-The migration is idempotent. Seeding installs the roles and default permission grants required before creating the first administrator.
 
 ### 4. Start the API
 
 ```bash
 docker compose up -d api
 ```
+
+Before the API process starts, the container automatically applies the idempotent database migration, seeds roles and default permission grants, and ensures the initial location and pricing catalogs exist. Existing location and pricing records are preserved, so container restarts do not overwrite changes made by administrators. The container exits instead of starting the API if any setup step fails.
 
 The API is available at:
 
