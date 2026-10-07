@@ -7,8 +7,12 @@ WORKDIR /app
 # Keep dependency installation cacheable. The API only imports the source-only
 # @dropx/types workspace, so the frontend workspaces are not installed.
 COPY package.json bun.lock ./
+COPY apps/admin/package.json apps/admin/package.json
 COPY apps/api/package.json apps/api/package.json
+COPY apps/riders/package.json apps/riders/package.json
+COPY apps/web/package.json apps/web/package.json
 COPY packages/types/package.json packages/types/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN bun install --frozen-lockfile --production --filter @dropx/api
 
 FROM oven/bun:1.3.13-alpine AS runtime
