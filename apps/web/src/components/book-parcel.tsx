@@ -622,7 +622,12 @@ export function BookParcel() {
             </p>
           </nav>
 
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(19rem,0.8fr)]">
+          <div
+            className={cn(
+              "grid items-start gap-6",
+              step !== 2 && "lg:grid-cols-[minmax(0,1.6fr)_minmax(19rem,0.8fr)]",
+            )}
+          >
             <div className="grid gap-6">
               {step === 1 ? (
                 <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
@@ -703,22 +708,7 @@ export function BookParcel() {
                       the exact spot — the pickup and delivery hubs are chosen for you.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-6 px-5 py-6 sm:px-7 sm:py-7">
-                    <AddressSection
-                      form={form}
-                      end="delivery"
-                      icon={MapPinIcon}
-                      title="Destination / delivery address"
-                      subtitle="Tell the rider exactly where to go"
-                      savedAddresses={savedAddressOptions}
-                      cities={cityOptions}
-                      zones={deliveryZoneOptions}
-                      areas={deliveryAreaOptions}
-                      onApplySaved={(id) => applySavedAddress("delivery", id)}
-                      onSelectCity={selectDeliveryCity}
-                      onSelectZone={selectDeliveryZone}
-                    />
-
+                  <CardContent className="grid items-start gap-6 px-5 py-6 sm:px-7 sm:py-7 lg:grid-cols-2">
                     <AddressSection
                       form={form}
                       end="pickup"
@@ -732,6 +722,21 @@ export function BookParcel() {
                       onApplySaved={(id) => applySavedAddress("pickup", id)}
                       onSelectCity={selectPickupCity}
                       onSelectZone={selectPickupZone}
+                    />
+
+                    <AddressSection
+                      form={form}
+                      end="delivery"
+                      icon={MapPinIcon}
+                      title="Delivery address"
+                      subtitle="Tell the rider exactly where to go"
+                      savedAddresses={savedAddressOptions}
+                      cities={cityOptions}
+                      zones={deliveryZoneOptions}
+                      areas={deliveryAreaOptions}
+                      onApplySaved={(id) => applySavedAddress("delivery", id)}
+                      onSelectCity={selectDeliveryCity}
+                      onSelectZone={selectDeliveryZone}
                     />
                   </CardContent>
                 </Card>
@@ -1124,80 +1129,82 @@ export function BookParcel() {
               ) : null}
             </div>
 
-            <aside className="grid h-fit gap-4 lg:sticky lg:top-6" aria-label="Booking summary">
-              <Card className="border-border bg-muted/30 overflow-hidden py-0 shadow-none">
-                <CardHeader className="relative gap-1 px-5 pt-6 pb-4">
-                  <CardTitle className="text-lg">Delivery estimate</CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Based on your addresses and parcel weight.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="relative grid gap-4 px-5 pb-6">
-                  {!quoteRequest ? (
-                    <div className="border-border bg-muted rounded-xl border p-4">
-                      <p className="text-foreground text-sm font-medium">
-                        Waiting for addresses and weight
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs leading-5">
-                        Complete the address and parcel steps to calculate the fee.
-                      </p>
-                    </div>
-                  ) : quote.isPending ? (
-                    <div className="grid gap-2" aria-busy="true">
-                      <Skeleton className="bg-border h-4 w-full" />
-                      <Skeleton className="bg-border h-4 w-2/3" />
-                      <Skeleton className="bg-border h-12 w-full" />
-                    </div>
-                  ) : quote.isError ? (
-                    <Alert variant="warning">
-                      <TriangleAlertIcon aria-hidden />
-                      <AlertTitle>No price for that combination</AlertTitle>
-                      <AlertDescription>
-                        {isApiError(quote.error)
-                          ? quote.error.message
-                          : "We could not reach the pricing service."}
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <dl className="grid gap-3 text-sm">
-                      <QuoteRow
-                        label="Base fee"
-                        value={formatMoney(quote.data.baseFee, quote.data.currency)}
-                      />
-                      {quote.data.extraWeightFee > 0 ? (
-                        <QuoteRow
-                          label="Extra weight fee"
-                          value={formatMoney(quote.data.extraWeightFee, quote.data.currency)}
-                        />
-                      ) : null}
-                      {quote.data.codFee > 0 ? (
-                        <QuoteRow
-                          label="Cash on delivery fee"
-                          value={formatMoney(quote.data.codFee, quote.data.currency)}
-                        />
-                      ) : null}
-                      <Separator className="bg-border" />
-                      <div className="flex items-end justify-between gap-4 pt-1">
-                        <dt className="text-muted-foreground text-sm font-medium">
-                          Estimated total
-                        </dt>
-                        <dd className="text-foreground text-2xl font-extrabold tracking-[-0.04em] tabular-nums">
-                          {formatMoney(quote.data.total, quote.data.currency)}
-                        </dd>
+            {step !== 2 ? (
+              <aside className="grid h-fit gap-4 lg:sticky lg:top-6" aria-label="Booking summary">
+                <Card className="border-border bg-muted/30 overflow-hidden py-0 shadow-none">
+                  <CardHeader className="relative gap-1 px-5 pt-6 pb-4">
+                    <CardTitle className="text-lg">Delivery estimate</CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                      Based on your addresses and parcel weight.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative grid gap-4 px-5 pb-6">
+                    {!quoteRequest ? (
+                      <div className="border-border bg-muted rounded-xl border p-4">
+                        <p className="text-foreground text-sm font-medium">
+                          Waiting for addresses and weight
+                        </p>
+                        <p className="text-muted-foreground mt-1 text-xs leading-5">
+                          Complete the address and parcel steps to calculate the fee.
+                        </p>
                       </div>
-                    </dl>
-                  )}
+                    ) : quote.isPending ? (
+                      <div className="grid gap-2" aria-busy="true">
+                        <Skeleton className="bg-border h-4 w-full" />
+                        <Skeleton className="bg-border h-4 w-2/3" />
+                        <Skeleton className="bg-border h-12 w-full" />
+                      </div>
+                    ) : quote.isError ? (
+                      <Alert variant="warning">
+                        <TriangleAlertIcon aria-hidden />
+                        <AlertTitle>No price for that combination</AlertTitle>
+                        <AlertDescription>
+                          {isApiError(quote.error)
+                            ? quote.error.message
+                            : "We could not reach the pricing service."}
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <dl className="grid gap-3 text-sm">
+                        <QuoteRow
+                          label="Base fee"
+                          value={formatMoney(quote.data.baseFee, quote.data.currency)}
+                        />
+                        {quote.data.extraWeightFee > 0 ? (
+                          <QuoteRow
+                            label="Extra weight fee"
+                            value={formatMoney(quote.data.extraWeightFee, quote.data.currency)}
+                          />
+                        ) : null}
+                        {quote.data.codFee > 0 ? (
+                          <QuoteRow
+                            label="Cash on delivery fee"
+                            value={formatMoney(quote.data.codFee, quote.data.currency)}
+                          />
+                        ) : null}
+                        <Separator className="bg-border" />
+                        <div className="flex items-end justify-between gap-4 pt-1">
+                          <dt className="text-muted-foreground text-sm font-medium">
+                            Estimated total
+                          </dt>
+                          <dd className="text-foreground text-2xl font-extrabold tracking-[-0.04em] tabular-nums">
+                            {formatMoney(quote.data.total, quote.data.currency)}
+                          </dd>
+                        </div>
+                      </dl>
+                    )}
 
-                  <div className="border-border text-muted-foreground flex items-start gap-2 border-t pt-4 text-xs leading-5">
-                    <ShieldCheckIcon
-                      className="mt-0.5 size-4 shrink-0 text-[#FF8A4C]"
-                      aria-hidden
-                    />
-                    <p>You’ll review the delivery fee before confirming your booking.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </aside>
+                    <div className="border-border text-muted-foreground flex items-start gap-2 border-t pt-4 text-xs leading-5">
+                      <ShieldCheckIcon
+                        className="mt-0.5 size-4 shrink-0 text-[#FF8A4C]"
+                        aria-hidden
+                      />
+                      <p>You’ll review the delivery fee before confirming your booking.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </aside>
+            ) : null}
           </div>
         </form>
       </Form>

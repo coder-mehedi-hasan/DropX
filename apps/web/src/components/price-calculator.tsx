@@ -64,7 +64,7 @@ export function PriceCalculator() {
   const quote = useFeeQuote(quoteRequest)
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+    <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.1fr)_minmax(20rem,1fr)] 2xl:items-start">
       <Card className="overflow-hidden py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
         <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
           <CardTitle className="text-lg font-bold tracking-[-0.02em]">Route and parcel</CardTitle>
@@ -76,7 +76,7 @@ export function PriceCalculator() {
         <CardContent className="grid gap-7 px-5 py-6 sm:px-7">
           <fieldset className="grid gap-4 rounded-2xl bg-[#F6F8FB] p-4 sm:p-5">
             <legend className="px-1 text-sm font-semibold">Pickup</legend>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
               <div className="grid gap-2">
                 <Label>City</Label>
                 <ReferenceSelect
@@ -106,7 +106,7 @@ export function PriceCalculator() {
 
           <fieldset className="grid gap-4 rounded-2xl bg-[#F6F8FB] p-4 sm:p-5">
             <legend className="px-1 text-sm font-semibold">Delivery</legend>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
               <div className="grid gap-2">
                 <Label>City</Label>
                 <ReferenceSelect
@@ -174,7 +174,7 @@ export function PriceCalculator() {
         </CardContent>
       </Card>
 
-      <Card className="relative overflow-hidden border-0 bg-[#0D0F12] py-0 text-white shadow-[0_24px_60px_-30px_rgba(13,15,18,.9)] lg:sticky lg:top-6">
+      <Card className="relative overflow-hidden border-0 bg-[#0D0F12] py-0 text-white shadow-[0_24px_60px_-30px_rgba(13,15,18,.9)] 2xl:sticky 2xl:top-6">
         <div className="pointer-events-none absolute -top-20 -right-16 size-52 rounded-full bg-[#FF5500]/20 blur-3xl" />
         <CardHeader className="relative gap-1 px-5 pt-6 pb-4 sm:px-7">
           <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-[#FF5500] text-white shadow-[0_10px_24px_-12px_rgba(255,85,0,.9)]">

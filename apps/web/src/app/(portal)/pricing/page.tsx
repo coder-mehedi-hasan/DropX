@@ -14,8 +14,8 @@ export default function PricingPage() {
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Pricing"
-        title="Every lane, every weight band."
-        description="The full price list: a base fee per weight band, an extra charge per kilogram above the top band, and the cash-on-delivery percentage — exactly what your quote is built from."
+        title="Simple, transparent delivery pricing."
+        description="Choose a route and find the price for your parcel’s weight. Any extra-weight or cash-on-delivery charge is shown clearly before you book."
       />
       <PricingPlans />
     </div>
