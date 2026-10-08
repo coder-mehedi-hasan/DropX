@@ -6,9 +6,10 @@ import { ErrorNotice, StaleDataNotice } from "../../components/feedback"
 import { AppHeader, AppShell } from "../../components/layout/app-shell"
 import { useAuth } from "../../lib/auth"
 import { RIDER_PERMISSIONS } from "../../lib/permissions"
-import { useJobList } from "./job-queries"
+import { useJobList, usePickupJobList } from "./job-queries"
 import { LocationPushStatus, useLocationPush } from "./location-push"
 import { JobCard, JobCardSkeleton } from "./job-card"
+import { PickupJobCard } from "./pickup-job-card"
 import {
   DEFAULT_JOB_STATUS_FILTER,
   JOB_STATUS_FILTER_LABELS,
@@ -29,6 +30,7 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
   const { rider, can } = useAuth()
   const navigate = useNavigate()
   const jobs = useJobList(filter)
+  const pickupJobs = usePickupJobList(filter)
   const canViewJobs = can(RIDER_PERMISSIONS.JOBS_VIEW)
   // Dispatch watches the fleet while a rider works, so the push runs from the
   // jobs screen — the one they keep open all shift — rather than from a setting
@@ -141,6 +143,9 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
             </Tabs>
 
             {jobs.isError ? <ErrorNotice error={jobs.error} onRetry={refetch} /> : null}
+            {pickupJobs.isError ? (
+              <ErrorNotice error={pickupJobs.error} onRetry={() => void pickupJobs.refetch()} />
+            ) : null}
             {jobs.isError && jobs.data ? <StaleDataNotice onRetry={refetch} /> : null}
 
             {jobs.isPending ? (
@@ -151,7 +156,27 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
               </div>
             ) : null}
 
-            {jobs.isSuccess && jobs.data.nodes.length === 0 ? (
+            {pickupJobs.isPending ? <JobCardSkeleton /> : null}
+
+            {pickupJobs.data && pickupJobs.data.nodes.length > 0 ? (
+              <section className="space-y-3">
+                <h2 className="text-muted-foreground px-1 text-xs font-semibold tracking-wide uppercase">
+                  Pickup collections
+                </h2>
+                <ul className="space-y-4">
+                  {pickupJobs.data.nodes.map((job) => (
+                    <li key={job.pickup.id}>
+                      <PickupJobCard job={job} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {jobs.isSuccess &&
+            pickupJobs.isSuccess &&
+            jobs.data.nodes.length === 0 &&
+            pickupJobs.data.nodes.length === 0 ? (
               <EmptyState
                 icon={ClipboardList}
                 title={EMPTY_TITLES[filter]}
@@ -175,10 +200,10 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
               </ul>
             ) : null}
 
-            {jobs.data ? (
+            {jobs.data || pickupJobs.data ? (
               <p className="text-muted-foreground text-center text-xs">
-                {jobs.data.meta.totalCount} job{jobs.data.meta.totalCount === 1 ? "" : "s"} in this
-                list
+                {(jobs.data?.meta.totalCount ?? 0) + (pickupJobs.data?.meta.totalCount ?? 0)} jobs
+                in this list
               </p>
             ) : null}
 

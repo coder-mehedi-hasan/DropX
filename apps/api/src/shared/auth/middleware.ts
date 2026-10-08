@@ -30,20 +30,28 @@ export const attachAuth = createMiddleware<AppEnv>(async (c, next) => {
 
   if (audience === "web") {
     actor = await loadCustomerActor(c.get("db")!, payload.sub)
+  } else if (audience === "riders") {
+    // Riders are stored in `users` too and may also hold admin roles. The JWT
+    // audience decides which actor projection applies: loading staff first
+    // would turn every rider token into a staff actor and make `/jobs` reject
+    // it with "This app is for riders".
+    const rider = await loadRiderActor(c.get("db")!, payload.sub)
+    if (!rider) {
+      throw new DomainError(
+        ERROR_CODES.TOKEN_INVALID,
+        "This account is not provisioned for the rider app",
+      )
+    }
+    actor = rider
   } else {
     const staff = await loadStaffActor(c.get("db")!, payload.sub)
-    if (staff) {
-      actor = staff
-    } else {
-      const rider = await loadRiderActor(c.get("db")!, payload.sub)
-      if (!rider) {
-        throw new DomainError(
-          ERROR_CODES.TOKEN_INVALID,
-          "This account is not provisioned for this app",
-        )
-      }
-      actor = rider
+    if (!staff) {
+      throw new DomainError(
+        ERROR_CODES.TOKEN_INVALID,
+        "This account is not provisioned for the admin app",
+      )
     }
+    actor = staff
   }
 
   c.set("auth", { audience, actor, sessionId: payload.sid })

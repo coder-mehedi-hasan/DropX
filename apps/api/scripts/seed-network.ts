@@ -27,7 +27,14 @@ async function ensureBranch(input: {
   const [result] = await pool.execute<mysql.ResultSetHeader>(
     `INSERT INTO branches (name, code, city, district, phone, address, status)
      VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-    [input.name, input.code, input.city, input.district, input.phone ?? null, input.address ?? null],
+    [
+      input.name,
+      input.code,
+      input.city,
+      input.district,
+      input.phone ?? null,
+      input.address ?? null,
+    ],
   )
   return String(result.insertId)
 }
@@ -167,7 +174,7 @@ async function main() {
     district: "Dhaka",
     capacity: 2000,
   })
-  const dhkDelivery = await ensureHub(dhkBranch, {
+  await ensureHub(dhkBranch, {
     name: "Dhaka Last-Mile Hub",
     code: "HUB-DHK-DL",
     type: "DESTINATION",
@@ -182,7 +189,7 @@ async function main() {
     district: "Chattogram",
     capacity: 4000,
   })
-  const ctgPickup = await ensureHub(ctgBranch, {
+  await ensureHub(ctgBranch, {
     name: "Chattogram Pickup Hub",
     code: "HUB-CTG-PK",
     type: "ORIGIN",
@@ -204,7 +211,7 @@ async function main() {
     district: "Khulna",
     capacity: 2000,
   })
-  const khlPickup = await ensureHub(khlBranch, {
+  await ensureHub(khlBranch, {
     name: "Khulna Pickup Hub",
     code: "HUB-KHL-PK",
     type: "ORIGIN",

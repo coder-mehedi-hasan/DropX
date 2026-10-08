@@ -4,7 +4,9 @@ import {
   jobDetailResponseSchema,
   jobIdParamSchema,
   jobResponseSchema,
+  pickupJobResponseSchema,
   listJobsQuerySchema,
+  listPickupJobsQuerySchema,
   updateJobStatusSchema,
 } from "../../modules/jobs/jobs.dto"
 import {
@@ -47,6 +49,16 @@ const listParams = () => {
   }))
 }
 
+const pickupListParams = () => {
+  const schema = jsonSchemaOf(listPickupJobsQuerySchema, "input")
+  return Object.entries(schema.properties as Record<string, any>).map(([name, propertySchema]) => ({
+    name,
+    in: "query",
+    required: Boolean((schema.required as string[] | undefined)?.includes(name)),
+    schema: propertySchema,
+  }))
+}
+
 const unauth = errorResponse("Not authenticated, or the token is missing/expired.")
 const forbidden = errorResponse("Wrong audience, or missing `rider.jobs.*`.")
 
@@ -64,6 +76,25 @@ export const jobsPaths = {
         200: {
           description: "A page of jobs.",
           ...json(pageSchema(jsonSchemaOf(jobResponseSchema, "output"))),
+        },
+        401: unauth,
+        403: forbidden,
+      },
+    },
+  },
+  "/jobs/pickups": {
+    get: {
+      operationId: "job.pickupList",
+      summary: "List my pickup jobs",
+      description:
+        "Lists pickup collections assigned to the signed-in rider. Scope is always the rider from the token.",
+      tags: ["jobs"],
+      security: bearerSecurity,
+      parameters: pickupListParams(),
+      responses: {
+        200: {
+          description: "A page of pickup jobs.",
+          ...json(pageSchema(jsonSchemaOf(pickupJobResponseSchema, "output"))),
         },
         401: unauth,
         403: forbidden,

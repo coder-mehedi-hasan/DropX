@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { DELIVERY_STATUSES, PARCEL_STATUSES, PAYMENT_TYPES } from "../../db/models"
+import { DELIVERY_STATUSES, PARCEL_STATUSES, PAYMENT_TYPES, PICKUP_STATUSES } from "../../db/models"
 
 /**
  * Boundary DTOs for the rider app.
@@ -21,6 +21,31 @@ export const listJobsQuerySchema = z.object({
 })
 
 export type ListJobsQuery = z.infer<typeof listJobsQuerySchema>
+
+export const listPickupJobsQuerySchema = z.object({
+  status: z.enum(PICKUP_STATUSES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+})
+
+export type ListPickupJobsQuery = z.infer<typeof listPickupJobsQuerySchema>
+
+export const updatePickupJobStatusSchema = z
+  .object({
+    status: z.enum(["IN_PROGRESS", "PICKED_UP", "FAILED"]),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.status === "FAILED" && !value.reason) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["reason"],
+        message: "Tell us why the pickup could not be completed",
+      })
+    }
+  })
+
+export type UpdatePickupJobStatusInput = z.infer<typeof updatePickupJobStatusSchema>
 
 export const jobIdParamSchema = z.object({ id })
 
@@ -105,4 +130,24 @@ export const jobItemResponseSchema = z.object({
 
 export const jobDetailResponseSchema = jobResponseSchema.extend({
   items: z.array(jobItemResponseSchema),
+})
+
+export const pickupJobResponseSchema = z.object({
+  pickup: z.object({
+    id: z.string(),
+    status: z.enum(PICKUP_STATUSES),
+    address: z.string(),
+    scheduledAt: z.iso.datetime().nullable(),
+    pickedUpAt: z.iso.datetime().nullable(),
+    failureReason: z.string().nullable(),
+  }),
+  parcel: z.object({
+    id: z.string(),
+    trackingNumber: z.string(),
+    status: z.enum(PARCEL_STATUSES),
+    weight: z.number(),
+    codAmount: z.number(),
+    paymentType: z.enum(PAYMENT_TYPES),
+    createdAt: z.iso.datetime(),
+  }),
 })

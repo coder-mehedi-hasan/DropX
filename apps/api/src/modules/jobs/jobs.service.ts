@@ -19,6 +19,7 @@ import {
   closeAttempt,
   findJobForRider,
   findOpenAttemptForUpdate,
+  listPickupJobsForRider,
   listJobItems,
   listJobsForRider,
 } from "./jobs.repository"
@@ -56,6 +57,43 @@ export async function listJobs(
   )
 
   return buildPage(nodes, totalCount, params)
+}
+
+export async function listPickupJobs(
+  c: Context<AppEnv>,
+  riderId: Id,
+  query: { page: number; limit: number; status?: import("@dropx/types").PickupStatus },
+) {
+  const params = normalizeListParams({ page: query.page, limit: query.limit })
+  const { nodes, totalCount } = await listPickupJobsForRider(
+    c.get("db")!,
+    riderId,
+    params,
+    query.status,
+  )
+  return buildPage(
+    nodes.map((job) => ({
+      pickup: {
+        id: job.pickupId,
+        status: job.pickupStatus,
+        address: job.pickupAddress,
+        scheduledAt: job.scheduledAt,
+        pickedUpAt: job.pickedUpAt,
+        failureReason: job.failureReason,
+      },
+      parcel: {
+        id: job.parcelId,
+        trackingNumber: job.trackingNumber,
+        status: job.parcelStatus,
+        weight: Number(job.weight),
+        codAmount: Number(job.codAmount),
+        paymentType: job.paymentType,
+        createdAt: job.createdAt,
+      },
+    })),
+    totalCount,
+    params,
+  )
 }
 
 export async function getJob(c: Context<AppEnv>, riderId: Id, parcelId: Id): Promise<JobDetail> {

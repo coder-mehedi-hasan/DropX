@@ -1,4 +1,4 @@
-import type { DeliveryStatus, Job, ListParams, Parcel, ParcelItem } from "@/db/models"
+import type { DeliveryStatus, Job, ListParams, Parcel, ParcelItem, PickupStatus } from "@/db/models"
 import { decodeItem, type ParcelItemRow } from "@/modules/parcels/parcels.repository"
 import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 
@@ -68,8 +68,10 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (match) => `\\${match}`)
 }
 
-function toDate(value: string | null): Date | null {
-  return value === null ? null : new Date(`${value.replace(" ", "T")}Z`)
+function toDate(value: string | Date | null): Date | null {
+  if (value === null) return null
+  if (value instanceof Date) return value
+  return new Date(`${value.replace(" ", "T")}Z`)
 }
 
 export function decodeJob(row: unknown): Job {
@@ -112,6 +114,76 @@ export function decodeJob(row: unknown): Job {
 
 export function toStringOrNull(value: unknown): string | null {
   return value === null || value === undefined ? null : String(value)
+}
+
+export type RiderPickupJob = {
+  pickupId: string
+  pickupStatus: PickupStatus
+  pickupAddress: string
+  scheduledAt: string | null
+  pickedUpAt: string | null
+  failureReason: string | null
+  parcelId: string
+  trackingNumber: string
+  parcelStatus: Parcel["status"]
+  weight: string
+  codAmount: string
+  paymentType: Parcel["paymentType"]
+  createdAt: string
+}
+
+const PICKUP_JOB_COLUMNS = `
+  pk.id AS pickup_id, pk.status AS pickup_status, pk.pickup_address,
+  pk.scheduled_at, pk.picked_up_at, pk.failure_reason,
+  p.id AS parcel_id, p.tracking_number, p.status AS parcel_status,
+  p.weight, p.cod_amount, p.payment_type, p.created_at
+`
+
+export function decodePickupJob(row: unknown): RiderPickupJob {
+  const r = row as Record<string, unknown>
+  return {
+    pickupId: String(r.pickup_id),
+    pickupStatus: r.pickup_status as PickupStatus,
+    pickupAddress: String(r.pickup_address),
+    scheduledAt: toDate(r.scheduled_at as string | Date | null)?.toISOString() ?? null,
+    pickedUpAt: toDate(r.picked_up_at as string | Date | null)?.toISOString() ?? null,
+    failureReason: toStringOrNull(r.failure_reason),
+    parcelId: String(r.parcel_id),
+    trackingNumber: String(r.tracking_number),
+    parcelStatus: r.parcel_status as Parcel["status"],
+    weight: String(r.weight),
+    codAmount: String(r.cod_amount),
+    paymentType: r.payment_type as Parcel["paymentType"],
+    createdAt: toDate(r.created_at as string | Date)?.toISOString() ?? "",
+  }
+}
+
+export async function listPickupJobsForRider(
+  db: Pool | Connection,
+  riderId: string,
+  params: ListParams,
+  status: PickupStatus | undefined,
+): Promise<{ nodes: RiderPickupJob[]; totalCount: number }> {
+  const clauses = ["pk.assigned_rider_id = ?"]
+  const filterParams: unknown[] = [riderId]
+  if (status) {
+    clauses.push("pk.status = ?")
+    filterParams.push(status)
+  }
+  const where = `WHERE ${clauses.join(" AND ")}`
+  const from = "FROM pickups AS pk INNER JOIN parcels AS p ON p.id = pk.parcel_id"
+  const [countRows] = await db.query<RowDataPacket[]>(
+    `SELECT COUNT(*) AS count ${from} ${where}`,
+    filterParams,
+  )
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${PICKUP_JOB_COLUMNS} ${from} ${where} ORDER BY pk.created_at DESC, pk.id DESC LIMIT ? OFFSET ?`,
+    [...filterParams, params.limit, params.offset],
+  )
+  return {
+    nodes: rows.map((row) => decodePickupJob(row)),
+    totalCount: Number(countRows[0]?.count ?? 0),
+  }
 }
 
 /** The rider's own deliveries for one status, newest first. */

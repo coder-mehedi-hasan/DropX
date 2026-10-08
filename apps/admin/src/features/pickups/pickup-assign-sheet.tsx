@@ -22,10 +22,9 @@ const BLANK: z.infer<typeof assignPickupSchema> = {
  * second write path for the same row with a different permission behind it. A
  * wrong address is fixed by cancelling the pickup and raising a new one.
  *
- * Reassignment is deliberately not offered here. The API only accepts `ASSIGNED`
- * from `REQUESTED` or `FAILED`, so a second dispatch has to go through a status
- * change first — an accidental double-click cannot silently replace a rider who
- * was already told to turn up.
+ * An assigned pickup can be safely reassigned while it has not started. Once it
+ * is `IN_PROGRESS`, the API refuses the write so dispatch cannot silently move a
+ * rider who is already on the collection.
  */
 export function PickupAssignSheet({
   open,
@@ -52,9 +51,9 @@ export function PickupAssignSheet({
       schema={assignPickupSchema}
       open={open}
       onOpenChange={onOpenChange}
-      title="Assign a rider"
+      title={pickup?.status === "ASSIGNED" ? "Reassign rider" : "Assign a rider"}
       description={pickup ? `Collect from: ${pickup.pickupAddress}` : undefined}
-      submitLabel="Assign rider"
+      submitLabel={pickup?.status === "ASSIGNED" ? "Reassign rider" : "Assign rider"}
       busy={mutation.isPending}
       defaults={BLANK}
       fieldLabels={{ riderId: "Rider", scheduledAt: "Scheduled for" }}

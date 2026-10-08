@@ -10,8 +10,13 @@ import { reportLocationSchema } from "../riders/rider-locations.dto"
 import { recordRiderLocation } from "../riders/rider-locations.service"
 import { submitProofSchema } from "../deliveries/delivery-proofs.dto"
 import { listJobProofs, submitProof } from "../deliveries/delivery-proofs.service"
-import { jobIdParamSchema, listJobsQuerySchema, updateJobStatusSchema } from "./jobs.dto"
-import { getJob, listJobs, reportOutcome } from "./jobs.service"
+import {
+  jobIdParamSchema,
+  listJobsQuerySchema,
+  listPickupJobsQuerySchema,
+  updateJobStatusSchema,
+} from "./jobs.dto"
+import { getJob, listJobs, listPickupJobs, reportOutcome } from "./jobs.service"
 
 /**
  * The rider app's job surface.
@@ -37,6 +42,22 @@ router.get(
       throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     }
     return c.json(response.success(await listJobs(c, auth.actor.riderId, c.req.valid("query"))))
+  },
+)
+
+router.get(
+  "/pickups",
+  defineOperation(
+    { id: "job.pickupList", audience: ["riders"], permissions: [PERMISSIONS.RIDER_JOBS_VIEW] },
+    { method: "GET", path: "/jobs/pickups" },
+  ),
+  validateQuery(listPickupJobsQuerySchema),
+  async (c) => {
+    const auth = c.get("auth")
+    if (!isRider(auth)) throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
+    return c.json(
+      response.success(await listPickupJobs(c, auth.actor.riderId, c.req.valid("query"))),
+    )
   },
 )
 

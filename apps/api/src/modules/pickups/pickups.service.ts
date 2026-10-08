@@ -136,11 +136,12 @@ export async function assignPickup(
 
   await withTransaction(db, async (tx) => {
     const current = await readLocked(tx, command.scope, command.pickupId)
-    assertTransition(current.status, "ASSIGNED")
+    if (current.status !== "ASSIGNED") {
+      assertTransition(current.status, "ASSIGNED")
+    }
 
-    // Assigning twice would be the same silent no-op as everything else, so the
-    // transition guard above refuses it: a rider who is already assigned is
-    // reassigned by cancelling or by moving the pickup back to REQUESTED first.
+    // A pickup that is already assigned can be reassigned until work starts.
+    // `IN_PROGRESS` and terminal states still fail through the transition guard.
     await assignPickupRow(tx, command.pickupId, rider.id, command.input.scheduledAt ?? null)
 
     await insertParcelEvent(tx, {
@@ -148,7 +149,10 @@ export async function assignPickup(
       eventType: "ASSIGNED_RIDER",
       riderId: rider.id,
       userId: command.actorId,
-      description: `Pickup assigned to ${rider.employeeCode}`,
+      description:
+        current.status === "ASSIGNED"
+          ? `Pickup reassigned to ${rider.employeeCode}`
+          : `Pickup assigned to ${rider.employeeCode}`,
     })
   })
 

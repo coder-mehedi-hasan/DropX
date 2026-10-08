@@ -7,3 +7,23 @@
  */
 
 export type { DeliveryStatus, Job, JobDetail, PageMeta, Page } from "@dropx/types"
+
+export type RiderPickupJob = {
+  pickup: {
+    id: string
+    status: "ASSIGNED" | "IN_PROGRESS" | "PICKED_UP" | "FAILED" | "CANCELLED"
+    address: string
+    scheduledAt: string | null
+    pickedUpAt: string | null
+    failureReason: string | null
+  }
+  parcel: {
+    id: string
+    trackingNumber: string
+    status: string
+    weight: number
+    codAmount: number
+    paymentType: "PREPAID" | "COD"
+    createdAt: string
+  }
+}

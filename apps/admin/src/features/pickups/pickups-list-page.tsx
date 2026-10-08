@@ -178,7 +178,7 @@ export function PickupsListPage({ search }: { search: PickupsSearch }) {
         align: "end",
         cell: (pickup) => (
           <div className="flex justify-end gap-1">
-            {canAssign && pickup.status === "REQUESTED" ? (
+            {canAssign && ["REQUESTED", "ASSIGNED", "FAILED"].includes(pickup.status) ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -186,7 +186,7 @@ export function PickupsListPage({ search }: { search: PickupsSearch }) {
                 onClick={() => openAssign(pickup)}
               >
                 <UserRoundCheck />
-                Assign
+                {pickup.status === "ASSIGNED" ? "Reassign" : "Assign"}
               </Button>
             ) : null}
             {canManage && pickup.status !== "PICKED_UP" && pickup.status !== "CANCELLED" ? (

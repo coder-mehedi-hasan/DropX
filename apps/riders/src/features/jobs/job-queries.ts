@@ -7,6 +7,7 @@ import {
   fetchJob,
   fetchJobProofs,
   fetchJobs,
+  fetchPickupJobs,
   submitJobProof,
   updateJobStatus,
   type JobStatusFilter,
@@ -41,6 +42,18 @@ export function useJobList(filter: JobStatusFilter) {
     queryFn: ({ signal }) => fetchJobs(filter, signal),
     enabled: canViewJobs,
     placeholderData: keepPreviousData,
+    staleTime: 30_000,
+    retry: shouldRetry,
+  })
+}
+
+export function usePickupJobList(filter: JobStatusFilter) {
+  const canViewJobs = usePermission(RIDER_PERMISSIONS.JOBS_VIEW)
+
+  return useQuery({
+    queryKey: ["jobs", "pickups", filter],
+    queryFn: ({ signal }) => fetchPickupJobs(filter, signal),
+    enabled: canViewJobs && ["ASSIGNED", "ALL", "FAILED"].includes(filter),
     staleTime: 30_000,
     retry: shouldRetry,
   })

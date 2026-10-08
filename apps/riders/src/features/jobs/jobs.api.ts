@@ -1,5 +1,5 @@
 import { apiRequest } from "../../lib/api-client"
-import type { DeliveryStatus, Job, JobDetail, Page } from "../../lib/domain"
+import type { DeliveryStatus, Job, JobDetail, Page, RiderPickupJob } from "../../lib/domain"
 
 /**
  * Rider jobs.
@@ -81,6 +81,21 @@ export async function fetchJobs(filter: JobStatusFilter, signal?: AbortSignal): 
     query: {
       limit: 50,
       ...(filter === "ALL" ? {} : { status: filter }),
+    },
+  })
+}
+
+export async function fetchPickupJobs(
+  filter: JobStatusFilter,
+  signal?: AbortSignal,
+): Promise<Page<RiderPickupJob>> {
+  return apiRequest<Page<RiderPickupJob>>("/jobs/pickups", {
+    auth: true,
+    signal,
+    query: {
+      limit: 50,
+      ...(filter === "ASSIGNED" ? { status: "ASSIGNED" } : {}),
+      ...(filter === "FAILED" ? { status: "FAILED" } : {}),
     },
   })
 }
