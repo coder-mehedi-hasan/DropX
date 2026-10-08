@@ -1,5 +1,5 @@
-import { MapPin, Package } from "lucide-react"
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@dropx/ui"
+import { ArrowRight, Check, MapPin, Package } from "lucide-react"
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@dropx/ui"
 
 import type { RiderPickupJob } from "../../lib/domain"
 import { formatMoney, formatWeight } from "../../lib/format"
@@ -12,7 +12,22 @@ const PICKUP_STATUS_LABELS = {
   CANCELLED: "Cancelled",
 } as const
 
-export function PickupJobCard({ job }: { job: RiderPickupJob }) {
+export function PickupJobCard({
+  job,
+  onAction,
+  busy = false,
+}: {
+  job: RiderPickupJob
+  onAction: (job: RiderPickupJob) => void
+  busy?: boolean
+}) {
+  const nextAction =
+    job.pickup.status === "ASSIGNED"
+      ? "Start pickup"
+      : job.pickup.status === "IN_PROGRESS"
+        ? "Mark picked up"
+        : null
+
   return (
     <Card className="rider-job-card relative overflow-hidden rounded-[1.25rem] border-transparent py-0">
       <div className="bg-primary absolute inset-y-0 left-0 w-1" aria-hidden />
@@ -45,6 +60,32 @@ export function PickupJobCard({ job }: { job: RiderPickupJob }) {
             {formatWeight(job.parcel.weight)}
           </span>
         </div>
+        {nextAction ? (
+          <div className="border-primary/15 bg-primary/[0.06] rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              Next step
+            </p>
+            <p className="mt-1 text-sm font-semibold">
+              {job.pickup.status === "ASSIGNED"
+                ? "Go to the collection address and start the pickup."
+                : "Confirm that you have collected the parcel."}
+            </p>
+            <Button
+              type="button"
+              size="lg"
+              className="tap-target mt-3 w-full justify-between rounded-xl"
+              disabled={busy}
+              onClick={() => onAction(job)}
+            >
+              {busy ? "Updating…" : nextAction}
+              {job.pickup.status === "IN_PROGRESS" ? (
+                <Check aria-hidden />
+              ) : (
+                <ArrowRight aria-hidden />
+              )}
+            </Button>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )

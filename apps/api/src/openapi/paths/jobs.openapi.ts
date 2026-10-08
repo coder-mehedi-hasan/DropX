@@ -7,6 +7,7 @@ import {
   pickupJobResponseSchema,
   listJobsQuerySchema,
   listPickupJobsQuerySchema,
+  updatePickupJobStatusSchema,
   updateJobStatusSchema,
 } from "../../modules/jobs/jobs.dto"
 import {
@@ -98,6 +99,40 @@ export const jobsPaths = {
         },
         401: unauth,
         403: forbidden,
+      },
+    },
+  },
+  "/jobs/pickups/{id}/status": {
+    patch: {
+      operationId: "job.pickupStatus",
+      summary: "Update my pickup job",
+      description:
+        "Starts an assigned pickup, marks it picked up, or records why the collection failed. The pickup must belong to the signed-in rider.",
+      tags: ["jobs"],
+      security: bearerSecurity,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: propertySchemaOf(jobIdParamSchema, "id"),
+          description: "Pickup id assigned to the signed-in rider.",
+        },
+      ],
+      requestBody: {
+        required: true,
+        ...json(jsonSchemaOf(updatePickupJobStatusSchema, "input")),
+      },
+      responses: {
+        200: {
+          description: "The updated pickup job.",
+          ...json(jsonSchemaOf(pickupJobResponseSchema, "output")),
+        },
+        401: unauth,
+        403: forbidden,
+        404: errorResponse("No such pickup for this rider."),
+        409: errorResponse("The pickup cannot move from its current status."),
+        422: errorResponse("Validation failed — a reason is required for FAILED."),
       },
     },
   },

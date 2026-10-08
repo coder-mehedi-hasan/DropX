@@ -295,6 +295,18 @@
   }
 }
 
+@layer utilities {
+  /* Keep scrollable navigation usable without showing a distracting gutter. */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer components {
   /*
    * The brand's link treatment, for bare `<a>` elements in footers and prose

@@ -9,9 +9,11 @@ import {
   fetchJobs,
   fetchPickupJobs,
   submitJobProof,
+  updatePickupJobStatus,
   updateJobStatus,
   type JobStatusFilter,
   type JobStatusUpdate,
+  type PickupJobStatusUpdate,
   type SubmitProofInput,
 } from "./jobs.api"
 
@@ -104,6 +106,19 @@ export function useUpdateJobStatus() {
     retry: shouldRetry,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: jobKeys.all })
+    },
+  })
+}
+
+export function useUpdatePickupJobStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ pickupId, ...input }: { pickupId: string } & PickupJobStatusUpdate) =>
+      updatePickupJobStatus(pickupId, input),
+    retry: shouldRetry,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["jobs", "pickups"] })
     },
   })
 }

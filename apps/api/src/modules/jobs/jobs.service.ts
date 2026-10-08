@@ -1,6 +1,7 @@
 import {
   buildPage,
   canTransitionParcel,
+  canTransitionPickup,
   normalizeListParams,
   type Id,
   type Job,
@@ -14,12 +15,17 @@ import { withTransaction } from "../../db/transaction"
 
 import { ERROR_CODES, DomainError, notFound } from "../../core"
 import { insertParcelEvent } from "../parcels/parcels.repository"
-import type { ListJobsQuery, UpdateJobStatusInput } from "./jobs.dto"
+import type {
+  ListJobsQuery,
+  UpdateJobStatusInput,
+  UpdatePickupJobStatusInput,
+} from "./jobs.dto"
 import {
   closeAttempt,
   findJobForRider,
   findOpenAttemptForUpdate,
   listPickupJobsForRider,
+  findPickupJobForRider,
   listJobItems,
   listJobsForRider,
 } from "./jobs.repository"
@@ -103,6 +109,80 @@ export async function getJob(c: Context<AppEnv>, riderId: Id, parcelId: Id): Pro
 
   const items = await listJobItems(db, job.parcel.id)
   return { ...job, items }
+}
+
+export async function updatePickupJobStatus(
+  c: Context<AppEnv>,
+  command: {
+    riderId: Id
+    riderUserId: Id
+    pickupId: Id
+    input: UpdatePickupJobStatusInput
+  },
+) {
+  const nextParcelStatus = command.input.status === "PICKED_UP" ? "PICKED_UP" : undefined
+
+  await withTransaction(c.get("db")!, async (tx) => {
+    const pickup = await findPickupJobForRider(tx, command.riderId, command.pickupId, true)
+    if (!pickup) throw notFound("That pickup is not assigned to you")
+    if (!canTransitionPickup(pickup.pickupStatus, command.input.status)) {
+      throw new DomainError(
+        ERROR_CODES.INVALID_STATE_TRANSITION,
+        `A pickup cannot move from ${pickup.pickupStatus} to ${command.input.status}`,
+      )
+    }
+
+    await tx.execute(
+      `UPDATE pickups
+          SET status = ?,
+              picked_up_at = CASE WHEN ? = 'PICKED_UP' THEN CURRENT_TIMESTAMP ELSE picked_up_at END,
+              failure_reason = CASE WHEN ? = 'FAILED' THEN ? ELSE NULL END
+        WHERE id = ? AND assigned_rider_id = ?`,
+      [
+        command.input.status,
+        command.input.status,
+        command.input.status,
+        command.input.reason ?? null,
+        command.pickupId,
+        command.riderId,
+      ],
+    )
+
+    if (nextParcelStatus) {
+      await tx.execute(`UPDATE parcels SET status = ? WHERE id = ?`, [nextParcelStatus, pickup.parcelId])
+    }
+
+    await insertParcelEvent(tx, {
+      parcelId: pickup.parcelId,
+      eventType: nextParcelStatus ?? "ARRIVED_HUB",
+      userId: command.riderUserId,
+      riderId: command.riderId,
+      description:
+        command.input.reason ?? `Rider marked pickup ${command.input.status.toLowerCase()}`,
+    })
+  })
+
+  const updated = await findPickupJobForRider(c.get("db")!, command.riderId, command.pickupId)
+  if (!updated) throw notFound("That pickup is no longer available")
+  return {
+    pickup: {
+      id: updated.pickupId,
+      status: updated.pickupStatus,
+      address: updated.pickupAddress,
+      scheduledAt: updated.scheduledAt,
+      pickedUpAt: updated.pickedUpAt,
+      failureReason: updated.failureReason,
+    },
+    parcel: {
+      id: updated.parcelId,
+      trackingNumber: updated.trackingNumber,
+      status: updated.parcelStatus,
+      weight: Number(updated.weight),
+      codAmount: Number(updated.codAmount),
+      paymentType: updated.paymentType,
+      createdAt: updated.createdAt,
+    },
+  }
 }
 
 export type ReportOutcomeCommand = {

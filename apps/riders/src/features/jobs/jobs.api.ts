@@ -100,6 +100,22 @@ export async function fetchPickupJobs(
   })
 }
 
+export type PickupJobStatusUpdate = {
+  status: "IN_PROGRESS" | "PICKED_UP" | "FAILED"
+  reason?: string
+}
+
+export async function updatePickupJobStatus(
+  pickupId: string,
+  input: PickupJobStatusUpdate,
+): Promise<RiderPickupJob> {
+  return apiRequest<RiderPickupJob>(`/jobs/pickups/${pickupId}/status`, {
+    auth: true,
+    method: "PATCH",
+    body: input,
+  })
+}
+
 /** `:id` is a parcel id — the API resolves it through the rider's own attempts. */
 export async function fetchJob(parcelId: string, signal?: AbortSignal): Promise<JobDetail> {
   return apiRequest<JobDetail>(`/jobs/${parcelId}`, { auth: true, signal })

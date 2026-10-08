@@ -167,8 +167,14 @@ export async function listPickupJobsForRider(
   const clauses = ["pk.assigned_rider_id = ?"]
   const filterParams: unknown[] = [riderId]
   if (status) {
-    clauses.push("pk.status = ?")
-    filterParams.push(status)
+    if (status === "ASSIGNED") {
+      // The rider's Assigned tab is the active pickup queue: a pickup remains
+      // actionable after the rider starts it, until it is picked up or failed.
+      clauses.push("pk.status IN ('ASSIGNED', 'IN_PROGRESS')")
+    } else {
+      clauses.push("pk.status = ?")
+      filterParams.push(status)
+    }
   }
   const where = `WHERE ${clauses.join(" AND ")}`
   const from = "FROM pickups AS pk INNER JOIN parcels AS p ON p.id = pk.parcel_id"
@@ -184,6 +190,20 @@ export async function listPickupJobsForRider(
     nodes: rows.map((row) => decodePickupJob(row)),
     totalCount: Number(countRows[0]?.count ?? 0),
   }
+}
+
+export async function findPickupJobForRider(
+  db: Pool | Connection,
+  riderId: string,
+  pickupId: string,
+  forUpdate = false,
+): Promise<RiderPickupJob | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT ${PICKUP_JOB_COLUMNS} FROM pickups AS pk INNER JOIN parcels AS p ON p.id = pk.parcel_id
+     WHERE pk.assigned_rider_id = ? AND pk.id = ? LIMIT 1${forUpdate ? " FOR UPDATE" : ""}`,
+    [riderId, pickupId],
+  )
+  return rows[0] ? decodePickupJob(rows[0]) : null
 }
 
 /** The rider's own deliveries for one status, newest first. */

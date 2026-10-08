@@ -14,9 +14,10 @@ import {
   jobIdParamSchema,
   listJobsQuerySchema,
   listPickupJobsQuerySchema,
+  updatePickupJobStatusSchema,
   updateJobStatusSchema,
 } from "./jobs.dto"
-import { getJob, listJobs, listPickupJobs, reportOutcome } from "./jobs.service"
+import { getJob, listJobs, listPickupJobs, reportOutcome, updatePickupJobStatus } from "./jobs.service"
 
 /**
  * The rider app's job surface.
@@ -57,6 +58,30 @@ router.get(
     if (!isRider(auth)) throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
     return c.json(
       response.success(await listPickupJobs(c, auth.actor.riderId, c.req.valid("query"))),
+    )
+  },
+)
+
+router.patch(
+  "/pickups/:id/status",
+  defineOperation(
+    { id: "job.pickupStatus", audience: ["riders"], permissions: [PERMISSIONS.RIDER_JOBS_UPDATE] },
+    { method: "PATCH", path: "/jobs/pickups/:id/status" },
+  ),
+  idParam,
+  validateJson(updatePickupJobStatusSchema),
+  async (c) => {
+    const auth = c.get("auth")
+    if (!isRider(auth)) throw new DomainError(ERROR_CODES.FORBIDDEN, "This app is for riders")
+    return c.json(
+      response.success(
+        await updatePickupJobStatus(c, {
+          riderId: auth.actor.riderId,
+          riderUserId: auth.actor.userId,
+          pickupId: c.req.param("id"),
+          input: c.req.valid("json"),
+        }),
+      ),
     )
   },
 )

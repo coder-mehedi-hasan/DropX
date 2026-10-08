@@ -1,12 +1,13 @@
 import { useNavigate } from "@tanstack/react-router"
 import { ArrowRight, ClipboardList, KeyRound, MapPinned, RefreshCw, Route } from "lucide-react"
-import { Button, EmptyState, Tabs, TabsList, TabsTrigger, cn } from "@dropx/ui"
+import { AppToast, Button, EmptyState, Tabs, TabsList, TabsTrigger, cn } from "@dropx/ui"
 
 import { ErrorNotice, StaleDataNotice } from "../../components/feedback"
 import { AppHeader, AppShell } from "../../components/layout/app-shell"
 import { useAuth } from "../../lib/auth"
+import type { RiderPickupJob } from "../../lib/domain"
 import { RIDER_PERMISSIONS } from "../../lib/permissions"
-import { useJobList, usePickupJobList } from "./job-queries"
+import { useJobList, usePickupJobList, useUpdatePickupJobStatus } from "./job-queries"
 import { LocationPushStatus, useLocationPush } from "./location-push"
 import { JobCard, JobCardSkeleton } from "./job-card"
 import { PickupJobCard } from "./pickup-job-card"
@@ -31,6 +32,7 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
   const navigate = useNavigate()
   const jobs = useJobList(filter)
   const pickupJobs = usePickupJobList(filter)
+  const pickupMutation = useUpdatePickupJobStatus()
   const canViewJobs = can(RIDER_PERMISSIONS.JOBS_VIEW)
   // Dispatch watches the fleet while a rider works, so the push runs from the
   // jobs screen — the one they keep open all shift — rather than from a setting
@@ -47,6 +49,17 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
 
   const refetch = () => {
     void jobs.refetch()
+  }
+
+  const updatePickup = (job: RiderPickupJob) => {
+    const status = job.pickup.status === "ASSIGNED" ? "IN_PROGRESS" : "PICKED_UP"
+    pickupMutation.mutate(
+      { pickupId: job.pickup.id, status },
+      {
+        onSuccess: () =>
+          AppToast.success(status === "IN_PROGRESS" ? "Pickup started" : "Parcel picked up"),
+      },
+    )
   }
 
   return (
@@ -146,6 +159,9 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
             {pickupJobs.isError ? (
               <ErrorNotice error={pickupJobs.error} onRetry={() => void pickupJobs.refetch()} />
             ) : null}
+            {pickupMutation.isError ? (
+              <ErrorNotice error={pickupMutation.error} onRetry={() => pickupMutation.reset()} />
+            ) : null}
             {jobs.isError && jobs.data ? <StaleDataNotice onRetry={refetch} /> : null}
 
             {jobs.isPending ? (
@@ -166,7 +182,14 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
                 <ul className="space-y-4">
                   {pickupJobs.data.nodes.map((job) => (
                     <li key={job.pickup.id}>
-                      <PickupJobCard job={job} />
+                      <PickupJobCard
+                        job={job}
+                        onAction={updatePickup}
+                        busy={
+                          pickupMutation.isPending &&
+                          pickupMutation.variables?.pickupId === job.pickup.id
+                        }
+                      />
                     </li>
                   ))}
                 </ul>
