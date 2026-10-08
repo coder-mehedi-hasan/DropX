@@ -156,6 +156,51 @@ export type CreateParcelItemInput = {
 }
 
 /**
+ * The booking form's raw, half-filled state — everything as typed, every field
+ * optional, because a draft is saved *before* it is valid. Keys mirror
+ * `bookParcelSchema` one-for-one so restoring is a straight `form.reset()`;
+ * only the real `CreateParcelRequest` converts strings to numbers.
+ */
+export type ParcelDraftPayload = {
+  step?: number
+  receiverName?: string
+  receiverPhone?: string
+  receiverSecondaryPhone?: string
+  deliveryCityId?: string
+  deliveryZoneId?: string
+  deliveryAreaId?: string
+  deliveryAddressLine?: string
+  deliveryLatitude?: string
+  deliveryLongitude?: string
+  pickupCityId?: string
+  pickupZoneId?: string
+  pickupAreaId?: string
+  pickupAddressLine?: string
+  pickupLatitude?: string
+  pickupLongitude?: string
+  weight?: string
+  length?: string
+  width?: string
+  height?: string
+  parcelType?: ParcelType
+  paymentType?: PaymentType
+  codAmount?: string
+  items?: Array<{
+    name?: string
+    description?: string
+    quantity?: string
+    unitPrice?: string
+  }>
+}
+
+/** The stored draft: one per customer, replaced on every autosave. */
+export type ParcelDraft = {
+  id: string
+  payload: ParcelDraftPayload
+  updatedAt: string
+}
+
+/**
  * `createOwnParcelSchema`: the staff create input minus `senderCustomerId`
  * (which the API stamps from the session) and minus both hub ids — a portal
  * booking is addressed, not routed, and the service resolves the hubs from the

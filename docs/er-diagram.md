@@ -14,6 +14,7 @@ erDiagram
     hubs ||--o{ user_hubs : staff
 
     customers ||--o{ customer_addresses : has
+    customers ||--o{ parcel_drafts : drafts
     customers ||--o{ parcels : sends
     customers ||--o{ parcels : receives
     customers ||--o{ settlements : settled
@@ -102,6 +103,10 @@ erDiagram
     customer_addresses {
         bigint id PK
         bigint customer_id FK
+    }
+    parcel_drafts {
+        bigint id PK
+        bigint customer_id FK_UK
     }
     vehicles {
         bigint id PK

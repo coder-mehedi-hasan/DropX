@@ -61,7 +61,9 @@ import { z } from "zod"
 import { PageHeader } from "@/components/page-header"
 import { ReferenceSelect } from "@/components/reference-select"
 import MapAddressPicker, { type MapPoint } from "@/components/address/map-address-picker"
+import { useParcelDraft } from "@/components/use-parcel-draft"
 import { isApiError } from "@/lib/api-client"
+import { useAuth } from "@/lib/auth"
 import { formatMoney } from "@/lib/format"
 import {
   useCities,
@@ -206,6 +208,38 @@ const bookParcelSchema = z
   })
 
 type BookParcelValues = z.infer<typeof bookParcelSchema>
+
+/**
+ * The untouched form, as a named constant so the draft restore can rebuild it
+ * by spreading the saved payload over a complete, valid set of values — a
+ * half-filled draft merged onto inline defaults would drift the moment either
+ * side changed shape.
+ */
+const EMPTY_BOOKING_VALUES: BookParcelValues = {
+  receiverName: "",
+  receiverPhone: "",
+  receiverSecondaryPhone: "",
+  deliveryCityId: "",
+  deliveryZoneId: "",
+  deliveryAreaId: "",
+  deliveryAddressLine: "",
+  pickupCityId: "",
+  pickupZoneId: "",
+  pickupAreaId: "",
+  pickupAddressLine: "",
+  pickupLatitude: "",
+  pickupLongitude: "",
+  deliveryLatitude: "",
+  deliveryLongitude: "",
+  weight: "",
+  length: "",
+  width: "",
+  height: "",
+  parcelType: "PACKAGE",
+  paymentType: "PREPAID",
+  codAmount: "0",
+  items: [],
+}
 
 const STEPS = [
   { title: "Receiver", description: "Who gets it", icon: UserRoundIcon },
@@ -354,36 +388,13 @@ function toCreateRequest(values: BookParcelValues): CreateParcelRequest {
 
 export function BookParcel() {
   const router = useRouter()
+  const { status: authStatus } = useAuth()
   const [step, setStep] = React.useState(1)
 
   const form = useForm<BookParcelValues>({
     resolver: zodResolver(bookParcelSchema),
     mode: "onBlur",
-    defaultValues: {
-      receiverName: "",
-      receiverPhone: "",
-      receiverSecondaryPhone: "",
-      deliveryCityId: "",
-      deliveryZoneId: "",
-      deliveryAreaId: "",
-      deliveryAddressLine: "",
-      pickupCityId: "",
-      pickupZoneId: "",
-      pickupAreaId: "",
-      pickupAddressLine: "",
-      pickupLatitude: "",
-      pickupLongitude: "",
-      deliveryLatitude: "",
-      deliveryLongitude: "",
-      weight: "",
-      length: "",
-      width: "",
-      height: "",
-      parcelType: "PACKAGE",
-      paymentType: "PREPAID",
-      codAmount: "0",
-      items: [],
-    },
+    defaultValues: EMPTY_BOOKING_VALUES,
   })
 
   const items = useFieldArray({ control: form.control, name: "items" })
@@ -391,6 +402,22 @@ export function BookParcel() {
   const { confirm, confirmationDialog } = useConfirmation()
 
   const [serverError, setServerError] = React.useState<string | null>(null)
+
+  /**
+   * Draft autosave: every field change is debounced into a POST, the stored
+   * draft is restored on arrival (unless the customer already started typing),
+   * and a successful booking deletes the row. Signed-out visitors get none of
+   * it — the endpoints require an ACTIVE session.
+   */
+  const { status: draftStatus, discard: discardDraft } = useParcelDraft<BookParcelValues>({
+    form,
+    enabled: authStatus === "authenticated",
+    paused: createParcel.isPending,
+    restore: (payload) => {
+      form.reset({ ...EMPTY_BOOKING_VALUES, ...payload } as BookParcelValues)
+      setStep(payload.step ?? 1)
+    },
+  })
 
   const pickedCityId = form.watch("pickupCityId")
   const pickedZoneId = form.watch("pickupZoneId")
@@ -535,6 +562,10 @@ export function BookParcel() {
 
     try {
       const parcel = await createParcel.mutateAsync(toCreateRequest(values))
+      // The booking exists; the draft must not outlive it. Fire-and-forget —
+      // `discard` flips its no-op ref synchronously, so a pending autosave can
+      // no longer land even if this request is still in flight during redirect.
+      void discardDraft()
       toast.success(`Booked — tracking number ${parcel.trackingNumber}`)
       router.push(`/parcels/${parcel.id}`)
     } catch (error) {
@@ -561,6 +592,13 @@ export function BookParcel() {
         title="Book a parcel"
         description="A few simple steps to get your parcel on its way."
       />
+      {authStatus === "authenticated" && draftStatus !== "idle" ? (
+        <p className="text-muted-foreground -mt-4 text-xs" role="status" aria-live="polite">
+          {draftStatus === "saving" ? "Saving draft…" : null}
+          {draftStatus === "saved" ? "Draft saved" : null}
+          {draftStatus === "error" ? "Draft not saved" : null}
+        </p>
+      ) : null}
       <Form {...form}>
         <form
           onSubmit={(event) => {

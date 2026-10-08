@@ -622,3 +622,71 @@ export function decodeItem(row: unknown): ParcelItem {
 }
 
 export { PARCEL_STATUSES }
+
+// --- Booking draft ---------------------------------------------------------
+
+/**
+ * Persistence for `parcel_drafts` — one in-progress booking per customer.
+ *
+ * Unlike every other table in this file there is no `Scope` here: a draft is
+ * not a parcel and belongs to no hub. The scope is the `customer_id` column
+ * predicate on every statement (the same guard `customer-addresses` uses), so
+ * a caller can only ever reach their own row — and since `customer_id` is
+ * UNIQUE, reaching it means there is exactly one.
+ */
+
+export type ParcelDraftRecord = {
+  id: string
+  customerId: string
+  /** The parsed JSON payload — shape enforced by the service, not here. */
+  payload: unknown
+  updatedAt: string
+}
+
+function decodeDraft(row: RowDataPacket): ParcelDraftRecord {
+  const raw = row.payload
+  return {
+    id: String(row.id),
+    customerId: String(row.customer_id),
+    payload: typeof raw === "string" ? JSON.parse(raw) : raw,
+    updatedAt: toUtcDate(row.updated_at as string | Date).toISOString(),
+  }
+}
+
+/**
+ * Insert-or-replace the customer's single draft. `customer_id` is UNIQUE, so
+ * the upsert key is the customer — autosave never needs a client-held draft id,
+ * and a lost response just means the next save replaces the same row.
+ */
+export async function upsertParcelDraft(
+  db: Pool,
+  customerId: string,
+  payload: unknown,
+): Promise<ParcelDraftRecord | null> {
+  const json = JSON.stringify(payload)
+  await db.execute(
+    `INSERT INTO parcel_drafts (customer_id, payload) VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE payload = ?`,
+    [customerId, json, json],
+  )
+  return selectParcelDraftByCustomer(db, customerId)
+}
+
+export async function selectParcelDraftByCustomer(
+  db: Pool,
+  customerId: string,
+): Promise<ParcelDraftRecord | null> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT id, customer_id, payload, updated_at
+       FROM parcel_drafts
+      WHERE customer_id = ?
+      LIMIT 1`,
+    [customerId],
+  )
+  return rows[0] ? decodeDraft(rows[0]) : null
+}
+
+/** Idempotent by design: deleting a draft that does not exist is not an error. */
+export async function deleteParcelDraftByCustomer(db: Pool, customerId: string): Promise<void> {
+  await db.execute(`DELETE FROM parcel_drafts WHERE customer_id = ?`, [customerId])
+}

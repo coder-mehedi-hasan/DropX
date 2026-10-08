@@ -43,6 +43,7 @@ export const TABLES = {
   parcels: "parcels",
   parcelAddresses: "parcel_addresses",
   parcelItems: "parcel_items",
+  parcelDrafts: "parcel_drafts",
   pickups: "pickups",
   transfers: "transfers",
   transferParcels: "transfer_parcels",

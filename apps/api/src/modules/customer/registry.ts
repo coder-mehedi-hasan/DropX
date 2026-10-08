@@ -21,6 +21,8 @@ import {
   parcelResponseSchema,
   parcelDetailResponseSchema,
   createParcelSchema,
+  saveParcelDraftSchema,
+  parcelDraftResponseSchema,
 } from "../parcels/parcels.dto"
 import {
   createCustomerAddressSchema,
@@ -213,6 +215,60 @@ export const CUSTOMER_SURFACE = defineSurface({
           errors: {
             422: "Validation failed, or the price list covers neither the route nor the weight.",
           },
+        },
+      },
+    },
+
+    /**
+     * The in-progress booking, autosaved while the form is filled.
+     *
+     * One draft per customer, keyed by the session's own id — the write is an
+     * upsert, so the client never holds a draft id and a dropped autosave
+     * simply means the next one replaces the same row. The payload is the
+     * booking form's raw values (strings, half-filled), deliberately looser
+     * than `createOwnParcelSchema`: a draft must be savable *before* it is
+     * valid, and only the real booking validates it end to end.
+     *
+     * The path is `/parcel-drafts`, not `/parcels/draft`, so these routes can
+     * never be shadowed by (or shadow) `GET /parcels/:id`.
+     */
+    parcelDrafts: {
+      tag: "parcel-drafts",
+      tagDescription:
+        "The signed-in customer's single in-progress booking, autosaved while the booking form is being filled.",
+      operations: {
+        save: {
+          method: "POST",
+          path: "/parcel-drafts",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Save my booking draft",
+          successDescription: "The stored draft.",
+          description:
+            "Create or replace the session's draft booking. Called by the booking form on a debounce as fields change; the customer id is the session, never the body.",
+          body: saveParcelDraftSchema,
+          response: parcelDraftResponseSchema,
+          errors: { 422: "Validation failed — the draft payload is malformed." },
+        },
+        read: {
+          method: "GET",
+          path: "/parcel-drafts",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Read my booking draft",
+          successDescription: "The stored draft.",
+          description:
+            "The session's draft, so the booking form can restore where the customer left off. 404 means there is nothing to restore.",
+          response: parcelDraftResponseSchema,
+          errors: { 404: "No saved draft." },
+        },
+        discard: {
+          method: "DELETE",
+          path: "/parcel-drafts",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Discard my booking draft",
+          successDescription: "Deleted.",
+          description:
+            "Deletes the session's draft. Idempotent — called after a successful booking and safe to call when nothing was saved.",
+          successStatus: 204,
         },
       },
     },

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { addressesApi, parcelsApi, pricingApi, trackingApi } from "@/lib/api"
+import { addressesApi, draftsApi, parcelsApi, pricingApi, trackingApi } from "@/lib/api"
 import { listCities, listCityZones, listZoneAreas } from "@/lib/reference-data"
 import type {
   CreateCustomerAddressInput,
@@ -26,6 +26,7 @@ export const queryKeys = {
   cityZones: (cityId: string) => ["reference", "cities", cityId, "zones"] as const,
   zoneAreas: (zoneId: string) => ["reference", "zones", zoneId, "areas"] as const,
   savedAddresses: () => ["addresses", "mine"] as const,
+  parcelDraft: () => ["parcel-draft"] as const,
 }
 
 export function useMyParcels(params: ListQueryParams) {
@@ -108,6 +109,20 @@ export function useSavedAddresses() {
     queryKey: queryKeys.savedAddresses(),
     queryFn: () => addressesApi.list(),
     staleTime: 30_000,
+  })
+}
+
+/**
+ * The session's in-progress booking. A 404 ("nothing saved") is the expected
+ * answer for a first-time visitor, so it is not worth a retry — the booking
+ * form treats the error as "no draft" and moves on.
+ */
+export function useMyParcelDraft(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.parcelDraft(),
+    queryFn: () => draftsApi.read(),
+    enabled,
+    retry: false,
   })
 }
 

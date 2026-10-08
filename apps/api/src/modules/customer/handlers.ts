@@ -123,6 +123,35 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
     },
   },
 
+  parcelDrafts: {
+    save: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      const draft = await parcels.saveParcelDraft(c, auth.actor.customerId, c.req.valid("json"))
+      return c.json(response.success(draft))
+    },
+
+    read: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      const draft = await parcels.getParcelDraft(c, auth.actor.customerId)
+      return c.json(response.success(draft))
+    },
+
+    discard: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      await parcels.discardParcelDraft(c, auth.actor.customerId)
+      return c.body(null, 204)
+    },
+  },
+
   addresses: {
     list: async (c) => {
       const auth = c.get("auth")

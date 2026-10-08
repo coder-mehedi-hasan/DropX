@@ -544,6 +544,31 @@ CREATE TABLE IF NOT EXISTS parcel_addresses (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
+-- A customer's in-progress booking, saved while they fill the form.
+--
+-- Deliberately NOT a `parcels` row: a half-filled booking cannot satisfy the
+-- NOT NULL columns (`tracking_number`, `weight`, both hubs, the receiver), and
+-- every `parcels` row is visible in the customer's parcel list — a draft must
+-- not look like a booked shipment. `payload` stores the booking form's raw
+-- values as JSON (strings, exactly as typed), so restoring is a direct form
+-- reset with no translation; the real `createParcelSchema` still validates the
+-- full set at booking time.
+--
+-- One draft per customer: `customer_id` is UNIQUE and the write is an upsert,
+-- so autosave can never fan out into a list of half-finished bookings.
+CREATE TABLE IF NOT EXISTS parcel_drafts (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    customer_id BIGINT UNSIGNED NOT NULL,
+    payload JSON NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_parcel_drafts_customer (customer_id),
+    CONSTRAINT fk_parcel_drafts_customer
+        FOREIGN KEY (customer_id) REFERENCES customers(id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 -- ============================================================
 -- Pickups
 -- ============================================================

@@ -11,6 +11,8 @@ import type {
   Page,
   Parcel,
   ParcelDetail,
+  ParcelDraft,
+  ParcelDraftPayload,
   ParcelTracking,
   PricingLaneWithSlabs,
   QuoteRequest,
@@ -66,6 +68,30 @@ export const parcelsApi = {
 
   createOwn(payload: CreateParcelRequest): Promise<Parcel> {
     return apiRequest<Parcel>("/customer/parcels", { method: "POST", body: payload })
+  },
+}
+
+/**
+ * The booking form's autosave — one draft per customer, upserted by the
+ * session, so there is never a draft id to hold. `save` takes an
+ * `AbortSignal` so a superseded debounced save is cancelled rather than
+ * racing the next one.
+ */
+export const draftsApi = {
+  read(): Promise<ParcelDraft> {
+    return apiRequest<ParcelDraft>("/customer/parcel-drafts")
+  },
+
+  save(payload: ParcelDraftPayload, signal?: AbortSignal): Promise<ParcelDraft> {
+    return apiRequest<ParcelDraft>("/customer/parcel-drafts", {
+      method: "POST",
+      body: payload,
+      ...(signal ? { signal } : {}),
+    })
+  },
+
+  discard(): Promise<void> {
+    return apiRequest<void>("/customer/parcel-drafts", { method: "DELETE" })
   },
 }
 

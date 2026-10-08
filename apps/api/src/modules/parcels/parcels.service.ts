@@ -19,9 +19,10 @@ import type { Scope } from "../../shared/auth/auth-context"
 import { emit } from "../../shared/events/bus"
 import { quoteDeliveryFee } from "../pricing/pricing.service"
 import { resolveAddress } from "../locations/locations.service"
-import type { CreateParcelInput, ListParcelsQuery } from "./parcels.dto"
-import { PARCEL_SORT_COLUMN_BY_KEY } from "./parcels.dto"
+import type { CreateParcelInput, ListParcelsQuery, ParcelDraftPayload } from "./parcels.dto"
+import { PARCEL_SORT_COLUMN_BY_KEY, parcelDraftPayloadSchema } from "./parcels.dto"
 import {
+  deleteParcelDraftByCustomer,
   findParcelById,
   findParcelForCustomer,
   insertParcel,
@@ -33,8 +34,11 @@ import {
   listParcelItems,
   listParcels,
   listParcelsForCustomer,
+  selectParcelDraftByCustomer,
   updateParcelStatus as updateStatusRow,
+  upsertParcelDraft,
   type ParcelAddressRecord,
+  type ParcelDraftRecord,
   type RoutingHub,
 } from "./parcels.repository"
 
@@ -456,4 +460,53 @@ export async function updateParcelStatus(
   })
 
   return updated
+}
+
+// --- Booking draft ---------------------------------------------------------
+
+/**
+ * The draft's half-filled payload re-validated on the way out.
+ *
+ * The row was written through `parcelDraftPayloadSchema`, but a schema that
+ * later tightens (a lower max length, a retired enum member) would otherwise
+ * turn every autosave into a 500 the client cannot fix. Falling back to an
+ * empty payload keeps the draft *readable*; the next autosave rewrites it in
+ * the current shape. The booking itself is validated by `createOwnParcelSchema`
+ * at submit time regardless — a draft is never a source of truth.
+ */
+function toDraftResponse(record: ParcelDraftRecord) {
+  const parsed = parcelDraftPayloadSchema.safeParse(record.payload)
+  return {
+    id: record.id,
+    payload: parsed.success ? parsed.data : ({} satisfies ParcelDraftPayload),
+    updatedAt: record.updatedAt,
+  }
+}
+
+/**
+ * Save (create or replace) the customer's single in-progress booking.
+ *
+ * The customer id comes from the session, never the body, and the write is an
+ * upsert keyed on it — the client never holds a draft id, so a dropped
+ * response costs nothing: the next debounced save lands on the same row.
+ */
+export async function saveParcelDraft(
+  c: Context<AppEnv>,
+  customerId: Id,
+  payload: ParcelDraftPayload,
+) {
+  const record = await upsertParcelDraft(c.get("db")!, customerId, payload)
+  if (!record) throw new Error("Parcel draft upsert returned no row")
+  return toDraftResponse(record)
+}
+
+export async function getParcelDraft(c: Context<AppEnv>, customerId: Id) {
+  const record = await selectParcelDraftByCustomer(c.get("db")!, customerId)
+  if (!record) throw notFound("No saved draft")
+  return toDraftResponse(record)
+}
+
+/** Idempotent: discarding a draft that was never saved is still a 204. */
+export async function discardParcelDraft(c: Context<AppEnv>, customerId: Id) {
+  await deleteParcelDraftByCustomer(c.get("db")!, customerId)
 }

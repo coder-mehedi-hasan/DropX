@@ -204,3 +204,69 @@ export const parcelAddressResponseSchema = z.object({
 export const parcelDetailResponseSchema = parcelWithItemsResponseSchema.extend({
   addresses: z.array(parcelAddressResponseSchema),
 })
+
+// --- Booking draft ---------------------------------------------------------
+
+/**
+ * The booking form's raw, half-filled state — the customer portal's
+ * `bookParcelSchema` as it is typed, not as `createParcelSchema` computes it.
+ *
+ * Every field is optional and every scalar is a string because the draft is
+ * saved while the form is being filled: numbers are not parsed yet, the
+ * cascade may be half-picked, and an empty step must not fail the write. This
+ * is storage, not validation — `createOwnParcelSchema` still validates the
+ * whole booking at booking time, which is the only moment any of it matters.
+ *
+ * The keys mirror `apps/web/src/components/book-parcel.tsx` one-for-one so a
+ * restore is a direct `form.reset(payload)` with no translation layer. Unknown
+ * keys are stripped, so a client cannot stash anything else in the row.
+ */
+export const parcelDraftPayloadSchema = z
+  .object({
+    step: z.coerce.number().int().min(1).max(6).optional(),
+    receiverName: z.string().max(150).optional(),
+    receiverPhone: z.string().max(30).optional(),
+    receiverSecondaryPhone: z.string().max(30).optional(),
+    deliveryCityId: z.string().max(50).optional(),
+    deliveryZoneId: z.string().max(50).optional(),
+    deliveryAreaId: z.string().max(50).optional(),
+    deliveryAddressLine: z.string().max(300).optional(),
+    deliveryLatitude: z.string().max(20).optional(),
+    deliveryLongitude: z.string().max(20).optional(),
+    pickupCityId: z.string().max(50).optional(),
+    pickupZoneId: z.string().max(50).optional(),
+    pickupAreaId: z.string().max(50).optional(),
+    pickupAddressLine: z.string().max(300).optional(),
+    pickupLatitude: z.string().max(20).optional(),
+    pickupLongitude: z.string().max(20).optional(),
+    weight: z.string().max(20).optional(),
+    length: z.string().max(20).optional(),
+    width: z.string().max(20).optional(),
+    height: z.string().max(20).optional(),
+    parcelType: z.enum(PARCEL_TYPES).optional(),
+    paymentType: z.enum(PAYMENT_TYPES).optional(),
+    codAmount: z.string().max(20).optional(),
+    items: z
+      .array(
+        z.object({
+          name: z.string().max(200).optional(),
+          description: z.string().max(2000).optional(),
+          quantity: z.string().max(10).optional(),
+          unitPrice: z.string().max(20).optional(),
+        }),
+      )
+      .max(50)
+      .optional(),
+  })
+  .strip()
+
+export type ParcelDraftPayload = z.infer<typeof parcelDraftPayloadSchema>
+
+/** The autosave body: the payload alone. The customer comes from the session. */
+export const saveParcelDraftSchema = parcelDraftPayloadSchema
+
+export const parcelDraftResponseSchema = z.object({
+  id: z.string(),
+  payload: parcelDraftPayloadSchema,
+  updatedAt: z.iso.datetime(),
+})
