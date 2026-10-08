@@ -14,6 +14,7 @@ import {
   FormPasswordInput,
   LoadingButton,
 } from "@dropx/ui"
+import { LockKeyhole, Navigation } from "lucide-react"
 
 import { describeApiError } from "../../components/feedback"
 import { useAuth } from "../../lib/auth"
@@ -60,15 +61,30 @@ export function LoginScreen() {
   })
 
   return (
-    <main className="bg-background text-foreground flex min-h-dvh w-full items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <DropXLogo size="lg" />
-          <h1 className="mt-8 text-2xl font-bold tracking-tight">Rider sign in</h1>
-          <p className="text-muted-foreground mt-2 text-sm">Sign in to see today&apos;s jobs.</p>
+    <main className="rider-auth-canvas text-foreground relative flex min-h-dvh w-full justify-center overflow-hidden px-4 pt-10 pb-8 sm:items-center sm:py-12">
+      <div className="rider-route-grid pointer-events-none absolute inset-x-0 top-0 h-80" />
+      <div className="relative w-full max-w-md">
+        <div className="mb-8 px-1 text-white sm:mb-10">
+          <DropXLogo size="lg" className="text-white" />
+          <div className="mt-9 flex items-center gap-2 text-sm font-semibold text-white/70">
+            <Navigation className="text-primary size-4" aria-hidden />
+            Rider workspace
+          </div>
+          <h1 className="mt-3 max-w-sm text-4xl leading-[1.02] font-extrabold tracking-[-0.045em] text-balance">
+            Ready for today&apos;s route?
+          </h1>
+          <p className="mt-3 max-w-xs text-sm leading-6 text-white/65">
+            Your assigned stops, delivery updates, and proof of handover in one place.
+          </p>
         </div>
 
-        <Card className="rounded-feature p-6 shadow-sm sm:p-8">
+        <Card className="rider-auth-card rounded-[1.5rem] border-0 p-5 sm:p-7">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold tracking-tight">Sign in</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Use your rider account to continue.
+            </p>
+          </div>
           {serverError ? (
             <Alert variant="destructive" className="mb-4">
               <AlertTitle>Sign in failed</AlertTitle>
@@ -79,7 +95,7 @@ export function LoginScreen() {
           ) : null}
 
           <Form {...form}>
-            <form onSubmit={onSubmit} className="grid gap-6" noValidate>
+            <form onSubmit={onSubmit} className="grid gap-5" noValidate>
               <FormInput<LoginValues>
                 name="email"
                 label="Email"
@@ -88,26 +104,31 @@ export function LoginScreen() {
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
-                className="h-12 text-base"
+                className="bg-background h-13 rounded-xl text-base"
               />
 
               <FormPasswordInput<LoginValues>
                 name="password"
                 label="Password"
                 autoComplete="current-password"
-                className="h-12 text-base"
+                className="bg-background h-13 rounded-xl text-base"
               />
 
               <LoadingButton
                 type="submit"
                 size="lg"
-                className="tap-target mt-2 w-full text-base"
+                className="tap-target mt-1 h-13 w-full rounded-xl text-base font-semibold shadow-[0_10px_28px_color-mix(in_oklab,var(--primary)_28%,transparent)] transition-transform active:scale-[0.98]"
                 loading={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
               </LoadingButton>
             </form>
           </Form>
+
+          <p className="text-muted-foreground mt-6 flex items-center justify-center gap-2 text-center text-xs">
+            <LockKeyhole className="size-3.5" aria-hidden />
+            Protected access for active DropX riders
+          </p>
         </Card>
       </div>
     </main>

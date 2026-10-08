@@ -26,7 +26,7 @@ export type ScreenHeaderAction = {
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-background text-foreground mx-auto flex min-h-dvh w-full max-w-md flex-col border-x">
+    <div className="rider-app-shell bg-background text-foreground mx-auto flex min-h-dvh w-full max-w-lg flex-col overflow-x-hidden sm:my-4 sm:min-h-[calc(100dvh-2rem)] sm:rounded-[1.75rem]">
       {children}
       <BottomNav />
     </div>
@@ -47,22 +47,29 @@ export function AppHeader({
   const { rider } = useAuth()
 
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 flex items-center gap-2 border-b px-3 py-3 backdrop-blur">
+    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/82 sticky top-0 z-30 flex items-center gap-3 border-b px-4 py-3.5 backdrop-blur-xl sm:rounded-t-[1.75rem]">
       {back ? (
         <Link
           to="/jobs"
           aria-label="Back to jobs"
-          className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "tap-target size-11")}
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "icon" }),
+            "tap-target -ml-1 size-11 rounded-xl",
+          )}
         >
           <ChevronLeft className="size-6" />
         </Link>
       ) : (
-        <DropXMark className="ml-1 size-9 rounded-[10px]" />
+        <DropXMark className="size-10 rounded-xl shadow-sm" />
       )}
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-lg leading-tight font-bold tracking-tight">{title}</h1>
-        {subtitle ? <p className="text-muted-foreground truncate text-sm">{subtitle}</p> : null}
+        <h1 className="truncate text-lg leading-tight font-extrabold tracking-[-0.025em]">
+          {title}
+        </h1>
+        {subtitle ? (
+          <p className="text-muted-foreground mt-0.5 truncate text-xs">{subtitle}</p>
+        ) : null}
       </div>
 
       {actions?.map((action) => (
@@ -71,7 +78,10 @@ export function AppHeader({
           type="button"
           onClick={action.onClick}
           disabled={action.disabled || action.busy}
-          className={cn(buttonVariants({ variant: "outline" }), "tap-target max-w-[10rem] px-3")}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "tap-target bg-card max-w-[10rem] rounded-xl px-3 shadow-xs",
+          )}
         >
           {action.icon}
           <span className="truncate">{action.label}</span>
@@ -79,8 +89,10 @@ export function AppHeader({
       ))}
 
       {rider ? (
-        <Avatar className="size-10">
-          <AvatarFallback className="text-sm">{initials(rider.name)}</AvatarFallback>
+        <Avatar className="size-10 rounded-xl">
+          <AvatarFallback className="bg-foreground text-background rounded-xl text-sm font-bold">
+            {initials(rider.name)}
+          </AvatarFallback>
         </Avatar>
       ) : null}
     </header>
@@ -96,7 +108,7 @@ export function AppHeader({
  */
 export function ActionBar({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-16 z-20 border-t px-3 py-3 backdrop-blur">
+    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/82 sticky bottom-[4.5rem] z-20 border-t px-4 py-3 backdrop-blur-xl">
       {children}
     </div>
   )

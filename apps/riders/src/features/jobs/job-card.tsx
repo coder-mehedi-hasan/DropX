@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { Banknote, ChevronRight, Package } from "lucide-react"
+import { Banknote, ChevronRight, MapPin, Package } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, StatusBadge } from "@dropx/ui"
 
 import type { Job } from "../../lib/domain"
@@ -23,20 +23,24 @@ export function JobCard({ job }: { job: Job }) {
     <Link
       to="/jobs/$jobId"
       params={{ jobId: job.parcel.id }}
-      className="focus-visible:ring-ring block rounded-xl focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-ring block rounded-[1.25rem] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
     >
-      <Card className="active:bg-accent gap-0 overflow-hidden py-0 transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b px-4 py-3">
-          <CardTitle data-numeric className="font-mono text-base tracking-tight break-all">
+      <Card className="rider-job-card hover:border-primary/25 active:bg-accent relative gap-0 overflow-hidden rounded-[1.25rem] border-transparent py-0 transition-all duration-200 hover:-translate-y-0.5">
+        <div className="bg-primary absolute inset-y-0 left-0 w-1" aria-hidden />
+        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b px-5 py-3.5">
+          <CardTitle
+            data-numeric
+            className="font-mono text-sm font-semibold tracking-tight break-all"
+          >
             {job.parcel.trackingNumber}
           </CardTitle>
           <StatusBadge status={job.parcel.status} />
         </CardHeader>
 
-        <CardContent className="grid gap-4 px-4 py-4">
+        <CardContent className="grid gap-4 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold">
+              <p className="truncate text-lg font-bold tracking-tight">
                 {job.delivery.recipientName ?? "No recipient name on file"}
               </p>
               {/*
@@ -45,8 +49,11 @@ export function JobCard({ job }: { job: Job }) {
                 migration. Area and city ride beneath so a rider can read the
                 drop at a glance without opening the job.
               */}
-              <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">
-                {job.delivery.addressLine ?? job.delivery.address}
+              <p className="text-muted-foreground mt-1 flex items-start gap-1.5 text-sm leading-5">
+                <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                <span className="line-clamp-2">
+                  {job.delivery.addressLine ?? job.delivery.address}
+                </span>
               </p>
               {job.delivery.areaName || job.delivery.cityName ? (
                 <p className="text-muted-foreground mt-0.5 text-xs">
@@ -56,16 +63,25 @@ export function JobCard({ job }: { job: Job }) {
                 </p>
               ) : null}
             </div>
-            <ChevronRight className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden />
+            <span className="bg-muted grid size-9 shrink-0 place-items-center rounded-xl">
+              <ChevronRight className="text-muted-foreground size-5" aria-hidden />
+            </span>
           </div>
 
-          <div className="bg-muted/60 flex items-center justify-between gap-3 rounded-lg px-3 py-2.5">
+          <div className="bg-muted/70 flex items-center justify-between gap-3 rounded-xl px-3.5 py-3">
             {isCod ? (
               <div className="flex items-center gap-2">
                 <Banknote className="text-muted-foreground size-4" strokeWidth={1.75} aria-hidden />
-                <span className="text-muted-foreground text-xs font-medium">Collect</span>
-                <span data-numeric className="text-base font-bold">
-                  {formatMoney(job.parcel.codAmount)}
+                <span>
+                  <span className="text-muted-foreground block text-[0.65rem] font-semibold tracking-wide uppercase">
+                    Collect cash
+                  </span>
+                  <span
+                    data-numeric
+                    className="block text-lg leading-tight font-extrabold tracking-tight"
+                  >
+                    {formatMoney(job.parcel.codAmount)}
+                  </span>
                 </span>
               </div>
             ) : (

@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router"
-import { ClipboardList, RefreshCw } from "lucide-react"
+import { ClipboardList, MapPinned, RefreshCw, Route } from "lucide-react"
 import { Button, EmptyState, Tabs, TabsList, TabsTrigger, cn } from "@dropx/ui"
 
 import { ErrorNotice, StaleDataNotice } from "../../components/feedback"
@@ -62,7 +62,7 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
         ]}
       />
 
-      <main className="flex-1 space-y-4 px-3 py-4">
+      <main className="flex-1 space-y-4 px-4 py-5">
         {!canViewJobs ? (
           <EmptyState
             icon={ClipboardList}
@@ -71,10 +71,35 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
           />
         ) : (
           <>
+            <section className="bg-foreground text-background relative overflow-hidden rounded-[1.35rem] px-5 py-5 shadow-lg">
+              <div className="bg-primary/20 absolute -top-10 -right-8 size-32 rounded-full blur-2xl" />
+              <div className="relative flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-background/60 flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+                    <Route className="text-primary size-4" aria-hidden />
+                    Route overview
+                  </p>
+                  <p data-numeric className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">
+                    {jobs.data?.meta.totalCount ?? "—"}
+                  </p>
+                  <p className="text-background/65 mt-1 text-sm">
+                    {filter === "ALL" ? "Assigned route jobs" : JOB_STATUS_FILTER_LABELS[filter]}
+                  </p>
+                </div>
+                <div className="bg-background/10 grid size-12 place-items-center rounded-2xl ring-1 ring-white/10">
+                  <MapPinned className="text-primary size-6" aria-hidden />
+                </div>
+              </div>
+            </section>
+
             <Tabs value={filter} onValueChange={setFilter}>
-              <TabsList className="grid h-auto w-full grid-cols-5">
+              <TabsList className="rider-filter-tabs flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl p-1">
                 {JOB_STATUS_FILTERS.map((value) => (
-                  <TabsTrigger key={value} value={value} className="min-h-11 px-1 text-xs">
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className="min-h-10 flex-none rounded-lg px-3 text-xs"
+                  >
                     {JOB_STATUS_FILTER_LABELS[value]}
                   </TabsTrigger>
                 ))}
@@ -107,7 +132,7 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
             ) : null}
 
             {jobs.data && jobs.data.nodes.length > 0 ? (
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {jobs.data.nodes.map((job) => (
                   <li key={job.parcel.id}>
                     <JobCard job={job} />

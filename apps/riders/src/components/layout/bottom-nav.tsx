@@ -24,9 +24,9 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-30 border-t backdrop-blur"
+      className="bg-background/95 supports-[backdrop-filter]:bg-background/82 sticky bottom-0 z-30 border-t px-3 pt-1 pb-[max(.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:rounded-b-[1.75rem]"
     >
-      <ul className="mx-auto flex max-w-md">
+      <ul className="mx-auto flex max-w-sm gap-2">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.to)
           return (
@@ -41,13 +41,13 @@ export function BottomNav() {
                  * spotting a colour alone.
                  */
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 px-3 py-2 text-sm transition-colors duration-150 ease-brand",
+                  "ease-brand relative flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs transition-all duration-150 active:scale-[0.98]",
                   active
-                    ? "border-primary text-foreground font-semibold"
-                    : "text-muted-foreground border-transparent font-medium",
+                    ? "bg-primary/10 text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground font-medium",
                 )}
               >
-                <item.icon className={cn("size-6", active && "text-primary")} aria-hidden />
+                <item.icon className={cn("size-5", active && "text-primary")} aria-hidden />
                 {item.label}
               </Link>
             </li>

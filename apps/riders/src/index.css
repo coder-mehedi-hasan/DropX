@@ -17,6 +17,13 @@
   body {
     @apply min-h-dvh antialiased;
     overscroll-behavior-y: none;
+    background:
+      radial-gradient(
+        circle at 15% 8%,
+        color-mix(in oklab, var(--primary) 10%, transparent),
+        transparent 24rem
+      ),
+      linear-gradient(180deg, color-mix(in oklab, var(--background) 92%, white), var(--background));
   }
 
   /*
@@ -36,6 +43,55 @@
   [data-slot="table"],
   [data-numeric] {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .rider-app-shell {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--border) 65%, transparent),
+      0 24px 80px color-mix(in oklab, var(--foreground) 9%, transparent);
+  }
+
+  .rider-auth-canvas {
+    background:
+      radial-gradient(
+        circle at 78% 8%,
+        color-mix(in oklab, var(--primary) 34%, transparent),
+        transparent 18rem
+      ),
+      linear-gradient(180deg, #17191f 0 19rem, var(--background) 19rem 100%);
+  }
+
+  .rider-route-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, white 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, white 5%, transparent) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    mask-image: linear-gradient(to bottom, black, transparent 88%);
+  }
+
+  .rider-auth-card {
+    box-shadow:
+      0 1px 0 color-mix(in oklab, white 78%, transparent) inset,
+      0 20px 60px color-mix(in oklab, #111827 15%, transparent);
+  }
+
+  .rider-job-card {
+    box-shadow: 0 10px 32px color-mix(in oklab, var(--foreground) 7%, transparent);
+  }
+
+  .rider-filter-tabs {
+    scrollbar-width: none;
+  }
+
+  .rider-filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dark .rider-app-shell,
+  .dark .rider-job-card {
+    box-shadow: 0 20px 56px color-mix(in oklab, black 35%, transparent);
   }
 }
 
