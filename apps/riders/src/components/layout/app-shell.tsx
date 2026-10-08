@@ -90,7 +90,7 @@ export function AppHeader({
 
       {rider ? (
         <Avatar className="size-10 rounded-xl">
-          <AvatarFallback className="bg-foreground text-background rounded-xl text-sm font-bold">
+          <AvatarFallback className="bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-sm">
             {initials(rider.name)}
           </AvatarFallback>
         </Avatar>

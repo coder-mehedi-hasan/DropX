@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router"
-import { ClipboardList, MapPinned, RefreshCw, Route } from "lucide-react"
+import { ArrowRight, ClipboardList, KeyRound, MapPinned, RefreshCw, Route } from "lucide-react"
 import { Button, EmptyState, Tabs, TabsList, TabsTrigger, cn } from "@dropx/ui"
 
 import { ErrorNotice, StaleDataNotice } from "../../components/feedback"
@@ -52,23 +52,57 @@ export function JobListScreen({ filter }: { filter: JobStatusFilter }) {
       <AppHeader
         title="Today's jobs"
         subtitle={rider ? `Signed in as ${rider.name}` : undefined}
-        actions={[
-          {
-            label: jobs.isFetching ? "Updating…" : "Refresh",
-            icon: <RefreshCw className={cn(jobs.isFetching && "animate-spin")} />,
-            onClick: refetch,
-            busy: jobs.isFetching,
-          },
-        ]}
+        actions={
+          canViewJobs
+            ? [
+                {
+                  label: jobs.isFetching ? "Updating…" : "Refresh",
+                  icon: <RefreshCw className={cn(jobs.isFetching && "animate-spin")} />,
+                  onClick: refetch,
+                  busy: jobs.isFetching,
+                },
+              ]
+            : undefined
+        }
       />
 
       <main className="flex-1 space-y-4 px-4 py-5">
         {!canViewJobs ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="You cannot view jobs"
-            description="Your account is missing the rider.jobs.view permission. Ask dispatch to grant it."
-          />
+          <section className="bg-card overflow-hidden rounded-[1.35rem] shadow-sm">
+            <div className="bg-primary h-1.5" />
+            <div className="px-5 pt-6 pb-7">
+              <div className="bg-primary/10 text-primary grid size-12 place-items-center rounded-2xl">
+                <KeyRound className="size-6" aria-hidden />
+              </div>
+              <p className="text-muted-foreground mt-6 text-xs font-semibold tracking-wide uppercase">
+                Access required
+              </p>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.035em] text-balance">
+                Your route is not available yet
+              </h2>
+              <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-6 text-pretty">
+                Dispatch needs to grant this account permission to view assigned jobs. Your sign-in
+                is working; only route access is missing.
+              </p>
+
+              <div className="bg-muted/70 mt-6 rounded-xl px-4 py-3">
+                <p className="text-muted-foreground text-xs font-medium">Permission needed</p>
+                <p data-numeric className="mt-1 font-mono text-sm font-semibold">
+                  rider.jobs.view
+                </p>
+              </div>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                className="tap-target mt-5 w-full justify-between rounded-xl"
+                onClick={() => void navigate({ to: "/profile" })}
+              >
+                Review rider access
+                <ArrowRight aria-hidden />
+              </Button>
+            </div>
+          </section>
         ) : (
           <>
             <section className="bg-foreground text-background relative overflow-hidden rounded-[1.35rem] px-5 py-5 shadow-lg">

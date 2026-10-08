@@ -48,7 +48,7 @@ export function ProfileScreen() {
       <AppHeader title="Profile" subtitle={rider?.email} />
 
       <main className="flex-1 space-y-4 px-4 py-5">
-        <Card className="bg-foreground text-background relative overflow-hidden rounded-[1.35rem] border-0">
+        <Card className="relative overflow-hidden rounded-[1.35rem] border-0 bg-[#17191f] text-white shadow-lg dark:bg-[#1a1d24]">
           <div className="bg-primary/20 absolute -top-12 -right-8 size-36 rounded-full blur-2xl" />
           <CardContent className="relative flex items-center gap-4 py-1">
             <Avatar className="size-16 rounded-2xl ring-2 ring-white/15">
@@ -58,10 +58,10 @@ export function ProfileScreen() {
             </Avatar>
             <div className="min-w-0">
               <p className="truncate text-xl font-extrabold tracking-tight">{rider?.name}</p>
-              <p className="text-background/60 truncate text-sm">{rider?.email}</p>
+              <p className="truncate text-sm text-white/60">{rider?.email}</p>
               <Badge variant="secondary" className="mt-2 border-0 bg-white/10 text-white">
                 <IdCard aria-hidden />
-                Hub {rider?.hubId}
+                {rider?.hubId ? `Hub ${rider.hubId}` : "Hub not assigned"}
               </Badge>
             </div>
           </CardContent>
