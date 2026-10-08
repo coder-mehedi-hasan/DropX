@@ -11,6 +11,7 @@ const DEFAULT_TRANSFERS_SEARCH = {
   hubId: "",
   vehicleId: "",
   driverId: "",
+  direction: "all",
 } as const
 
 export const transfersSearchSchema = z.object({
@@ -27,6 +28,7 @@ export const transfersSearchSchema = z.object({
   hubId: z.string().catch(DEFAULT_TRANSFERS_SEARCH.hubId),
   vehicleId: z.string().catch(DEFAULT_TRANSFERS_SEARCH.vehicleId),
   driverId: z.string().catch(DEFAULT_TRANSFERS_SEARCH.driverId),
+  direction: z.enum(["all", "outgoing", "incoming"]).catch(DEFAULT_TRANSFERS_SEARCH.direction),
 })
 
 export type TransfersSearch = {
@@ -39,6 +41,7 @@ export type TransfersSearch = {
   hubId: string
   vehicleId: string
   driverId: string
+  direction: "all" | "outgoing" | "incoming"
 }
 
 /**
@@ -58,4 +61,5 @@ export const DEFAULT_TRANSFERS_SEARCH_PARAMS: TransfersSearch = {
   hubId: "",
   vehicleId: "",
   driverId: "",
+  direction: "all",
 }

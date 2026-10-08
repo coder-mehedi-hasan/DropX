@@ -42,11 +42,13 @@ export function TransferFormSheet({
   open,
   onOpenChange,
   transfer,
+  defaultFromHubId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Present when editing, absent when creating. */
   transfer?: TransferWithManifest | null
+  defaultFromHubId?: string
 }) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(transfer)
@@ -69,9 +71,9 @@ export function TransferFormSheet({
         toHubId: transfer!.toHubId,
         routeId: transfer!.routeId,
         vehicleId: transfer!.vehicleId,
-        driverRef: null,
+        driverRef: transfer!.driverId,
       }
-    : BLANK
+    : { ...BLANK, fromHubId: defaultFromHubId ?? "" }
 
   return (
     <FormSheet

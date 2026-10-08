@@ -22,6 +22,7 @@ import {
 } from "@dropx/ui"
 
 import { listParcels, replaceTransferManifest } from "@/lib/endpoints"
+import { ServerError } from "@/components/server-error"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 import type { Parcel, TransferWithManifest } from "@/lib/types"
 
@@ -55,10 +56,12 @@ export function TransferManifestSheet({
   open,
   onOpenChange,
   transfer,
+  onManifestChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   transfer: TransferWithManifest | null
+  onManifestChange: (parcels: TransferWithManifest["parcels"]) => void
 }) {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState("")
@@ -89,8 +92,9 @@ export function TransferManifestSheet({
 
   const mutation = useMutation({
     mutationFn: (parcelIds: string[]) => replaceTransferManifest(transfer!.id, { parcelIds }),
-    onSuccess: () => {
+    onSuccess: (manifest) => {
       AppToast.success("Manifest updated")
+      onManifestChange(manifest)
       void queryClient.invalidateQueries({ queryKey: ["transfers"] })
     },
   })
@@ -99,7 +103,8 @@ export function TransferManifestSheet({
 
   const manifestIds = new Set(transfer.parcels.map((parcel) => parcel.parcelId))
   const candidates = (parcelsQuery.data?.nodes ?? []).filter(
-    (parcel) => !manifestIds.has(parcel.id),
+    (parcel) =>
+      !manifestIds.has(parcel.id) && (parcel.status === "PICKED_UP" || parcel.status === "AT_HUB"),
   )
 
   function add(parcel: Parcel) {
@@ -121,6 +126,8 @@ export function TransferManifestSheet({
               : "Parcels at the origin hub. The API rejects any parcel that is not there, so the picker only offers those that are."}
           </DialogDescription>
         </DialogHeader>
+
+        <ServerError error={mutation.error} title="Could not update manifest" />
 
         {sealed ? null : (
           <div className="flex flex-col gap-2">

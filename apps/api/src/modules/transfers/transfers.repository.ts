@@ -160,6 +160,7 @@ export type ListTransfersFilter = {
   vehicleId?: Id | undefined
   driverId?: Id | undefined
   search?: string | undefined
+  direction?: "all" | "outgoing" | "incoming" | undefined
 }
 
 export async function selectTransfers(
@@ -182,8 +183,18 @@ export async function selectTransfers(
     filterParams.push(filter.status)
   }
   if (filter.hubId) {
-    clauses.push(TRANSFER_SCOPE_PREDICATE)
-    filterParams.push(filter.hubId, filter.hubId)
+    clauses.push(
+      filter.direction === "outgoing"
+        ? "t.from_hub_id = ?"
+        : filter.direction === "incoming"
+          ? "t.to_hub_id = ?"
+          : TRANSFER_SCOPE_PREDICATE,
+    )
+    if (filter.direction === "outgoing" || filter.direction === "incoming") {
+      filterParams.push(filter.hubId)
+    } else {
+      filterParams.push(filter.hubId, filter.hubId)
+    }
   }
   if (filter.vehicleId) {
     clauses.push("t.vehicle_id = ?")

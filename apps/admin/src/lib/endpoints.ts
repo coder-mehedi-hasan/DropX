@@ -836,6 +836,7 @@ function transferQuery(params: TransfersSearch) {
     // either end, so this is the one filter a dispatcher can narrow on without
     // leaving the screen.
     ...(params.hubId ? { hubId: params.hubId } : {}),
+    ...(params.direction !== "all" ? { direction: params.direction } : {}),
     ...(params.vehicleId ? { vehicleId: params.vehicleId } : {}),
     ...(params.driverId ? { driverId: params.driverId } : {}),
   }

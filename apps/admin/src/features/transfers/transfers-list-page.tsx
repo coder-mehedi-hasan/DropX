@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { Plus, Truck } from "lucide-react"
-import { useMemo, useState } from "react"
+import { ArrowDownToLine, ArrowUpFromLine, MapPin, Plus, Truck } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Badge,
   Button,
@@ -9,6 +9,11 @@ import {
   CardHeader,
   EmptyState,
   ServerDataTable,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   useFormSheetState,
   type DataTableColumn,
 } from "@dropx/ui"
@@ -18,7 +23,7 @@ import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
-import { getTransfer, listTransfers } from "@/lib/endpoints"
+import { getTransfer, listHubsForPicker, listTransfers } from "@/lib/endpoints"
 import { formatDateTime } from "@/lib/format"
 import type { TransferListItem, TransferWithManifest } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
@@ -30,6 +35,21 @@ import { TRANSFER_STATUS_BADGE, TRANSFER_STATUS_LABEL } from "./transfer-status"
 import { TransferStatusSheet } from "./transfer-status-sheet"
 
 const TRANSFER_SORT_COLUMNS = ["departedAt", "arrivedAt", "status", "createdAt"] as const
+
+function nextAction(transfer: TransferListItem, currentHubId: string): string {
+  switch (transfer.status) {
+    case "PLANNED":
+      return "Add parcels to manifest"
+    case "LOADING":
+      return "Depart transfer"
+    case "IN_TRANSIT":
+      return transfer.toHubId === currentHubId ? "Receive at this hub" : "Await arrival"
+    case "ARRIVED":
+      return "Ready for delivery"
+    case "CANCELLED":
+      return "Cancelled"
+  }
+}
 
 /**
  * The hub-to-hub worklist.
@@ -45,7 +65,7 @@ const TRANSFER_SORT_COLUMNS = ["departedAt", "arrivedAt", "status", "createdAt"]
  * projection for exactly this reason.
  */
 export function TransfersListPage({ search }: { search: TransfersSearch }) {
-  const { hasPermission } = useAuth()
+  const { hasPermission, user } = useAuth()
   const canManage = hasPermission("transfers.manage")
 
   const createSheet = useFormSheetState()
@@ -53,6 +73,19 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
   const statusSheet = useFormSheetState<string>()
   const manifestSheet = useFormSheetState<string>()
   const [active, setActive] = useState<TransferWithManifest | null>(null)
+
+  const hubsQuery = useQuery({
+    queryKey: ["transfer-context-hubs", user?.hubIds],
+    queryFn: () => listHubsForPicker({ page: 1, limit: 100 }),
+    enabled: Boolean(user),
+    staleTime: 60_000,
+  })
+  const hubs = useMemo(() => {
+    const all = hubsQuery.data?.nodes ?? []
+    if (!user?.hubIds.length || user.roles.includes("ADMIN")) return all
+    return all.filter((hub) => user.hubIds.includes(hub.id))
+  }, [hubsQuery.data?.nodes, user?.hubIds, user?.roles])
+  const currentHub = hubs.find((hub) => hub.id === search.hubId) ?? null
 
   const where = usePaginatedListWhere(search)
   const params = useMemo(
@@ -66,6 +99,7 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
       hubId: search.hubId,
       vehicleId: search.vehicleId,
       driverId: search.driverId,
+      direction: search.direction,
     }),
     [
       where.page,
@@ -77,6 +111,7 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
       search.hubId,
       search.vehicleId,
       search.driverId,
+      search.direction,
     ],
   )
 
@@ -161,6 +196,14 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
         value: (transfer) => transfer.status,
       },
       {
+        id: "nextAction",
+        header: "Next action",
+        cell: (transfer) => (
+          <span className="text-sm font-medium">{nextAction(transfer, search.hubId)}</span>
+        ),
+        value: (transfer) => nextAction(transfer, search.hubId),
+      },
+      {
         id: "departedAt",
         header: "Departed",
         cell: (transfer) => (
@@ -231,19 +274,31 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
     // `openEdit`/`openStatus`/`openManifest` are stable enough for a row render —
     // they only set state — but they are listed so a stale closure cannot outlive
     // a change to the sheet hooks.
-    [canManage, editSheet.openFor, statusSheet.openFor, manifestSheet.openFor],
+    [canManage, editSheet.openFor, statusSheet.openFor, manifestSheet.openFor, search.hubId],
   )
 
   const filtered = Boolean(
     search.search || search.status || search.hubId || search.vehicleId || search.driverId,
   )
 
+  useEffect(() => {
+    const onlyHub = hubs[0]
+    if (onlyHub && hubs.length === 1 && !search.hubId) patch({ hubId: onlyHub.id, page: 1 })
+  }, [hubs, search.hubId])
+
+  const contextLabel = currentHub
+    ? `${currentHub.name} (${currentHub.code})`
+    : "All accessible hubs"
+  const updateManifest = (parcels: TransferWithManifest["parcels"]) => {
+    setActive((current) => (current ? { ...current, parcels } : current))
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Operations"
         title="Transfers"
-        description="Hub-to-hub transfers — planned, loaded, dispatched, and arrived."
+        description="Move parcels between hubs with a clear loading and receiving workflow."
         actions={
           canManage ? (
             <Button onClick={() => createSheet.openNew()}>
@@ -253,6 +308,62 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
           ) : null
         }
       />
+
+      <Card className="border-primary/20 bg-primary/[0.03] gap-0 py-0">
+        <CardContent className="flex flex-wrap items-center gap-4 p-4">
+          <div className="flex min-w-60 flex-1 items-start gap-3">
+            <MapPin className="text-primary mt-0.5 size-5" />
+            <div>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Working context
+              </p>
+              <p className="text-sm font-semibold">{contextLabel}</p>
+              <p className="text-muted-foreground text-xs">
+                {currentHub
+                  ? "Transfers from this hub are outgoing; transfers to it are incoming."
+                  : "Choose a hub to see your loading and receiving work."}
+              </p>
+            </div>
+          </div>
+          <Select
+            value={search.hubId || "all"}
+            onValueChange={(value) => patch({ hubId: value === "all" ? "" : value, page: 1 })}
+          >
+            <SelectTrigger className="w-64" aria-label="Current hub">
+              <SelectValue placeholder="Choose current hub" />
+            </SelectTrigger>
+            <SelectContent>
+              {user?.hubIds.length !== 1 || user.roles.includes("ADMIN") ? (
+                <SelectItem value="all">All accessible hubs</SelectItem>
+              ) : null}
+              {hubs.map((hub) => (
+                <SelectItem key={hub.id} value={hub.id}>
+                  {hub.name} · {hub.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        {[
+          { value: "all" as const, label: "All transfers", icon: Truck },
+          { value: "outgoing" as const, label: "Outgoing · load here", icon: ArrowUpFromLine },
+          { value: "incoming" as const, label: "Incoming · receive here", icon: ArrowDownToLine },
+        ].map(({ value, label, icon: Icon }) => (
+          <Button
+            key={value}
+            variant={search.direction === value ? "default" : "outline"}
+            className="justify-start"
+            disabled={!currentHub && value !== "all"}
+            onClick={() => patch({ direction: value, page: 1 })}
+          >
+            <Icon />
+            {label}
+          </Button>
+        ))}
+      </div>
 
       <ServerError
         error={query.isError ? query.error : null}
@@ -283,20 +394,11 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
               }))}
             />
           </div>
-          {/* `hubId`, `vehicleId` and `driverId` arrive in the URL from other screens
+          {/* `vehicleId` and `driverId` arrive in the URL from other screens
               rather than from controls here, so they are shown as removable chips
               instead of filters that cannot be set on this page. */}
-          {search.hubId || search.vehicleId || search.driverId ? (
+          {search.vehicleId || search.driverId ? (
             <div className="text-muted-foreground flex flex-wrap gap-2 pt-2 text-xs">
-              {search.hubId ? (
-                <button
-                  type="button"
-                  className="hover:bg-muted rounded-full border px-2 py-0.5"
-                  onClick={() => patch({ hubId: "" })}
-                >
-                  Hub {search.hubId} ✕
-                </button>
-              ) : null}
               {search.vehicleId ? (
                 <button
                   type="button"
@@ -361,6 +463,7 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
         key={createSheet.key}
         open={createSheet.open}
         onOpenChange={createSheet.onOpenChange}
+        defaultFromHubId={currentHub?.id}
       />
 
       <TransferFormSheet
@@ -382,6 +485,7 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
         open={manifestSheet.open}
         onOpenChange={manifestSheet.onOpenChange}
         transfer={active}
+        onManifestChange={updateManifest}
       />
     </div>
   )

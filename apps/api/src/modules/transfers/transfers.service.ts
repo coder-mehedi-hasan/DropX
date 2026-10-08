@@ -79,6 +79,7 @@ export async function listTransfers(
     hubId: query.hubId,
     vehicleId: query.vehicleId,
     driverId: query.driverId,
+    direction: query.direction,
     search: query.search,
   })
   return buildPage(nodes, totalCount, params)

@@ -18,6 +18,7 @@ export const listTransfersQuerySchema = z.object({
   sortBy: z.enum(["departedAt", "arrivedAt", "status", "createdAt"]).default("createdAt"),
   sort: z.enum(["asc", "desc"]).default("desc"),
   status: recordStatus.optional(),
+  direction: z.enum(["all", "outgoing", "incoming"]).default("all"),
   /**
    * Matches `from_hub_id` **or** `to_hub_id`, because both are ends the caller's
    * hub has to see: the transfer it is loading and the one it is about to
