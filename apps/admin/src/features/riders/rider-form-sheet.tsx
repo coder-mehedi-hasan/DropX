@@ -3,7 +3,6 @@ import { z } from "zod"
 import {
   AppToast,
   BoundFormField,
-  FormInputSlug,
   FormItem,
   FormLabel,
   FormMessage,
@@ -39,7 +38,6 @@ const BLANK: z.infer<typeof createRiderSchema> = {
   password: "",
   phone: "",
   hubId: "",
-  employeeCode: "",
   licenseNumber: "",
   compensationType: "SALARIED",
   status: "OFFLINE",
@@ -98,7 +96,6 @@ function CreateRiderFormSheet({
         password: "Temporary password",
         phone: "Phone",
         hubId: "Home hub",
-        employeeCode: "Employee code",
         licenseNumber: "Licence number",
         compensationType: "Pay type",
         status: "Status",
@@ -174,12 +171,6 @@ function CreateRiderFormSheet({
               </FormItem>
             )}
           />
-          <FormInputSlug
-            name="employeeCode"
-            inheritFrom="name"
-            label="Employee code"
-            placeholder="RDR-1042"
-          />
           <BoundFormField
             name="licenseNumber"
             render={({ field }) => (
@@ -251,7 +242,6 @@ function EditRiderFormSheet({
 
   const defaults: z.infer<typeof updateRiderSchema> = {
     hubId: rider.hubId,
-    employeeCode: rider.employeeCode,
     licenseNumber: rider.licenseNumber ?? "",
     compensationType: rider.compensationType,
     status: rider.status,
@@ -272,13 +262,12 @@ function EditRiderFormSheet({
       open={open}
       onOpenChange={onOpenChange}
       title={`Edit ${rider.employeeCode}`}
-      description="Hub, code, licence, pay type and availability. Sign-in details are managed on the user account."
+      description="Hub, licence, pay type and availability. Sign-in details are managed on the user account."
       submitLabel="Save rider"
       busy={mutation.isPending}
       defaults={defaults}
       fieldLabels={{
         hubId: "Home hub",
-        employeeCode: "Employee code",
         licenseNumber: "Licence number",
         compensationType: "Pay type",
         status: "Status",
@@ -301,16 +290,6 @@ function EditRiderFormSheet({
                   value={field.value}
                   onChange={field.onChange}
                 />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <BoundFormField
-            name="employeeCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Employee code</FormLabel>
-                <Input className="font-mono" {...field} />
                 <FormMessage />
               </FormItem>
             )}

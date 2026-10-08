@@ -360,7 +360,6 @@ export type CreateRiderBody = {
   password: string
   phone?: string | null
   hubId: string
-  employeeCode: string
   licenseNumber?: string | null
   compensationType: CompensationType
   status: RiderStatus
@@ -391,7 +390,6 @@ export type ApproveRiderApplicationBody = {
   email?: string
   password: string
   hubId: string
-  employeeCode: string
   licenseNumber?: string
   compensationType: CompensationType
 }
@@ -647,12 +645,6 @@ export const createRiderSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(200),
   phone: z.string().trim().max(30).nullish(),
   hubId: z.string().trim().min(1, "Pick a home hub"),
-  employeeCode: z
-    .string()
-    .trim()
-    .min(1)
-    .max(50)
-    .regex(/^[A-Z0-9-]+$/, "Use uppercase letters, numbers and hyphens only"),
   licenseNumber: z.string().trim().max(100).nullish(),
   compensationType: z.enum(COMPENSATION_TYPES).default("SALARIED"),
   status: z.enum(RIDER_STATUSES).default("OFFLINE"),
@@ -863,6 +855,7 @@ export type HubOption = {
 
 export type CustomerOption = {
   id: Id
+  code: string
   name: string
   phone: string
   email: string | null

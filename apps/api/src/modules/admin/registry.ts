@@ -1579,14 +1579,13 @@ export const ADMIN_SURFACE = defineSurface({
           summary: "Update a rider",
           successDescription: "Updated.",
           description:
-            "Hub, employee code, licence, compensation and status only. The rider's email, name and password belong to their `users` account and are not editable here.",
+            "Hub, licence, compensation and status only. The rider's email, name and password belong to their `users` account and are not editable here, and the employee code is assigned by the server when the rider is created — it is never edited afterwards, because a code a human can type is one the counter can later duplicate.",
           params: riderIdParam,
           paramDescriptions: { id: "Rider id." },
           body: updateRiderBody,
           response: riderResponse,
           errors: {
             404: "No such rider.",
-            409: "That employee code is already in use.",
           },
         },
         setStatus: {

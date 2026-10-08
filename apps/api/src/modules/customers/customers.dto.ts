@@ -32,6 +32,7 @@ export type ListCustomersQuery = z.infer<typeof listCustomersQuerySchema>
  */
 export const customerResponseSchema = z.object({
   id: z.string(),
+  code: z.string(),
   name: z.string(),
   phone: z.string(),
   email: z.string().nullable(),

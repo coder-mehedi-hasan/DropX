@@ -113,6 +113,12 @@ export function SettlementsListPage({ search }: { search: SettlementsSearch }) {
   const columns = useMemo<DataTableColumn<SettlementListItem>[]>(
     () => [
       {
+        id: "code",
+        header: "Code",
+        cell: (settlement) => <span className="font-mono text-sm">{settlement.code}</span>,
+        value: (settlement) => settlement.code,
+      },
+      {
         id: "customer",
         header: "Merchant",
         cell: (settlement) => (

@@ -6,6 +6,7 @@ import { canTransitionSettlement } from "../../db/models"
 import { toDecimal } from "../../db/sql"
 import { withTransaction } from "../../db/transaction"
 import { emit } from "../../shared/events/bus"
+import { nextSequenceCode } from "../../shared/ids/sequence"
 import type { AppEnv } from "../../types/env"
 
 import type {
@@ -117,6 +118,7 @@ export async function createSettlement(
       }
 
       const inserted = await insertSettlement(tx, {
+        code: await nextSequenceCode(tx, "settlement"),
         customerId: input.customerId,
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,

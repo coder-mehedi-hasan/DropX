@@ -148,6 +148,7 @@ function toCustomerRows(nodes: readonly CustomerOption[]): Row[] {
     id: customer.id,
     label: customer.name,
     hint: customer.phone,
+    tags: [customer.code],
     status: customer.status,
   }))
 }

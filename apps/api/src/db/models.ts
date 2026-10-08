@@ -55,6 +55,7 @@ export const TABLES = {
   notifications: "notifications",
   supportTickets: "support_tickets",
   auditLogs: "audit_logs",
+  sequences: "sequences",
 } as const
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES]

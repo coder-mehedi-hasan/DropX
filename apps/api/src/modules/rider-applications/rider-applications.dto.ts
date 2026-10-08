@@ -24,15 +24,6 @@ export const approveRiderApplicationSchema = z.object({
   email: z.string().trim().email("Enter a rider login email").max(255).optional().or(z.literal("")),
   password: z.string().min(8, "Password must be at least 8 characters").max(200),
   hubId: z.string().trim().min(1, "Select a home hub"),
-  employeeCode: z
-    .string()
-    .trim()
-    .min(1)
-    .max(50)
-    .refine(
-      (value) => /^[A-Z0-9-]+$/.test(value),
-      "Use uppercase letters, numbers and hyphens only",
-    ),
   licenseNumber: z.string().trim().max(100).optional().or(z.literal("")),
   compensationType: z.enum(COMPENSATION_TYPES).default("SALARIED"),
 })

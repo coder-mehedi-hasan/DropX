@@ -8,6 +8,7 @@ import type { Audience } from "../../shared/auth"
 import { issueTokenPair, verifyToken, type TokenPair } from "../../shared/auth"
 import { pushEmailJob } from "../../shared/email/queue"
 import { emit } from "../../shared/events/bus"
+import { nextSequenceCode } from "../../shared/ids/sequence"
 import type {
   ChangePasswordInput,
   OtpRequestInput,
@@ -223,11 +224,16 @@ export async function requestOtp(
   if (!customer) {
     // Placeholder name — the customer supplies it after verifying.
     const { phone, email } = splitIdentifier(identifier)
+    // Drawn before the insert rather than inside it: the OTP path has no
+    // transaction, so a lost race below burns one number. A gap in a customer
+    // reference is harmless; a duplicate is not.
+    const customerCode = await nextSequenceCode(c.get("db")!, "customer")
     try {
       customer = await authRepository.createTempCustomer(c.get("db")!, {
         name: "New customer",
         phone: phone ?? pendingPhone(identifier),
         email,
+        code: customerCode,
       })
     } catch (error) {
       // Lost a race with a concurrent request: re-read and continue.

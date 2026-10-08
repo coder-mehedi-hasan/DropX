@@ -5,6 +5,7 @@ import type { Context } from "hono"
 import { buildPage, normalizeListParams, TABLES, type Page } from "../../db/models"
 import { DomainError, ERROR_CODES, fromDatabaseError, notFound } from "../../core"
 import { withTransaction } from "../../db/transaction"
+import { nextSequenceCode } from "../../shared/ids/sequence"
 import type { AppEnv } from "../../types/env"
 
 import type { RiderApplication } from "./rider-applications.repository"
@@ -126,7 +127,7 @@ export async function approveRiderApplication(
       const createdRiderId = await insertRider(tx, {
         userId,
         hubId: input.hubId,
-        employeeCode: input.employeeCode,
+        employeeCode: await nextSequenceCode(tx, "rider"),
         licenseNumber: input.licenseNumber || application.licenseNumber,
         compensationType: input.compensationType,
         status: "OFFLINE",
@@ -136,7 +137,8 @@ export async function approveRiderApplication(
       ])
       return createdRiderId
     } catch (error) {
-      throw fromDatabaseError(error, "A rider with that employee code already exists")
+      if (error instanceof DomainError) throw error
+      throw fromDatabaseError(error, "Could not approve that application")
     }
   })
 

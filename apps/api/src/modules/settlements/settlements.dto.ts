@@ -61,6 +61,7 @@ export type SetSettlementStatusInput = z.infer<typeof setSettlementStatusSchema>
  */
 export const settlementResponseSchema = z.object({
   id: z.string(),
+  code: z.string(),
   customerId: z.string(),
   customerName: z.string(),
   customerPhone: z.string(),

@@ -26,14 +26,6 @@ export const createRiderSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(200),
   phone: z.string().trim().max(30).nullish(),
   hubId: id,
-  employeeCode: z
-    .string()
-    .trim()
-    .min(1)
-    .max(50)
-    .refine((v) => /^[A-Z0-9-]+$/.test(v), {
-      message: "Use uppercase letters, numbers and hyphens only",
-    }),
   licenseNumber: z.string().trim().max(100).nullish(),
   compensationType: z.enum(COMPENSATION_TYPES).default("SALARIED"),
   status: z.enum(RIDER_STATUSES).default("OFFLINE"),
@@ -46,6 +38,10 @@ export type CreateRiderInput = z.infer<typeof createRiderSchema>
  * how they sign in to the rider app. The account fields are therefore not
  * patchable here — changing a rider's email or name is a user edit, not a rider
  * edit, and letting both surfaces write the same row invites a drift bug.
+ *
+ * `employeeCode` is absent from both halves: the server assigns it from the
+ * `rider` sequence when the rider is created, and it is never edited after
+ * that. A code a human could type is one the counter can later duplicate.
  */
 export const updateRiderSchema = createRiderSchema
   .omit({ email: true, name: true, phone: true, password: true })

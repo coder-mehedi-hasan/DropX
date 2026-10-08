@@ -127,6 +127,12 @@ CREATE TABLE IF NOT EXISTS user_hubs (
 
 CREATE TABLE IF NOT EXISTS customers (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    -- Public reference (`CUS-0001`), assigned by the server from `sequences`.
+    -- Separate from `id` so the number shown to staff stays stable and dense
+    -- even if rows are ever re-keyed. Default '' exists only so the guarded
+    -- upgrade statement below can add this column to a populated table; every
+    -- insert supplies a real value.
+    code VARCHAR(20) NOT NULL DEFAULT '',
     name VARCHAR(150) NOT NULL,
     phone VARCHAR(30) NOT NULL,
     email VARCHAR(255) NULL,
@@ -138,6 +144,7 @@ CREATE TABLE IF NOT EXISTS customers (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE KEY uq_customers_code (code),
     UNIQUE KEY uq_customers_phone (phone),
     UNIQUE KEY uq_customers_email (email),
     KEY idx_customers_type (type),
@@ -784,6 +791,8 @@ CREATE TABLE IF NOT EXISTS payments (
 
 CREATE TABLE IF NOT EXISTS settlements (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    -- Server-assigned reference (`SET-0001`), same contract as `customers.code`.
+    code VARCHAR(20) NOT NULL DEFAULT '',
     customer_id BIGINT UNSIGNED NOT NULL,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
@@ -795,6 +804,7 @@ CREATE TABLE IF NOT EXISTS settlements (
     paid_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE KEY uq_settlements_code (code),
     KEY idx_settlements_customer_id (customer_id),
     KEY idx_settlements_period (period_start, period_end),
     KEY idx_settlements_status (status),
@@ -884,5 +894,109 @@ CREATE TABLE IF NOT EXISTS audit_logs (
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE SET NULL
 );
+
+-- ============================================================
+-- Sequences
+-- ============================================================
+
+-- MySQL has no sequences, so every server-assigned code (`RDR-`, `CUS-`,
+-- `SET-`) claims a number from a one-row counter here. The claim is a single
+-- atomic `INSERT ... ON DUPLICATE KEY UPDATE next_value =
+-- LAST_INSERT_ID(next_value + 1)`, which serialises concurrent writers on the
+-- row lock and returns the new value in the same round trip — see
+-- `shared/ids/sequence.ts`. Pass the caller's transaction handle when there is
+-- one, so a rolled-back insert also rolls its number back.
+--
+-- The column is `next_value`, never `last_value`: that is reserved in MySQL 8.
+CREATE TABLE IF NOT EXISTS sequences (
+    seq_name VARCHAR(50) NOT NULL,
+    next_value BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (seq_name)
+);
+
+-- ============================================================
+-- Upgrades to tables above
+-- ============================================================
+
+-- MySQL has no `ADD COLUMN IF NOT EXISTS`, so these statements re-run on every
+-- migrate. `migrate.ts` treats errno 1060 (duplicate column) and 1061
+-- (duplicate key) as "already applied" — the same no-op `IF NOT EXISTS` gives
+-- the CREATE TABLE statements — and fails on anything else.
+--
+-- Order is load-bearing: add the column, backfill it, and only then add the
+-- unique key. Backfilled rows would otherwise all hold '' and the key would
+-- reject them. Each step is its own statement so that a partially-applied state
+-- still converges rather than aborting before its later steps.
+ALTER TABLE customers ADD COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE settlements ADD COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
+
+-- Heal a `code` column that already exists but with the wrong shape (an earlier
+-- run added it nullable, which would let a NULL reach the mapper). Re-declaring
+-- a matching definition is a no-op, so unlike `ADD COLUMN` this needs no errno
+-- tolerance; and it runs before the backfill, which is scoped to `code = ''`
+-- and would otherwise miss the NULLs this converts.
+ALTER TABLE customers MODIFY COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE settlements MODIFY COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
+
+-- Existing rows get the first free numbers, in `id` order. Scoped to `code =
+-- ''` so a re-run after a partial backfill never rewrites an assigned code —
+-- and if that partial state means two rows would want the same number, the
+-- unique key below rejects it loudly instead of shipping a duplicate.
+UPDATE customers c
+  JOIN (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
+    FROM customers
+    WHERE code = ''
+  ) x ON x.id = c.id
+  SET c.code = CONCAT('CUS-', LPAD(x.rn, 4, '0'));
+
+UPDATE settlements s
+  JOIN (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
+    FROM settlements
+    WHERE code = ''
+  ) x ON x.id = s.id
+  SET s.code = CONCAT('SET-', LPAD(x.rn, 4, '0'));
+
+ALTER TABLE customers ADD UNIQUE KEY uq_customers_code (code);
+ALTER TABLE settlements ADD UNIQUE KEY uq_settlements_code (code);
+
+-- Seed the counters, then pin them above every number already in use — a
+-- hand-inserted rider, or a database restored from before this migration — so
+-- the next generated code cannot collide. `GREATEST` keeps this safe to re-run:
+-- it raises a counter, never lowers it.
+INSERT IGNORE INTO sequences (seq_name, next_value) VALUES
+    ('rider', 0),
+    ('customer', 0),
+    ('settlement', 0);
+
+UPDATE sequences s
+  LEFT JOIN (
+    SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(employee_code, '-', -1) AS UNSIGNED)), 0) AS max_code
+    FROM riders
+    WHERE employee_code REGEXP '^RDR-[0-9]+$'
+  ) r ON 1 = 1
+  SET s.next_value = GREATEST(s.next_value, r.max_code)
+  WHERE s.seq_name = 'rider';
+
+UPDATE sequences s
+  LEFT JOIN (
+    SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED)), 0) AS max_code
+    FROM customers
+    WHERE code REGEXP '^CUS-[0-9]+$'
+  ) c ON 1 = 1
+  SET s.next_value = GREATEST(s.next_value, c.max_code)
+  WHERE s.seq_name = 'customer';
+
+UPDATE sequences s
+  LEFT JOIN (
+    SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED)), 0) AS max_code
+    FROM settlements
+    WHERE code REGEXP '^SET-[0-9]+$'
+  ) t ON 1 = 1
+  SET s.next_value = GREATEST(s.next_value, t.max_code)
+  WHERE s.seq_name = 'settlement';
 
 SET FOREIGN_KEY_CHECKS = 1;

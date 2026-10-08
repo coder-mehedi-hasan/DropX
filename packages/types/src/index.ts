@@ -188,6 +188,8 @@ export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number]
 
 export type Customer = EntityBase &
   Timestamped & {
+    /** Server-assigned reference (`CUS-0001`), assigned once and never edited. */
+    code: string
     name: string
     phone: string
     email: Nullable<string>
@@ -904,6 +906,8 @@ export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number]
  */
 export type Settlement = EntityBase &
   CreatedAt & {
+    /** Server-assigned reference (`SET-0001`), assigned once and never edited. */
+    code: string
     customerId: Id
     periodStart: string
     periodEnd: string

@@ -22,6 +22,20 @@ const SCHEMA_PATH = resolve(SCRIPT_DIR, "migrate.sql")
 const DATABASE_URL = process.env.DATABASE_URL
 
 /**
+ * Errors that mean "this change is already in the database".
+ *
+ * MySQL has no `ADD COLUMN IF NOT EXISTS`, so an upgrade statement in
+ * `migrate.sql` runs on every migrate and fails once it has been applied.
+ * Those two errnos are the upgrade equivalent of the `IF NOT EXISTS` the
+ * CREATE TABLE statements carry, so they are a no-op here. Everything else —
+ * a typo'd column (1054), a colliding backfill (1062) — still fails the run.
+ */
+const IDEMPOTENT_ERRNOS = new Set([
+  1060, // ER_DUP_COLUMNNAME — the column already exists
+  1061, // ER_DUP_KEYNAME — the index already exists
+])
+
+/**
  * Splits a SQL script into statements.
  *
  * Strips `--` line comments and `/* *\/` block comments, then splits on
@@ -149,9 +163,14 @@ async function main(): Promise<void> {
         await pool.execute(statement)
       } catch (error) {
         const preview = statement.replace(/\s+/g, " ").slice(0, 90)
-        if (error != null && typeof error === "object" && "errno" in error) {
+        const errno =
+          error != null && typeof error === "object" && "errno" in error
+            ? (error as { errno?: number }).errno
+            : undefined
+        if (errno !== undefined && IDEMPOTENT_ERRNOS.has(errno)) continue
+        if (errno !== undefined) {
           console.error(
-            `\n✗ mysql error code ${error.errno}: ${(error as { sqlMessage?: string }).sqlMessage}\n  statement: ${preview}…`,
+            `\n✗ mysql error code ${errno}: ${(error as { sqlMessage?: string }).sqlMessage}\n  statement: ${preview}…`,
           )
         } else {
           console.error(`\n✗ migration failed\n  statement: ${preview}…`)

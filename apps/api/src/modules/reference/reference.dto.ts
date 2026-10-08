@@ -68,6 +68,7 @@ export const hubRefResponseSchema = z.object({
 
 export const customerRefResponseSchema = z.object({
   id: z.string(),
+  code: z.string(),
   name: z.string(),
   phone: z.string(),
   email: z.string().nullable(),

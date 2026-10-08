@@ -3,7 +3,6 @@ import { z } from "zod"
 import {
   AppToast,
   BoundFormField,
-  FormInputSlug,
   FormItem,
   FormLabel,
   FormMessage,
@@ -25,11 +24,6 @@ const schema = z.object({
   email: z.string().trim().email("Enter a valid login email").or(z.literal("")),
   password: z.string().min(8, "Password must be at least 8 characters"),
   hubId: z.string().trim().min(1, "Select a home hub"),
-  employeeCode: z
-    .string()
-    .trim()
-    .min(1)
-    .regex(/^[A-Z0-9-]+$/, "Use uppercase letters, numbers and hyphens only"),
   licenseNumber: z.string().trim().or(z.literal("")),
   compensationType: z.enum(COMPENSATION_TYPES),
 })
@@ -61,7 +55,6 @@ export function ApproveRiderApplicationSheet({
     email: application?.email ?? "",
     password: "",
     hubId: "",
-    employeeCode: "",
     licenseNumber: application?.licenseNumber ?? "",
     compensationType: "SALARIED",
   }
@@ -80,7 +73,6 @@ export function ApproveRiderApplicationSheet({
         email: "Login email",
         password: "Temporary password",
         hubId: "Home hub",
-        employeeCode: "Employee code",
         licenseNumber: "Licence number",
         compensationType: "Pay type",
       }}
@@ -134,12 +126,6 @@ export function ApproveRiderApplicationSheet({
                 <FormMessage />
               </FormItem>
             )}
-          />
-          <FormInputSlug
-            name="employeeCode"
-            inheritFrom="email"
-            label="Employee code"
-            placeholder="RDR-1042"
           />
           <BoundFormField
             name="licenseNumber"

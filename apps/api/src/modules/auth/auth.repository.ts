@@ -67,12 +67,12 @@ export const authRepository = {
 
   async createTempCustomer(
     db: Pool,
-    input: { name: string; phone: string; email: string | null },
+    input: { name: string; phone: string; email: string | null; code: string },
   ): Promise<CustomerByIdentifierRow> {
     const [result] = await db.execute<OkPacket>(
-      `INSERT INTO customers (name, phone, email, type, status, consent_accepted_at)
-       VALUES (?, ?, ?, 'INDIVIDUAL', 'TEMP', CURRENT_TIMESTAMP)`,
-      [input.name, input.phone, input.email],
+      `INSERT INTO customers (code, name, phone, email, type, status, consent_accepted_at)
+       VALUES (?, ?, ?, ?, 'INDIVIDUAL', 'TEMP', CURRENT_TIMESTAMP)`,
+      [input.code, input.name, input.phone, input.email],
     )
 
     const id = result.insertId

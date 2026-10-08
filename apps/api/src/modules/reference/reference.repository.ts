@@ -34,6 +34,7 @@ export type BranchRef = {
 
 export type CustomerRef = {
   id: string
+  code: string
   name: string
   phone: string
   email: string | null
@@ -42,7 +43,7 @@ export type CustomerRef = {
 }
 
 const HUB_COLUMNS = "h.id, h.name, h.code, h.type, h.district, h.status"
-const CUSTOMER_COLUMNS = "c.id, c.name, c.phone, c.email, c.type, c.status"
+const CUSTOMER_COLUMNS = "c.id, c.code, c.name, c.phone, c.email, c.type, c.status"
 
 const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status"] as const
 const CUSTOMER_SORT_COLUMNS = ["c.name", "c.phone", "c.created_at", "c.id"] as const
@@ -210,8 +211,8 @@ export async function searchCustomerRefs(
   if (filter.search) {
     const like = `%${escapeLike(filter.search)}%`
     clauses.push({
-      text: `(${["c.name", "c.phone", "c.email"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
-      params: [like, like, like],
+      text: `(${["c.code", "c.name", "c.phone", "c.email"].map((c) => `${c} LIKE ?`).join(" OR ")})`,
+      params: [like, like, like, like],
     })
   }
   if (filter.status) clauses.push({ text: "c.status = ?", params: [filter.status] })
@@ -243,6 +244,7 @@ function decodeCustomerRef(row: unknown): CustomerRef {
   const r = row as Record<string, unknown>
   return {
     id: String(r.id),
+    code: String(r.code),
     name: String(r.name),
     phone: String(r.phone),
     email: toStringOrNull(r.email),

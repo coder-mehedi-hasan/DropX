@@ -141,6 +141,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
           </CardHeader>
           <CardContent className="px-4">
             <dl className="grid grid-cols-2 gap-5">
+              <DetailRow label="Code">
+                <span className="font-mono">{data.code}</span>
+              </DetailRow>
               <DetailRow label="Phone">{data.phone}</DetailRow>
               <DetailRow label="Email">{data.email ?? "—"}</DetailRow>
               <DetailRow label="Type">{data.type}</DetailRow>

@@ -11,6 +11,8 @@ import { orderByClauseOf, pageOf, toDecimal, toUtcDate, whereClause } from "@/db
  */
 export type SettlementRecord = {
   id: string
+  /** Server-assigned reference (`SET-0001`), never edited after creation. */
+  code: string
   customerId: string
   customerName: string
   customerPhone: string
@@ -26,7 +28,7 @@ export type SettlementRecord = {
 }
 
 const SETTLEMENT_COLUMNS = `
-  s.id, s.customer_id, s.period_start, s.period_end, s.total_cod, s.delivery_charges,
+  s.id, s.code, s.customer_id, s.period_start, s.period_end, s.total_cod, s.delivery_charges,
   s.other_charges, s.net_amount, s.status, s.paid_at, s.created_at,
   c.name, c.phone
 `
@@ -50,6 +52,7 @@ function toPeriodDate(value: string | Date): string {
 function settlementRow(row: Record<string, unknown>): SettlementRecord {
   return {
     id: String(row.id),
+    code: String(row.code),
     customerId: String(row.customer_id),
     customerName: String(row.name),
     customerPhone: String(row.phone ?? ""),
@@ -188,6 +191,7 @@ export async function settlementPeriodExists(
 }
 
 export type InsertSettlementRecord = {
+  code: string
   customerId: string
   periodStart: string
   periodEnd: string
@@ -203,10 +207,11 @@ export async function insertSettlement(
 ): Promise<string> {
   const [result] = await db.execute<OkPacket>(
     `INSERT INTO settlements
-      (customer_id, period_start, period_end, total_cod, delivery_charges,
+      (code, customer_id, period_start, period_end, total_cod, delivery_charges,
        other_charges, net_amount, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
     [
+      input.code,
       input.customerId,
       input.periodStart,
       input.periodEnd,

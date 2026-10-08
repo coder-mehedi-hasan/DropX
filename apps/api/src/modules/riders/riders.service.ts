@@ -7,6 +7,7 @@ import type { Context } from "hono"
 import type { Rider } from "../../db/models"
 import { buildPage, normalizeListParams, TABLES, type Page } from "../../db/models"
 import { withTransaction } from "../../db/transaction"
+import { nextSequenceCode } from "../../shared/ids/sequence"
 import type { AppEnv } from "../../types/env"
 
 import type { CreateRiderInput, ListRidersQuery, UpdateRiderInput } from "./riders.dto"
@@ -98,14 +99,17 @@ export async function createRider(c: Context<AppEnv>, input: CreateRiderInput): 
       return await insertRider(tx, {
         userId,
         hubId: input.hubId,
-        employeeCode: input.employeeCode,
+        employeeCode: await nextSequenceCode(tx, "rider"),
         licenseNumber: input.licenseNumber ?? null,
         compensationType: input.compensationType,
         status: input.status,
       })
     } catch (error) {
       if (error instanceof DomainError) throw error
-      throw fromDatabaseError(error, "A rider with that employee code already exists")
+      throw fromDatabaseError(
+        error,
+        "Could not assign a rider code — the rider sequence is behind an existing code",
+      )
     }
   })
 
@@ -134,7 +138,7 @@ export async function updateRider(
     return rider
   } catch (error) {
     if (error instanceof DomainError) throw error
-    throw fromDatabaseError(error, "A rider with that employee code already exists")
+    throw fromDatabaseError(error, "Could not update that rider")
   }
 }
 

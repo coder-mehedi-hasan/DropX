@@ -33,7 +33,8 @@ Public **tracking** (by tracking number only) is available without login. **Book
 The public website also exposes `/become-a-rider` for recruitment. Applications capture contact
 details, district, vehicle, availability, and experience in `rider_applications` with `PENDING`
 status. Submission does not create a rider account; staff review the application and then use the
-existing rider setup flow to assign a hub, employee code, password, and permissions.
+existing rider setup flow to assign a hub, password, and permissions. The employee code
+itself is server-assigned from a sequence (`RDR-0001`), never typed by staff.
 
 ---
 

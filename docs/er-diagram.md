@@ -96,6 +96,7 @@ erDiagram
     }
     customers {
         bigint id PK
+        varchar code UK
         varchar phone UK
         varchar email UK
         enum status
@@ -202,6 +203,7 @@ erDiagram
     }
     settlements {
         bigint id PK
+        varchar code UK
         bigint customer_id FK
         enum status
     }
@@ -223,4 +225,15 @@ erDiagram
         varchar action
         varchar entity_type
     }
+    sequences {
+        varchar seq_name PK
+        bigint next_value
+    }
 ```
+
+`riders.employee_code`, `customers.code` and `settlements.code` are server-assigned
+sequential references (`RDR-0001`, `CUS-0001`, `SET-0001`). MySQL has no sequences, so each
+one draws a number from the matching row of `sequences` with a single atomic
+`INSERT ... ON DUPLICATE KEY UPDATE`. There is deliberately no foreign key: `sequences` is a
+counter, not a fact about any row, and it is pinned above every code already in the table by
+`migrate.sql` so a restored or hand-edited database cannot reissue a number.

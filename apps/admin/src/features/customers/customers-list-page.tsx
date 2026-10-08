@@ -85,7 +85,10 @@ export function CustomersListPage({ search }: { search: CustomersSearch }) {
             >
               {customer.name}
             </Link>
-            <span className="text-muted-foreground text-xs">{customer.phone}</span>
+            <span className="flex items-center gap-2">
+              <span className="font-mono text-xs">{customer.code}</span>
+              <span className="text-muted-foreground text-xs">{customer.phone}</span>
+            </span>
           </div>
         ),
         value: (customer) => customer.name,
@@ -156,7 +159,7 @@ export function CustomersListPage({ search }: { search: CustomersSearch }) {
                 value={search.search}
                 onChange={(value) => patch({ search: value })}
                 label="Search customers"
-                placeholder="Name, phone or email"
+                placeholder="Code, name, phone or email"
               />
             </div>
             <ListFilterSelect

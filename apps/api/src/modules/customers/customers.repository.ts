@@ -11,6 +11,8 @@ import { escapeLike, orderByClauseOf, pageOf, toUtcDate, whereClause } from "@/d
  */
 export type CustomerRecord = {
   id: string
+  /** Server-assigned reference (`CUS-0001`), never edited after creation. */
+  code: string
   name: string
   phone: string
   email: string | null
@@ -23,7 +25,7 @@ export type CustomerRecord = {
 }
 
 const CUSTOMER_COLUMNS = `
-  c.id, c.name, c.phone, c.email, c.type, c.status, c.consent_accepted_at,
+  c.id, c.code, c.name, c.phone, c.email, c.type, c.status, c.consent_accepted_at,
   c.activated_at, c.created_at, c.updated_at
 `
 
@@ -39,11 +41,12 @@ const CUSTOMER_SORT_COLUMNS = {
 } as const
 
 const CUSTOMER_TIEBREAK = "c.id ASC"
-const CUSTOMER_SEARCH_COLUMNS = ["c.name", "c.phone", "c.email"]
+const CUSTOMER_SEARCH_COLUMNS = ["c.code", "c.name", "c.phone", "c.email"]
 
 function customerRow(row: Record<string, unknown>): CustomerRecord {
   return {
     id: String(row.id),
+    code: String(row.code),
     name: String(row.name),
     phone: String(row.phone),
     email: row.email === null ? null : String(row.email),
