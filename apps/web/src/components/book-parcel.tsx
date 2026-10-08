@@ -20,11 +20,6 @@ import {
   FormMessage,
   Input,
   LoadingButton,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Separator,
   Skeleton,
   Textarea,
@@ -43,6 +38,7 @@ import {
   GemIcon,
   MapPinIcon,
   PackageIcon,
+  PencilIcon,
   PlusIcon,
   ShieldCheckIcon,
   ShapesIcon,
@@ -60,7 +56,9 @@ import { z } from "zod"
 
 import { PageHeader } from "@/components/page-header"
 import { ReferenceSelect } from "@/components/reference-select"
+import { AddressFormSheet } from "@/components/address/address-form-sheet"
 import MapAddressPicker, { type MapPoint } from "@/components/address/map-address-picker"
+import { SavedAddressCard } from "@/components/address/saved-address-card"
 import { useParcelDraft } from "@/components/use-parcel-draft"
 import { isApiError } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth"
@@ -386,6 +384,13 @@ function toCreateRequest(values: BookParcelValues): CreateParcelRequest {
   }
 }
 
+/**
+ * Which end of the booking an address belongs to, and how the customer is
+ * filling it in: picking a saved card, or typing the cascade by hand.
+ */
+type AddressEnd = "pickup" | "delivery"
+type AddressMode = "cards" | "custom"
+
 export function BookParcel() {
   const router = useRouter()
   const { status: authStatus } = useAuth()
@@ -404,6 +409,22 @@ export function BookParcel() {
   const [serverError, setServerError] = React.useState<string | null>(null)
 
   /**
+   * The address step opens on the saved-address cards; the cascade stays hidden
+   * until the customer asks for a custom address. Both live up here rather than
+   * inside `AddressSection`, because leaving the step unmounts it and the choice
+   * (and the picked card) has to survive a hop to the next step and back.
+   */
+  const [addressMode, setAddressMode] = React.useState<Record<AddressEnd, AddressMode>>({
+    pickup: "cards",
+    delivery: "cards",
+  })
+  const [selectedSavedId, setSelectedSavedId] = React.useState<Record<AddressEnd, string | null>>({
+    pickup: null,
+    delivery: null,
+  })
+  const [editingAddress, setEditingAddress] = React.useState<CustomerAddress | null>(null)
+
+  /**
    * Draft autosave: every field change is debounced into a POST, the stored
    * draft is restored on arrival (unless the customer already started typing),
    * and a successful booking deletes the row. Signed-out visitors get none of
@@ -416,6 +437,12 @@ export function BookParcel() {
     restore: (payload) => {
       form.reset({ ...EMPTY_BOOKING_VALUES, ...payload } as BookParcelValues)
       setStep(payload.step ?? 1)
+      // A half-typed end was filled in by hand, so show it as custom fields
+      // rather than hiding the customer's own input behind the cards.
+      setAddressMode({
+        pickup: payload.pickupCityId || payload.pickupAddressLine ? "custom" : "cards",
+        delivery: payload.deliveryCityId || payload.deliveryAddressLine ? "custom" : "cards",
+      })
     },
   })
 
@@ -486,6 +513,34 @@ export function BookParcel() {
   }
 
   /**
+   * Cards mode keeps the cascade out of the DOM, so the form's address fields
+   * are invisible state — whatever a selected card wrote stays there. Editing
+   * that card in the drawer refetches the list, and this copies the saved
+   * values back onto the end that picked it, so a booking cannot submit the
+   * address as it was before the edit.
+   */
+  React.useEffect(() => {
+    for (const end of ["pickup", "delivery"] as const) {
+      const id = selectedSavedId[end]
+      if (id) applySavedAddress(end, id)
+    }
+  }, [savedAddresses.data, selectedSavedId])
+
+  function chooseSavedAddress(end: AddressEnd, addressId: string) {
+    applySavedAddress(end, addressId)
+    setSelectedSavedId((current) => ({ ...current, [end]: addressId }))
+  }
+
+  function enterCustomAddress(end: AddressEnd) {
+    setAddressMode((current) => ({ ...current, [end]: "custom" }))
+    setSelectedSavedId((current) => ({ ...current, [end]: null }))
+  }
+
+  function showSavedCards(end: AddressEnd) {
+    setAddressMode((current) => ({ ...current, [end]: "cards" }))
+  }
+
+  /**
    * Booking is impossible until the API can be asked which cities exist — the
    * cascade has nowhere else to get its options from. Zone and area lists
    * follow the picked city, so they are never a gate.
@@ -518,7 +573,22 @@ export function BookParcel() {
   async function goNext() {
     setServerError(null)
     const valid = await form.trigger(STEP_FIELDS[step - 1], { shouldFocus: true })
-    if (valid) setStep((current) => Math.min(STEPS.length, current + 1))
+    if (valid) {
+      setStep((current) => Math.min(STEPS.length, current + 1))
+      return
+    }
+    // An end still on cards hides its fields — and with them the errors that
+    // just failed. Open the ends that never picked a card so the customer can
+    // see what has to be filled in.
+    if (step === 2) {
+      setAddressMode((current) => {
+        const next = { ...current }
+        for (const end of ["pickup", "delivery"] as const) {
+          if (next[end] === "cards" && !selectedSavedId[end]) next[end] = "custom"
+        }
+        return next
+      })
+    }
   }
 
   function goBack() {
@@ -587,6 +657,14 @@ export function BookParcel() {
   return (
     <div className="mx-auto grid w-full gap-7">
       {confirmationDialog}
+      <AddressFormSheet
+        open={editingAddress !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingAddress(null)
+        }}
+        editing={editingAddress}
+        cityOptions={cityOptions}
+      />
       <PageHeader
         eyebrow="New shipment"
         title="Book a parcel"
@@ -757,7 +835,12 @@ export function BookParcel() {
                       cities={cityOptions}
                       zones={pickupZoneOptions}
                       areas={pickupAreaOptions}
-                      onApplySaved={(id) => applySavedAddress("pickup", id)}
+                      mode={addressMode.pickup}
+                      selectedId={selectedSavedId.pickup}
+                      onSelectSaved={(id) => chooseSavedAddress("pickup", id)}
+                      onEnterCustom={() => enterCustomAddress("pickup")}
+                      onShowCards={() => showSavedCards("pickup")}
+                      onEditSaved={setEditingAddress}
                       onSelectCity={selectPickupCity}
                       onSelectZone={selectPickupZone}
                     />
@@ -772,7 +855,12 @@ export function BookParcel() {
                       cities={cityOptions}
                       zones={deliveryZoneOptions}
                       areas={deliveryAreaOptions}
-                      onApplySaved={(id) => applySavedAddress("delivery", id)}
+                      mode={addressMode.delivery}
+                      selectedId={selectedSavedId.delivery}
+                      onSelectSaved={(id) => chooseSavedAddress("delivery", id)}
+                      onEnterCustom={() => enterCustomAddress("delivery")}
+                      onShowCards={() => showSavedCards("delivery")}
+                      onEditSaved={setEditingAddress}
                       onSelectCity={selectDeliveryCity}
                       onSelectZone={selectDeliveryZone}
                     />
@@ -1447,10 +1535,14 @@ function toMapPoint(latitude: string, longitude: string): MapPoint | null {
 }
 
 /**
- * One end of a booking: the saved-address shortcut, the city/zone/area cascade,
- * the free-text line, and the map pin. The two ends differ only in prefix, icon
- * and copy — everything else is the same control — so both render through this,
- * with the prefix driving the form's own `pickup*`/`delivery*` field names.
+ * One end of a booking. The two ends differ only in prefix, icon and copy —
+ * everything else is the same control — so both render through this, with the
+ * prefix driving the form's own `pickup*`/`delivery*` field names.
+ *
+ * The end opens on its saved-address cards. The cascade, the free-text line and
+ * the map pin are one click away behind the pencil button, and only come back
+ * out when the customer asks for them — but `mode` and the picked card are held
+ * by the wizard, so the choice survives the walk to the next step and back.
  *
  * The pin is a pair of form fields rather than one object so it survives the
  * schema's string-only contract: the map writes, zod checks the range, and
@@ -1466,12 +1558,17 @@ function AddressSection({
   cities,
   zones,
   areas,
-  onApplySaved,
+  mode,
+  selectedId,
+  onSelectSaved,
+  onEnterCustom,
+  onShowCards,
+  onEditSaved,
   onSelectCity,
   onSelectZone,
 }: {
   form: UseFormReturn<BookParcelValues>
-  end: "pickup" | "delivery"
+  end: AddressEnd
   icon: LucideIcon
   title: string
   subtitle: string
@@ -1479,7 +1576,13 @@ function AddressSection({
   cities: ReferenceOption[]
   zones: ReferenceOption[]
   areas: ReferenceOption[]
-  onApplySaved: (addressId: string) => void
+  /** Cards by default; custom fields only once asked for (or on a bare list). */
+  mode: AddressMode
+  selectedId: string | null
+  onSelectSaved: (addressId: string) => void
+  onEnterCustom: () => void
+  onShowCards: () => void
+  onEditSaved: (address: CustomerAddress) => void
   onSelectCity: (cityId: string) => void
   onSelectZone: (zoneId: string) => void
 }) {
@@ -1489,6 +1592,8 @@ function AddressSection({
   const addressLine = useWatch({ control, name: `${end}AddressLine` })
   const latitude = useWatch({ control, name: `${end}Latitude` })
   const longitude = useWatch({ control, name: `${end}Longitude` })
+
+  const showCards = mode === "cards" && savedAddresses.length > 0
 
   return (
     <div className="rounded-2xl bg-[#F6F8FB] p-4 sm:p-5">
@@ -1502,49 +1607,84 @@ function AddressSection({
         </div>
       </div>
 
-      {savedAddresses.length > 0 ? (
-        <div className="mb-5">
-          <Select
-            value=""
-            onValueChange={(value) => {
-              if (value) onApplySaved(value)
-            }}
+      {showCards ? (
+        <div className="grid gap-3">
+          {savedAddresses.map((address) => (
+            <SavedAddressCard
+              key={address.id}
+              address={address}
+              selected={address.id === selectedId}
+              onSelect={() => onSelectSaved(address.id)}
+              onEdit={() => onEditSaved(address)}
+            />
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            className="justify-center"
+            onClick={onEnterCustom}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Use a saved address" />
-            </SelectTrigger>
-            <SelectContent>
-              {savedAddresses.map((address) => (
-                <SelectItem key={address.id} value={address.id}>
-                  <span className="grid gap-0.5">
-                    <span>{address.label || address.addressLine}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {[address.areaName, address.zoneName, address.cityName]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <PencilIcon />
+            Enter a custom address
+          </Button>
         </div>
-      ) : null}
+      ) : (
+        <div className="grid gap-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              control={control}
+              name={`${end}CityId`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <ReferenceSelect
+                    value={field.value}
+                    onValueChange={onSelectCity}
+                    options={cities}
+                    source="cities"
+                    placeholder={`Pick the ${end} city`}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div className="grid gap-5">
-        <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              control={control}
+              name={`${end}ZoneId`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Zone</FormLabel>
+                  <ReferenceSelect
+                    value={field.value}
+                    onValueChange={onSelectZone}
+                    options={zones}
+                    source="city-zones"
+                    loading={!cityId}
+                    placeholder="Pick the zone under that city"
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={control}
-            name={`${end}CityId`}
+            name={`${end}AreaId`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>City</FormLabel>
+                <FormLabel>
+                  Area <span className="text-muted-foreground font-normal">(optional)</span>
+                </FormLabel>
                 <ReferenceSelect
                   value={field.value}
-                  onValueChange={onSelectCity}
-                  options={cities}
-                  source="cities"
-                  placeholder={`Pick the ${end} city`}
+                  onValueChange={field.onChange}
+                  options={areas}
+                  source="zone-areas"
+                  loading={!zoneId}
+                  placeholder="Pick an area, if listed"
+                  emptyTitle="No areas in this zone yet"
                 />
                 <FormMessage />
               </FormItem>
@@ -1553,83 +1693,49 @@ function AddressSection({
 
           <FormField
             control={control}
-            name={`${end}ZoneId`}
+            name={`${end}AddressLine`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Zone</FormLabel>
-                <ReferenceSelect
-                  value={field.value}
-                  onValueChange={onSelectZone}
-                  options={zones}
-                  source="city-zones"
-                  loading={!cityId}
-                  placeholder="Pick the zone under that city"
-                />
+                <FormLabel>Address line</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    rows={3}
+                    placeholder="House / Building / Flat number, road and landmark"
+                    className="bg-white"
+                    autoComplete="street-address"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          <MapAddressPicker
+            value={toMapPoint(latitude, longitude)}
+            onChange={(point) => {
+              form.setValue(`${end}Latitude`, point ? String(point.latitude) : "", {
+                shouldValidate: false,
+              })
+              form.setValue(`${end}Longitude`, point ? String(point.longitude) : "", {
+                shouldValidate: false,
+              })
+            }}
+            onSuggestAddress={(line) => {
+              if (!addressLine.trim()) {
+                form.setValue(`${end}AddressLine`, line, { shouldValidate: true })
+              }
+            }}
+          />
+
+          {savedAddresses.length > 0 ? (
+            <Button type="button" variant="ghost" className="justify-center" onClick={onShowCards}>
+              <MapPinIcon />
+              Choose a saved address instead
+            </Button>
+          ) : null}
         </div>
-
-        <FormField
-          control={control}
-          name={`${end}AreaId`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Area <span className="text-muted-foreground font-normal">(optional)</span>
-              </FormLabel>
-              <ReferenceSelect
-                value={field.value}
-                onValueChange={field.onChange}
-                options={areas}
-                source="zone-areas"
-                loading={!zoneId}
-                placeholder="Pick an area, if listed"
-                emptyTitle="No areas in this zone yet"
-              />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={control}
-          name={`${end}AddressLine`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address line</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  rows={3}
-                  placeholder="House / Building / Flat number, road and landmark"
-                  className="bg-white"
-                  autoComplete="street-address"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <MapAddressPicker
-          value={toMapPoint(latitude, longitude)}
-          onChange={(point) => {
-            form.setValue(`${end}Latitude`, point ? String(point.latitude) : "", {
-              shouldValidate: false,
-            })
-            form.setValue(`${end}Longitude`, point ? String(point.longitude) : "", {
-              shouldValidate: false,
-            })
-          }}
-          onSuggestAddress={(line) => {
-            if (!addressLine.trim()) {
-              form.setValue(`${end}AddressLine`, line, { shouldValidate: true })
-            }
-          }}
-        />
-      </div>
+      )}
     </div>
   )
 }

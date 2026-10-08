@@ -59,8 +59,8 @@ export async function listCities(): Promise<ReferenceOption[]> {
   }>("/customer/locations/cities", { query: LIST_REFERENCE_QUERY })
   return page.nodes.map((city) => ({
     id: city.id,
-    label: `${city.name} (${city.serviceType})`,
-    description: city.code,
+    label: `${city.name}`,
+    // description: city.code,
     name: city.name,
     code: city.code,
     serviceType: city.serviceType,

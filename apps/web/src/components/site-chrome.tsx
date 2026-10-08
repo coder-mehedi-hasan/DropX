@@ -1,6 +1,8 @@
-import { Button, DropXLogo, Separator } from "@dropx/ui"
+import { DropXLogo } from "@dropx/ui"
 import Link from "next/link"
 import type * as React from "react"
+
+import { HeaderActions } from "@/components/header-actions"
 
 const NAV = [
   { href: "/track", label: "Track" },
@@ -37,15 +39,7 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="link" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Separator orientation="vertical" className="hidden h-6 sm:block" />
-          <Button asChild>
-            <Link href="/login">Book a parcel</Link>
-          </Button>
-        </div>
+        <HeaderActions />
       </div>
     </header>
   )
