@@ -26,16 +26,6 @@ export type ReferenceOption = {
   serviceType?: string
 }
 
-export type ReferenceSource = "hubs" | "cities" | "city-zones" | "zone-areas"
-
-/** Named so the UI can say which endpoint is missing instead of guessing. */
-export const REFERENCE_ENDPOINTS: Readonly<Record<ReferenceSource, string>> = {
-  hubs: "GET /api/v1/customer/reference/hubs",
-  cities: "GET /api/v1/customer/locations/cities",
-  "city-zones": "GET /api/v1/customer/locations/cities/:cityId/zones",
-  "zone-areas": "GET /api/v1/customer/locations/zones/:zoneId/areas",
-}
-
 const LIST_REFERENCE_QUERY = { limit: 100, sortBy: "name", sort: "asc" } as const
 
 export async function listHubs(): Promise<ReferenceOption[]> {

@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  EmptyState,
   Select,
   SelectContent,
   SelectItem,
@@ -9,38 +8,22 @@ import {
   SelectValue,
   cn,
 } from "@dropx/ui"
-import { PlugZapIcon } from "lucide-react"
 import * as React from "react"
 
-import {
-  REFERENCE_ENDPOINTS,
-  type ReferenceOption,
-  type ReferenceSource,
-} from "@/lib/reference-data"
+import type { ReferenceOption } from "@/lib/reference-data"
 
-/**
- * A picker over a reference list the API does not expose yet.
- *
- * When the list is empty the trigger is disabled and the endpoint that should
- * back it is named on screen, because a booking form that silently submits an
- * empty id is worse than one that says it cannot be completed yet.
- */
 export function ReferenceSelect({
   value,
   onValueChange,
   options,
-  source,
   placeholder,
-  emptyTitle = "Not configured yet",
   className,
   loading = false,
 }: {
   value: string
   onValueChange: (value: string) => void
   options: ReferenceOption[]
-  source: ReferenceSource
   placeholder: string
-  emptyTitle?: string
   className?: string
   /** Upstream selection not made yet — render a disabled trigger, not the missing-endpoint state. */
   loading?: boolean
@@ -63,7 +46,7 @@ export function ReferenceSelect({
     <div className={cn("grid gap-2", className)}>
       <Select value={isEmpty ? undefined : value} onValueChange={onValueChange} disabled={isEmpty}>
         <SelectTrigger className="w-full" aria-label={placeholder}>
-          <SelectValue placeholder={isEmpty ? "Not available yet" : placeholder} />
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         {!isEmpty ? (
           <SelectContent>
@@ -80,15 +63,6 @@ export function ReferenceSelect({
           </SelectContent>
         ) : null}
       </Select>
-
-      {isEmpty ? (
-        <EmptyState
-          icon={PlugZapIcon}
-          title={emptyTitle}
-          description={`This list is empty. Back it with ${REFERENCE_ENDPOINTS[source]}.`}
-          className="px-4 py-6"
-        />
-      ) : null}
     </div>
   )
 }

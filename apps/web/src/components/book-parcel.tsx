@@ -1641,7 +1641,6 @@ function AddressSection({
                     value={field.value}
                     onValueChange={onSelectCity}
                     options={cities}
-                    source="cities"
                     placeholder={`Pick the ${end} city`}
                   />
                   <FormMessage />
@@ -1659,7 +1658,6 @@ function AddressSection({
                     value={field.value}
                     onValueChange={onSelectZone}
                     options={zones}
-                    source="city-zones"
                     loading={!cityId}
                     placeholder="Pick the zone under that city"
                   />
@@ -1681,10 +1679,8 @@ function AddressSection({
                   value={field.value}
                   onValueChange={field.onChange}
                   options={areas}
-                  source="zone-areas"
                   loading={!zoneId}
                   placeholder="Pick an area, if listed"
-                  emptyTitle="No areas in this zone yet"
                 />
                 <FormMessage />
               </FormItem>

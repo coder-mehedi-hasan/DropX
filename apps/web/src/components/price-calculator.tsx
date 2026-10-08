@@ -86,7 +86,6 @@ export function PriceCalculator() {
                     setPickupZoneId("")
                   }}
                   options={cities.data ?? []}
-                  source="cities"
                   placeholder="Pick the pickup city"
                 />
               </div>
@@ -96,7 +95,6 @@ export function PriceCalculator() {
                   value={pickupZoneId}
                   onValueChange={setPickupZoneId}
                   options={pickupZones.data ?? []}
-                  source="city-zones"
                   loading={pickupCityId.length > 0 && pickupZones.isLoading}
                   placeholder="Pick the pickup zone"
                 />
@@ -116,7 +114,6 @@ export function PriceCalculator() {
                     setDeliveryZoneId("")
                   }}
                   options={cities.data ?? []}
-                  source="cities"
                   placeholder="Pick the delivery city"
                 />
               </div>
@@ -126,7 +123,6 @@ export function PriceCalculator() {
                   value={deliveryZoneId}
                   onValueChange={setDeliveryZoneId}
                   options={deliveryZones.data ?? []}
-                  source="city-zones"
                   loading={deliveryCityId.length > 0 && deliveryZones.isLoading}
                   placeholder="Pick the delivery zone"
                 />

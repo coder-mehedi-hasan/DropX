@@ -204,7 +204,6 @@ export function AddressFormSheet({
                       value={field.value}
                       onValueChange={selectCity}
                       options={cityOptions}
-                      source="cities"
                       placeholder="Pick the city"
                     />
                     <FormMessage />
@@ -222,7 +221,6 @@ export function AddressFormSheet({
                       value={field.value}
                       onValueChange={selectZone}
                       options={zoneOptions}
-                      source="city-zones"
                       loading={!pickedCityId}
                       placeholder="Pick the zone"
                     />
@@ -244,10 +242,8 @@ export function AddressFormSheet({
                     value={field.value}
                     onValueChange={field.onChange}
                     options={areaOptions}
-                    source="zone-areas"
                     loading={!pickedZoneId}
                     placeholder="Pick an area, if listed"
-                    emptyTitle="No areas in this zone yet"
                   />
                   <FormDescription>Optional — narrows the drop-off for the rider.</FormDescription>
                   <FormMessage />
