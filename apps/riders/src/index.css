@@ -56,11 +56,16 @@
   .rider-auth-canvas {
     background:
       radial-gradient(
-        circle at 78% 8%,
-        color-mix(in oklab, var(--primary) 34%, transparent),
-        transparent 18rem
+        ellipse at 84% 5%,
+        color-mix(in oklab, var(--primary) 26%, transparent),
+        transparent 28rem
       ),
-      linear-gradient(180deg, #17191f 0 19rem, var(--background) 19rem 100%);
+      radial-gradient(
+        ellipse at 50% -15%,
+        color-mix(in oklab, white 4%, transparent),
+        transparent 36rem
+      ),
+      #0c0e12;
   }
 
   .rider-route-grid {
@@ -68,13 +73,28 @@
       linear-gradient(color-mix(in oklab, white 5%, transparent) 1px, transparent 1px),
       linear-gradient(90deg, color-mix(in oklab, white 5%, transparent) 1px, transparent 1px);
     background-size: 2rem 2rem;
-    mask-image: linear-gradient(to bottom, black, transparent 88%);
+    mask-image: linear-gradient(to bottom, black, transparent 68%);
+    opacity: 0.75;
+  }
+
+  .rider-auth-glow {
+    top: 20rem;
+    left: 50%;
+    width: min(42rem, 92vw);
+    height: 22rem;
+    transform: translateX(-50%);
+    background: radial-gradient(
+      ellipse,
+      color-mix(in oklab, var(--primary) 7%, transparent),
+      transparent 68%
+    );
+    filter: blur(18px);
   }
 
   .rider-auth-card {
     box-shadow:
-      0 1px 0 color-mix(in oklab, white 78%, transparent) inset,
-      0 20px 60px color-mix(in oklab, #111827 15%, transparent);
+      0 1px 0 color-mix(in oklab, white 10%, transparent) inset,
+      0 22px 70px color-mix(in oklab, black 34%, transparent);
   }
 
   .rider-job-card {

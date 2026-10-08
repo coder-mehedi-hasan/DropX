@@ -39,6 +39,8 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>
 
+const becomeRiderUrl = import.meta.env.VITE_BECOME_A_RIDER_URL
+
 export function LoginScreen() {
   const { status, login } = useAuth()
   const router = useRouter()
@@ -61,24 +63,25 @@ export function LoginScreen() {
   })
 
   return (
-    <main className="rider-auth-canvas text-foreground relative flex min-h-dvh w-full justify-center overflow-hidden px-4 pt-10 pb-8 sm:items-center sm:py-12">
-      <div className="rider-route-grid pointer-events-none absolute inset-x-0 top-0 h-80" />
+    <main className="rider-auth-canvas text-foreground relative flex min-h-dvh w-full justify-center overflow-hidden px-4 pt-8 pb-8 sm:items-center sm:py-12">
+      <div className="rider-route-grid pointer-events-none absolute inset-0" />
+      <div className="rider-auth-glow pointer-events-none absolute" />
       <div className="relative w-full max-w-md">
-        <div className="mb-8 px-1 text-white sm:mb-10">
+        <div className="rider-auth-heading mb-7 px-1 text-white sm:mb-8">
           <DropXLogo size="lg" className="text-white" />
-          <div className="mt-9 flex items-center gap-2 text-sm font-semibold text-white/70">
+          <div className="mt-8 flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.08em] text-white/60 uppercase">
             <Navigation className="text-primary size-4" aria-hidden />
             Rider workspace
           </div>
-          <h1 className="mt-3 max-w-sm text-4xl leading-[1.02] font-extrabold tracking-[-0.045em] text-balance">
+          <h1 className="mt-3 max-w-sm text-[2.6rem] leading-[0.98] font-extrabold tracking-[-0.055em] text-balance sm:text-5xl">
             Ready for today&apos;s route?
           </h1>
-          <p className="mt-3 max-w-xs text-sm leading-6 text-white/65">
+          <p className="mt-4 max-w-xs text-sm leading-6 text-white/60">
             Your assigned stops, delivery updates, and proof of handover in one place.
           </p>
         </div>
 
-        <Card className="rider-auth-card rounded-[1.5rem] border-0 p-5 sm:p-7">
+        <Card className="rider-auth-card rounded-[1.35rem] border border-white/8 p-5 sm:p-7">
           <div className="mb-6">
             <h2 className="text-xl font-bold tracking-tight">Sign in</h2>
             <p className="text-muted-foreground mt-1 text-sm">
@@ -125,9 +128,19 @@ export function LoginScreen() {
             </form>
           </Form>
 
-          <p className="text-muted-foreground mt-6 flex items-center justify-center gap-2 text-center text-xs">
-            <LockKeyhole className="size-3.5" aria-hidden />
-            Protected access for active DropX riders
+          <p className="text-muted-foreground mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs">
+            <span className="inline-flex items-center gap-2">
+              <LockKeyhole className="size-3.5" aria-hidden />
+              Protected access for active DropX riders
+            </span>
+            {becomeRiderUrl ? (
+              <a
+                href={becomeRiderUrl}
+                className="text-primary font-semibold underline-offset-4 transition-colors hover:text-primary/80 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Become a rider
+              </a>
+            ) : null}
           </p>
         </Card>
       </div>
