@@ -5,7 +5,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Badge,
   Button,
   Card,
   CardContent,
@@ -21,7 +20,6 @@ import {
   FormMessage,
   Input,
   LoadingButton,
-  QuantityStepper,
   Select,
   SelectContent,
   SelectItem,
@@ -46,7 +44,6 @@ import {
   MapPinIcon,
   PackageIcon,
   PlusIcon,
-  ReceiptIcon,
   ShieldCheckIcon,
   ShapesIcon,
   Trash2Icon,
@@ -214,11 +211,10 @@ const STEPS = [
   { title: "Receiver", description: "Who gets it", icon: UserRoundIcon },
   { title: "Address", description: "Pickup and drop-off", icon: MapPinIcon },
   { title: "Parcel", description: "Size and weight", icon: BoxIcon },
+  { title: "Items", description: "Optional contents", icon: PackageIcon },
   { title: "Payment", description: "How it is paid", icon: WalletCardsIcon },
   { title: "Review", description: "Check and book", icon: ClipboardCheckIcon },
 ] as const
-
-const PROGRESS_WIDTHS = ["w-1/5", "w-2/5", "w-3/5", "w-4/5", "w-full"] as const
 
 const PARCEL_TYPE_OPTIONS = {
   DOCUMENT: { label: "Document", description: "Paperwork and flat mail", icon: FileTextIcon },
@@ -263,7 +259,8 @@ const STEP_FIELDS = [
     "pickupLongitude",
   ],
   ["parcelType", "weight", "length", "width", "height"],
-  ["paymentType", "codAmount", "items"],
+  ["items"],
+  ["paymentType", "codAmount"],
 ] as const
 
 const EMPTY_ITEM = { name: "", description: "", quantity: "1", unitPrice: "0" } as const
@@ -493,7 +490,7 @@ export function BookParcel() {
 
   async function goNext() {
     setServerError(null)
-    const valid = await form.trigger(STEP_FIELDS[step - 1])
+    const valid = await form.trigger(STEP_FIELDS[step - 1], { shouldFocus: true })
     if (valid) setStep((current) => Math.min(STEPS.length, current + 1))
   }
 
@@ -561,88 +558,68 @@ export function BookParcel() {
       {confirmationDialog}
       <PageHeader
         eyebrow="New shipment"
-        title="Book a parcel with confidence."
-        description="Tell us where it is going and what is inside. Your delivery fee updates as soon as the addresses and weight are ready."
+        title="Book a parcel"
+        description="A few simple steps to get your parcel on its way."
       />
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={(event) => {
+            if (step < STEPS.length) {
+              event.preventDefault()
+              void goNext()
+              return
+            }
+            void form.handleSubmit(onSubmit)(event)
+          }}
           className="grid gap-6 [&_[data-slot=input]]:h-12 [&_[data-slot=select-trigger]]:h-12 [&_[data-slot=select-trigger]]:bg-[#FBFBFC] [&_textarea]:bg-[#FBFBFC]"
           noValidate
         >
-          <nav
-            aria-label="Booking progress"
-            className="relative overflow-hidden rounded-2xl bg-white p-2 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.28)] ring-1 ring-black/5"
-          >
-            <div className="grid grid-cols-5 gap-1">
+          <nav aria-label="Booking progress" className="grid gap-3">
+            <ol className="grid grid-cols-6 gap-1 sm:gap-3">
               {STEPS.map((item, index) => {
                 const number = index + 1
                 const active = number === step
                 const complete = number < step
-                const Icon = item.icon
                 return (
-                  <button
-                    key={item.title}
-                    type="button"
-                    className={cn(
-                      "group relative flex min-w-0 items-center gap-2 rounded-xl px-2 py-3 text-left transition-all duration-200 sm:px-3",
-                      active
-                        ? "bg-[#0D0F12] text-white shadow-[0_12px_28px_-18px_rgba(13,15,18,.9)]"
-                        : complete
-                          ? "text-foreground hover:bg-[#F7F8FA]"
-                          : "text-muted-foreground",
-                    )}
-                    onClick={() => number < step && setStep(number)}
-                    disabled={number >= step}
-                    aria-current={active ? "step" : undefined}
-                  >
-                    <span
+                  <li key={item.title}>
+                    <button
+                      type="button"
                       className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors",
-                        active
-                          ? "bg-[#FF5500] text-white"
-                          : complete
-                            ? "bg-primary/10 text-accent-ink"
-                            : "bg-muted text-muted-foreground",
+                        "focus-visible:outline-primary flex w-full flex-col items-center gap-2 rounded-lg py-2 text-xs font-medium focus-visible:outline-2 sm:flex-row sm:text-sm",
+                        active ? "text-accent-ink" : "text-muted-foreground",
                       )}
+                      onClick={() => number < step && setStep(number)}
+                      disabled={number >= step}
+                      aria-current={active ? "step" : undefined}
+                      aria-label={`Step ${number}: ${item.title}${index === 3 ? " (optional)" : ""}`}
                     >
-                      {complete ? (
-                        <CheckIcon className="size-4" aria-hidden />
-                      ) : (
-                        <Icon className="size-4" aria-hidden />
-                      )}
-                    </span>
-                    <span className="hidden min-w-0 lg:grid">
-                      <span className="truncate text-sm font-semibold">{item.title}</span>
                       <span
                         className={cn(
-                          "truncate text-[0.68rem]",
-                          active ? "text-white/55" : "text-muted-foreground",
+                          "flex size-7 shrink-0 items-center justify-center rounded-full text-xs",
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : complete
+                              ? "bg-primary/10 text-accent-ink"
+                              : "bg-muted text-muted-foreground",
                         )}
                       >
-                        {item.description}
+                        {complete ? <CheckIcon className="size-3.5" aria-hidden /> : number}
                       </span>
-                    </span>
-                    <span className="sr-only lg:hidden">
-                      Step {number}: {item.title}
-                    </span>
-                  </button>
+                      {item.title}
+                    </button>
+                  </li>
                 )
               })}
+            </ol>
+            <div className="bg-muted h-1 overflow-hidden rounded-full" aria-hidden>
+              <div
+                className="bg-primary h-full transition-[width] duration-300"
+                style={{ width: `${(step / STEPS.length) * 100}%` }}
+              />
             </div>
-            <div className="mt-2 flex items-center gap-3 px-2 pb-1 sm:px-3">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#ECEEF1]" aria-hidden>
-                <div
-                  className={cn(
-                    "ease-brand h-full rounded-full bg-[#FF5500] transition-[width] duration-300",
-                    PROGRESS_WIDTHS[step - 1],
-                  )}
-                />
-              </div>
-              <p className="text-muted-foreground text-xs font-semibold tabular-nums">
-                {step}/{STEPS.length}
-              </p>
-            </div>
+            <p className="text-muted-foreground text-xs" aria-live="polite">
+              Step {step} of {STEPS.length} · {STEPS[step - 1]?.description}
+            </p>
           </nav>
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(19rem,0.8fr)]">
@@ -867,10 +844,10 @@ export function BookParcel() {
                 </Card>
               ) : null}
 
-              {step === 4 ? (
+              {step === 5 ? (
                 <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
                   <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
-                    <BookingCardTitle icon={WalletCardsIcon} step="04" title="Payment" />
+                    <BookingCardTitle icon={WalletCardsIcon} step="05" title="Payment" />
                     <CardDescription>
                       Prepaid is charged up front. Cash on delivery is collected by the rider from
                       the receiver.
@@ -948,25 +925,11 @@ export function BookParcel() {
               {step === 4 ? (
                 <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
                   <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <CardTitle>What is inside?</CardTitle>
-                        <CardDescription className="mt-1.5">
-                          Optional. A contents list helps the receiver check the parcel.
-                        </CardDescription>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0 bg-white"
-                        onClick={() => items.append({ ...EMPTY_ITEM })}
-                        disabled={items.fields.length >= 50}
-                      >
-                        <PlusIcon aria-hidden />
-                        Add item
-                      </Button>
-                    </div>
+                    <BookingCardTitle icon={PackageIcon} step="04" title="What’s in your parcel?" />
+                    <CardDescription>
+                      Add the items you’re sending, or skip this step. Item prices do not set the
+                      cash collection amount.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-4 px-5 py-6 sm:px-7 sm:py-7">
                     {items.fields.length === 0 ? (
@@ -984,14 +947,15 @@ export function BookParcel() {
                     {items.fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="grid gap-4 rounded-xl bg-[#F7F8FA] p-4 ring-1 ring-black/5 sm:p-5"
+                        className="border-border grid gap-5 border-b pb-6 last:border-0 last:pb-0"
                       >
                         <div className="flex items-center justify-between">
-                          <Badge variant="secondary">Item {index + 1}</Badge>
+                          <p className="text-sm font-semibold">Item {index + 1}</p>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
+                            aria-label={`Remove item ${index + 1}`}
                             onClick={() => items.remove(index)}
                           >
                             <Trash2Icon aria-hidden />
@@ -999,15 +963,15 @@ export function BookParcel() {
                           </Button>
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+                        <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
                           <FormField
                             control={form.control}
                             name={`items.${index}.name`}
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Name</FormLabel>
+                              <FormItem className="col-span-2 sm:col-span-1">
+                                <FormLabel>Item name</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="Cotton shirt" />
+                                  <Input {...field} placeholder="e.g. Cotton shirt" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1021,26 +985,25 @@ export function BookParcel() {
                               <FormItem>
                                 <FormLabel>Quantity</FormLabel>
                                 <FormControl>
-                                  <QuantityStepper
-                                    value={Number(field.value)}
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    inputMode="numeric"
                                     min={1}
                                     max={9999}
-                                    onValueChange={(next) => field.onChange(String(next))}
+                                    step={1}
                                   />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                        </div>
-
-                        <div className="grid gap-4 sm:grid-cols-2">
                           <FormField
                             control={form.control}
                             name={`items.${index}.unitPrice`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Unit price (BDT)</FormLabel>
+                                <FormLabel>Price each (BDT)</FormLabel>
                                 <FormControl>
                                   <Input {...field} inputMode="decimal" />
                                 </FormControl>
@@ -1048,7 +1011,16 @@ export function BookParcel() {
                               </FormItem>
                             )}
                           />
-
+                        </div>
+                        <details
+                          open={
+                            form.formState.errors.items?.[index]?.description ? true : undefined
+                          }
+                          className="group"
+                        >
+                          <summary className="text-muted-foreground focus-visible:outline-primary cursor-pointer text-sm focus-visible:outline-2">
+                            Add a description <span className="text-xs">(optional)</span>
+                          </summary>
                           <FormField
                             control={form.control}
                             name={`items.${index}.description`}
@@ -1056,20 +1028,34 @@ export function BookParcel() {
                               <FormItem>
                                 <FormLabel>Description</FormLabel>
                                 <FormControl>
-                                  <Textarea {...field} rows={2} placeholder="Optional" />
+                                  <Textarea
+                                    {...field}
+                                    rows={2}
+                                    placeholder="Colour, size or other useful details"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                        </div>
+                        </details>
                       </div>
                     ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-fit"
+                      onClick={() => items.append({ ...EMPTY_ITEM })}
+                      disabled={items.fields.length >= 50}
+                    >
+                      <PlusIcon aria-hidden />
+                      {items.fields.length === 0 ? "Add an item" : "Add another item"}
+                    </Button>
                   </CardContent>
                 </Card>
               ) : null}
 
-              {step === 5 ? (
+              {step === 6 ? (
                 <ReviewCard
                   values={form.getValues()}
                   pickupAddress={joinedAddress(
@@ -1089,35 +1075,78 @@ export function BookParcel() {
                   quote={quote.data}
                 />
               ) : null}
+              {serverError ? (
+                <Alert variant="destructive">
+                  <TriangleAlertIcon aria-hidden />
+                  <AlertTitle>We could not book that parcel</AlertTitle>
+                  <AlertDescription>{serverError}</AlertDescription>
+                </Alert>
+              ) : null}
+
+              <div className="border-border flex items-center justify-between gap-3 border-t pt-5">
+                {step > 1 ? (
+                  <Button type="button" variant="ghost" onClick={goBack} className="shrink-0">
+                    <ArrowLeftIcon aria-hidden />
+                    Back
+                  </Button>
+                ) : null}
+                {step < STEPS.length ? (
+                  <Button
+                    type="button"
+                    onClick={() => void goNext()}
+                    className="ml-auto"
+                    disabled={step > 1 && !referenceDataReady}
+                  >
+                    {step === 4 && items.fields.length === 0
+                      ? "Skip items"
+                      : step === 5
+                        ? "Review booking"
+                        : "Continue"}
+                    <ArrowRightIcon aria-hidden />
+                  </Button>
+                ) : (
+                  <LoadingButton
+                    type="submit"
+                    loading={createParcel.isPending}
+                    disabled={!referenceDataReady}
+                    className="ml-auto"
+                  >
+                    {createParcel.isPending ? "Booking…" : "Confirm and book"}
+                    <CheckIcon aria-hidden />
+                  </LoadingButton>
+                )}
+              </div>
+
+              {!referenceDataReady ? (
+                <p className="text-muted-foreground text-xs">
+                  Booking is disabled until the city list is available.
+                </p>
+              ) : null}
             </div>
 
             <aside className="grid h-fit gap-4 lg:sticky lg:top-6" aria-label="Booking summary">
-              <Card className="relative overflow-hidden border-0 bg-[#0D0F12] py-0 text-white shadow-[0_24px_60px_-30px_rgba(13,15,18,.9)]">
-                <div className="pointer-events-none absolute -top-20 -right-16 size-52 rounded-full bg-[#FF5500]/20 blur-3xl" />
+              <Card className="border-border bg-muted/30 overflow-hidden py-0 shadow-none">
                 <CardHeader className="relative gap-1 px-5 pt-6 pb-4">
-                  <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-[#FF5500] text-white shadow-[0_10px_24px_-12px_rgba(255,85,0,.9)]">
-                    <ReceiptIcon className="size-5" aria-hidden />
-                  </span>
-                  <CardTitle className="text-lg">Live delivery estimate</CardTitle>
-                  <CardDescription className="text-[#A7ABB4]">
-                    Updates from the route, weight, and collection amount.
+                  <CardTitle className="text-lg">Delivery estimate</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Based on your addresses and parcel weight.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="relative grid gap-4 px-5 pb-6">
                   {!quoteRequest ? (
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-sm font-medium text-white">
+                    <div className="border-border bg-muted rounded-xl border p-4">
+                      <p className="text-foreground text-sm font-medium">
                         Waiting for addresses and weight
                       </p>
-                      <p className="mt-1 text-xs leading-5 text-[#A7ABB4]">
+                      <p className="text-muted-foreground mt-1 text-xs leading-5">
                         Complete the address and parcel steps to calculate the fee.
                       </p>
                     </div>
                   ) : quote.isPending ? (
                     <div className="grid gap-2" aria-busy="true">
-                      <Skeleton className="h-4 w-full bg-white/10" />
-                      <Skeleton className="h-4 w-2/3 bg-white/10" />
-                      <Skeleton className="h-12 w-full bg-white/10" />
+                      <Skeleton className="bg-border h-4 w-full" />
+                      <Skeleton className="bg-border h-4 w-2/3" />
+                      <Skeleton className="bg-border h-12 w-full" />
                     </div>
                   ) : quote.isError ? (
                     <Alert variant="warning">
@@ -1147,72 +1176,27 @@ export function BookParcel() {
                           value={formatMoney(quote.data.codFee, quote.data.currency)}
                         />
                       ) : null}
-                      <Separator className="bg-white/10" />
+                      <Separator className="bg-border" />
                       <div className="flex items-end justify-between gap-4 pt-1">
-                        <dt className="text-sm font-medium text-[#A7ABB4]">Estimated total</dt>
-                        <dd className="text-2xl font-extrabold tracking-[-0.04em] text-white tabular-nums">
+                        <dt className="text-muted-foreground text-sm font-medium">
+                          Estimated total
+                        </dt>
+                        <dd className="text-foreground text-2xl font-extrabold tracking-[-0.04em] tabular-nums">
                           {formatMoney(quote.data.total, quote.data.currency)}
                         </dd>
                       </div>
                     </dl>
                   )}
 
-                  <div className="flex items-start gap-2 border-t border-white/10 pt-4 text-xs leading-5 text-[#A7ABB4]">
+                  <div className="border-border text-muted-foreground flex items-start gap-2 border-t pt-4 text-xs leading-5">
                     <ShieldCheckIcon
                       className="mt-0.5 size-4 shrink-0 text-[#FF8A4C]"
                       aria-hidden
                     />
-                    <p>
-                      DropX recomputes the price when you confirm, so the server always applies the
-                      correct rule.
-                    </p>
+                    <p>You’ll review the delivery fee before confirming your booking.</p>
                   </div>
                 </CardContent>
               </Card>
-
-              {serverError ? (
-                <Alert variant="destructive">
-                  <TriangleAlertIcon aria-hidden />
-                  <AlertTitle>We could not book that parcel</AlertTitle>
-                  <AlertDescription>{serverError}</AlertDescription>
-                </Alert>
-              ) : null}
-
-              <div className="flex gap-3 rounded-2xl bg-white p-2 shadow-[0_12px_32px_-26px_rgba(13,15,18,.55)] ring-1 ring-black/5">
-                {step > 1 ? (
-                  <Button type="button" variant="ghost" onClick={goBack} className="flex-1">
-                    <ArrowLeftIcon aria-hidden />
-                    Back
-                  </Button>
-                ) : null}
-                {step < STEPS.length ? (
-                  <Button
-                    type="button"
-                    onClick={() => void goNext()}
-                    className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
-                    disabled={step > 1 && !referenceDataReady}
-                  >
-                    Continue
-                    <ArrowRightIcon aria-hidden />
-                  </Button>
-                ) : (
-                  <LoadingButton
-                    type="submit"
-                    loading={createParcel.isPending}
-                    disabled={!referenceDataReady}
-                    className="flex-1 shadow-[0_10px_22px_-12px_rgba(255,85,0,.75)]"
-                  >
-                    {createParcel.isPending ? "Booking…" : "Confirm and book"}
-                    <CheckIcon aria-hidden />
-                  </LoadingButton>
-                )}
-              </div>
-
-              {!referenceDataReady ? (
-                <p className="text-muted-foreground text-xs">
-                  Booking is disabled until the city list is available.
-                </p>
-              ) : null}
             </aside>
           </div>
         </form>
@@ -1286,8 +1270,8 @@ function ChoiceTile({
 function QuoteRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <dt className="text-[#A7ABB4]">{label}</dt>
-      <dd className="font-medium text-white tabular-nums">{value}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-foreground font-medium tabular-nums">{value}</dd>
     </div>
   )
 }
@@ -1330,7 +1314,7 @@ function ReviewCard({
   return (
     <Card className="overflow-hidden border-0 py-0 shadow-[0_1px_2px_rgba(13,15,18,.04),0_18px_48px_-30px_rgba(13,15,18,.3)] ring-1 ring-black/5">
       <CardHeader className="border-b border-black/6 bg-[#FCFCFD] px-5 py-5 sm:px-7">
-        <BookingCardTitle icon={ClipboardCheckIcon} step="05" title="Review your booking" />
+        <BookingCardTitle icon={ClipboardCheckIcon} step="06" title="Review your booking" />
         <CardDescription>Check the handover details before creating the parcel.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 px-5 py-6 sm:px-7 sm:py-7">
