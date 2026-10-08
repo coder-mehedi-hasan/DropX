@@ -1,12 +1,10 @@
-import { Link, useNavigate } from "@tanstack/react-router"
-import { LogOut, Menu, Moon, Sun } from "lucide-react"
-import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
+import { LogOut, Moon, Sun } from "lucide-react"
 import {
   Avatar,
   AvatarFallback,
   Badge,
   Button,
-  DropXLogo,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -14,24 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Separator,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+  SidebarTrigger,
   useConfirmation,
 } from "@dropx/ui"
 
-import { NAV_ITEMS } from "@/components/layout/sidebar"
 import { useAuth } from "@/lib/auth"
 import { initialsOf } from "@/lib/format"
 import { useTheme } from "@/lib/theme"
 
 export function Header() {
-  const { displayName, user, logout, hasPermission } = useAuth()
+  const { displayName, user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { confirm, confirmationDialog } = useConfirmation()
 
   async function onSignOut() {
@@ -43,40 +35,9 @@ export function Header() {
     if (ok) await logout().then(() => navigate({ to: "/login" }))
   }
 
-  const items = NAV_ITEMS.filter(
-    (item) => item.permission === null || hasPermission(item.permission),
-  )
-
   return (
     <header className="bg-background/95 sticky top-0 z-30 flex h-14 items-center gap-3 border-b px-4 backdrop-blur">
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation">
-            <Menu />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-72">
-          <SheetHeader>
-            <SheetTitle className="flex items-center">
-              <DropXLogo size="sm" />
-            </SheetTitle>
-          </SheetHeader>
-          <nav className="flex flex-col gap-1 px-4" aria-label="Main">
-            {items.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                search={item.search}
-                onClick={() => setMobileNavOpen(false)}
-                className="hover:bg-accent hover:text-accent-foreground ease-brand flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors duration-150"
-              >
-                <item.icon className="size-4 shrink-0" aria-hidden />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </SheetContent>
-      </Sheet>
+      <SidebarTrigger className="-ml-1" />
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">Operations</p>

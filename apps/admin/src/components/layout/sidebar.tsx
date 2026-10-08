@@ -1,14 +1,19 @@
 import { Link, useRouterState } from "@tanstack/react-router"
+import { useEffect, useSyncExternalStore } from "react"
 import {
+  Banknote,
   Bike,
+  Boxes,
   Building2,
   Car,
+  ChevronRight,
+  FileCheck,
   Gauge,
   Handshake,
-  FileCheck,
   Layers,
   LayoutDashboard,
   MapPin,
+  Network,
   PackageCheck,
   PackageSearch,
   Route,
@@ -16,11 +21,30 @@ import {
   Truck,
   UserRound,
   Users,
+  UsersRound,
   Wallet,
   Warehouse,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { DropXLogo, cn } from "@dropx/ui"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  DropXLogo,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarRail,
+  useSidebar,
+} from "@dropx/ui"
 
 import { useAuth } from "@/lib/auth"
 import { DEFAULT_BRANCHES_SEARCH, DEFAULT_HUBS_SEARCH, DEFAULT_PARCELS_SEARCH } from "@/lib/parcels"
@@ -115,222 +139,402 @@ export type NavItem = {
   permission: PermissionKey | null
 }
 
-export const NAV_ITEMS: readonly NavItem[] = [
-  { label: "Dashboard", to: "/", icon: LayoutDashboard, permission: null },
+export type NavGroup = {
+  id: string
+  icon?: LucideIcon
+  label: string | null
+  items: readonly NavItem[]
+}
+
+export const NAV_GROUPS: readonly NavGroup[] = [
   {
-    label: "Parcels",
-    to: "/parcels",
-    search: DEFAULT_PARCELS_SEARCH,
-    icon: PackageSearch,
-    permission: "parcels.view",
-  },
-  { label: "Tracking", to: "/tracking", icon: Truck, permission: "parcels.view" },
-  {
-    label: "Branches",
-    to: "/branches",
-    search: DEFAULT_BRANCHES_SEARCH,
-    icon: Building2,
-    permission: "branches.view",
+    id: "home",
+    label: null,
+    items: [{ label: "Dashboard", to: "/", icon: LayoutDashboard, permission: null }],
   },
   {
-    label: "Hubs",
-    to: "/hubs",
-    search: DEFAULT_HUBS_SEARCH,
-    icon: Warehouse,
-    permission: "hubs.view",
-  },
-  // After Hubs: the people who sign into them. Accounts sit with the
-  // organization screens because a staff row is branch-and-hub scoped the same
-  // way a hub is branch scoped.
-  {
-    label: "Users",
-    to: "/users",
-    search: DEFAULT_USERS_SEARCH_PARAMS,
-    icon: Users,
-    permission: "users.view",
-  },
-  // Right after Users: the roles those users hold, and the permission grid that
-  // decides what each role is for. Account and role are one screen pair in the
-  // RBAC doc, so they sit next to each other here.
-  {
-    label: "Roles",
-    to: "/roles",
-    search: DEFAULT_ROLES_SEARCH_PARAMS,
-    icon: ShieldCheck,
-    permission: "roles.view",
-  },
-  // After Roles: the customers those roles are for. Support reads a customer
-  // that never verified a code, and the activate override is the one write —
-  // gated by customers.manage which is why the nav item itself only needs
-  // customers.view.
-  {
-    label: "Customers",
-    to: "/customers",
-    search: DEFAULT_CUSTOMERS_SEARCH_PARAMS,
-    icon: UserRound,
-    permission: "customers.view",
-  },
-  // Locations is the city → zone → area territory staff book parcels against.
-  {
-    label: "Locations",
-    to: "/locations/cities",
-    search: DEFAULT_CITIES_SEARCH_PARAMS,
-    icon: Layers,
-    permission: "locations.view",
+    id: "operations",
+    icon: Boxes,
+    label: "Operations",
+    items: [
+      {
+        label: "Parcels",
+        to: "/parcels",
+        search: DEFAULT_PARCELS_SEARCH,
+        icon: PackageSearch,
+        permission: "parcels.view",
+      },
+      { label: "Tracking", to: "/tracking", icon: Truck, permission: "parcels.view" },
+      {
+        label: "Pickups",
+        to: "/pickups",
+        search: DEFAULT_PICKUPS_SEARCH_PARAMS,
+        icon: PackageCheck,
+        permission: "pickups.view",
+      },
+      {
+        label: "Transfers",
+        to: "/transfers",
+        search: DEFAULT_TRANSFERS_SEARCH_PARAMS,
+        icon: Truck,
+        permission: "transfers.view",
+      },
+      {
+        label: "Deliveries",
+        to: "/deliveries",
+        search: DEFAULT_DELIVERIES_SEARCH_PARAMS,
+        icon: Handshake,
+        permission: "deliveries.view",
+      },
+      {
+        label: "Delivery proofs",
+        to: "/delivery-proofs",
+        search: DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS,
+        icon: FileCheck,
+        permission: "deliveries.view",
+      },
+    ],
   },
   {
-    label: "Vehicles",
-    to: "/vehicles",
-    search: DEFAULT_VEHICLES_SEARCH_PARAMS,
-    icon: Car,
-    permission: "vehicles.view",
+    id: "network",
+    icon: Network,
+    label: "Network",
+    items: [
+      {
+        label: "Branches",
+        to: "/branches",
+        search: DEFAULT_BRANCHES_SEARCH,
+        icon: Building2,
+        permission: "branches.view",
+      },
+      {
+        label: "Hubs",
+        to: "/hubs",
+        search: DEFAULT_HUBS_SEARCH,
+        icon: Warehouse,
+        permission: "hubs.view",
+      },
+      // Locations is the city → zone → area territory staff book parcels against.
+      {
+        label: "Locations",
+        to: "/locations/cities",
+        search: DEFAULT_CITIES_SEARCH_PARAMS,
+        icon: Layers,
+        permission: "locations.view",
+      },
+      {
+        label: "Routes",
+        to: "/routes",
+        search: DEFAULT_ROUTES_SEARCH_PARAMS,
+        icon: Route,
+        permission: "routes.view",
+      },
+      {
+        label: "Vehicles",
+        to: "/vehicles",
+        search: DEFAULT_VEHICLES_SEARCH_PARAMS,
+        icon: Car,
+        permission: "vehicles.view",
+      },
+      // The matrix is what quotes run on — one row per pickup-to-delivery lane with its bands.
+      {
+        label: "Pricing matrix",
+        to: "/pricing/matrix",
+        search: DEFAULT_PRICING_LANES_SEARCH_PARAMS,
+        icon: Gauge,
+        permission: "pricing.view",
+      },
+    ],
   },
-  // The matrix is what quotes run on — one row per pickup-to-delivery lane with its bands.
   {
-    label: "Pricing matrix",
-    to: "/pricing/matrix",
-    search: DEFAULT_PRICING_LANES_SEARCH_PARAMS,
-    icon: Gauge,
-    permission: "pricing.view",
+    id: "people",
+    icon: UsersRound,
+    label: "People",
+    items: [
+      // The nav item needs only customers.view; the activate override is gated
+      // by customers.manage inside the screen.
+      {
+        label: "Customers",
+        to: "/customers",
+        search: DEFAULT_CUSTOMERS_SEARCH_PARAMS,
+        icon: UserRound,
+        permission: "customers.view",
+      },
+      {
+        label: "Users",
+        to: "/users",
+        search: DEFAULT_USERS_SEARCH_PARAMS,
+        icon: Users,
+        permission: "users.view",
+      },
+      // The roles those users hold, and the permission grid that decides what
+      // each role is for. Account and role are one screen pair in the RBAC doc.
+      {
+        label: "Roles",
+        to: "/roles",
+        search: DEFAULT_ROLES_SEARCH_PARAMS,
+        icon: ShieldCheck,
+        permission: "roles.view",
+      },
+    ],
   },
   {
-    label: "Routes",
-    to: "/routes",
-    search: DEFAULT_ROUTES_SEARCH_PARAMS,
-    icon: Route,
-    permission: "routes.view",
-  },
-  {
-    label: "Riders",
-    to: "/riders",
-    search: DEFAULT_RIDERS_SEARCH_PARAMS,
+    id: "riders",
     icon: Bike,
-    permission: "riders.view",
+    label: "Riders",
+    items: [
+      {
+        label: "Riders",
+        to: "/riders",
+        search: DEFAULT_RIDERS_SEARCH_PARAMS,
+        icon: Bike,
+        permission: "riders.view",
+      },
+      {
+        label: "Rider Locations",
+        to: "/rider-locations",
+        search: DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
+        icon: MapPin,
+        permission: "riders.view",
+      },
+      {
+        label: "Rider Applications",
+        to: "/rider-applications",
+        search: DEFAULT_RIDER_APPLICATIONS_SEARCH,
+        icon: FileCheck,
+        permission: "riders.view",
+      },
+    ],
   },
+  // Money closes the operation, so it sits last.
   {
-    label: "Rider Locations",
-    to: "/rider-locations",
-    search: DEFAULT_RIDER_LOCATIONS_SEARCH_PARAMS,
-    icon: MapPin,
-    permission: "riders.view",
-  },
-  {
-    label: "Rider Applications",
-    to: "/rider-applications",
-    search: DEFAULT_RIDER_APPLICATIONS_SEARCH,
-    icon: FileCheck,
-    permission: "riders.view",
-  },
-  // After Parcels and before the fleet screens: a pickup is a parcel-side action,
-  // and the fleet is who performs it.
-  {
-    label: "Pickups",
-    to: "/pickups",
-    search: DEFAULT_PICKUPS_SEARCH_PARAMS,
-    icon: PackageCheck,
-    permission: "pickups.view",
-  },
-  // After Pickups: a transfer is the same work at a longer distance, and the two
-  // screens read alike.
-  {
-    label: "Transfers",
-    to: "/transfers",
-    search: DEFAULT_TRANSFERS_SEARCH_PARAMS,
-    icon: Truck,
-    permission: "transfers.view",
-  },
-  // After Transfers: the attempt the transfer fed, in the last mile.
-  {
-    label: "Deliveries",
-    to: "/deliveries",
-    search: DEFAULT_DELIVERIES_SEARCH_PARAMS,
-    icon: Handshake,
-    permission: "deliveries.view",
-  },
-  // After Deliveries: what was recorded at the door.
-  {
-    label: "Delivery proofs",
-    to: "/delivery-proofs",
-    search: DEFAULT_DELIVERY_PROOFS_SEARCH_PARAMS,
-    icon: FileCheck,
-    permission: "deliveries.view",
-  },
-  // After the delivery lifecycle: the money it settled. Money closes the
-  // operation, so it sits last. The nav item needs only payments.view; the
-  // record/refund writes are gated payments.manage inside the screen.
-  {
-    label: "Payments",
-    to: "/payments",
-    search: DEFAULT_PAYMENTS_SEARCH_PARAMS,
-    icon: Wallet,
-    permission: "payments.view",
-  },
-  // After the money collected: the statement of what the company now owes the
-  // merchant. `create` needs settlements.manage (it writes the statement
-  // totals), so the nav item only requires the read key and the screen gates
-  // the writes.
-  {
-    label: "Settlements",
-    to: "/settlements",
-    search: DEFAULT_SETTLEMENTS_SEARCH_PARAMS,
-    icon: Handshake,
-    permission: "settlements.view",
+    id: "money",
+    icon: Banknote,
+    label: "Money",
+    items: [
+      // The nav item needs only payments.view; the record/refund writes are
+      // gated payments.manage inside the screen.
+      {
+        label: "Payments",
+        to: "/payments",
+        search: DEFAULT_PAYMENTS_SEARCH_PARAMS,
+        icon: Wallet,
+        permission: "payments.view",
+      },
+      // `create` needs settlements.manage (it writes the statement totals), so
+      // the nav item only requires the read key and the screen gates the writes.
+      {
+        label: "Settlements",
+        to: "/settlements",
+        search: DEFAULT_SETTLEMENTS_SEARCH_PARAMS,
+        icon: Handshake,
+        permission: "settlements.view",
+      },
+    ],
   },
 ]
 
-export function Sidebar() {
-  const { hasPermission } = useAuth()
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const visible = NAV_ITEMS.filter(
-    (item) => item.permission === null || hasPermission(item.permission),
-  )
+export const NAV_ITEMS: readonly NavItem[] = NAV_GROUPS.flatMap((group) => group.items)
+
+const COLLAPSED_STORAGE_KEY = "dropx.admin.nav.collapsed.v1"
+
+function isItemActive(item: NavItem, pathname: string) {
+  return item.to === "/"
+    ? pathname === "/"
+    : pathname === item.to || pathname.startsWith(`${item.to}/`)
+}
+
+function readStoredCollapsed(): Set<string> | null {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_STORAGE_KEY)
+    if (raw === null) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return new Set()
+    return new Set(parsed.filter((entry): entry is string => typeof entry === "string"))
+  } catch {
+    return null
+  }
+}
+
+let collapsedGroups: Set<string> =
+  readStoredCollapsed() ??
+  new Set(NAV_GROUPS.filter((group) => group.label !== null).map((group) => group.id))
+
+const collapsedListeners = new Set<() => void>()
+
+function writeCollapsed(next: Set<string>) {
+  collapsedGroups = next
+  try {
+    localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify([...next]))
+  } catch {
+    // Storage can be unavailable (private mode); the in-memory state still holds.
+  }
+  collapsedListeners.forEach((listener) => listener())
+}
+
+function toggleGroup(id: string) {
+  const next = new Set(collapsedGroups)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  writeCollapsed(next)
+}
+
+function openGroup(id: string) {
+  if (!collapsedGroups.has(id)) return
+  const next = new Set(collapsedGroups)
+  next.delete(id)
+  writeCollapsed(next)
+}
+
+function subscribeCollapsed(listener: () => void) {
+  collapsedListeners.add(listener)
+  return () => {
+    collapsedListeners.delete(listener)
+  }
+}
+
+function useCollapsedGroups() {
+  return useSyncExternalStore(subscribeCollapsed, () => collapsedGroups)
+}
+
+type NavLeafProps = {
+  item: NavItem
+  pathname: string
+  onClick?: () => void
+}
+
+function NavLeaf({ item, pathname, onClick }: NavLeafProps) {
+  const active = isItemActive(item, pathname)
 
   return (
-    <aside className="bg-card hidden w-64 shrink-0 flex-col gap-1 border-r px-3 py-4 md:flex">
-      <div className="px-2 pb-5">
-        <DropXLogo size="sm" />
-        <p className="text-muted-foreground mt-1 pl-9 text-xs">Operations portal</p>
-      </div>
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton asChild isActive={active}>
+        <Link
+          to={item.to}
+          search={item.search}
+          onClick={onClick}
+          aria-current={active ? "page" : undefined}
+        >
+          <item.icon />
+          <span>{item.label}</span>
+        </Link>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  )
+}
 
-      <p className="text-muted-foreground px-2 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
-        Workspace
-      </p>
+export function AppSidebar() {
+  const { hasPermission } = useAuth()
+  const { isMobile, setOpenMobile } = useSidebar()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const collapsed = useCollapsedGroups()
 
-      <nav className="flex flex-col gap-1" aria-label="Main">
-        {visible.map((item) => {
-          const active =
-            item.to === "/"
-              ? pathname === "/"
-              : pathname === item.to || pathname.startsWith(`${item.to}/`)
+  const closeOnNavigate = isMobile ? () => setOpenMobile(false) : undefined
+
+  const activeGroupId = NAV_GROUPS.find(
+    (group) => group.label !== null && group.items.some((item) => isItemActive(item, pathname)),
+  )?.id
+
+  // Navigating to a screen reveals the group that holds it, so the active page is
+  // never hidden behind a collapsed section. Collapsing it again by hand sticks
+  // until the next navigation.
+  useEffect(() => {
+    if (activeGroupId) openGroup(activeGroupId)
+  }, [pathname, activeGroupId])
+
+  return (
+    <Sidebar>
+      <SidebarHeader>
+        <div className="px-2 pt-1 pb-2">
+          <DropXLogo size="sm" />
+          <p className="text-muted-foreground mt-1 pl-9 text-xs">Operations portal</p>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        {NAV_GROUPS.filter((group) => group.label === null).map((group) => {
+          const items = group.items.filter(
+            (item) => item.permission === null || hasPermission(item.permission),
+          )
+          if (items.length === 0) return null
           return (
-            <Link
-              key={item.to}
-              to={item.to}
-              search={item.search}
-              /*
-               * The active destination is marked three ways, not one: a Volt
-               * rail, a Volt-tinted ground, and bold ink. The brand requires a
-               * status colour never to be the only signal, and a sidebar item is
-               * a status a dispatcher reads at a glance.
-               */
-              className={cn(
-                "ease-brand relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150",
-                active
-                  ? "bg-primary/12 text-foreground before:bg-primary font-semibold before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
-              aria-current={active ? "page" : undefined}
-            >
-              <item.icon className={cn("size-4 shrink-0", active && "text-primary")} aria-hidden />
-              {item.label}
-            </Link>
+            <SidebarGroup key={group.id}>
+              <SidebarMenu>
+                {items.map((item) => {
+                  const active = isItemActive(item, pathname)
+                  return (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton asChild isActive={active}>
+                        <Link
+                          to={item.to}
+                          search={item.search}
+                          onClick={closeOnNavigate}
+                          aria-current={active ? "page" : undefined}
+                        >
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
           )
         })}
-      </nav>
 
-      <p className="text-muted-foreground mt-auto px-2 text-xs leading-relaxed">
-        Staff only. Actions are audited against your account.
-      </p>
-    </aside>
+        {NAV_GROUPS.filter((group) => group.label !== null).map((group) => {
+          const items = group.items.filter(
+            (item) => item.permission === null || hasPermission(item.permission),
+          )
+          if (items.length === 0) return null
+          const groupActive = items.some((item) => isItemActive(item, pathname))
+          const GroupIcon = group.icon
+
+          return (
+            <Collapsible
+              key={group.id}
+              open={!collapsed.has(group.id)}
+              onOpenChange={() => toggleGroup(group.id)}
+              className="group/collapsible"
+            >
+              <SidebarGroup>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton isActive={groupActive}>
+                        {GroupIcon && <GroupIcon />}
+                        <span>{group.label}</span>
+                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {items.map((item) => (
+                          <NavLeaf
+                            key={item.to}
+                            item={item}
+                            pathname={pathname}
+                            onClick={closeOnNavigate}
+                          />
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroup>
+            </Collapsible>
+          )
+        })}
+      </SidebarContent>
+
+      <SidebarFooter>
+        <p className="text-muted-foreground px-2 pb-1 text-xs leading-relaxed">
+          Staff only. Actions are audited against your account.
+        </p>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
   )
 }
