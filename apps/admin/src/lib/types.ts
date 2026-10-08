@@ -718,10 +718,9 @@ export type ReplacePermissionsBody = {
 }
 
 /**
- * `parcelId` is typed as a string the human types, then handed to the API as-is.
- * There is no parcel picker: a picker over every parcel would list tracking
- * numbers and addresses, and the person raising a collection already has the
- * tracking number in hand from the customer or the phone.
+ * `parcelId` is the selected parcel id from the admin picker, which searches
+ * the staff parcel list by tracking number or parcel id. The API also accepts
+ * either identifier for non-picker callers.
  */
 export const createPickupSchema = z.object({
   parcelId: z.string().trim().min(1, "Tracking number or parcel id is required").max(64),

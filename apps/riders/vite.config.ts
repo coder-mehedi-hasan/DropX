@@ -29,6 +29,9 @@ export default defineConfig(({ command }) => ({
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
+    // One React per bundle: the root tree and the workspace's bun store hold
+    // separate physical copies, and two of them means a null hook dispatcher.
+    dedupe: ["react", "react-dom"],
   },
   server: {
     port: 5174,

@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useFormContext } from "react-hook-form"
 import { z } from "zod"
+import * as React from "react"
 import {
   AppToast,
   BoundFormField,
@@ -11,7 +13,8 @@ import {
 } from "@dropx/ui"
 
 import { FormSheet } from "@/components/form-sheet"
-import { createPickup } from "@/lib/endpoints"
+import { ReferenceCombobox } from "@/components/reference-combobox"
+import { createPickup, getParcel } from "@/lib/endpoints"
 import { localDateTimeToIso } from "@/lib/format"
 import { createPickupSchema, type CreatePickupBody } from "@/lib/types"
 
@@ -24,12 +27,9 @@ const BLANK: z.infer<typeof createPickupSchema> = {
 /**
  * Raise a collection.
  *
- * `parcelId` is a plain text field rather than a parcel picker, which is a
- * deliberate exception to the reference-picker rule used everywhere else in this
- * app. A pickup is created while someone is on the phone with a customer, who
- * reads out a tracking number — a dropdown over every parcel would make them
- * search a list instead of typing the one string they were given. The API accepts
- * either an id or a tracking number for exactly this reason, so the label says so.
+ * The parcel picker searches the staff parcel list by tracking number or parcel
+ * id, then submits the selected parcel id. The API still accepts either form
+ * for callers that do not use the picker.
  *
  * There is no status field. A new pickup is always `REQUESTED`, and the API's
  * create body defaults it; offering the other five would mean creating a pickup
@@ -77,44 +77,96 @@ export function PickupFormSheet({
         })
       }}
       error={null}
-      renderFields={() => (
-        <>
-          <BoundFormField
-            name="parcelId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Parcel</FormLabel>
-                <Input placeholder="DX-2026-000123 or the parcel id" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <BoundFormField
-            name="pickupAddress"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Collection address</FormLabel>
-                <Textarea
-                  rows={2}
-                  placeholder="House, road, area — where the rider should turn up"
-                  {...field}
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <BoundFormField
-            name="scheduledAt"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Scheduled for (optional)</FormLabel>
-                <Input type="datetime-local" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </>
-      )}
+      renderFields={() => <PickupFields />}
     />
   )
+}
+
+function PickupFields() {
+  const form = useFormContext<z.infer<typeof createPickupSchema>>()
+  const parcelId = form.watch("parcelId")
+  const parcel = useQuery({
+    queryKey: ["parcels", "detail", parcelId],
+    queryFn: ({ signal }) => getParcel(parcelId, signal),
+    enabled: Boolean(parcelId),
+    staleTime: 60_000,
+  })
+  const hydratedParcelId = React.useRef("")
+
+  React.useEffect(() => {
+    if (!parcel.data || hydratedParcelId.current === parcelId) return
+
+    const pickupAddress = parcel.data.addresses.find((address) => address.type === "PICKUP")
+    if (pickupAddress) {
+      form.setValue("pickupAddress", formatPickupAddress(pickupAddress), {
+        shouldDirty: false,
+        shouldValidate: true,
+      })
+    }
+    hydratedParcelId.current = parcelId
+  }, [form, parcel.data, parcelId])
+
+  React.useEffect(() => {
+    if (!parcelId) hydratedParcelId.current = ""
+  }, [parcelId])
+
+  return (
+    <>
+      <BoundFormField
+        name="parcelId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Parcel</FormLabel>
+            <ReferenceCombobox
+              source="parcels"
+              placeholder="Search parcel ID or tracking number"
+              value={field.value}
+              onChange={(value) => {
+                hydratedParcelId.current = ""
+                form.setValue("pickupAddress", "", { shouldDirty: true })
+                field.onChange(value)
+              }}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <BoundFormField
+        name="pickupAddress"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Collection address</FormLabel>
+            <Textarea
+              rows={2}
+              placeholder="House, road, area — where the rider should turn up"
+              {...field}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <BoundFormField
+        name="scheduledAt"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Scheduled for (optional)</FormLabel>
+            <Input type="datetime-local" {...field} />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  )
+}
+
+function formatPickupAddress(address: {
+  addressLine: string
+  landmark: string | null
+  areaName: string | null
+  zoneName: string
+  cityName: string
+}) {
+  return [address.addressLine, address.landmark, address.areaName, address.zoneName, address.cityName]
+    .filter((part): part is string => Boolean(part))
+    .join(", ")
 }

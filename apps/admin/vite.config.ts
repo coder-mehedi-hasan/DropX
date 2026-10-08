@@ -29,6 +29,13 @@ export default defineConfig(({ command }) => ({
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
+    /**
+     * One React per bundle, whatever node_modules says. The workspace links
+     * into bun's `.bun` store while the root tree holds its own physical copy
+     * of react, so Radix — resolved from the root — would otherwise ship a
+     * second React and every hook in it sees a null dispatcher.
+     */
+    dedupe: ["react", "react-dom"],
   },
   server: {
     port: 5173,

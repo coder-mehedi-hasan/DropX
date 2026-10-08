@@ -43,6 +43,16 @@ async function grant(pool: mysql.Pool, roleId: Id, permissionKey: PermissionKey)
   return result.affectedRows > 0
 }
 
+/** Repairs rider accounts created before rider-role assignment was enforced. */
+async function assignRiderRoleToRiders(pool: mysql.Pool, roleId: Id): Promise<number> {
+  const [result] = await pool.execute<mysql.ResultSetHeader>(
+    `INSERT IGNORE INTO ${TABLES.userRoles} (user_id, role_id)
+     SELECT r.user_id, ? FROM riders r`,
+    [roleId],
+  )
+  return result.affectedRows
+}
+
 /** Catches a key that was revoked in code but still granted in the database. */
 async function reportOrphanedGrants(pool: mysql.Pool): Promise<void> {
   const placeholders = ALL_PERMISSION_KEYS.map(() => "?").join(", ")
@@ -87,6 +97,11 @@ async function main(): Promise<void> {
 
       totalGrants += added
       console.log(`  ${name.padEnd(16)} ${String(keys.length).padStart(3)} key(s) — ${added} new`)
+
+      if (name === "RIDER") {
+        const repaired = await assignRiderRoleToRiders(pool, roleId)
+        if (repaired > 0) console.log(`  RIDER accounts repaired: ${repaired}`)
+      }
     }
 
     await reportOrphanedGrants(pool)

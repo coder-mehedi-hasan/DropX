@@ -211,8 +211,8 @@ function toParcelRows(nodes: readonly Parcel[]): Row[] {
     label: parcel.trackingNumber,
     hint:
       parcel.paymentType === "COD"
-        ? `Collects ${formatMoney(parcel.codAmount)} on delivery`
-        : "Prepaid",
+        ? `${parcel.id} · collects ${formatMoney(parcel.codAmount)} on delivery`
+        : `${parcel.id} · prepaid`,
     status: parcel.status,
   }))
 }

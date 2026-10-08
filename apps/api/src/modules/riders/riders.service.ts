@@ -78,6 +78,22 @@ export async function createRider(c: Context<AppEnv>, input: CreateRiderInput): 
       throw fromDatabaseError(error, "An account with that email already exists")
     }
 
+    const [riderRoles] = await tx.query<RowDataPacket[]>(
+      `SELECT id FROM ${TABLES.roles} WHERE name = 'RIDER' LIMIT 1`,
+    )
+    const riderRole = riderRoles[0]
+    if (!riderRole) {
+      throw new DomainError(
+        ERROR_CODES.VALIDATION_FAILED,
+        "The RIDER role is not seeded. Run the database seed before creating riders.",
+      )
+    }
+
+    await tx.execute(`INSERT INTO ${TABLES.userRoles} (user_id, role_id) VALUES (?, ?)`, [
+      userId,
+      riderRole.id,
+    ])
+
     try {
       return await insertRider(tx, {
         userId,

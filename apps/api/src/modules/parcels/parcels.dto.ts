@@ -135,6 +135,7 @@ export const PARCEL_SORT_COLUMN_BY_KEY: Readonly<Record<ParcelSortKey, string>> 
 /** Columns searched by the list `search` param — the parcel's own receiver
  * fields cover non-account receivers, and `r.*` still matches account holders. */
 export const PARCEL_SEARCH_COLUMNS = [
+  "p.id",
   "p.tracking_number",
   "p.receiver_name",
   "p.receiver_phone",

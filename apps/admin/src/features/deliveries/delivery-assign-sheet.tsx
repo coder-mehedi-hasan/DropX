@@ -1,26 +1,27 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useFormContext } from "react-hook-form"
 import { z } from "zod"
+import * as React from "react"
 import {
   AppToast,
   BoundFormField,
   FormItem,
   FormLabel,
   FormMessage,
-  Input,
   Textarea,
 } from "@dropx/ui"
 
 import { FormSheet } from "@/components/form-sheet"
 import { ReferenceCombobox } from "@/components/reference-combobox"
-import { createDelivery, reassignDelivery } from "@/lib/endpoints"
+import { createDelivery, getParcel, reassignDelivery } from "@/lib/endpoints"
 import type { DeliveryRow } from "@/lib/types"
 import { createDeliverySchema, reassignDeliverySchema } from "@/lib/types"
 
 /**
  * Open an attempt for a parcel, or swap the rider on one that has not started.
  *
- * Two modes on one component: `delivery === null` creates (parcel id or
- * tracking number typed by hand — the same convention as a pickup), otherwise
+ * Two modes on one component: `delivery === null` creates (the parcel picker
+ * searches by parcel id or tracking number), otherwise
  * it reassigns the rider. They are separate operations with different
  * permissions' neighbours (`deliveries.assign` for both) and different
  * bodies, and both are about "who carries this parcel" so they belong
@@ -118,49 +119,101 @@ export function DeliveryAssignSheet({
         })
       }}
       error={null}
-      renderFields={() => (
-        <>
-          <BoundFormField
-            name="parcelId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Parcel</FormLabel>
-                <Input placeholder="DX-2026-000123 or the parcel id" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <BoundFormField
-            name="riderId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rider</FormLabel>
-                <ReferenceCombobox
-                  source="riders"
-                  placeholder="Select rider"
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <BoundFormField
-            name="deliveryAddress"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Delivery address</FormLabel>
-                <Textarea
-                  rows={2}
-                  placeholder="House, road, area — where the rider should deliver"
-                  {...field}
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </>
-      )}
+      renderFields={() => <DeliveryFields />}
     />
   )
+}
+
+function DeliveryFields() {
+  const form = useFormContext<z.infer<typeof createDeliverySchema>>()
+  const parcelId = form.watch("parcelId")
+  const parcel = useQuery({
+    queryKey: ["parcels", "detail", parcelId],
+    queryFn: ({ signal }) => getParcel(parcelId, signal),
+    enabled: Boolean(parcelId),
+    staleTime: 60_000,
+  })
+  const hydratedParcelId = React.useRef("")
+
+  React.useEffect(() => {
+    if (!parcel.data || hydratedParcelId.current === parcelId) return
+
+    const deliveryAddress = parcel.data.addresses.find((address) => address.type === "DELIVERY")
+    if (deliveryAddress) {
+      form.setValue("deliveryAddress", formatDeliveryAddress(deliveryAddress), {
+        shouldDirty: false,
+        shouldValidate: true,
+      })
+    }
+    hydratedParcelId.current = parcelId
+  }, [form, parcel.data, parcelId])
+
+  React.useEffect(() => {
+    if (!parcelId) hydratedParcelId.current = ""
+  }, [parcelId])
+
+  return (
+    <>
+      <BoundFormField
+        name="parcelId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Parcel</FormLabel>
+            <ReferenceCombobox
+              source="parcels"
+              placeholder="Search parcel ID or tracking number"
+              value={field.value}
+              onChange={(value) => {
+                hydratedParcelId.current = ""
+                form.setValue("deliveryAddress", "", { shouldDirty: true })
+                field.onChange(value)
+              }}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <BoundFormField
+        name="riderId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Rider</FormLabel>
+            <ReferenceCombobox
+              source="riders"
+              placeholder="Select rider"
+              value={field.value}
+              onChange={field.onChange}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <BoundFormField
+        name="deliveryAddress"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Delivery address</FormLabel>
+            <Textarea
+              rows={2}
+              placeholder="House, road, area — where the rider should deliver"
+              {...field}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  )
+}
+
+function formatDeliveryAddress(address: {
+  addressLine: string
+  landmark: string | null
+  areaName: string | null
+  zoneName: string
+  cityName: string
+}) {
+  return [address.addressLine, address.landmark, address.areaName, address.zoneName, address.cityName]
+    .filter((part): part is string => Boolean(part))
+    .join(", ")
 }
