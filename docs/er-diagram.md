@@ -83,16 +83,16 @@ erDiagram
         varchar name UK
     }
     user_roles {
-        bigint user_id PK_FK
-        bigint role_id PK_FK
+        bigint user_id PK
+        bigint role_id PK
     }
     role_permissions {
-        bigint role_id PK_FK
+        bigint role_id PK
         varchar permission_key PK
     }
     user_hubs {
-        bigint user_id PK_FK
-        bigint hub_id PK_FK
+        bigint user_id PK
+        bigint hub_id PK
     }
     customers {
         bigint id PK
@@ -106,7 +106,7 @@ erDiagram
     }
     parcel_drafts {
         bigint id PK
-        bigint customer_id FK_UK
+        bigint customer_id UK
     }
     vehicles {
         bigint id PK
@@ -126,7 +126,7 @@ erDiagram
     }
     riders {
         bigint id PK
-        bigint user_id FK_UK
+        bigint user_id UK
         bigint hub_id FK
         enum compensation_type
     }
@@ -173,8 +173,8 @@ erDiagram
         bigint driver_id FK
     }
     transfer_parcels {
-        bigint transfer_id PK_FK
-        bigint parcel_id PK_FK
+        bigint transfer_id PK
+        bigint parcel_id PK
     }
     deliveries {
         bigint id PK
