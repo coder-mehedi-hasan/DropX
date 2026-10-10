@@ -86,6 +86,7 @@ export const loginResponseSchema = z.object({
     kind: z.enum(["staff", "rider"]),
     name: z.string().nullable(),
     email: z.string().nullable(),
+    avatarUrl: z.string().nullable().optional(),
     roles: z.array(z.string()),
     mustChangePassword: z.boolean(),
   }),

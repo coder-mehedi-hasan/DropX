@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
 import { ChevronLeft } from "lucide-react"
-import { Avatar, AvatarFallback, DropXMark, buttonVariants, cn } from "@dropx/ui"
+import { Avatar, AvatarFallback, AvatarImage, DropXMark, buttonVariants, cn } from "@dropx/ui"
 
 import { useAuth } from "../../lib/auth"
 import { initials } from "../../lib/format"
@@ -90,6 +90,7 @@ export function AppHeader({
 
       {rider ? (
         <Avatar className="size-10 rounded-xl">
+          {rider.avatarUrl ? <AvatarImage src={rider.avatarUrl} alt="Your profile photo" /> : null}
           <AvatarFallback className="bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-sm">
             {initials(rider.name)}
           </AvatarFallback>

@@ -77,6 +77,7 @@ erDiagram
         bigint id PK
         bigint branch_id FK
         varchar email UK
+        varchar avatar_url
     }
     roles {
         bigint id PK

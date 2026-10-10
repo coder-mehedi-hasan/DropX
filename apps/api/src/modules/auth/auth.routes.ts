@@ -129,6 +129,7 @@ router.get(
             riderId: actor.riderId,
             hubId: actor.hubId,
             email: actor.email,
+            avatarUrl: actor.avatarUrl,
             mustChangePassword: actor.mustChangePassword,
             permissions: [...actor.permissions],
           }),

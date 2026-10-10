@@ -43,6 +43,7 @@ export type LoginResult = TokenPair & {
     kind: "staff" | "rider"
     name: string
     email: string
+    avatarUrl?: string | null
     roles: string[]
     mustChangePassword: boolean
   }
@@ -143,6 +144,7 @@ export async function loginWithPassword(
       kind: audience === "riders" ? "rider" : "staff",
       name: user.name,
       email: user.email,
+      avatarUrl: user.avatar_url === null ? null : user.avatar_url,
       mustChangePassword: audience === "riders" ? Boolean(user.must_change_password) : false,
       roles: [],
     },

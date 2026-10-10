@@ -104,6 +104,7 @@ export type StoredSession = TokenPair & {
     kind: "rider"
     name: string
     email: string
+    avatarUrl?: string | null
   }
 }
 
@@ -205,22 +206,35 @@ function toApiError(status: number, body: unknown): ApiError {
   return new ApiError({ code, message, status, ...(details ? { details } : {}) })
 }
 
+function isFormDataBody(body: unknown): body is FormData {
+  return typeof FormData !== "undefined" && body instanceof FormData
+}
+
 async function rawRequest(path: string, options: RequestOptions): Promise<RawResult> {
+  const isFormData = isFormDataBody(options.body)
   const headers: Record<string, string> = { Accept: "application/json" }
-  if (options.body !== undefined) headers["Content-Type"] = "application/json"
+  if (options.body !== undefined && !isFormData) headers["Content-Type"] = "application/json"
   if (options.auth) {
     const token = session?.accessToken
     if (token) headers.Authorization = `Bearer ${token}`
   }
 
+  const requestBody =
+    options.body === undefined
+      ? undefined
+      : isFormData
+        ? options.body
+        : JSON.stringify(options.body)
+
   let response: Response
   try {
-    response = await fetch(buildUrl(path, options.query), {
+    const requestInit: RequestInit = {
       method: options.method ?? "GET",
       headers,
-      ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
-      ...(options.signal ? { signal: options.signal } : {}),
-    })
+      signal: options.signal,
+    }
+    if (requestBody !== undefined) requestInit.body = requestBody as BodyInit | null | undefined
+    response = await fetch(buildUrl(path, options.query), requestInit)
   } catch (error) {
     if (isAbortError(error)) throw error
     throw new ApiError({

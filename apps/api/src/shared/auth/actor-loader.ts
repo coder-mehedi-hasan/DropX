@@ -68,7 +68,7 @@ export async function loadStaffActor(db: Pool, userId: string): Promise<StaffAut
 export async function loadRiderActor(db: Pool, userId: string): Promise<RiderAuth | null> {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT r.id, r.hub_id, r.status AS rider_status,
-            u.email, u.branch_id, u.must_change_password, u.status AS user_status
+            u.email, u.avatar_url, u.branch_id, u.must_change_password, u.status AS user_status
        FROM riders r
        JOIN users u ON u.id = r.user_id
       WHERE r.user_id = ?
@@ -97,6 +97,7 @@ export async function loadRiderActor(db: Pool, userId: string): Promise<RiderAut
     riderId: String(row.id),
     hubId: String(row.hub_id),
     email: row.email,
+    avatarUrl: row.avatar_url === null ? null : String(row.avatar_url),
     mustChangePassword: Boolean(row.must_change_password),
     roles: ["RIDER"],
     permissions: new Set(permissions.map((entry) => entry.permission_key)),

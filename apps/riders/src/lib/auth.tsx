@@ -24,6 +24,7 @@ type LoginResponse = TokenPair & {
     kind: "rider"
     name: string
     email: string
+    avatarUrl?: string | null
     roles: string[]
     mustChangePassword: boolean
   }
@@ -36,6 +37,7 @@ type RiderMeResponse = {
   riderId: string
   hubId: string
   email: string
+  avatarUrl: string | null
   permissions: string[]
   mustChangePassword: boolean
 }
@@ -46,6 +48,7 @@ export type RiderIdentity = {
   hubId: string
   name: string
   email: string
+  avatarUrl: string | null
   permissions: RiderPermission[]
   mustChangePassword: boolean
 }
@@ -62,6 +65,7 @@ type AuthContextValue = AuthState & {
   changePassword: (newPassword: string) => Promise<void>
   logout: () => Promise<void>
   can: (permission: RiderPermission) => boolean
+  updateRider: (patch: Partial<Pick<RiderIdentity, "name" | "avatarUrl">>) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -78,6 +82,7 @@ async function loadIdentity(account: { name: string; email: string }): Promise<R
     hubId: me.hubId,
     name: account.name,
     email: me.email,
+    avatarUrl: me.avatarUrl,
     permissions: me.permissions.filter((key): key is RiderPermission => RIDER_KEYS.has(key)),
     mustChangePassword: me.mustChangePassword,
   }
@@ -133,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         kind: "rider",
         name: result.account.name,
         email: result.account.email,
+        avatarUrl: result.account.avatarUrl ?? null,
       },
     })
 
@@ -167,14 +173,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(ANONYMOUS)
   }, [])
 
+  const updateRider = useCallback(
+    (patch: Partial<Pick<RiderIdentity, "name" | "avatarUrl">>) => {
+      setState((current) => {
+        if (!current.rider) return current
+        const next = { ...current.rider, ...patch }
+        const session = getSession()
+        if (session) {
+          setSession({
+            ...session,
+            account: { ...session.account, name: next.name, avatarUrl: next.avatarUrl },
+          })
+        }
+        return { status: "authenticated", rider: next }
+      })
+    },
+    [],
+  )
+
   const can = useCallback(
     (permission: RiderPermission) => state.rider?.permissions.includes(permission) ?? false,
     [state.rider],
   )
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, login, changePassword, logout, can }),
-    [state, login, changePassword, logout, can],
+    () => ({ ...state, login, changePassword, logout, can, updateRider }),
+    [state, login, changePassword, logout, can, updateRider],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -11,6 +11,7 @@ export type StaffLoginRow = {
   id: string
   email: string
   name: string
+  avatar_url: string | null
   password_hash: string
   must_change_password: boolean
   status: "ACTIVE" | "INACTIVE" | "SUSPENDED"
@@ -29,7 +30,7 @@ const CUSTOMER_COLUMNS = "id, name, phone, email, status"
 export const authRepository = {
   async findUserByEmail(db: Pool, email: string): Promise<StaffLoginRow | null> {
     const [rows] = await db.query<RowDataPacket[]>(
-      `SELECT id, email, name, password_hash, must_change_password, status
+      `SELECT id, email, name, avatar_url, password_hash, must_change_password, status
          FROM users
         WHERE email = ?
         LIMIT 1`,

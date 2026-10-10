@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
     status ENUM('ACTIVE','INACTIVE','SUSPENDED') NOT NULL DEFAULT 'ACTIVE',
+    avatar_url VARCHAR(500) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -937,6 +938,8 @@ ALTER TABLE settlements ADD COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
 -- Layout of the customer profile (avatar). Idempotent: errno 1060 from
 -- `migrate.ts` means the column already exists, exactly like the code column.
 ALTER TABLE customers ADD COLUMN avatar_url VARCHAR(500) NULL;
+-- Same for rider/staff users (their avatar on the riders + admin profile pages).
+ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) NULL;
 
 -- Heal a `code` column that already exists but with the wrong shape (an earlier
 -- run added it nullable, which would let a NULL reach the mapper). Re-declaring
