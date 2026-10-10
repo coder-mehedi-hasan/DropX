@@ -4,6 +4,9 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Button,
   DropXLogo,
   LoadingButton,
@@ -162,10 +165,18 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               <ArrowUpRightIcon className="size-4" aria-hidden />
             </Link> */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <div className="flex items-center gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5500] text-sm font-bold text-white">
-                  {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
-                </span>
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 rounded-xl transition-colors hover:bg-white/5"
+              >
+                <Avatar className="size-9 rounded-xl">
+                  {customer?.avatarUrl ? (
+                    <AvatarImage src={customer.avatarUrl} alt="Your profile photo" />
+                  ) : null}
+                  <AvatarFallback className="rounded-xl bg-[#FF5500] text-sm font-bold text-white">
+                    {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-white">
                     {customer?.name || "DropX customer"}
@@ -174,7 +185,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
                     {customer?.email || customer?.phone || "Verified account"}
                   </p>
                 </div>
-              </div>
+              </Link>
               <LoadingButton
                 variant="ghost"
                 size="sm"
@@ -196,9 +207,20 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <Link href="/dashboard" className="text-foreground shrink-0">
               <DropXLogo size="sm" />
             </Link>
-            <span className="ml-auto flex size-8 items-center justify-center rounded-lg bg-[#0D0F12] text-xs font-bold text-white">
-              {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
-            </span>
+            <Link
+              href="/profile"
+              aria-label="Your profile"
+              className="rounded-lg transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#FF5500] focus-visible:outline-none"
+            >
+              <Avatar className="ml-auto size-8 rounded-lg">
+                {customer?.avatarUrl ? (
+                  <AvatarImage src={customer.avatarUrl} alt="Your profile photo" />
+                ) : null}
+                <AvatarFallback className="rounded-lg bg-[#0D0F12] text-xs font-bold text-white">
+                  {(customer?.name || customer?.phone || "D").trim().charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
             <LoadingButton variant="ghost" size="sm" onClick={onSignOut} loading={signingOut}>
               <LogOutIcon aria-hidden />
               <span className="sr-only sm:not-sr-only">Sign out</span>

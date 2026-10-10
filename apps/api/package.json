@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "DropX backend API \u2014 Hono, modular by domain feature.",
+  "description": "DropX backend API — Hono, modular by domain feature.",
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
@@ -19,6 +19,7 @@
     "seed:pricing": "bun run ./scripts/seed-pricing.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
     "@dropx/types": "workspace:*",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",

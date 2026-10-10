@@ -55,6 +55,28 @@ const schema = z.object({
    * that forgot to set it is closed, not open. Compared in constant time.
    */
   BOOTSTRAP_TOKEN: z.string().min(16).optional(),
+
+  /**
+   * S3-compatible object storage for user-uploaded files (avatars, delivery
+   * proofs, …). Every variable is optional so a dev who has no bucket can still
+   * boot the API; the upload route fails closed (`SERVICE_UNAVAILABLE`) rather
+   * than guessing. Defaults match a stock local MinIO, so `docker run -p 9000:9000
+   * -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin minio/minio
+   * server /data` gives uploads that just work.
+   */
+  S3_ENDPOINT: z.string().url().optional(),
+  S3_REGION: z.string().default("us-east-1"),
+  S3_BUCKET: z.string().default("dropx-assets"),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_FORCE_PATH_STYLE: bool(false),
+  /**
+   * Public base the stored object keys are prefixed with, e.g. `https://cdn.example.com/dropx-assets`
+   * or a MinIO path-style `http://localhost:9000/dropx-assets`. Defaults to
+   * `{endpoint}/{bucket}` when unset — which is exactly right for path-style
+   * MinIO and wrong for AWS, where you should set a CloudFront/s3 URL.
+   */
+  S3_PUBLIC_URL: z.string().url().optional(),
 })
 
 export type AppConfig = {
@@ -81,6 +103,16 @@ export type AppConfig = {
     user?: string
     password?: string
     brandAssetUrl?: string
+  }
+  storage: {
+    endpoint?: string
+    region: string
+    bucket: string
+    accessKeyId?: string
+    secretAccessKey?: string
+    forcePathStyle: boolean
+    publicUrl?: string
+    enabled: boolean
   }
 }
 
@@ -137,6 +169,16 @@ function load(env: Record<string, string | undefined>): AppConfig {
       user: value.MAIL_USER,
       password: value.MAIL_PASSWORD,
       brandAssetUrl: value.MAIL_BRAND_ASSET_URL,
+    },
+    storage: {
+      endpoint: value.S3_ENDPOINT,
+      region: value.S3_REGION,
+      bucket: value.S3_BUCKET,
+      accessKeyId: value.S3_ACCESS_KEY_ID,
+      secretAccessKey: value.S3_SECRET_ACCESS_KEY,
+      forcePathStyle: value.S3_FORCE_PATH_STYLE,
+      publicUrl: value.S3_PUBLIC_URL,
+      enabled: value.S3_ENDPOINT !== undefined && value.S3_ACCESS_KEY_ID !== undefined,
     },
   }
 }

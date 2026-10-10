@@ -236,7 +236,14 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   const { method = "GET", query, body, auth = true, signal, allowRefresh = true } = options
 
   const headers: Record<string, string> = { Accept: "application/json" }
-  if (body !== undefined) headers["Content-Type"] = "application/json"
+  /**
+   * A `FormData` body rides without a Content-Type so the browser can set the
+   * multipart boundary it generated itself.
+   */
+  const multipart = body instanceof FormData
+  if (body !== undefined && !multipart) headers["Content-Type"] = "application/json"
+  let bodyValue: BodyInit | undefined
+  if (body !== undefined) bodyValue = multipart ? body : JSON.stringify(body)
 
   if (auth) {
     const stored = readTokens()
@@ -248,7 +255,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     {
       method,
       headers,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(bodyValue === undefined ? {} : { body: bodyValue }),
       ...(signal ? { signal } : {}),
     },
   )

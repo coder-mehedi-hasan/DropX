@@ -99,6 +99,7 @@ erDiagram
         varchar code UK
         varchar phone UK
         varchar email UK
+        varchar avatar_url
         enum status
     }
     customer_addresses {

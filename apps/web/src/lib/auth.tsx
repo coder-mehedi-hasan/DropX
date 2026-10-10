@@ -33,6 +33,11 @@ export type AuthContextValue = {
   customer: SessionCustomer | null
   signIn: (session: CustomerSession) => void
   signOut: () => Promise<void>
+  /**
+   * Merges profile edits (name, avatar) into the cached session and persists
+   * them, so the shell's identity card updates without a sign-out/in.
+   */
+  updateCustomer: (patch: Partial<Pick<SessionCustomer, "name" | "avatarUrl">>) => void
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -54,6 +59,7 @@ function readStoredCustomer(): SessionCustomer | null {
       phone: customer.phone ?? "",
       email: customer.email ?? null,
       status: "ACTIVE",
+      avatarUrl: typeof customer.avatarUrl === "string" ? customer.avatarUrl : null,
     }
   } catch {
     return null
@@ -183,9 +189,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [adopt, router])
 
+  const updateCustomer = React.useCallback(
+    (patch: Partial<Pick<SessionCustomer, "name" | "avatarUrl">>) => {
+      setCustomer((current) => {
+        if (!current) return current
+        const next = { ...current, ...patch }
+        writeStoredCustomer(next)
+        return next
+      })
+    },
+    [],
+  )
+
   const value = React.useMemo<AuthContextValue>(
-    () => ({ status, customer, signIn, signOut }),
-    [status, customer, signIn, signOut],
+    () => ({ status, customer, signIn, signOut, updateCustomer }),
+    [status, customer, signIn, signOut, updateCustomer],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

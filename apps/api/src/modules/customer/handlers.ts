@@ -4,6 +4,7 @@ import { isCustomer, scopeFromAuth } from "../../shared/auth/auth-context"
 import type { SurfaceHandlers } from "../../shared/auth/surface"
 import * as parcels from "../parcels/parcels.service"
 import * as addresses from "../customer-addresses/customer-addresses.service"
+import * as customerProfile from "../customer-profile/customer-profile.service"
 import * as reference from "../reference/reference.service"
 import * as locations from "../locations/locations.service"
 import * as pricingLanes from "../pricing/pricing-lanes.service"
@@ -191,6 +192,34 @@ export const customerHandlers: SurfaceHandlers<typeof CUSTOMER_SURFACE> = {
       }
       await addresses.deleteAddress(c, auth.actor.customerId, c.req.valid("param").id)
       return c.body(null, 204)
+    },
+  },
+
+  profile: {
+    read: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      return c.json(
+        response.success(await customerProfile.getCustomerProfile(c, auth.actor.customerId)),
+      )
+    },
+
+    update: async (c) => {
+      const auth = c.get("auth")
+      if (!isCustomer(auth)) {
+        throw new DomainError(ERROR_CODES.UNAUTHENTICATED, "Please sign in to continue")
+      }
+      return c.json(
+        response.success(
+          await customerProfile.updateCustomerProfile(
+            c,
+            auth.actor.customerId,
+            c.req.valid("json"),
+          ),
+        ),
+      )
     },
   },
 }

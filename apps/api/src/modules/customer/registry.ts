@@ -30,6 +30,10 @@ import {
   customerAddressResponseSchema,
   updateCustomerAddressSchema,
 } from "../customer-addresses/customer-addresses.dto"
+import {
+  customerProfileResponseSchema,
+  updateCustomerProfileSchema,
+} from "../customer-profile/customer-profile.dto"
 import { pricingLaneWithSlabsResponseSchema } from "../pricing/pricing-lanes.dto"
 
 /**
@@ -335,6 +339,42 @@ export const CUSTOMER_SURFACE = defineSurface({
           paramDescriptions: { id: "Saved address id." },
           successStatus: 204,
           errors: { 404: "No such saved address." },
+        },
+      },
+    },
+
+    /**
+     * The customer's own profile.
+     *
+     * The two editable fields a customer owns — the display name shown in the
+     * portal and across their parcels, and the avatar whose bytes live in
+     * object storage. Phone and email are the OTP identifiers and are
+     * deliberately absent from the write schema.
+     */
+    profile: {
+      tag: "customer-profile",
+      tagDescription: "The signed-in customer's own profile: display name and avatar.",
+      operations: {
+        read: {
+          method: "GET",
+          path: "/profile",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Read my profile",
+          successDescription: "The profile.",
+          description: "The signed-in customer's own profile, scoped to the session.",
+          response: customerProfileResponseSchema,
+        },
+        update: {
+          method: "PATCH",
+          path: "/profile",
+          policy: { audience: ["web"], requiresActiveCustomer: true },
+          summary: "Update my profile",
+          successDescription: "Updated.",
+          description:
+            "Edits the display name and/or the avatar URL (null or empty string removes the picture). Phone and email are not editable here.",
+          body: updateCustomerProfileSchema,
+          response: customerProfileResponseSchema,
+          errors: { 404: "No such customer." },
         },
       },
     },

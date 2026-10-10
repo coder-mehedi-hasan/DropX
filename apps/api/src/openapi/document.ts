@@ -12,6 +12,7 @@ import { pricingPaths, pricingTags } from "./paths/pricing.openapi"
 import { routesPaths, routesTags } from "./paths/routes.openapi"
 import { riderApplicationPaths, riderApplicationTags } from "./paths/rider-applications.openapi"
 import { trackingPaths, trackingTags } from "./paths/tracking.openapi"
+import { uploadsPaths, uploadsTags } from "./paths/uploads.openapi"
 import { buildSurfacePaths, buildSurfaceTags } from "./surface-spec"
 
 /**
@@ -40,6 +41,7 @@ const paths = {
   ...pricingPaths,
   ...routesPaths,
   ...riderApplicationPaths,
+  ...uploadsPaths,
 } as const
 
 const tags = [
@@ -51,6 +53,7 @@ const tags = [
   ...pricingTags,
   ...routesTags,
   ...riderApplicationTags,
+  ...uploadsTags,
 ]
 
 /** Every operation declared in the path fragments, flattened for the coverage check. */

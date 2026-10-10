@@ -3,6 +3,7 @@ import type {
   CreateCustomerAddressInput,
   CreateParcelRequest,
   CustomerAddress,
+  CustomerProfile,
   CustomerSession,
   FeeQuote,
   ListQueryParams,
@@ -19,6 +20,9 @@ import type {
   SessionMe,
   TokenPair,
   UpdateCustomerAddressInput,
+  UpdateCustomerProfileInput,
+  UploadPurpose,
+  UploadResult,
 } from "@/lib/types"
 
 /**
@@ -113,6 +117,34 @@ export const addressesApi = {
 
   remove(id: string): Promise<void> {
     return apiRequest<void>(`/customer/addresses/${encodeURIComponent(id)}`, { method: "DELETE" })
+  },
+}
+
+/**
+ * The signed-in customer's own profile. Reads return the real row; edits are
+ * merged with `PATCH` so the name and the avatar can change independently.
+ */
+export const profileApi = {
+  get(): Promise<CustomerProfile> {
+    return apiRequest<CustomerProfile>("/customer/profile")
+  },
+
+  update(payload: UpdateCustomerProfileInput): Promise<CustomerProfile> {
+    return apiRequest<CustomerProfile>("/customer/profile", { method: "PATCH", body: payload })
+  },
+}
+
+/**
+ * Generic file upload — every feature that needs stored bytes (avatar, proof,
+ * …) calls this and persists the returned URL. The purpose gates the type
+ * allowlist and size ceiling server-side.
+ */
+export const uploadsApi = {
+  upload(purpose: UploadPurpose, file: File): Promise<UploadResult> {
+    const form = new FormData()
+    form.set("purpose", purpose)
+    form.set("file", file)
+    return apiRequest<UploadResult>("/uploads", { method: "POST", body: form })
   },
 }
 

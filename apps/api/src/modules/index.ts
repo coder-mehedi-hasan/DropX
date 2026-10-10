@@ -10,6 +10,7 @@ import pricing from "./pricing/pricing.routes"
 import routes from "./routes/routes.routes"
 import riderApplications from "./rider-applications/rider-applications.routes"
 import tracking from "./tracking/tracking.routes"
+import uploads from "./uploads/uploads.routes"
 
 /**
  * The domain aggregator.
@@ -39,6 +40,7 @@ const modules: readonly FeatureModule[] = [
   { name: "pricing", basePath: "/pricing", router: pricing },
   { name: "routes", basePath: "/routes", router: routes },
   { name: "rider-applications", basePath: "/rider-applications", router: riderApplications },
+  { name: "uploads", basePath: "/uploads", router: uploads },
 ]
 
 export const MODULES: readonly FeatureModule[] = modules

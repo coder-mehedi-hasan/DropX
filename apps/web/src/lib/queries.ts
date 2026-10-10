@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { addressesApi, draftsApi, parcelsApi, pricingApi, trackingApi } from "@/lib/api"
+import { addressesApi, draftsApi, parcelsApi, pricingApi, profileApi, trackingApi, uploadsApi } from "@/lib/api"
 import { listCities, listCityZones, listZoneAreas } from "@/lib/reference-data"
 import type {
   CreateCustomerAddressInput,
@@ -10,6 +10,8 @@ import type {
   ListQueryParams,
   QuoteRequest,
   UpdateCustomerAddressInput,
+  UpdateCustomerProfileInput,
+  UploadPurpose,
 } from "@/lib/types"
 
 /**
@@ -27,6 +29,7 @@ export const queryKeys = {
   zoneAreas: (zoneId: string) => ["reference", "zones", zoneId, "areas"] as const,
   savedAddresses: () => ["addresses", "mine"] as const,
   parcelDraft: () => ["parcel-draft"] as const,
+  profile: () => ["profile", "mine"] as const,
 }
 
 export function useMyParcels(params: ListQueryParams) {
@@ -157,6 +160,28 @@ export function useDeleteAddress() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["addresses"] })
     },
+  })
+}
+
+export function useCustomerProfile() {
+  return useQuery({ queryKey: queryKeys.profile(), queryFn: profileApi.get })
+}
+
+export function useUpdateCustomerProfile() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: UpdateCustomerProfileInput) => profileApi.update(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["profile"] })
+    },
+  })
+}
+
+export function useUpload() {
+  return useMutation({
+    mutationFn: (input: { purpose: UploadPurpose; file: File }) =>
+      uploadsApi.upload(input.purpose, input.file),
   })
 }
 

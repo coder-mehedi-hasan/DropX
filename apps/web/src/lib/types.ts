@@ -70,7 +70,48 @@ export type SessionCustomer = {
   phone: string
   email: string | null
   status: "ACTIVE"
+  /** Public URL of the uploaded avatar; absent until the profile is read or edited. */
+  avatarUrl?: string | null
 }
+
+/**
+ * `GET /customer/profile` — the signed-in customer's own profile. The two
+ * editable fields are `name` and `avatarUrl`; phone and email are the OTP
+ * identifiers and are read-only.
+ */
+export type CustomerProfile = {
+  id: string
+  code: string
+  name: string
+  phone: string
+  email: string | null
+  type: "INDIVIDUAL" | "BUSINESS"
+  avatarUrl: string | null
+  createdAt: string
+}
+
+export type UpdateCustomerProfileInput = {
+  name?: string
+  /**
+   * `null` (or the empty string) removes the picture; a URL sets it. The bytes
+   * themselves come from `POST /uploads` with purpose `avatar`.
+   */
+  avatarUrl?: string | null
+}
+
+/** The `POST /uploads` result — what a caller stores, never the bytes. */
+export type UploadResult = {
+  url: string
+  key: string
+  size: number
+  contentType: string
+}
+
+/**
+ * The purpose gates the server-side type allowlist and size ceiling. A new
+ * camera/proof feature reuses this hook without touching the API.
+ */
+export type UploadPurpose = "avatar" | "proof"
 
 export type TokenPair = {
   accessToken: string

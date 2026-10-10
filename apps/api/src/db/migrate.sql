@@ -139,6 +139,9 @@ CREATE TABLE IF NOT EXISTS customers (
     type ENUM('INDIVIDUAL','BUSINESS') NOT NULL DEFAULT 'INDIVIDUAL',
     -- TEMP: created on OTP request after consent; ACTIVE: after OTP verified
     status ENUM('TEMP','ACTIVE') NOT NULL DEFAULT 'TEMP',
+    -- Public URL of the customer's uploaded avatar; NULL means the initials
+    -- fallback in the UI. The bytes live in object storage, never MySQL.
+    avatar_url VARCHAR(500) NULL,
     consent_accepted_at DATETIME NULL,
     activated_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -931,6 +934,9 @@ CREATE TABLE IF NOT EXISTS sequences (
 -- still converges rather than aborting before its later steps.
 ALTER TABLE customers ADD COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
 ALTER TABLE settlements ADD COLUMN code VARCHAR(20) NOT NULL DEFAULT '';
+-- Layout of the customer profile (avatar). Idempotent: errno 1060 from
+-- `migrate.ts` means the column already exists, exactly like the code column.
+ALTER TABLE customers ADD COLUMN avatar_url VARCHAR(500) NULL;
 
 -- Heal a `code` column that already exists but with the wrong shape (an earlier
 -- run added it nullable, which would let a NULL reach the mapper). Re-declaring
