@@ -11,9 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog"
+import { Textarea } from "../components/ui/textarea"
 
 /**
- * Confirmation for destructive actions.
+ * Confirmation for destructive or milestone actions.
  *
  * One dialog per provider, opened imperatively, rather than a controlled
  * `<Dialog>` per call site: deleting ten rows should not mean ten pieces of
@@ -25,7 +26,18 @@ import {
  *
  * `requireText` is for the irreversible ones — a name typed to confirm a delete
  * cannot be mis-clicked. It is opt-in because it is friction on purpose.
+ *
+ * `reason` turns the dialog into a prompt with an **optional** free-text box
+ * beside the question. Use `confirmWithReason` when you want the value back,
+ * because the reason is only ever returned alongside the boolean answer; plain
+ * `confirm` keeps resolving a boolean so older call sites never see it.
  */
+export type ConfirmReasonOptions = {
+  /** Label above the reason box. Defaults to "Reason (optional)". */
+  label?: string
+  placeholder?: string
+}
+
 export type ConfirmOptions = {
   title: string
   description?: React.ReactNode
@@ -35,34 +47,54 @@ export type ConfirmOptions = {
   destructive?: boolean
   /** Require this exact text before the confirm button enables. */
   requireText?: string
+  /** Collect an optional free-text reason aside the answer. */
+  reason?: boolean | ConfirmReasonOptions
+}
+
+export type ConfirmResult = {
+  confirmed: boolean
+  reason: string
 }
 
 type PendingConfirm = ConfirmOptions & {
-  resolve: (ok: boolean) => void
+  resolve: (result: ConfirmResult) => void
 }
 
 export function useConfirmation() {
   const [pending, setPending] = React.useState<PendingConfirm | null>(null)
   const [typed, setTyped] = React.useState("")
+  const [reason, setReason] = React.useState("")
 
-  const confirm = React.useCallback((options: ConfirmOptions) => {
+  const ask = React.useCallback((options: ConfirmOptions) => {
     setTyped("")
-    return new Promise<boolean>((resolve) => setPending({ ...options, resolve }))
+    setReason("")
+    return new Promise<ConfirmResult>((resolve) => setPending({ ...options, resolve }))
   }, [])
 
+  const confirm = React.useCallback(
+    (options: ConfirmOptions) => ask(options).then((result) => result.confirmed),
+    [ask],
+  )
+
+  const confirmWithReason = React.useCallback((options: ConfirmOptions) => ask(options), [ask])
+
   const settle = React.useCallback(
-    (ok: boolean) => {
-      pending?.resolve(ok)
+    (confirmed: boolean) => {
+      pending?.resolve({ confirmed, reason: confirmed ? reason.trim() : "" })
       setPending(null)
       setTyped("")
+      setReason("")
     },
-    [pending],
+    [pending, reason],
   )
 
   // A confirm that resolves `true` because the component unmounted would be worse
   // than one that never resolves: the caller's `then` would run a delete the
   // user never agreed to. Resolve `false` on the way out.
-  React.useEffect(() => () => pending?.resolve(false), [pending])
+  React.useEffect(() => () => pending?.resolve({ confirmed: false, reason: "" }), [pending])
+
+  const reasonOptions =
+    pending && pending.reason ? (typeof pending.reason === "boolean" ? {} : pending.reason) : null
 
   const dialog = (
     <Dialog
@@ -95,6 +127,20 @@ export function useConfirmation() {
           </label>
         ) : null}
 
+        {reasonOptions && pending ? (
+          <label className="space-y-2 text-sm">
+            <span className="text-muted-foreground">
+              {reasonOptions.label ?? "Reason (optional)"}
+            </span>
+            <Textarea
+              rows={2}
+              placeholder={reasonOptions.placeholder ?? "Optional note recorded with this action"}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </label>
+        ) : null}
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => settle(false)}>
             {pending?.cancelLabel ?? "Cancel"}
@@ -112,5 +158,5 @@ export function useConfirmation() {
     </Dialog>
   )
 
-  return { confirm, confirmationDialog: dialog }
+  return { confirm, confirmWithReason, confirmationDialog: dialog }
 }

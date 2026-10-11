@@ -228,16 +228,6 @@ export async function updateTransferStatus(
   const { input } = command
   const reason = input.reason ?? null
 
-  if (input.status === "CANCELLED" && !reason) {
-    throw new DomainError(
-      ERROR_CODES.VALIDATION_FAILED,
-      "A reason is required to cancel a transfer",
-      {
-        details: [{ field: "reason", message: "Say why it is not going" }],
-      },
-    )
-  }
-
   const departed = await withTransaction(db, async (tx) => {
     const current = await readLocked(tx, command.scope, command.transferId)
     assertTransition(current.status, input.status)

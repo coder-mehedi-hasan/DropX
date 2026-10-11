@@ -71,7 +71,7 @@ export type UpdateTransferInput = z.infer<typeof updateTransferSchema>
 
 export const updateTransferStatusSchema = z.object({
   status: recordStatus,
-  /** Required for `CANCELLED`, as for a delivery or a pickup. */
+  /** Optional free-text note recorded with any move, cancellation included. */
   reason: z.string().trim().max(500).optional(),
 })
 export type UpdateTransferStatusInput = z.infer<typeof updateTransferStatusSchema>

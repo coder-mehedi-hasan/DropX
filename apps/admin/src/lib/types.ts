@@ -807,24 +807,13 @@ export const updateTransferSchema = z
   })
 
 /**
- * The reason is required by the *API* for `CANCELLED`, and conditionally
- * required rather than always optional, so it is refined here too to fail in the
- * form instead of as a 422 after a round trip.
+ * `reason` is an optional free-text note on any move, cancellation included —
+ * the API no longer requires it for `CANCELLED`.
  */
-export const updateTransferStatusSchema = z
-  .object({
-    status: z.enum(TRANSFER_STATUSES),
-    reason: z.string().trim().max(500).optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.status === "CANCELLED" && !value.reason) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["reason"],
-        message: "Say why it is not going",
-      })
-    }
-  })
+export const updateTransferStatusSchema = z.object({
+  status: z.enum(TRANSFER_STATUSES),
+  reason: z.string().trim().max(500).optional(),
+})
 
 export const replaceTransferManifestSchema = z.object({
   parcelIds: z.array(z.string().trim().min(1)).max(500),

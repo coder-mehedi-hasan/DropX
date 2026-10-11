@@ -1,29 +1,57 @@
-import { useQuery } from "@tanstack/react-query"
-import { ArrowDownToLine, ArrowUpFromLine, MapPin, Plus, Truck } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ClipboardList,
+  MapPin,
+  MoreHorizontal,
+  Package,
+  PackageCheck,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Truck,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import {
+  AppToast,
   Badge,
   Button,
   Card,
   CardContent,
   CardHeader,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   EmptyState,
+  LoadingButton,
   ServerDataTable,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  useConfirmation,
   useFormSheetState,
   type DataTableColumn,
 } from "@dropx/ui"
-import { TRANSFER_STATUSES } from "@dropx/types"
+import { TRANSFER_STATUSES, TRANSFER_TRANSITIONS, type TransferStatus } from "@dropx/types"
 
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
-import { getTransfer, listHubsForPicker, listTransfers } from "@/lib/endpoints"
+import {
+  getTransfer,
+  listHubsForPicker,
+  listTransfers,
+  updateTransferStatus,
+} from "@/lib/endpoints"
 import { formatDateTime } from "@/lib/format"
 import type { TransferListItem, TransferWithManifest } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
@@ -32,9 +60,59 @@ import type { TransfersSearch } from "@/routes/transfers-search-params"
 import { TransferFormSheet } from "./transfer-form-sheet"
 import { TransferManifestSheet } from "./transfer-manifest-sheet"
 import { TRANSFER_STATUS_BADGE, TRANSFER_STATUS_LABEL } from "./transfer-status"
-import { TransferStatusSheet } from "./transfer-status-sheet"
 
 const TRANSFER_SORT_COLUMNS = ["departedAt", "arrivedAt", "status", "createdAt"] as const
+
+/**
+ * The one forward move worth surfacing as a button per row — the milestone the
+ * dispatcher is actually trying to reach. Built from the same shape as
+ * `TRANSFER_TRANSITIONS`: what turns into a button here is exactly what the API
+ * will accept from the current status.
+ */
+const FORWARD_ACTION: Partial<
+  Record<TransferStatus, { to: TransferStatus; label: string; icon: LucideIcon }>
+> = {
+  PLANNED: { to: "LOADING", label: "Start loading", icon: ClipboardList },
+  LOADING: { to: "IN_TRANSIT", label: "Depart", icon: Truck },
+  IN_TRANSIT: { to: "ARRIVED", label: "Mark arrived", icon: PackageCheck },
+}
+
+/**
+ * What to say when confirming a given move. `CANCELLED` is the only destructive
+ * one; everything else is a milestone. The reason box stays **optional** on
+ * every move — cancel included, matching the API.
+ */
+const STATUS_MOVE: Record<
+  TransferStatus,
+  { confirmLabel: string; description: string; placeholder?: string }
+> = {
+  LOADING: {
+    confirmLabel: "Start loading",
+    description:
+      "Marks the transfer as being loaded. The manifest can still change until you depart.",
+    placeholder: "Loading notes (optional)",
+  },
+  PLANNED: {
+    confirmLabel: "Back to planned",
+    description: "Reopens the draft so the load list can be changed.",
+    placeholder: "Why step back? (optional)",
+  },
+  IN_TRANSIT: {
+    confirmLabel: "Depart",
+    description: "Seals the manifest and moves every parcel to In transit. This cannot be undone.",
+    placeholder: "Vehicle / route notes (optional)",
+  },
+  ARRIVED: {
+    confirmLabel: "Mark arrived",
+    description: "Moves every manifest parcel to the destination hub and back to At hub.",
+    placeholder: "Receiving notes (optional)",
+  },
+  CANCELLED: {
+    confirmLabel: "Cancel transfer",
+    description: "Removes the manifest. Parcels stay on the origin hub's shelf.",
+    placeholder: "Why is it not going? (optional)",
+  },
+}
 
 function nextAction(transfer: TransferListItem, currentHubId: string): string {
   switch (transfer.status) {
@@ -70,9 +148,39 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
 
   const createSheet = useFormSheetState()
   const editSheet = useFormSheetState<string>()
-  const statusSheet = useFormSheetState<string>()
   const manifestSheet = useFormSheetState<string>()
   const [active, setActive] = useState<TransferWithManifest | null>(null)
+  const { confirmWithReason, confirmationDialog } = useConfirmation()
+
+  const queryClient = useQueryClient()
+  const [statusPendingId, setStatusPendingId] = useState<string | null>(null)
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: TransferStatus; reason: string }) =>
+      updateTransferStatus(id, {
+        status,
+        reason: reason.trim() ? reason.trim() : undefined,
+      }),
+    onMutate: ({ id }) => setStatusPendingId(id),
+    onSettled: () => setStatusPendingId(null),
+    onSuccess: () => {
+      AppToast.success("Transfer updated")
+      void queryClient.invalidateQueries({ queryKey: ["transfers"] })
+    },
+  })
+
+  async function askStatusMove(transfer: TransferListItem, to: TransferStatus) {
+    const move = STATUS_MOVE[to]
+    const result = await confirmWithReason({
+      title: `${move.confirmLabel} · ${transfer.transferNumber}?`,
+      description: move.description,
+      confirmLabel: move.confirmLabel,
+      destructive: to === "CANCELLED",
+      reason: { placeholder: move.placeholder },
+    })
+    if (result.confirmed) {
+      updateStatus.mutate({ id: transfer.id, status: to, reason: result.reason })
+    }
+  }
 
   const hubsQuery = useQuery({
     queryKey: ["transfer-context-hubs", user?.hubIds],
@@ -144,12 +252,6 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
     const full = await getTransfer(transfer.id)
     setActive(full)
     editSheet.openFor(transfer.id)
-  }
-
-  const openStatus = async (transfer: TransferListItem) => {
-    const full = await getTransfer(transfer.id)
-    setActive(full)
-    statusSheet.openFor(transfer.id)
   }
 
   const openManifest = async (transfer: TransferListItem) => {
@@ -237,44 +339,87 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
         id: "actions",
         header: "",
         align: "end",
-        cell: (transfer) => (
-          <div className="flex justify-end gap-1">
-            {canManage && transfer.status !== "IN_TRANSIT" && transfer.status !== "ARRIVED" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Edit transfer ${transfer.transferNumber}`}
-                onClick={() => void openEdit(transfer)}
-              >
-                Edit
-              </Button>
-            ) : null}
-            {canManage && transfer.status !== "ARRIVED" && transfer.status !== "CANCELLED" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Update status of transfer ${transfer.transferNumber}`}
-                onClick={() => void openStatus(transfer)}
-              >
-                Status
-              </Button>
-            ) : null}
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={`Edit manifest of transfer ${transfer.transferNumber}`}
-              onClick={() => void openManifest(transfer)}
-            >
-              Manifest
-            </Button>
-          </div>
-        ),
+        cell: (transfer) => {
+          const forward = FORWARD_ACTION[transfer.status]
+          const busy = statusPendingId === transfer.id
+          const statusBusy = statusPendingId !== null
+          return (
+            <div className="flex items-center justify-end gap-1">
+              {canManage && forward ? (
+                <LoadingButton
+                  variant="outline"
+                  size="sm"
+                  loading={busy}
+                  disabled={statusBusy}
+                  aria-label={`${forward.label} ${transfer.transferNumber}`}
+                  onClick={() => void askStatusMove(transfer, forward.to)}
+                >
+                  <forward.icon />
+                  {forward.label}
+                </LoadingButton>
+              ) : null}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label={`Actions for ${transfer.transferNumber}`}
+                  >
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="font-mono text-xs">
+                    {transfer.transferNumber}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {canManage &&
+                  transfer.status !== "IN_TRANSIT" &&
+                  transfer.status !== "ARRIVED" ? (
+                    <DropdownMenuItem onSelect={() => void openEdit(transfer)}>
+                      <Pencil />
+                      Edit
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem onSelect={() => void openManifest(transfer)}>
+                    <Package />
+                    Manifest
+                  </DropdownMenuItem>
+                  {canManage && forward
+                    ? TRANSFER_TRANSITIONS[transfer.status]
+                        .filter((to) => to !== forward.to)
+                        .map((to) => (
+                          <DropdownMenuItem
+                            key={to}
+                            className={to === "CANCELLED" ? "text-destructive" : undefined}
+                            disabled={statusBusy}
+                            onSelect={() => void askStatusMove(transfer, to)}
+                          >
+                            {to === "CANCELLED" ? <XCircle /> : <RotateCcw />}
+                            {STATUS_MOVE[to].confirmLabel}
+                          </DropdownMenuItem>
+                        ))
+                    : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )
+        },
       },
     ],
-    // `openEdit`/`openStatus`/`openManifest` are stable enough for a row render —
-    // they only set state — but they are listed so a stale closure cannot outlive
-    // a change to the sheet hooks.
-    [canManage, editSheet.openFor, statusSheet.openFor, manifestSheet.openFor, search.hubId],
+    // `openEdit`/`openManifest`/`askStatusMove` only set state or fire a
+    // mutation — they are stable enough for a row render — but they are listed so
+    // a stale closure cannot outlive a change here.
+    [
+      canManage,
+      editSheet.openFor,
+      manifestSheet.openFor,
+      confirmWithReason,
+      updateStatus,
+      statusPendingId,
+      search.hubId,
+    ],
   )
 
   const filtered = Boolean(
@@ -473,13 +618,6 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
         transfer={active}
       />
 
-      <TransferStatusSheet
-        key={statusSheet.key}
-        open={statusSheet.open}
-        onOpenChange={statusSheet.onOpenChange}
-        transfer={active}
-      />
-
       <TransferManifestSheet
         key={manifestSheet.key}
         open={manifestSheet.open}
@@ -487,6 +625,8 @@ export function TransfersListPage({ search }: { search: TransfersSearch }) {
         transfer={active}
         onManifestChange={updateManifest}
       />
+
+      {confirmationDialog}
     </div>
   )
 }
