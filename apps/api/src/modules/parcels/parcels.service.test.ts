@@ -4,45 +4,49 @@ import { pickRoutingHub } from "./parcels.service"
 import type { RoutingHub } from "./parcels.repository"
 
 const hubs: RoutingHub[] = [
-  { id: "1", type: "SORTING", district: "Dhaka", latitude: 23.8, longitude: 90.4 },
-  { id: "2", type: "ORIGIN", district: "Dhaka", latitude: 23.81, longitude: 90.41 },
-  { id: "3", type: "DESTINATION", district: "Dhaka", latitude: 23.82, longitude: 90.42 },
   {
-    id: "5",
-    type: "ORIGIN",
+    id: "1",
+    services: ["PICKUP", "SORTING", "DELIVERY"],
+    district: "Dhaka",
+    latitude: 23.8,
+    longitude: 90.4,
+  },
+  {
+    id: "4",
+    services: ["PICKUP", "SORTING", "DELIVERY"],
     district: "Chattogram",
     latitude: 22.35,
     longitude: 91.82,
-  },
-  {
-    id: "6",
-    type: "DESTINATION",
-    district: "Chattogram",
-    latitude: 22.36,
-    longitude: 91.83,
   },
 ]
 
 describe("pickRoutingHub", () => {
   test("uses the city district when an address has no map pin", () => {
-    expect(pickRoutingHub(hubs, "ORIGIN", { cityName: "Dhaka" })?.id).toBe("2")
+    expect(pickRoutingHub(hubs, "PICKUP", { cityName: "Dhaka" })?.id).toBe("1")
   })
 
   test("normalizes Chittagong to the Chattogram hub district", () => {
-    expect(pickRoutingHub(hubs, "DESTINATION", { cityName: "Chittagong" })?.id).toBe("6")
+    expect(pickRoutingHub(hubs, "DELIVERY", { cityName: "Chittagong" })?.id).toBe("4")
   })
 
   test("uses distance among hubs with the required operational role", () => {
     expect(
-      pickRoutingHub(hubs, "ORIGIN", {
+      pickRoutingHub(hubs, "PICKUP", {
         cityName: "Dhaka",
         latitude: 22.34,
         longitude: 91.81,
       })?.id,
-    ).toBe("5")
+    ).toBe("4")
   })
 
   test("does not silently use an unrelated hub", () => {
-    expect(pickRoutingHub(hubs, "DESTINATION", { cityName: "Rajshahi" })).toBeUndefined()
+    expect(pickRoutingHub(hubs, "DELIVERY", { cityName: "Rajshahi" })).toBeUndefined()
+  })
+
+  test("allows one multi-service hub to own both ends of a local journey", () => {
+    const origin = pickRoutingHub(hubs, "PICKUP", { cityName: "Dhaka" })
+    const destination = pickRoutingHub(hubs, "DELIVERY", { cityName: "Dhaka" })
+    expect(origin?.id).toBe("1")
+    expect(destination?.id).toBe("1")
   })
 })

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { Plus, Warehouse } from "lucide-react"
+import { Plus, Settings2, Warehouse } from "lucide-react"
 import { useMemo, useState } from "react"
 import {
   Badge,
@@ -11,7 +11,7 @@ import {
   ServerDataTable,
   type DataTableColumn,
 } from "@dropx/ui"
-import { HUB_STATUSES, HUB_TYPES } from "@dropx/types"
+import { HUB_SERVICES, HUB_STATUSES } from "@dropx/types"
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
@@ -24,13 +24,14 @@ import type { HubsSearch } from "@/routes/org-search-params"
 
 import { HubFormSheet } from "./hub-form-sheet"
 
-const HUB_SORT_COLUMNS = ["name", "code", "type", "status", "createdAt"] as const
+const HUB_SORT_COLUMNS = ["name", "code", "status", "createdAt"] as const
 
 export function HubsListPage({ search }: { search: HubsSearch }) {
   const { hasPermission } = useAuth()
-  const canCreate = hasPermission("hubs.manage")
+  const canManage = hasPermission("hubs.manage")
 
   const [createOpen, setCreateOpen] = useState(false)
+  const [editing, setEditing] = useState<Hub | null>(null)
 
   const where = usePaginatedListWhere(search)
   const params = useMemo(
@@ -40,7 +41,7 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
       sortBy: where.sortBy,
       sort: where.sort,
       search: where.search,
-      type: where.type as HubsSearch["type"],
+      service: where.service as HubsSearch["service"],
       status: where.status as HubsSearch["status"],
       branchId: where.branchId,
     }),
@@ -50,7 +51,7 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
       where.sortBy,
       where.sort,
       where.search,
-      where.type,
+      where.service,
       where.status,
       where.branchId,
     ],
@@ -106,10 +107,18 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
         value: (hub) => hub.code,
       },
       {
-        id: "type",
-        header: "Type",
-        cell: (hub) => <Badge variant="secondary">{hub.type}</Badge>,
-        value: (hub) => hub.type,
+        id: "services",
+        header: "Services",
+        cell: (hub) => (
+          <div className="flex flex-wrap gap-1">
+            {hub.services.map((service) => (
+              <Badge key={service} variant="secondary">
+                {service}
+              </Badge>
+            ))}
+          </div>
+        ),
+        value: (hub) => hub.services.join(", "),
       },
       {
         id: "status",
@@ -132,8 +141,22 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
         ),
         value: (hub) => hub.createdAt,
       },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: "",
+              cell: (hub: Hub) => (
+                <Button variant="ghost" size="sm" onClick={() => setEditing(hub)}>
+                  <Settings2 />
+                  Configure
+                </Button>
+              ),
+            } satisfies DataTableColumn<Hub>,
+          ]
+        : []),
     ],
-    [],
+    [canManage],
   )
 
   return (
@@ -143,7 +166,7 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
         title="Hubs"
         description="Sorting and delivery points. Each belongs to one branch, and staff can be scoped to their assigned hubs."
         actions={
-          canCreate ? (
+          canManage ? (
             <Button onClick={() => setCreateOpen(true)}>
               <Plus />
               New hub
@@ -171,11 +194,11 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
             </div>
             <ListFilterSelect
               className="w-36"
-              label="Filter by type"
-              allLabel="All types"
-              value={search.type ?? ""}
-              onChange={(value) => patch({ type: value || undefined })}
-              options={HUB_TYPES.map((type) => ({ value: type, label: type }))}
+              label="Filter by service"
+              allLabel="All services"
+              value={search.service ?? ""}
+              onChange={(value) => patch({ service: value || undefined })}
+              options={HUB_SERVICES.map((service) => ({ value: service, label: service }))}
             />
             <ListFilterSelect
               className="w-36"
@@ -211,12 +234,12 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
                 icon={Warehouse}
                 title="No hubs match these filters"
                 description={
-                  search.search || search.type || search.status
+                  search.search || search.service || search.status
                     ? "Try a different search, or clear the filters."
                     : "No hubs yet. Create the first one."
                 }
                 action={
-                  canCreate ? (
+                  canManage ? (
                     <Button onClick={() => setCreateOpen(true)}>
                       <Plus />
                       New hub
@@ -233,6 +256,14 @@ export function HubsListPage({ search }: { search: HubsSearch }) {
       </Card>
 
       <HubFormSheet open={createOpen} onOpenChange={setCreateOpen} />
+      <HubFormSheet
+        key={editing?.id ?? "no-edit"}
+        open={editing !== null}
+        onOpenChange={(next) => {
+          if (!next) setEditing(null)
+        }}
+        hub={editing}
+      />
     </div>
   )
 }

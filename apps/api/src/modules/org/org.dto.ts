@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "../../db/models"
+import { BRANCH_STATUSES, HUB_SERVICES, HUB_STATUSES } from "../../db/models"
 
 /**
  * Boundary DTOs for the `org` feature.
@@ -57,9 +57,9 @@ export const hubIdParamSchema = z.object({ id })
 export const listHubsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
-  sortBy: z.enum(["name", "code", "type", "status", "createdAt"]).default("name"),
+  sortBy: z.enum(["name", "code", "status", "createdAt"]).default("name"),
   sort: z.enum(["asc", "desc"]).default("asc"),
-  type: z.enum(HUB_TYPES).optional(),
+  service: z.enum(HUB_SERVICES).optional(),
   status: z.enum(HUB_STATUSES).optional(),
   branchId: id.optional(),
   search: z.string().trim().max(100).optional(),
@@ -67,20 +67,30 @@ export const listHubsQuerySchema = z.object({
 
 export type ListHubsQuery = z.infer<typeof listHubsQuerySchema>
 
-export const createHubSchema = z.object({
+const hubServicesSchema = z
+  .array(z.enum(HUB_SERVICES))
+  .min(1, "Select at least one hub service")
+  .max(HUB_SERVICES.length)
+  .refine((services) => new Set(services).size === services.length, {
+    message: "A hub service can only be selected once",
+  })
+
+const hubInputFields = {
   branchId: id,
   name,
   code: code.refine((value) => /^[A-Z0-9-]+$/.test(value), {
     message: "Use uppercase letters, numbers and hyphens only",
   }),
-  type: z.enum(HUB_TYPES),
+  services: hubServicesSchema,
   address: optionalString(500),
   district: optionalString(100),
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
   capacity: z.coerce.number().int().min(0).optional(),
   status: z.enum(HUB_STATUSES).default("ACTIVE"),
-})
+}
+
+export const createHubSchema = z.object(hubInputFields)
 
 export type CreateHubInput = z.infer<typeof createHubSchema>
 
@@ -120,7 +130,7 @@ export const hubResponseSchema = z.object({
   branchCode: z.string(),
   name: z.string(),
   code: z.string(),
-  type: z.enum(HUB_TYPES),
+  services: z.array(z.enum(HUB_SERVICES)),
   address: z.string().nullable(),
   district: z.string().nullable(),
   latitude: z.number().nullable(),

@@ -1,4 +1,5 @@
-import type { CustomerStatus, CustomerType, HubStatus, HubType, ListParams } from "@/db/models"
+import { HUB_SERVICES } from "@/db/models"
+import type { CustomerStatus, CustomerType, HubService, HubStatus, ListParams } from "@/db/models"
 import type { Scope } from "@/shared/auth/auth-context"
 import type { Pool, RowDataPacket } from "mysql2/promise"
 
@@ -20,7 +21,7 @@ export type HubRef = {
   id: string
   name: string
   code: string
-  type: HubType
+  services: HubService[]
   district: string | null
   status: HubStatus
 }
@@ -42,10 +43,14 @@ export type CustomerRef = {
   status: CustomerStatus
 }
 
-const HUB_COLUMNS = "h.id, h.name, h.code, h.type, h.district, h.status"
+const HUB_COLUMNS = `h.id, h.name, h.code, h.district, h.status,
+  COALESCE(
+    (SELECT JSON_ARRAYAGG(hs.service) FROM hub_services AS hs WHERE hs.hub_id = h.id),
+    JSON_ARRAY()
+  ) AS services`
 const CUSTOMER_COLUMNS = "c.id, c.code, c.name, c.phone, c.email, c.type, c.status"
 
-const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status"] as const
+const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.status"] as const
 const CUSTOMER_SORT_COLUMNS = ["c.name", "c.phone", "c.created_at", "c.id"] as const
 const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status"] as const
 
@@ -143,18 +148,23 @@ export async function listBranchRefs(
 }
 
 export type ListHubRefsFilter = {
-  type?: HubType | undefined
+  service?: HubService | undefined
   status?: HubStatus | undefined
   search?: string | undefined
 }
 
 function decodeHubRef(row: unknown): HubRef {
   const r = row as Record<string, unknown>
+  const parsedServices = typeof r.services === "string" ? JSON.parse(r.services) : r.services
   return {
     id: String(r.id),
     name: String(r.name),
     code: String(r.code),
-    type: r.type as HubType,
+    services: Array.isArray(parsedServices)
+      ? parsedServices.filter((service): service is HubService =>
+          (HUB_SERVICES as readonly unknown[]).includes(service),
+        )
+      : [],
     district: toStringOrNull(r.district),
     status: r.status as HubStatus,
   }
@@ -169,7 +179,12 @@ export async function listHubRefs(
   const clauses: Clause[] = []
   const scopeClause = applyHubScope(scope)
   if (scopeClause.params.length) clauses.push(scopeClause)
-  if (filter.type) clauses.push({ text: "h.type = ?", params: [filter.type] })
+  if (filter.service) {
+    clauses.push({
+      text: "EXISTS (SELECT 1 FROM hub_services AS hs_filter WHERE hs_filter.hub_id = h.id AND hs_filter.service = ?)",
+      params: [filter.service],
+    })
+  }
   if (filter.status) clauses.push({ text: "h.status = ?", params: [filter.status] })
   if (filter.search) {
     const like = `%${escapeLike(filter.search)}%`

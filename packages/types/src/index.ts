@@ -151,8 +151,8 @@ export type Branch = EntityBase &
     status: BranchStatus
   }
 
-export const HUB_TYPES = ["ORIGIN", "SORTING", "TRANSIT", "DESTINATION"] as const
-export type HubType = (typeof HUB_TYPES)[number]
+export const HUB_SERVICES = ["PICKUP", "SORTING", "DELIVERY"] as const
+export type HubService = (typeof HUB_SERVICES)[number]
 
 export const HUB_STATUSES = ["ACTIVE", "INACTIVE", "MAINTENANCE"] as const
 export type HubStatus = (typeof HUB_STATUSES)[number]
@@ -162,7 +162,7 @@ export type Hub = EntityBase &
     branchId: Id
     name: string
     code: string
-    type: HubType
+    services: HubService[]
     address: Nullable<string>
     district: Nullable<string>
     latitude: Nullable<number>

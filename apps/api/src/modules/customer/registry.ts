@@ -46,7 +46,7 @@ import { pricingLaneWithSlabsResponseSchema } from "../pricing/pricing-lanes.dto
  * shape of the request has nowhere to put the other party's id.
  *
  * Hubs go the same way: a portal booking is addressed, not routed. The service
- * resolves origin and destination from role-compatible active hubs, using the
+ * resolves origin and destination from service-compatible active hubs, using the
  * address coordinates when present and its resolved city otherwise. Neither id
  * appears on this wire at all — and one sent anyway is stripped by the schema
  * rather than honoured.
@@ -213,7 +213,7 @@ export const CUSTOMER_SURFACE = defineSurface({
           summary: "Book a parcel (customer)",
           successDescription: "Created.",
           description:
-            "Self-service booking. The sender is the session and neither hub id is accepted — `senderCustomerId` is stamped from the session, and role-compatible origin/destination hubs are resolved server-side from the validated addresses. The delivery fee is quoted from the lane matrix.",
+            "Self-service booking. The sender is the session and neither hub id is accepted — `senderCustomerId` is stamped from the session, and pickup/delivery-capable hubs are resolved server-side from the validated addresses. The delivery fee is quoted from the lane matrix.",
           body: createOwnParcelSchema,
           response: parcelDetailResponseSchema,
           successStatus: 201,

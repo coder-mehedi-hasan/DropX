@@ -54,7 +54,7 @@ export async function listHubs(
   const params = pickerParams(query)
 
   const { nodes, totalCount } = await listHubRefs(c.get("db")!, scope, params, {
-    type: query.type,
+    service: query.service,
     status: query.status,
     search: params.search,
   } satisfies ListHubRefsFilter)

@@ -1,12 +1,14 @@
 import { buildPage, normalizeListParams, type Page } from "../../db/models"
 
-import type { Branch, HubWithBranch } from "../../db/models"
+import type { Branch, HubService, HubWithBranch } from "../../db/models"
+import { withTransaction } from "../../db/transaction"
 
 import {
   insertBranch,
   insertHub,
   patchBranch,
   patchHub,
+  replaceHubServices,
   selectBranch,
   selectBranches,
   selectHub,
@@ -29,14 +31,17 @@ import { DomainError, fromDatabaseError, notFound } from "../../core"
  * to show ("pick a branch") rather than a 500.
  */
 
-export async function listBranches(c: Context<AppEnv>, query: {
-  page?: number
-  limit?: number
-  sortBy?: string
-  sort?: "asc" | "desc"
-  status?: string
-  search?: string
-}): Promise<Page<Branch>> {
+export async function listBranches(
+  c: Context<AppEnv>,
+  query: {
+    page?: number
+    limit?: number
+    sortBy?: string
+    sort?: "asc" | "desc"
+    status?: string
+    search?: string
+  },
+): Promise<Page<Branch>> {
   const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectBranches(c.get("db")!, params, {
     status: query.status as Branch["status"] | undefined,
@@ -51,17 +56,20 @@ export async function getBranch(c: Context<AppEnv>, branchId: string): Promise<B
   return branch
 }
 
-export async function createBranch(c: Context<AppEnv>, input: {
-  name: string
-  code: string
-  phone?: string
-  address?: string
-  city?: string
-  district?: string
-  latitude?: number
-  longitude?: number
-  status: Branch["status"]
-}): Promise<Branch> {
+export async function createBranch(
+  c: Context<AppEnv>,
+  input: {
+    name: string
+    code: string
+    phone?: string
+    address?: string
+    city?: string
+    district?: string
+    latitude?: number
+    longitude?: number
+    status: Branch["status"]
+  },
+): Promise<Branch> {
   const id = await insertBranch(c.get("db")!, {
     name: input.name,
     code: input.code,
@@ -88,20 +96,23 @@ export async function updateBranch(
   return branch
 }
 
-export async function listHubs(c: Context<AppEnv>, query: {
-  page?: number
-  limit?: number
-  sortBy?: string
-  sort?: "asc" | "desc"
-  branchId?: string
-  type?: string
-  status?: string
-  search?: string
-}): Promise<Page<HubWithBranch>> {
+export async function listHubs(
+  c: Context<AppEnv>,
+  query: {
+    page?: number
+    limit?: number
+    sortBy?: string
+    sort?: "asc" | "desc"
+    branchId?: string
+    service?: string
+    status?: string
+    search?: string
+  },
+): Promise<Page<HubWithBranch>> {
   const params = normalizeListParams(query)
   const { nodes, totalCount } = await selectHubs(c.get("db")!, params, {
     branchId: query.branchId,
-    type: query.type as HubWithBranch["type"] | undefined,
+    service: query.service as HubService | undefined,
     status: query.status as HubWithBranch["status"] | undefined,
     search: query.search,
   })
@@ -114,33 +125,39 @@ export async function getHub(c: Context<AppEnv>, hubId: string): Promise<HubWith
   return hub
 }
 
-export async function createHub(c: Context<AppEnv>, input: {
-  branchId: string
-  name: string
-  code: string
-  type: HubWithBranch["type"]
-  address?: string
-  district?: string
-  latitude?: number
-  longitude?: number
-  capacity?: number
-  status: HubWithBranch["status"]
-}): Promise<HubWithBranch> {
+export async function createHub(
+  c: Context<AppEnv>,
+  input: {
+    branchId: string
+    name: string
+    code: string
+    services: HubService[]
+    address?: string
+    district?: string
+    latitude?: number
+    longitude?: number
+    capacity?: number
+    status: HubWithBranch["status"]
+  },
+): Promise<HubWithBranch> {
   try {
-    const id = await insertHub(c.get("db")!, {
-      branchId: input.branchId,
-      name: input.name,
-      code: input.code,
-      type: input.type,
-      address: input.address ?? null,
-      district: input.district ?? null,
-      latitude: input.latitude ?? null,
-      longitude: input.longitude ?? null,
-      capacity: input.capacity ?? null,
-      status: input.status,
+    const hub = await withTransaction(c.get("db")!, async (tx) => {
+      const id = await insertHub(tx, {
+        branchId: input.branchId,
+        name: input.name,
+        code: input.code,
+        address: input.address ?? null,
+        district: input.district ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        capacity: input.capacity ?? null,
+        status: input.status,
+      })
+      await replaceHubServices(tx, id, input.services)
+      const created = await selectHub(tx, id)
+      if (!created) throw new Error("Hub disappeared immediately after insert")
+      return created
     })
-    const hub = await selectHub(c.get("db")!, id)
-    if (!hub) throw new Error("Hub disappeared immediately after insert")
     return hub
   } catch (error) {
     if (error instanceof DomainError) throw error
@@ -157,10 +174,23 @@ export async function updateHub(
   // hub to a different branch after creation would orphan the rows that hang
   // off it. Strip it here rather than letting it through to the UPDATE, so the
   // FK stays the single source of truth for where a hub belongs.
-  const { branchId: _branchId, ...rest } = patch
+  const {
+    branchId: _branchId,
+    branchName: _branchName,
+    branchCode: _branchCode,
+    services,
+    ...rest
+  } = patch
   void _branchId
+  void _branchName
+  void _branchCode
 
-  const hub = await patchHub(c.get("db")!, hubId, rest)
-  if (!hub) throw notFound("No such hub")
-  return hub
+  return withTransaction(c.get("db")!, async (tx) => {
+    const hub = await patchHub(tx, hubId, rest)
+    if (!hub) throw notFound("No such hub")
+    if (services !== undefined) await replaceHubServices(tx, hubId, services)
+    const updated = await selectHub(tx, hubId)
+    if (!updated) throw notFound("No such hub")
+    return updated
+  })
 }

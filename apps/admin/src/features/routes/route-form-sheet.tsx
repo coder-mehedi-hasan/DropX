@@ -161,6 +161,7 @@ export function RouteFormSheet({
                 <FormLabel>Origin hub</FormLabel>
                 <ReferenceCombobox
                   source="hubs"
+                  hubService="SORTING"
                   placeholder="Select origin hub"
                   value={field.value}
                   onChange={field.onChange}
@@ -176,6 +177,7 @@ export function RouteFormSheet({
                 <FormLabel>Destination hub</FormLabel>
                 <ReferenceCombobox
                   source="hubs"
+                  hubService="SORTING"
                   placeholder="Select destination hub"
                   value={field.value}
                   onChange={field.onChange}
@@ -315,6 +317,7 @@ function StopsEditor({
                 <ReferenceCombobox
                   id={hubFieldId(index)}
                   source="hubs"
+                  hubService="SORTING"
                   placeholder="Select hub"
                   value={row.hubId}
                   onChange={(hubId) => update(index, { hubId })}

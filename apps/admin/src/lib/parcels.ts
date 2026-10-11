@@ -48,7 +48,7 @@ export const BRANCH_SORT_COLUMNS = ["name", "code", "status", "createdAt"] as co
 export type BranchSortColumn = (typeof BRANCH_SORT_COLUMNS)[number]
 
 /** Columns the API allowlists in `sortBy` for hubs. */
-export const HUB_SORT_COLUMNS = ["name", "code", "type", "status", "createdAt"] as const
+export const HUB_SORT_COLUMNS = ["name", "code", "status", "createdAt"] as const
 export type HubSortColumn = (typeof HUB_SORT_COLUMNS)[number]
 
 /**

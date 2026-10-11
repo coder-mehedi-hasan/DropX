@@ -44,7 +44,7 @@ async function ensureHub(
   input: {
     name: string
     code: string
-    type: "ORIGIN" | "SORTING" | "TRANSIT" | "DESTINATION"
+    services: Array<"PICKUP" | "SORTING" | "DELIVERY">
     district: string
     address?: string | null
     capacity?: number | null
@@ -54,22 +54,36 @@ async function ensureHub(
     `SELECT id FROM hubs WHERE code = ? LIMIT 1`,
     [input.code],
   )
-  if (rows[0]) return String(rows[0].id)
+  let hubId: string
+  if (rows[0]) {
+    hubId = String(rows[0].id)
+    await pool.execute(
+      `UPDATE hubs
+       SET branch_id = ?, name = ?, district = ?, address = ?, capacity = ?, status = 'ACTIVE'
+       WHERE id = ?`,
+      [branchId, input.name, input.district, input.address ?? null, input.capacity ?? null, hubId],
+    )
+  } else {
+    const [result] = await pool.execute<mysql.ResultSetHeader>(
+      `INSERT INTO hubs (branch_id, name, code, district, address, capacity, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+      [
+        branchId,
+        input.name,
+        input.code,
+        input.district,
+        input.address ?? null,
+        input.capacity ?? null,
+      ],
+    )
+    hubId = String(result.insertId)
+  }
 
-  const [result] = await pool.execute<mysql.ResultSetHeader>(
-    `INSERT INTO hubs (branch_id, name, code, type, district, address, capacity, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-    [
-      branchId,
-      input.name,
-      input.code,
-      input.type,
-      input.district,
-      input.address ?? null,
-      input.capacity ?? null,
-    ],
-  )
-  return String(result.insertId)
+  await pool.execute("DELETE FROM hub_services WHERE hub_id = ?", [hubId])
+  for (const service of input.services) {
+    await pool.execute("INSERT INTO hub_services (hub_id, service) VALUES (?, ?)", [hubId, service])
+  }
+  return hubId
 }
 
 async function ensureVehicle(input: {
@@ -159,71 +173,29 @@ async function main() {
     district: "Khulna",
   })
 
-  // Hubs
+  // One physical hub per city, each configured with the services it provides.
   const dhkCentral = await ensureHub(dhkBranch, {
-    name: "Dhaka Central Sorting Hub",
+    name: "Dhaka Hub",
     code: "HUB-DHK-CEN",
-    type: "SORTING",
+    services: ["PICKUP", "SORTING", "DELIVERY"],
     district: "Dhaka",
     capacity: 5000,
   })
-  const dhkPickup = await ensureHub(dhkBranch, {
-    name: "Dhaka Pickup Hub",
-    code: "HUB-DHK-PK",
-    type: "ORIGIN",
-    district: "Dhaka",
-    capacity: 2000,
-  })
-  await ensureHub(dhkBranch, {
-    name: "Dhaka Last-Mile Hub",
-    code: "HUB-DHK-DL",
-    type: "DESTINATION",
-    district: "Dhaka",
-    capacity: 1500,
-  })
 
   const ctgCentral = await ensureHub(ctgBranch, {
-    name: "Chattogram Central Sorting Hub",
+    name: "Chattogram Hub",
     code: "HUB-CTG-CEN",
-    type: "SORTING",
+    services: ["PICKUP", "SORTING", "DELIVERY"],
     district: "Chattogram",
     capacity: 4000,
   })
-  await ensureHub(ctgBranch, {
-    name: "Chattogram Pickup Hub",
-    code: "HUB-CTG-PK",
-    type: "ORIGIN",
-    district: "Chattogram",
-    capacity: 1500,
-  })
-  const ctgDelivery = await ensureHub(ctgBranch, {
-    name: "Chattogram Last-Mile Hub",
-    code: "HUB-CTG-DL",
-    type: "DESTINATION",
-    district: "Chattogram",
-    capacity: 1200,
-  })
 
   const khlCentral = await ensureHub(khlBranch, {
-    name: "Khulna Central Sorting Hub",
+    name: "Khulna Hub",
     code: "HUB-KHL-CEN",
-    type: "SORTING",
+    services: ["PICKUP", "SORTING", "DELIVERY"],
     district: "Khulna",
     capacity: 2000,
-  })
-  await ensureHub(khlBranch, {
-    name: "Khulna Pickup Hub",
-    code: "HUB-KHL-PK",
-    type: "ORIGIN",
-    district: "Khulna",
-    capacity: 1000,
-  })
-  const khlDelivery = await ensureHub(khlBranch, {
-    name: "Khulna Last-Mile Hub",
-    code: "HUB-KHL-DL",
-    type: "DESTINATION",
-    district: "Khulna",
-    capacity: 800,
   })
 
   // Vehicles
@@ -245,10 +217,8 @@ async function main() {
     estMin: 420,
   })
   await ensureRouteStops(rtDhkCtg, [
-    { hubId: dhkPickup, seq: 1, etaMin: 0 },
-    { hubId: dhkCentral, seq: 2, etaMin: 30 },
-    { hubId: ctgCentral, seq: 3, etaMin: 390 },
-    { hubId: ctgDelivery, seq: 4, etaMin: 420 },
+    { hubId: dhkCentral, seq: 1, etaMin: 0 },
+    { hubId: ctgCentral, seq: 2, etaMin: 420 },
   ])
 
   const rtDhkKhl = await ensureRoute({
@@ -261,8 +231,7 @@ async function main() {
   })
   await ensureRouteStops(rtDhkKhl, [
     { hubId: dhkCentral, seq: 1, etaMin: 0 },
-    { hubId: khlCentral, seq: 2, etaMin: 300 },
-    { hubId: khlDelivery, seq: 3, etaMin: 330 },
+    { hubId: khlCentral, seq: 2, etaMin: 330 },
   ])
 
   const rtCtgDhk = await ensureRoute({

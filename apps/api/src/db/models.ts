@@ -23,6 +23,7 @@ export const TABLES = {
   roles: "roles",
   branches: "branches",
   hubs: "hubs",
+  hubServices: "hub_services",
   users: "users",
   userRoles: "user_roles",
   rolePermissions: "role_permissions",

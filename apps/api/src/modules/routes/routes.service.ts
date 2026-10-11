@@ -1,4 +1,4 @@
-import { DomainError, fromDatabaseError, notFound } from "../../core"
+import { DomainError, ERROR_CODES, fromDatabaseError, notFound } from "../../core"
 
 import type { Context } from "hono"
 import type { AppEnv } from "../../types/env"
@@ -14,6 +14,7 @@ import {
   replaceStops,
   selectRoute,
   selectRoutes,
+  selectHubsProvidingService,
   selectStops,
 } from "./routes.repository"
 
@@ -40,6 +41,10 @@ export async function createRoute(
   input: Parameters<typeof insertRoute>[1],
 ): Promise<Route> {
   try {
+    await requireSortingHubs(c, [
+      { id: input.originHubId, field: "originHubId" },
+      { id: input.destinationHubId, field: "destinationHubId" },
+    ])
     const id = await insertRoute(c.get("db")!, input)
     const route = await selectRoute(c.get("db")!, id)
     if (!route) throw new Error("Route disappeared immediately after insert")
@@ -56,6 +61,13 @@ export async function updateRoute(
   patch: UpdateRouteInput,
 ): Promise<Route> {
   try {
+    await requireSortingHubs(
+      c,
+      [
+        patch.originHubId ? { id: patch.originHubId, field: "originHubId" } : null,
+        patch.destinationHubId ? { id: patch.destinationHubId, field: "destinationHubId" } : null,
+      ].filter((entry): entry is { id: string; field: string } => entry !== null),
+    )
     const route = await patchRoute(c.get("db")!, routeId, patch)
     if (!route) throw notFound("No such route")
     return route
@@ -93,5 +105,30 @@ export async function updateRouteStops(
 ): Promise<RouteStop[]> {
   const route = await selectRoute(c.get("db")!, routeId)
   if (!route) throw notFound("No such route")
+  await requireSortingHubs(
+    c,
+    stops.map((stop, index) => ({ id: stop.hubId, field: `stops.${index}.hubId` })),
+  )
   return replaceStops(c.get("db")!, routeId, stops)
+}
+
+async function requireSortingHubs(
+  c: Context<AppEnv>,
+  refs: Array<{ id: string; field: string }>,
+): Promise<void> {
+  if (refs.length === 0) return
+  const supported = await selectHubsProvidingService(
+    c.get("db")!,
+    [...new Set(refs.map((ref) => ref.id))],
+    "SORTING",
+  )
+  const invalid = refs.find((ref) => !supported.has(ref.id))
+  if (!invalid) return
+  throw new DomainError(
+    ERROR_CODES.VALIDATION_FAILED,
+    "Every route hub must be active and provide sorting service",
+    {
+      details: [{ field: invalid.field, message: "Choose a sorting-capable hub" }],
+    },
+  )
 }

@@ -13,7 +13,7 @@ import {
   COMPENSATION_TYPES,
   DELIVERY_STATUSES,
   HUB_STATUSES,
-  HUB_TYPES,
+  HUB_SERVICES,
   PICKUP_STATUSES,
   RIDER_STATUSES,
   TRANSFER_STATUSES,
@@ -30,7 +30,7 @@ import type {
   CustomerWithAddresses,
   FeeQuote,
   HubStatus,
-  HubType,
+  HubService,
   HubRef,
   Parcel,
   ParcelAddress,
@@ -317,7 +317,7 @@ export type Hub = {
   branchCode: string
   name: string
   code: string
-  type: "ORIGIN" | "SORTING" | "TRANSIT" | "DESTINATION"
+  services: HubService[]
   address: string | null
   district: string | null
   latitude: number | null
@@ -341,7 +341,7 @@ export type CreateHubBody = {
   branchId: Id
   name: string
   code: string
-  type: HubType
+  services: HubService[]
   address: string | null
   district: string | null
   latitude: number | null
@@ -524,7 +524,12 @@ export const createHubSchema = z.object({
   branchId: z.string().trim().min(1),
   name: z.string().trim().min(1).max(150),
   code: z.string().trim().min(1).max(50),
-  type: z.enum(HUB_TYPES),
+  services: z
+    .array(z.enum(HUB_SERVICES))
+    .min(1, "Select at least one hub service")
+    .refine((services) => new Set(services).size === services.length, {
+      message: "A hub service can only be selected once",
+    }),
   address: z.string().trim().max(500).optional(),
   district: z.string().trim().max(100).optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
@@ -848,7 +853,7 @@ export type HubOption = {
   id: Id
   name: string
   code: string
-  type: HubType
+  services: HubService[]
   district: string | null
   status: HubStatus
 }

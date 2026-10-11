@@ -40,6 +40,7 @@ import type {
   ServiceZone,
   Vehicle,
 } from "@/lib/types"
+import type { HubService } from "@dropx/types"
 import { formatMoney } from "@/lib/format"
 import { useDebouncedValue } from "@/lib/use-debounced-value"
 
@@ -116,7 +117,7 @@ function toHubRows(nodes: readonly HubOption[]): Row[] {
     id: hub.id,
     label: hub.name,
     hint: hub.district ?? hub.code,
-    tags: [hub.code, hub.type],
+    tags: [hub.code, ...hub.services],
   }))
 }
 
@@ -223,6 +224,7 @@ function useReferenceRows(
   search: string,
   enabled: boolean,
   dependsOn: string,
+  hubService?: HubService,
 ): { rows: Row[]; isFetching: boolean; isError: boolean } {
   const params = { page: 1, limit: PAGE_SIZE, search: search || undefined }
 
@@ -258,8 +260,8 @@ function useReferenceRows(
   })
 
   const hubs = useQuery({
-    queryKey: ["reference", "hubs", params],
-    queryFn: ({ signal }) => listHubsForPicker(params, signal),
+    queryKey: ["reference", "hubs", hubService, params],
+    queryFn: ({ signal }) => listHubsForPicker({ ...params, service: hubService }, signal),
     enabled: enabled && source === "hubs",
     staleTime: 60_000,
   })
@@ -398,6 +400,7 @@ export function ReferenceCombobox({
   dependsOn,
   id,
   invalid,
+  hubService,
 }: {
   /** Selected id, or `""` for nothing. */
   value: string
@@ -414,6 +417,8 @@ export function ReferenceCombobox({
   id?: string
   /** Paints the red border; the message itself belongs to the form field. */
   invalid?: boolean
+  /** Limits hub rows to facilities that provide this service. */
+  hubService?: HubService
 }) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
@@ -426,6 +431,7 @@ export function ReferenceCombobox({
     debouncedSearch,
     open && !blocked,
     dependsOn ?? "",
+    hubService,
   )
 
   const selected = React.useMemo(() => rows.find((row) => row.id === value) ?? null, [rows, value])

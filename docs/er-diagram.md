@@ -5,6 +5,7 @@ Entity-relationship diagram for the schema in `migrate.sql`.
 ```mermaid
 erDiagram
     branches ||--o{ hubs : has
+    hubs ||--|{ hub_services : provides
     branches ||--o{ users : "home branch"
 
     roles ||--o{ user_roles : grants
@@ -71,7 +72,10 @@ erDiagram
         bigint id PK
         bigint branch_id FK
         varchar code UK
-        enum type
+    }
+    hub_services {
+        bigint hub_id PK
+        enum service PK
     }
     users {
         bigint id PK

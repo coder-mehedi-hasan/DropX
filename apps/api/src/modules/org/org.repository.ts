@@ -1,5 +1,6 @@
-import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
-import type { Branch, Hub, HubWithBranch, ListParams } from "@/db/models"
+import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
+import { HUB_SERVICES } from "@/db/models"
+import type { Branch, Hub, HubService, HubWithBranch, ListParams } from "@/db/models"
 import {
   escapeLike,
   orderByClauseOf,
@@ -30,14 +31,18 @@ const BRANCH_COLUMNS = `
 `
 
 const HUB_COLUMNS = `
-  h.id, h.branch_id, h.name, h.code, h.type, h.address, h.district,
+  h.id, h.branch_id, h.name, h.code, h.address, h.district,
   h.latitude, h.longitude, h.capacity, h.status, h.created_at, h.updated_at,
-  br.name AS branch_name, br.code AS branch_code
+  br.name AS branch_name, br.code AS branch_code,
+  COALESCE(
+    (SELECT JSON_ARRAYAGG(hs.service) FROM hub_services AS hs WHERE hs.hub_id = h.id),
+    JSON_ARRAY()
+  ) AS services
 `
 
 const BRANCH_SORT_COLUMNS = ["b.name", "b.code", "b.status", "b.created_at"] as const
 const BRANCH_TIEBREAK = "b.name ASC, b.id ASC"
-const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.type", "h.status", "h.created_at"] as const
+const HUB_SORT_COLUMNS = ["h.name", "h.code", "h.status", "h.created_at"] as const
 const HUB_TIEBREAK = "h.name ASC, h.id ASC"
 
 const BRANCH_PATCH_COLUMNS = {
@@ -56,7 +61,6 @@ const HUB_PATCH_COLUMNS = {
   branchId: "branch_id",
   name: "name",
   code: "code",
-  type: "type",
   address: "address",
   district: "district",
   latitude: "latitude",
@@ -82,13 +86,21 @@ function branchRow(row: Record<string, unknown>): Branch {
   }
 }
 
+function hubServices(value: unknown): HubService[] {
+  const parsed = typeof value === "string" ? JSON.parse(value) : value
+  if (!Array.isArray(parsed)) return []
+  return parsed.filter((service): service is HubService =>
+    (HUB_SERVICES as readonly unknown[]).includes(service),
+  )
+}
+
 function hubRow(row: Record<string, unknown>): HubWithBranch {
   return {
     id: String(row.id),
     branchId: String(row.branch_id),
     name: String(row.name),
     code: String(row.code),
-    type: row.type as Hub["type"],
+    services: hubServices(row.services),
     address: toStringOrNull(row.address),
     district: toStringOrNull(row.district),
     latitude: toDecimal(row.latitude),
@@ -194,7 +206,7 @@ export async function patchBranch(
 
 export type ListHubsFilter = {
   branchId?: string | undefined
-  type?: Hub["type"] | undefined
+  service?: HubService | undefined
   status?: Hub["status"] | undefined
   search?: string | undefined
 }
@@ -211,9 +223,11 @@ export async function selectHubs(
     clauses.push("h.branch_id = ?")
     filterParams.push(filter.branchId)
   }
-  if (filter.type) {
-    clauses.push("h.type = ?")
-    filterParams.push(filter.type)
+  if (filter.service) {
+    clauses.push(
+      "EXISTS (SELECT 1 FROM hub_services AS hs_filter WHERE hs_filter.hub_id = h.id AND hs_filter.service = ?)",
+    )
+    filterParams.push(filter.service)
   }
   if (filter.status) {
     clauses.push("h.status = ?")
@@ -238,7 +252,10 @@ export async function selectHubs(
   })
 }
 
-export async function selectHub(db: Pool, hubId: string): Promise<HubWithBranch | null> {
+export async function selectHub(
+  db: Pool | Connection,
+  hubId: string,
+): Promise<HubWithBranch | null> {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT ${HUB_COLUMNS} FROM hubs AS h LEFT JOIN branches AS br ON br.id = h.branch_id WHERE h.id = ?`,
     [hubId],
@@ -247,14 +264,13 @@ export async function selectHub(db: Pool, hubId: string): Promise<HubWithBranch 
 }
 
 export async function insertHub(
-  db: Pool,
-  record: Omit<Hub, "id" | "createdAt" | "updatedAt">,
+  db: Pool | Connection,
+  record: Omit<Hub, "id" | "services" | "createdAt" | "updatedAt">,
 ): Promise<string> {
   const params = [
     record.branchId,
     record.name,
     record.code,
-    record.type,
     record.address,
     record.district,
     record.latitude,
@@ -262,16 +278,16 @@ export async function insertHub(
     record.capacity,
     record.status,
   ]
-  const sql = `INSERT INTO hubs (branch_id, name, code, type, address, district, latitude, longitude, capacity, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  const sql = `INSERT INTO hubs (branch_id, name, code, address, district, latitude, longitude, capacity, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   const [result] = await db.execute<OkPacket>(sql, params)
   if (!result.insertId) throw new Error("Hub insert returned no id")
   return String(result.insertId)
 }
 
 export async function patchHub(
-  db: Pool,
+  db: Pool | Connection,
   hubId: string,
-  patch: Partial<Omit<Hub, "id" | "createdAt" | "updatedAt">>,
+  patch: Partial<Omit<Hub, "id" | "services" | "createdAt" | "updatedAt">>,
 ): Promise<HubWithBranch | null> {
   const { assignments, params } = buildAssignments(patch, HUB_PATCH_COLUMNS)
 
@@ -282,4 +298,19 @@ export async function patchHub(
 
   await db.execute<OkPacket>(sql, params)
   return selectHub(db, hubId)
+}
+
+export async function replaceHubServices(
+  db: Pool | Connection,
+  hubId: string,
+  services: readonly HubService[],
+): Promise<void> {
+  await db.execute("DELETE FROM hub_services WHERE hub_id = ?", [hubId])
+  if (services.length === 0) return
+
+  const placeholders = services.map(() => "(?, ?)").join(", ")
+  await db.execute(
+    `INSERT INTO hub_services (hub_id, service) VALUES ${placeholders}`,
+    services.flatMap((service) => [hubId, service]),
+  )
 }

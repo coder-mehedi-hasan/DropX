@@ -223,8 +223,8 @@ cases.push(
     run: () => reference.listHubRefs(pool, scope, listParams, { search: "a" }),
   },
   {
-    name: "reference.listHubRefs(type)",
-    run: () => reference.listHubRefs(pool, scope, listParams, { type: "ORIGIN" }),
+    name: "reference.listHubRefs(service)",
+    run: () => reference.listHubRefs(pool, scope, listParams, { service: "PICKUP" }),
   },
   {
     name: "reference.listHubRefs(status)",
@@ -260,7 +260,7 @@ cases.push(
   },
 
   // Each sort key, so a rename in the schema or the allowlist is caught here.
-  ...(["name", "code", "type", "status"] as const).map((sortBy) => ({
+  ...(["name", "code", "status"] as const).map((sortBy) => ({
     name: `reference.listHubRefs(sortBy=${sortBy})`,
     run: () => reference.listHubRefs(pool, scope, { ...listParams, sortBy }, {}),
   })),
@@ -306,7 +306,7 @@ cases.push(
       org.selectBranches(pool, { ...listParams, sortBy }, { status: undefined, search: undefined }),
   })),
   { name: "org.selectBranch", run: () => org.selectBranch(pool, "1") },
-  ...(["name", "code", "type", "status", "createdAt"] as const).map((sortBy) => ({
+  ...(["name", "code", "status", "createdAt"] as const).map((sortBy) => ({
     name: `org.listHubs(sortBy=${sortBy})`,
     run: () =>
       org.selectHubs(
@@ -314,7 +314,7 @@ cases.push(
         { ...listParams, sortBy },
         {
           branchId: undefined,
-          type: undefined,
+          service: undefined,
           status: undefined,
           search: undefined,
         },
@@ -464,6 +464,10 @@ cases.push(
   })),
   { name: "routes.selectRoute", run: () => routes.selectRoute(pool, "1") },
   { name: "routes.selectStops", run: () => routes.selectStops(pool, "1") },
+  {
+    name: "routes.selectHubsProvidingService",
+    run: () => routes.selectHubsProvidingService(pool, ["1"], "SORTING"),
+  },
 
   // --- Riders ---------------------------------------------------------------
   { name: "riders.selectRiders", run: () => riders.selectRiders(pool, listParams, {}) },

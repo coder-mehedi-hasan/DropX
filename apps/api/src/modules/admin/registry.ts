@@ -720,7 +720,7 @@ export const ADMIN_SURFACE = defineSurface({
           summary: "List hubs",
           successDescription: "A page of hubs, each carrying its branch's name and code.",
           description:
-            "Each row carries its branch alongside it, so a list screen does not need a join per row. Filterable by branch, type and status.",
+            "Each row carries its branch and configured services alongside it, so a list screen does not need a request per row. Filterable by branch, service and status.",
           query: listHubsQuery,
           listNodes: hubResponse,
         },
@@ -1177,7 +1177,7 @@ export const ADMIN_SURFACE = defineSurface({
           summary: "List hubs (picker)",
           successDescription: "A page of hubs.",
           description:
-            "Branch-scoped hub lookup for pickers. A non-company-wide caller sees only their own branch's hubs, narrowed further to their assigned hubs where the role says so. Only the fields a combobox renders are returned — no coordinates, no capacity.",
+            "Branch-scoped hub lookup for pickers. A non-company-wide caller sees only their own branch's hubs, narrowed further to their assigned hubs where the role says so. Only the fields a combobox renders are returned, including service badges — no coordinates or capacity.",
           query: listHubsQuerySchema,
           listNodes: hubRefResponseSchema,
         },

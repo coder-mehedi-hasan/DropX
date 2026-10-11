@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { BRANCH_STATUSES, HUB_STATUSES, HUB_TYPES } from "@dropx/types"
+import { BRANCH_STATUSES, HUB_SERVICES, HUB_STATUSES } from "@dropx/types"
 
 /**
  * List state for the org screens lives in the URL, same as parcels.
@@ -17,7 +17,7 @@ export const DEFAULT_ORG_SEARCH = {
   sort: "asc",
   search: "",
   status: "",
-  type: "",
+  service: "",
   branchId: "",
 } as const
 
@@ -33,10 +33,10 @@ export const branchesSearchSchema = z.object({
 export const hubsSearchSchema = z.object({
   page: z.coerce.number().int().min(1).catch(DEFAULT_ORG_SEARCH.page),
   limit: z.coerce.number().int().min(1).max(100).catch(DEFAULT_ORG_SEARCH.limit),
-  sortBy: z.enum(["name", "code", "type", "status", "createdAt"]).catch(DEFAULT_ORG_SEARCH.sortBy),
+  sortBy: z.enum(["name", "code", "status", "createdAt"]).catch(DEFAULT_ORG_SEARCH.sortBy),
   sort: z.enum(["asc", "desc"]).catch(DEFAULT_ORG_SEARCH.sort),
   search: z.string().catch(DEFAULT_ORG_SEARCH.search),
-  type: z.enum(HUB_TYPES).or(z.literal("")).optional(),
+  service: z.enum(HUB_SERVICES).or(z.literal("")).optional(),
   status: z.enum(HUB_STATUSES).or(z.literal("")).optional(),
   branchId: z.string().optional(),
 })
@@ -60,10 +60,10 @@ export type BranchesSearch = {
 export type HubsSearch = {
   page: number
   limit: number
-  sortBy: "name" | "code" | "type" | "status" | "createdAt"
+  sortBy: "name" | "code" | "status" | "createdAt"
   sort: "asc" | "desc"
   search: string
-  type?: (typeof HUB_TYPES)[number] | "" | undefined
+  service?: (typeof HUB_SERVICES)[number] | "" | undefined
   status?: (typeof HUB_STATUSES)[number] | "" | undefined
   branchId?: string | undefined
 }
@@ -84,6 +84,6 @@ export const DEFAULT_HUBS_SEARCH: HubsSearch = {
   sortBy: "name",
   sort: "asc",
   search: "",
-  type: "",
+  service: "",
   status: "",
 }

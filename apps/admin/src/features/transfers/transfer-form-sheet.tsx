@@ -116,6 +116,7 @@ export function TransferFormSheet({
                 <FormLabel>Origin hub</FormLabel>
                 <ReferenceCombobox
                   source="hubs"
+                  hubService="SORTING"
                   placeholder="Search hubs"
                   value={field.value}
                   onChange={field.onChange}
@@ -131,6 +132,7 @@ export function TransferFormSheet({
                 <FormLabel>Destination hub</FormLabel>
                 <ReferenceCombobox
                   source="hubs"
+                  hubService="SORTING"
                   placeholder="Search hubs"
                   value={field.value}
                   onChange={field.onChange}

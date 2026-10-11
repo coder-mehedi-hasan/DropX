@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { CUSTOMER_STATUSES, CUSTOMER_TYPES, HUB_STATUSES, HUB_TYPES } from "../../db/models"
+import { CUSTOMER_STATUSES, CUSTOMER_TYPES, HUB_SERVICES, HUB_STATUSES } from "../../db/models"
 
 /**
  * Reference DTOs.
@@ -29,8 +29,8 @@ const referenceListQuery = z.object({
 })
 
 export const listHubsQuerySchema = referenceListQuery.extend({
-  sortBy: z.enum(["name", "code", "type", "status"]).default("name"),
-  type: z.enum(HUB_TYPES).optional(),
+  sortBy: z.enum(["name", "code", "status"]).default("name"),
+  service: z.enum(HUB_SERVICES).optional(),
   status: z.enum(HUB_STATUSES).optional(),
 })
 
@@ -61,7 +61,7 @@ export const hubRefResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   code: z.string(),
-  type: z.enum(HUB_TYPES),
+  services: z.array(z.enum(HUB_SERVICES)),
   district: z.string().nullable(),
   status: z.enum(HUB_STATUSES),
 })

@@ -438,8 +438,20 @@ async function recordEvent(
 }
 
 async function requireHub(db: Connection, hubId: string, label: string): Promise<string> {
-  if (await findHub(db, hubId)) return hubId
-  throw notFound(`No such ${label}`)
+  if (await findHub(db, hubId, "SORTING")) return hubId
+  if (!(await findHub(db, hubId))) throw notFound(`No such ${label}`)
+  throw new DomainError(
+    ERROR_CODES.VALIDATION_FAILED,
+    `The ${label} does not provide sorting service`,
+    {
+      details: [
+        {
+          field: label === "origin hub" ? "fromHubId" : "toHubId",
+          message: "Choose a sorting-capable hub",
+        },
+      ],
+    },
+  )
 }
 
 /**

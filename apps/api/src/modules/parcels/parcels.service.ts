@@ -190,17 +190,16 @@ function normalizePlaceName(value: string): string {
 
 /**
  * Resolve one end of a customer journey without accepting a hub id from the
- * client. Hub role is mandatory. A map pin ranks role-compatible hubs by
+ * client. The required hub service is mandatory. A map pin ranks compatible hubs by
  * distance; without usable coordinates, the resolved service city must match
  * the hub district. There is deliberately no "first active hub" fallback.
  */
 export function pickRoutingHub(
   hubs: readonly RoutingHub[],
-  role: "ORIGIN" | "DESTINATION",
+  service: "PICKUP" | "DELIVERY",
   address: RoutingAddress,
-  excludeId?: Id,
 ): RoutingHub | undefined {
-  const candidates = hubs.filter((hub) => hub.type === role && hub.id !== excludeId)
+  const candidates = hubs.filter((hub) => hub.services.includes(service))
   if (candidates.length === 0) return undefined
 
   const hasPoint = typeof address.latitude === "number" && typeof address.longitude === "number"
@@ -231,17 +230,12 @@ export function pickRoutingHub(
   )
 }
 
-function hubMustDiffer(): DomainError {
-  return new DomainError(ERROR_CODES.VALIDATION_FAILED, "Origin and destination hub must differ", {
-    details: [{ field: "destinationHubId", message: "Pick a different destination hub" }],
-  })
-}
-
 /**
  * Both ids in, both ids out — the staff path. Anything less is resolved from
- * role-compatible active hubs and validated addresses, never the same hub
- * twice. The customer portal sends no ids at all, so this is the only place its
- * parcel learns where it enters and leaves the network.
+ * service-compatible active hubs and validated addresses. A local journey may
+ * resolve both ends to the same multi-service hub and needs no transfer. The
+ * customer portal sends no ids at all, so this is the only place its parcel
+ * learns where it enters and leaves the network.
  */
 async function resolveHubPair(
   db: Pool,
@@ -250,11 +244,6 @@ async function resolveHubPair(
   delivery: ResolvedAddress,
 ): Promise<{ originHubId: Id; destinationHubId: Id }> {
   const { originHubId, destinationHubId } = input
-  if (originHubId !== undefined && destinationHubId !== undefined) {
-    if (originHubId === destinationHubId) throw hubMustDiffer()
-    return { originHubId, destinationHubId }
-  }
-
   const hubs = await listActiveRoutingHubs(db)
   if (hubs.length === 0) {
     throw new DomainError(
@@ -263,9 +252,37 @@ async function resolveHubPair(
     )
   }
 
+  if (originHubId !== undefined && destinationHubId !== undefined) {
+    const origin = hubs.find(
+      (hub) => hub.id === originHubId && hub.services.includes("PICKUP"),
+    )
+    if (!origin) {
+      throw new DomainError(
+        ERROR_CODES.VALIDATION_FAILED,
+        "The origin hub is inactive or does not provide pickup service",
+        { details: [{ field: "originHubId", message: "Choose a pickup-capable hub" }] },
+      )
+    }
+    const destination = hubs.find(
+      (hub) => hub.id === destinationHubId && hub.services.includes("DELIVERY"),
+    )
+    if (!destination) {
+      throw new DomainError(
+        ERROR_CODES.VALIDATION_FAILED,
+        "The destination hub is inactive or does not provide delivery service",
+        {
+          details: [
+            { field: "destinationHubId", message: "Choose a delivery-capable hub" },
+          ],
+        },
+      )
+    }
+    return { originHubId, destinationHubId }
+  }
+
   const originHub =
     originHubId === undefined
-      ? pickRoutingHub(hubs, "ORIGIN", {
+      ? pickRoutingHub(hubs, "PICKUP", {
           cityName: pickup.city.name,
           latitude: input.pickupAddress.latitude,
           longitude: input.pickupAddress.longitude,
@@ -290,16 +307,11 @@ async function resolveHubPair(
 
   const destinationHub =
     destinationHubId === undefined
-      ? pickRoutingHub(
-          hubs,
-          "DESTINATION",
-          {
-            cityName: delivery.city.name,
-            latitude: input.deliveryAddress.latitude,
-            longitude: input.deliveryAddress.longitude,
-          },
-          origin,
-        )
+      ? pickRoutingHub(hubs, "DELIVERY", {
+          cityName: delivery.city.name,
+          latitude: input.deliveryAddress.latitude,
+          longitude: input.deliveryAddress.longitude,
+        })
       : undefined
   const destination = destinationHubId ?? destinationHub?.id
 
@@ -318,7 +330,6 @@ async function resolveHubPair(
     )
   }
 
-  if (origin === destination) throw hubMustDiffer()
   return { originHubId: origin, destinationHubId: destination }
 }
 
@@ -341,7 +352,7 @@ export async function createParcel(
   const delivery = await resolveAddress(c, input.deliveryAddress)
 
   // Staff explicitly choose both hubs. Customer bookings carry neither id, so
-  // the API derives the role-compatible pair from the now-validated addresses.
+  // the API derives the service-compatible pair from the now-validated addresses.
   const { originHubId, destinationHubId } = await resolveHubPair(
     c.get("db")!,
     input,

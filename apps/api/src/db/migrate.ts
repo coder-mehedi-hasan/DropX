@@ -121,19 +121,19 @@ export function splitStatements(sql: string): string[] {
   return statements
 }
 
-async function dropAllTables(pool: mysql.Pool): Promise<void> {
+async function dropAllTables(connection: mysql.PoolConnection): Promise<void> {
   console.log("· dropping existing tables")
   // DROP order does not matter for FK references, so disable the checks rather
   // than trying to topologically sort information_schema output.
-  await pool.query("SET FOREIGN_KEY_CHECKS = 0")
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+  await connection.query("SET FOREIGN_KEY_CHECKS = 0")
+  const [rows] = await connection.query<mysql.RowDataPacket[]>(
     "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()",
   )
 
   for (const { TABLE_NAME: table } of rows) {
-    await pool.execute(`DROP TABLE IF EXISTS \`${table}\``)
+    await connection.execute(`DROP TABLE IF EXISTS \`${table}\``)
   }
-  await pool.query("SET FOREIGN_KEY_CHECKS = 1")
+  await connection.query("SET FOREIGN_KEY_CHECKS = 1")
   console.log(`  dropped ${rows.length} table(s)`)
 }
 
@@ -145,13 +145,14 @@ async function main(): Promise<void> {
   }
 
   const pool = mysql.createPool(DATABASE_URL)
+  const connection = await pool.getConnection()
 
   try {
-    const [result] = await pool.query("SELECT 1")
+    const [result] = await connection.query("SELECT 1")
     console.log(`· connected (mysql)`, result)
 
     if (reset) {
-      await dropAllTables(pool)
+      await dropAllTables(connection)
     }
 
     const sql = await readFile(SCHEMA_PATH, "utf8")
@@ -160,7 +161,7 @@ async function main(): Promise<void> {
     console.log(`· applying ${statements.length} statement(s) from migrate.sql`)
     for (const statement of statements) {
       try {
-        await pool.execute(statement)
+        await connection.query(statement)
       } catch (error) {
         const preview = statement.replace(/\s+/g, " ").slice(0, 90)
         const errno =
@@ -180,12 +181,13 @@ async function main(): Promise<void> {
     }
 
     const expected = Object.values(TABLES).length
-    const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    const [rows] = await connection.query<mysql.RowDataPacket[]>(
       "SELECT COUNT(*) AS total FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()",
     )
     const actual = (rows[0] as { total: number } | undefined)?.total ?? 0
     console.log(`✓ schema applied — ${actual} table(s) present (${expected} expected)`)
   } finally {
+    connection.release()
     await pool.end()
   }
 }

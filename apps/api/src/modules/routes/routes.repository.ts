@@ -1,6 +1,6 @@
 import type { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 
-import type { ListParams, Route, RouteStop } from "@/db/models"
+import type { HubService, ListParams, Route, RouteStop } from "@/db/models"
 import {
   escapeLike,
   orderByClauseOf,
@@ -173,4 +173,21 @@ export async function replaceStops(
     )
   }
   return selectStops(db, routeId)
+}
+
+export async function selectHubsProvidingService(
+  db: Pool,
+  hubIds: readonly string[],
+  service: HubService,
+): Promise<Set<string>> {
+  if (hubIds.length === 0) return new Set()
+  const placeholders = hubIds.map(() => "?").join(", ")
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT h.id
+       FROM hubs AS h
+       JOIN hub_services AS hs ON hs.hub_id = h.id
+      WHERE h.id IN (${placeholders}) AND h.status = 'ACTIVE' AND hs.service = ?`,
+    [...hubIds, service],
+  )
+  return new Set(rows.map((row) => String(row.id)))
 }

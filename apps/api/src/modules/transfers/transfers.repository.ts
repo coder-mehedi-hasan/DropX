@@ -1,6 +1,6 @@
 import type { Connection, OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 
-import type { ListParams, Transfer, TransferParcel } from "@/db/models"
+import type { HubService, ListParams, Transfer, TransferParcel } from "@/db/models"
 import type { Scope } from "@/shared/auth/auth-context"
 import { escapeLike, orderByClauseOf, pageOf, toStringOrNull, toUtcDate } from "@/db/sql"
 import type { Id, ParcelStatus } from "@dropx/types"
@@ -349,10 +349,20 @@ export async function findStaffByRef(db: Pool | Connection, ref: string): Promis
   return rows[0] ? String(rows[0].id) : null
 }
 
-export async function findHub(db: Pool | Connection, hubId: string): Promise<boolean> {
-  const [rows] = await db.query<RowDataPacket[]>(`SELECT id FROM hubs WHERE id = ? LIMIT 1`, [
-    hubId,
-  ])
+export async function findHub(
+  db: Pool | Connection,
+  hubId: string,
+  service?: HubService,
+): Promise<boolean> {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT h.id
+       FROM hubs AS h
+      WHERE h.id = ?
+        AND h.status = 'ACTIVE'
+        ${service ? "AND EXISTS (SELECT 1 FROM hub_services AS hs WHERE hs.hub_id = h.id AND hs.service = ?)" : ""}
+      LIMIT 1`,
+    service ? [hubId, service] : [hubId],
+  )
   return rows.length > 0
 }
 

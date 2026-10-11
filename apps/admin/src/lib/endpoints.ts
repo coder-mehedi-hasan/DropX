@@ -6,6 +6,7 @@
  * already throws a typed `ApiError`, and screens need to see the failure.
  */
 import { api } from "./api-client"
+import type { HubService } from "@dropx/types"
 import type {
   CancelParcelBody,
   CreateParcelBody,
@@ -202,9 +203,15 @@ function referenceQuery(params: ReferenceListParams) {
   }
 }
 
-export function listHubsForPicker(params: ReferenceListParams, signal?: AbortSignal) {
+export function listHubsForPicker(
+  params: ReferenceListParams & { service?: HubService },
+  signal?: AbortSignal,
+) {
   return api.get<Page<HubOption>>("/admin/reference/hubs", {
-    query: referenceQuery(params),
+    query: {
+      ...referenceQuery(params),
+      ...(params.service ? { service: params.service } : {}),
+    },
     ...(signal ? { signal } : {}),
   })
 }
@@ -721,7 +728,7 @@ function orgQuery(params: {
   sort: "asc" | "desc"
   search: string
   status?: string
-  type?: string
+  service?: string
   branchId?: string
 }) {
   return {
@@ -731,7 +738,7 @@ function orgQuery(params: {
     sort: params.sort,
     ...(params.search ? { search: params.search } : {}),
     ...(params.status ? { status: params.status } : {}),
-    ...(params.type ? { type: params.type } : {}),
+    ...(params.service ? { service: params.service } : {}),
     ...(params.branchId ? { branchId: params.branchId } : {}),
   }
 }

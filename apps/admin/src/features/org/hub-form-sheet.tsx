@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   AppToast,
   BoundFormField,
+  Checkbox,
   FormInputSlug,
   FormItem,
   FormLabel,
@@ -15,10 +16,11 @@ import {
   SelectValue,
   Textarea,
 } from "@dropx/ui"
+import { HUB_SERVICES, type HubService } from "@dropx/types"
 import { ReferenceCombobox } from "@/components/reference-combobox"
 import { FormSheet } from "@/components/form-sheet"
-import { createHub } from "@/lib/endpoints"
-import { createHubSchema, type CreateHubBody } from "@/lib/types"
+import { createHub, updateHub } from "@/lib/endpoints"
+import { createHubSchema, type CreateHubBody, type Hub, type UpdateHubBody } from "@/lib/types"
 
 /** Same reasoning as the branch form: the schema is the API's DTO, so the two
  *  cannot drift — a field added here is a field the endpoint rejects. */
@@ -28,7 +30,7 @@ const DEFAULT_VALUES: z.infer<typeof schema> = {
   branchId: "",
   name: "",
   code: "",
-  type: "ORIGIN",
+  services: [...HUB_SERVICES],
   address: "",
   district: "",
   latitude: undefined,
@@ -40,16 +42,34 @@ const DEFAULT_VALUES: z.infer<typeof schema> = {
 export function HubFormSheet({
   open,
   onOpenChange,
+  hub,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  hub?: Hub | null
 }) {
   const queryClient = useQueryClient()
 
+  const defaults: z.infer<typeof schema> = hub
+    ? {
+        branchId: hub.branchId,
+        name: hub.name,
+        code: hub.code,
+        services: hub.services,
+        address: hub.address ?? "",
+        district: hub.district ?? "",
+        latitude: hub.latitude ?? undefined,
+        longitude: hub.longitude ?? undefined,
+        capacity: hub.capacity ?? undefined,
+        status: hub.status,
+      }
+    : DEFAULT_VALUES
+
   const mutation = useMutation({
-    mutationFn: (body: CreateHubBody) => createHub(body),
+    mutationFn: (body: CreateHubBody | UpdateHubBody) =>
+      hub ? updateHub(hub.id, body) : createHub(body as CreateHubBody),
     onSuccess: (saved) => {
-      AppToast.success(`${saved.name} created`)
+      AppToast.success(hub ? `${saved.name} updated` : `${saved.name} created`)
       void queryClient.invalidateQueries({ queryKey: ["hubs"] })
       onOpenChange(false)
     },
@@ -60,16 +80,16 @@ export function HubFormSheet({
       schema={schema}
       open={open}
       onOpenChange={onOpenChange}
-      title="New hub"
-      description="A hub belongs to exactly one branch. Its code is unique company-wide."
-      submitLabel="Create hub"
+      title={hub ? "Configure hub" : "New hub"}
+      description="A hub is one physical facility. Select every pickup, sorting and delivery service it provides."
+      submitLabel={hub ? "Save changes" : "Create hub"}
       busy={mutation.isPending}
-      defaults={DEFAULT_VALUES}
+      defaults={defaults}
       fieldLabels={{
         branchId: "Branch",
         name: "Name",
         code: "Code",
-        type: "Type",
+        services: "Services",
         address: "Address",
         district: "District",
         latitude: "Latitude",
@@ -108,6 +128,7 @@ export function HubFormSheet({
                   placeholder="Search branches"
                   value={field.value}
                   onChange={field.onChange}
+                  disabled={Boolean(hub)}
                 />
                 <FormMessage />
               </FormItem>
@@ -125,24 +146,37 @@ export function HubFormSheet({
           />
           <FormInputSlug name="code" inheritFrom="name" label="Code" placeholder="DHAKA-SORT" />
           <BoundFormField
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Type</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ORIGIN">Origin</SelectItem>
-                    <SelectItem value="SORTING">Sorting</SelectItem>
-                    <SelectItem value="TRANSIT">Transit</SelectItem>
-                    <SelectItem value="DESTINATION">Destination</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            name="services"
+            render={({ field }) => {
+              const selected = Array.isArray(field.value) ? (field.value as HubService[]) : []
+              return (
+                <FormItem>
+                  <FormLabel>Hub services</FormLabel>
+                  <div className="grid gap-2 rounded-lg border p-3 sm:grid-cols-3">
+                    {HUB_SERVICES.map((service) => (
+                      <label
+                        key={service}
+                        className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm"
+                      >
+                        <Checkbox
+                          checked={selected.includes(service)}
+                          onCheckedChange={(checked) =>
+                            field.onChange(
+                              checked === true
+                                ? [...selected, service]
+                                : selected.filter((value) => value !== service),
+                            )
+                          }
+                          onBlur={field.onBlur}
+                        />
+                        <span className="capitalize">{service.toLowerCase()}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
           <BoundFormField
             name="address"

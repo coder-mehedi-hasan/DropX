@@ -395,6 +395,7 @@ export function ParcelCreateDialog({
                   <FormControl>
                     <ReferenceCombobox
                       source="hubs"
+                      hubService="PICKUP"
                       placeholder="Search hubs"
                       value={field.value}
                       onChange={field.onChange}
@@ -415,6 +416,7 @@ export function ParcelCreateDialog({
                   <FormControl>
                     <ReferenceCombobox
                       source="hubs"
+                      hubService="DELIVERY"
                       placeholder="Search hubs"
                       value={field.value}
                       onChange={field.onChange}

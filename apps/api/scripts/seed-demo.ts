@@ -32,19 +32,28 @@ async function ensureBranch(): Promise<string> {
 
 async function ensureHub(
   branchId: string,
-  input: { name: string; code: string; type: "ORIGIN" | "DESTINATION"; district: string },
+  input: { name: string; code: string; district: string },
 ): Promise<void> {
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     `SELECT id FROM hubs WHERE code = ? LIMIT 1`,
     [input.code],
   )
-  if (rows[0]) return
+  let hubId: string
+  if (rows[0]) {
+    hubId = String(rows[0].id)
+  } else {
+    const [result] = await pool.execute<mysql.ResultSetHeader>(
+      `INSERT INTO hubs (branch_id, name, code, district, status)
+       VALUES (?, ?, ?, ?, 'ACTIVE')`,
+      [branchId, input.name, input.code, input.district],
+    )
+    hubId = String(result.insertId)
+  }
 
-  await pool.execute(
-    `INSERT INTO hubs (branch_id, name, code, type, district, status)
-     VALUES (?, ?, ?, ?, ?, 'ACTIVE')`,
-    [branchId, input.name, input.code, input.type, input.district],
-  )
+  await pool.execute("DELETE FROM hub_services WHERE hub_id = ?", [hubId])
+  for (const service of ["PICKUP", "SORTING", "DELIVERY"] as const) {
+    await pool.execute("INSERT INTO hub_services (hub_id, service) VALUES (?, ?)", [hubId, service])
+  }
 }
 
 try {
@@ -52,13 +61,11 @@ try {
   await ensureHub(branchId, {
     name: "Dhaka Central Hub",
     code: "DPX-DHK",
-    type: "ORIGIN",
     district: "Dhaka",
   })
   await ensureHub(branchId, {
     name: "Chattogram Central Hub",
     code: "DPX-CTG",
-    type: "DESTINATION",
     district: "Chattogram",
   })
 

@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS hubs (
     branch_id BIGINT UNSIGNED NOT NULL,
     name VARCHAR(150) NOT NULL,
     code VARCHAR(50) NOT NULL,
-    type ENUM('ORIGIN','SORTING','TRANSIT','DESTINATION') NOT NULL,
     address VARCHAR(500) NULL,
     district VARCHAR(100) NULL,
     latitude DECIMAL(10,7) NULL,
@@ -59,11 +58,23 @@ CREATE TABLE IF NOT EXISTS hubs (
     PRIMARY KEY (id),
     UNIQUE KEY uq_hubs_code (code),
     KEY idx_hubs_branch_id (branch_id),
-    KEY idx_hubs_type_status (type, status),
+    KEY idx_hubs_status (status),
     KEY idx_hubs_district (district),
     CONSTRAINT fk_hubs_branch
         FOREIGN KEY (branch_id) REFERENCES branches(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- A hub is a physical facility, not a single operational role. One facility
+-- may collect parcels, sort transfers, deliver last-mile, or do all three.
+CREATE TABLE IF NOT EXISTS hub_services (
+    hub_id BIGINT UNSIGNED NOT NULL,
+    service ENUM('PICKUP','SORTING','DELIVERY') NOT NULL,
+    PRIMARY KEY (hub_id, service),
+    KEY idx_hub_services_service_hub (service, hub_id),
+    CONSTRAINT fk_hub_services_hub
+        FOREIGN KEY (hub_id) REFERENCES hubs(id)
+        ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -923,6 +934,49 @@ CREATE TABLE IF NOT EXISTS sequences (
 -- ============================================================
 -- Upgrades to tables above
 -- ============================================================
+
+-- Migrate the former one-role `hubs.type` model without making a fresh schema
+-- depend on that retired column. These prepared statements share the migration
+-- connection (see migrate.ts), so each conditional is safe on both old and new
+-- databases and on every later re-run.
+SET @dropx_has_hub_type = (
+  SELECT COUNT(*)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'hubs' AND COLUMN_NAME = 'type'
+);
+SET @dropx_hub_service_backfill_sql = IF(
+  @dropx_has_hub_type > 0,
+  'INSERT IGNORE INTO hub_services (hub_id, service) SELECT id, CASE type WHEN ''ORIGIN'' THEN ''PICKUP'' WHEN ''DESTINATION'' THEN ''DELIVERY'' ELSE ''SORTING'' END FROM hubs',
+  'SELECT 1'
+);
+PREPARE dropx_hub_service_backfill_stmt FROM @dropx_hub_service_backfill_sql;
+EXECUTE dropx_hub_service_backfill_stmt;
+DEALLOCATE PREPARE dropx_hub_service_backfill_stmt;
+
+ALTER TABLE hubs ADD KEY idx_hubs_status (status);
+
+SET @dropx_has_hub_type_index = (
+  SELECT COUNT(*)
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'hubs' AND INDEX_NAME = 'idx_hubs_type_status'
+);
+SET @dropx_drop_hub_type_index_sql = IF(
+  @dropx_has_hub_type_index > 0,
+  'ALTER TABLE hubs DROP INDEX idx_hubs_type_status',
+  'SELECT 1'
+);
+PREPARE dropx_drop_hub_type_index_stmt FROM @dropx_drop_hub_type_index_sql;
+EXECUTE dropx_drop_hub_type_index_stmt;
+DEALLOCATE PREPARE dropx_drop_hub_type_index_stmt;
+
+SET @dropx_drop_hub_type_sql = IF(
+  @dropx_has_hub_type > 0,
+  'ALTER TABLE hubs DROP COLUMN type',
+  'SELECT 1'
+);
+PREPARE dropx_drop_hub_type_stmt FROM @dropx_drop_hub_type_sql;
+EXECUTE dropx_drop_hub_type_stmt;
+DEALLOCATE PREPARE dropx_drop_hub_type_stmt;
 
 -- MySQL has no `ADD COLUMN IF NOT EXISTS`, so these statements re-run on every
 -- migrate. `migrate.ts` treats errno 1060 (duplicate column) and 1061
