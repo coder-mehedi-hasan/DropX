@@ -39,7 +39,7 @@ const TRANSFER_SORT_COLUMNS = ["departedAt", "arrivedAt", "status", "createdAt"]
 function nextAction(transfer: TransferListItem, currentHubId: string): string {
   switch (transfer.status) {
     case "PLANNED":
-      return "Add parcels to manifest"
+      return transfer.parcelCount > 0 ? "Review manifest, then depart" : "Add parcels to manifest"
     case "LOADING":
       return "Depart transfer"
     case "IN_TRANSIT":

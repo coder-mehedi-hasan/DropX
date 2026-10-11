@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   Popover,
@@ -246,6 +247,15 @@ export function TransferManifestSheet({
             Saving…
           </div>
         ) : null}
+
+        <DialogFooter className="items-center sm:justify-between">
+          <p className="text-muted-foreground text-xs">
+            {sealed ? "This manifest is read-only." : "Adds and removals save automatically."}
+          </p>
+          <Button type="button" disabled={mutation.isPending} onClick={() => onOpenChange(false)}>
+            Done
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

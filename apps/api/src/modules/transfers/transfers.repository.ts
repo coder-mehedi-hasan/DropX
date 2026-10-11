@@ -541,8 +541,8 @@ export async function replaceTransferManifest(
   if (parcelIds.length === 0) return
 
   const values = parcelIds.map(() => "(?, ?)").join(", ")
-  const params: string[] = [transferId]
-  for (const parcelId of parcelIds) params.push(parcelId)
+  const params: string[] = []
+  for (const parcelId of parcelIds) params.push(transferId, parcelId)
   await db.execute(`INSERT INTO transfer_parcels (transfer_id, parcel_id) VALUES ${values}`, params)
 }
 
