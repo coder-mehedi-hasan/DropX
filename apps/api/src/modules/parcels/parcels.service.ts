@@ -18,7 +18,7 @@ import { ERROR_CODES, DomainError, fromDatabaseError, notFound } from "../../cor
 import type { Scope } from "../../shared/auth/auth-context"
 import { emit } from "../../shared/events/bus"
 import { quoteDeliveryFee } from "../pricing/pricing.service"
-import { resolveAddress } from "../locations/locations.service"
+import { resolveAddress, type ResolvedAddress } from "../locations/locations.service"
 import type { CreateParcelInput, ListParcelsQuery, ParcelDraftPayload } from "./parcels.dto"
 import { PARCEL_SORT_COLUMN_BY_KEY, parcelDraftPayloadSchema } from "./parcels.dto"
 import {
@@ -158,7 +158,11 @@ export type CreateParcelCommand = {
   actorId: Id | null
 }
 
-type MapPoint = { latitude?: number | undefined; longitude?: number | undefined }
+type RoutingAddress = {
+  cityName: string
+  latitude?: number | undefined
+  longitude?: number | undefined
+}
 
 function distanceKm(fromLat: number, fromLng: number, toLat: number, toLng: number): number {
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180
@@ -170,35 +174,61 @@ function distanceKm(fromLat: number, fromLng: number, toLat: number, toLng: numb
   return 2 * 6371 * Math.asin(Math.sqrt(h))
 }
 
+const PLACE_ALIASES: Readonly<Record<string, string>> = {
+  chittagong: "chattogram",
+}
+
+function normalizePlaceName(value: string): string {
+  const normalized = value
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/\b(city|district)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+  return PLACE_ALIASES[normalized] ?? normalized
+}
+
 /**
- * The closest hub carrying coordinates, or the first candidate (lowest id,
- * because the list is ordered) when the address has no pin or no hub has any.
- * Coordinates are a ranking, not a requirement: a depot that never filled in
- * its location still books.
+ * Resolve one end of a customer journey without accepting a hub id from the
+ * client. Hub role is mandatory. A map pin ranks role-compatible hubs by
+ * distance; without usable coordinates, the resolved service city must match
+ * the hub district. There is deliberately no "first active hub" fallback.
  */
-function pickNearestHub(
+export function pickRoutingHub(
   hubs: readonly RoutingHub[],
-  point: MapPoint,
+  role: "ORIGIN" | "DESTINATION",
+  address: RoutingAddress,
   excludeId?: Id,
 ): RoutingHub | undefined {
-  const candidates = hubs.filter((hub) => hub.id !== excludeId)
+  const candidates = hubs.filter((hub) => hub.type === role && hub.id !== excludeId)
   if (candidates.length === 0) return undefined
 
-  const hasPoint = typeof point.latitude === "number" && typeof point.longitude === "number"
-  if (!hasPoint) return candidates[0]
+  const hasPoint = typeof address.latitude === "number" && typeof address.longitude === "number"
 
-  let nearest: RoutingHub | undefined
-  let nearestDistance = Number.POSITIVE_INFINITY
-  for (const hub of candidates) {
-    if (hub.latitude === null || hub.longitude === null) continue
-    const distance = distanceKm(point.latitude!, point.longitude!, hub.latitude, hub.longitude)
-    // Strictly-less keeps the lowest id on a tie, so the pick is deterministic.
-    if (distance < nearestDistance) {
-      nearest = hub
-      nearestDistance = distance
+  if (hasPoint) {
+    let nearest: RoutingHub | undefined
+    let nearestDistance = Number.POSITIVE_INFINITY
+    for (const hub of candidates) {
+      if (hub.latitude === null || hub.longitude === null) continue
+      const distance = distanceKm(
+        address.latitude!,
+        address.longitude!,
+        hub.latitude,
+        hub.longitude,
+      )
+      // Strictly-less keeps the lowest id on a tie, so the pick is deterministic.
+      if (distance < nearestDistance) {
+        nearest = hub
+        nearestDistance = distance
+      }
     }
+    if (nearest) return nearest
   }
-  return nearest ?? candidates[0]
+
+  const city = normalizePlaceName(address.cityName)
+  return candidates.find(
+    (hub) => hub.district !== null && normalizePlaceName(hub.district) === city,
+  )
 }
 
 function hubMustDiffer(): DomainError {
@@ -209,14 +239,15 @@ function hubMustDiffer(): DomainError {
 
 /**
  * Both ids in, both ids out — the staff path. Anything less is resolved from
- * the active hubs and the addresses' map coordinates: nearest to the pickup for
- * the origin, nearest to the delivery for the destination, never the same hub
+ * role-compatible active hubs and validated addresses, never the same hub
  * twice. The customer portal sends no ids at all, so this is the only place its
  * parcel learns where it enters and leaves the network.
  */
 async function resolveHubPair(
   db: Pool,
   input: ParcelBookingInput,
+  pickup: ResolvedAddress,
+  delivery: ResolvedAddress,
 ): Promise<{ originHubId: Id; destinationHubId: Id }> {
   const { originHubId, destinationHubId } = input
   if (originHubId !== undefined && destinationHubId !== undefined) {
@@ -232,23 +263,62 @@ async function resolveHubPair(
     )
   }
 
-  const origin =
-    originHubId ??
-    pickNearestHub(hubs, {
-      latitude: input.pickupAddress.latitude,
-      longitude: input.pickupAddress.longitude,
-    })?.id
-  const destination =
-    destinationHubId ??
-    pickNearestHub(
-      hubs,
-      { latitude: input.deliveryAddress.latitude, longitude: input.deliveryAddress.longitude },
-      origin,
-    )?.id
+  const originHub =
+    originHubId === undefined
+      ? pickRoutingHub(hubs, "ORIGIN", {
+          cityName: pickup.city.name,
+          latitude: input.pickupAddress.latitude,
+          longitude: input.pickupAddress.longitude,
+        })
+      : undefined
+  const origin = originHubId ?? originHub?.id
 
-  if (origin === undefined || destination === undefined || origin === destination) {
-    throw hubMustDiffer()
+  if (origin === undefined) {
+    throw new DomainError(
+      ERROR_CODES.VALIDATION_FAILED,
+      `No active pickup hub serves ${pickup.city.name}`,
+      {
+        details: [
+          {
+            field: "pickupAddress.cityId",
+            message: "Choose a serviced pickup city or add an exact map pin",
+          },
+        ],
+      },
+    )
   }
+
+  const destinationHub =
+    destinationHubId === undefined
+      ? pickRoutingHub(
+          hubs,
+          "DESTINATION",
+          {
+            cityName: delivery.city.name,
+            latitude: input.deliveryAddress.latitude,
+            longitude: input.deliveryAddress.longitude,
+          },
+          origin,
+        )
+      : undefined
+  const destination = destinationHubId ?? destinationHub?.id
+
+  if (destination === undefined) {
+    throw new DomainError(
+      ERROR_CODES.VALIDATION_FAILED,
+      `No active delivery hub serves ${delivery.city.name}`,
+      {
+        details: [
+          {
+            field: "deliveryAddress.cityId",
+            message: "Choose a serviced delivery city or add an exact map pin",
+          },
+        ],
+      },
+    )
+  }
+
+  if (origin === destination) throw hubMustDiffer()
   return { originHubId: origin, destinationHubId: destination }
 }
 
@@ -257,11 +327,6 @@ export async function createParcel(
   command: CreateParcelCommand,
 ): Promise<Parcel> {
   const { input, senderCustomerId, actorId: actor } = command
-
-  // Resolved first, so a booking with no route fails before anything is quoted
-  // or written. Both ids supplied is the staff path and validates here; the
-  // customer path arrives with none and is routed from the address coordinates.
-  const { originHubId, destinationHubId } = await resolveHubPair(c.get("db")!, input)
 
   if (input.paymentType === "PREPAID" && input.codAmount > 0) {
     throw new DomainError(ERROR_CODES.VALIDATION_FAILED, "COD amount only applies to COD parcels", {
@@ -274,6 +339,15 @@ export async function createParcel(
   // than half-commit it.
   const pickup = await resolveAddress(c, input.pickupAddress)
   const delivery = await resolveAddress(c, input.deliveryAddress)
+
+  // Staff explicitly choose both hubs. Customer bookings carry neither id, so
+  // the API derives the role-compatible pair from the now-validated addresses.
+  const { originHubId, destinationHubId } = await resolveHubPair(
+    c.get("db")!,
+    input,
+    pickup,
+    delivery,
+  )
 
   // Recomputed server-side: a client-supplied fee is never trusted. The weight
   // is kilograms on the wire and grams on the lane, so the conversion happens

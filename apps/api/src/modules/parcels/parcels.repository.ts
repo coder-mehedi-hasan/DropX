@@ -255,23 +255,28 @@ type CreateParcelRecord = {
 
 export type RoutingHub = {
   id: string
+  type: "ORIGIN" | "SORTING" | "TRANSIT" | "DESTINATION"
+  district: string | null
   latitude: number | null
   longitude: number | null
 }
 
 /**
- * The ACTIVE hubs a booking can be routed through, with their coordinates.
+ * The ACTIVE hubs a booking can be routed through. Type prevents a customer
+ * pickup from being assigned to a sorting/last-mile hub, while district is the
+ * deterministic fallback when an address has no map pin.
  *
- * Ordered by id so every caller sees the same list: the nearest-hub pick in the
- * service leans on that order for its tie-break, and a hub without coordinates
- * falls back to a stable position instead of to whatever the database returned.
+ * Ordered by id so every caller sees the same list and equal-distance or
+ * same-district candidates have a deterministic tie-break.
  */
 export async function listActiveRoutingHubs(db: Pool | Connection): Promise<RoutingHub[]> {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT id, latitude, longitude FROM hubs WHERE status = 'ACTIVE' ORDER BY id ASC",
+    "SELECT id, type, district, latitude, longitude FROM hubs WHERE status = 'ACTIVE' ORDER BY id ASC",
   )
   return rows.map((row) => ({
     id: String(row.id),
+    type: row.type,
+    district: row.district === null ? null : String(row.district),
     latitude: row.latitude === null ? null : Number(row.latitude),
     longitude: row.longitude === null ? null : Number(row.longitude),
   }))
