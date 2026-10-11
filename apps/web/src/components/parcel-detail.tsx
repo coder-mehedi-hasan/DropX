@@ -29,7 +29,7 @@ import { EventTimeline } from "@/components/event-timeline"
 import { isApiError } from "@/lib/api-client"
 import { formatDateTime, formatDimensions, formatMoney, formatWeight } from "@/lib/format"
 import { useMyParcel, useTracking } from "@/lib/queries"
-import type { Parcel, ParcelAddress } from "@/lib/types"
+import type { HubRef, Parcel, ParcelAddress } from "@/lib/types"
 
 /**
  * One end of a booking, from the name snapshots the API wrote at booking time.
@@ -42,6 +42,16 @@ function addressSummary(addresses: ParcelAddress[], type: ParcelAddress["type"])
         .filter(Boolean)
         .join(", ")
     : "—"
+}
+
+function hubSummary(
+  hub: HubRef | null | undefined,
+  fallbackId: string | null,
+  isPending: boolean,
+): string {
+  if (hub) return `${hub.name} (${hub.code})`
+  if (isPending) return "Loading hub…"
+  return fallbackId ? `Hub #${fallbackId}` : "—"
 }
 
 /**
@@ -150,18 +160,36 @@ export function ParcelDetail({ parcelId }: { parcelId: string }) {
                 />
                 <Fact label="Pickup" value={addressSummary(parcel.addresses, "PICKUP")} />
                 <Fact label="Delivery" value={addressSummary(parcel.addresses, "DELIVERY")} />
-                <Fact label="Origin hub" value={`#${parcel.originHubId}`} />
-                <Fact label="Destination hub" value={`#${parcel.destinationHubId}`} />
+                <Fact
+                  label="Origin hub"
+                  value={hubSummary(
+                    tracking.data?.originHub,
+                    parcel.originHubId,
+                    tracking.isPending,
+                  )}
+                />
+                <Fact
+                  label="Destination hub"
+                  value={hubSummary(
+                    tracking.data?.destinationHub,
+                    parcel.destinationHubId,
+                    tracking.isPending,
+                  )}
+                />
                 <Fact
                   label="Current hub"
-                  value={parcel.currentHubId ? `#${parcel.currentHubId}` : "—"}
+                  value={hubSummary(
+                    tracking.data?.currentHub,
+                    parcel.currentHubId,
+                    tracking.isPending,
+                  )}
                 />
                 <Fact label="Receiver" value={parcel.receiverName || "—"} />
               </dl>
 
               <p className="text-muted-foreground mt-4 text-xs">
                 Address names are snapshots from booking time, so they stay correct even if a zone
-                is renamed later. Hubs are shown as ids here; the tracking view resolves names.
+                is renamed later. Hub names and codes come from the live tracking record.
               </p>
             </CardContent>
           </Card>

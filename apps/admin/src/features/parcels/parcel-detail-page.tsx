@@ -60,7 +60,7 @@ import { cancelParcel, getParcel, trackParcel, updateParcelStatus } from "@/lib/
 import { formatDateTime, formatDimensions, formatMoney, formatNumber } from "@/lib/format"
 import { DEFAULT_PARCELS_SEARCH, nextStatuses } from "@/lib/parcels"
 import type { ParcelDetail, ParcelStatus } from "@/lib/parcels"
-import type { ParcelAddress, ParcelAddressType } from "@/lib/types"
+import type { HubRef, ParcelAddress, ParcelAddressType } from "@/lib/types"
 import { EventTimeline } from "@/features/tracking/event-timeline"
 
 const statusChangeSchema = z.object({
@@ -76,6 +76,16 @@ const cancelSchema = z.object({
     .min(1, "Tell us why the parcel is being cancelled")
     .max(500, "Keep the reason under 500 characters"),
 })
+
+function hubSummary(
+  hub: HubRef | null | undefined,
+  fallbackId: string | null,
+  isPending: boolean,
+): string {
+  if (hub) return `${hub.name} (${hub.code})`
+  if (isPending) return "Loading hub…"
+  return fallbackId ? `Hub #${fallbackId}` : "—"
+}
 
 type StatusChangeValues = z.infer<typeof statusChangeSchema>
 
@@ -178,10 +188,14 @@ export function ParcelDetailPage({ parcelId }: { parcelId: string }) {
                 {data.receiverName ||
                   (data.receiverCustomerId ? `Customer #${data.receiverCustomerId}` : "—")}
               </DetailRow>
-              <DetailRow label="Origin hub">#{data.originHubId}</DetailRow>
-              <DetailRow label="Destination hub">#{data.destinationHubId}</DetailRow>
+              <DetailRow label="Origin hub">
+                {hubSummary(events.data?.originHub, data.originHubId, events.isPending)}
+              </DetailRow>
+              <DetailRow label="Destination hub">
+                {hubSummary(events.data?.destinationHub, data.destinationHubId, events.isPending)}
+              </DetailRow>
               <DetailRow label="Current hub">
-                {data.currentHubId ? `#${data.currentHubId}` : "—"}
+                {hubSummary(events.data?.currentHub, data.currentHubId, events.isPending)}
               </DetailRow>
               <DetailRow label="Pickup address">
                 {addressSummary(data.addresses, "PICKUP")}
