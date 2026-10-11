@@ -86,6 +86,125 @@ async function ensureHub(
   return hubId
 }
 
+/**
+ * The original demo network represented pickup, sorting, and delivery as
+ * separate physical hubs. Consolidate those known seed rows into the city's
+ * central hub before deleting them. All references move in one transaction so
+ * a failed cleanup cannot leave half of the network on the old model.
+ */
+async function consolidateLegacyDemoHubs(
+  mappings: Array<{ legacyCode: string; centralHubId: string }>,
+): Promise<number> {
+  const connection = await pool.getConnection()
+  let removed = 0
+
+  try {
+    await connection.beginTransaction()
+
+    for (const mapping of mappings) {
+      const [hubRows] = await connection.query<mysql.RowDataPacket[]>(
+        `SELECT id FROM hubs WHERE code = ? LIMIT 1 FOR UPDATE`,
+        [mapping.legacyCode],
+      )
+      if (!hubRows[0]) continue
+
+      const legacyHubId = String(hubRows[0].id)
+
+      // A pickup-hub -> central-hub demo transfer becomes a self-transfer after
+      // consolidation. It is safe to remove only while it is still an empty,
+      // planned draft; anything operational or historical must stop the seed.
+      const [sameHubTransfers] = await connection.query<mysql.RowDataPacket[]>(
+        `SELECT t.id, t.transfer_number, t.status,
+                EXISTS(SELECT 1 FROM transfer_parcels tp WHERE tp.transfer_id = t.id) AS has_parcels
+         FROM transfers t
+         WHERE (t.from_hub_id = ? AND t.to_hub_id = ?)
+            OR (t.from_hub_id = ? AND t.to_hub_id = ?)
+         FOR UPDATE`,
+        [legacyHubId, mapping.centralHubId, mapping.centralHubId, legacyHubId],
+      )
+      const unsafeTransfer = sameHubTransfers.find(
+        (row) => row.status !== "PLANNED" || Number(row.has_parcels) !== 0,
+      )
+      if (unsafeTransfer) {
+        throw new Error(
+          `Cannot consolidate ${mapping.legacyCode}: transfer ${unsafeTransfer.transfer_number} has operational history`,
+        )
+      }
+      if (sameHubTransfers.length > 0) {
+        await connection.query(
+          `DELETE FROM transfers WHERE id IN (${sameHubTransfers.map(() => "?").join(", ")})`,
+          [sameHubTransfers.map((row) => String(row.id))].flat(),
+        )
+      }
+
+      const [sameHubRoutes] = await connection.query<mysql.RowDataPacket[]>(
+        `SELECT code
+         FROM routes
+         WHERE (origin_hub_id = ? AND destination_hub_id = ?)
+            OR (origin_hub_id = ? AND destination_hub_id = ?)
+         LIMIT 1
+         FOR UPDATE`,
+        [legacyHubId, mapping.centralHubId, mapping.centralHubId, legacyHubId],
+      )
+      if (sameHubRoutes[0]) {
+        throw new Error(
+          `Cannot consolidate ${mapping.legacyCode}: route ${sameHubRoutes[0].code} would become a self-route`,
+        )
+      }
+
+      // Composite keys need conflict-safe consolidation before ordinary FK
+      // columns can be updated directly.
+      await connection.execute(
+        `INSERT IGNORE INTO user_hubs (user_id, hub_id)
+         SELECT user_id, ? FROM user_hubs WHERE hub_id = ?`,
+        [mapping.centralHubId, legacyHubId],
+      )
+      await connection.execute(`DELETE FROM user_hubs WHERE hub_id = ?`, [legacyHubId])
+
+      await connection.execute(
+        `DELETE old_stop
+         FROM route_stops old_stop
+         JOIN route_stops central_stop
+           ON central_stop.route_id = old_stop.route_id AND central_stop.hub_id = ?
+         WHERE old_stop.hub_id = ?`,
+        [mapping.centralHubId, legacyHubId],
+      )
+
+      const references = [
+        ["parcels", "origin_hub_id"],
+        ["parcels", "destination_hub_id"],
+        ["parcels", "current_hub_id"],
+        ["routes", "origin_hub_id"],
+        ["routes", "destination_hub_id"],
+        ["route_stops", "hub_id"],
+        ["riders", "hub_id"],
+        ["transfers", "from_hub_id"],
+        ["transfers", "to_hub_id"],
+        ["deliveries", "hub_id"],
+        ["parcel_events", "hub_id"],
+      ] as const
+
+      for (const [table, column] of references) {
+        await connection.execute(`UPDATE ${table} SET ${column} = ? WHERE ${column} = ?`, [
+          mapping.centralHubId,
+          legacyHubId,
+        ])
+      }
+
+      await connection.execute(`DELETE FROM hubs WHERE id = ?`, [legacyHubId])
+      removed += 1
+    }
+
+    await connection.commit()
+    return removed
+  } catch (error) {
+    await connection.rollback()
+    throw error
+  } finally {
+    connection.release()
+  }
+}
+
 async function ensureVehicle(input: {
   reg: string
   type: "BIKE" | "VAN" | "TRUCK" | "COVERED_VAN"
@@ -117,7 +236,24 @@ async function ensureRoute(input: {
     `SELECT id FROM routes WHERE code = ? LIMIT 1`,
     [input.code],
   )
-  if (rows[0]) return String(rows[0].id)
+  if (rows[0]) {
+    const routeId = String(rows[0].id)
+    await pool.execute(
+      `UPDATE routes
+       SET name = ?, origin_hub_id = ?, destination_hub_id = ?, distance_km = ?,
+           estimated_minutes = ?, status = 'ACTIVE'
+       WHERE id = ?`,
+      [
+        input.name,
+        input.originHubId,
+        input.destHubId,
+        input.distanceKm ?? null,
+        input.estMin ?? null,
+        routeId,
+      ],
+    )
+    return routeId
+  }
 
   const [result] = await pool.execute<mysql.ResultSetHeader>(
     `INSERT INTO routes (name, code, origin_hub_id, destination_hub_id, distance_km, estimated_minutes, status)
@@ -198,6 +334,15 @@ async function main() {
     capacity: 2000,
   })
 
+  const removedLegacyHubs = await consolidateLegacyDemoHubs([
+    { legacyCode: "HUB-DHK-PK", centralHubId: dhkCentral },
+    { legacyCode: "HUB-DHK-DL", centralHubId: dhkCentral },
+    { legacyCode: "HUB-CTG-PK", centralHubId: ctgCentral },
+    { legacyCode: "HUB-CTG-DL", centralHubId: ctgCentral },
+    { legacyCode: "HUB-KHL-PK", centralHubId: khlCentral },
+    { legacyCode: "HUB-KHL-DL", centralHubId: khlCentral },
+  ])
+
   // Vehicles
   await ensureVehicle({ reg: "DHK-MOTO-01", type: "BIKE", capacityKg: 15 })
   await ensureVehicle({ reg: "DHK-MOTO-02", type: "BIKE", capacityKg: 15 })
@@ -247,7 +392,9 @@ async function main() {
     { hubId: dhkCentral, seq: 2, etaMin: 390 },
   ])
 
-  console.log("✓ network seed ready (branches/hubs/routes/stops/vehicles)")
+  console.log(
+    `✓ network seed ready (branches/hubs/routes/stops/vehicles; removed ${removedLegacyHubs} legacy hubs)`,
+  )
 }
 
 main()
