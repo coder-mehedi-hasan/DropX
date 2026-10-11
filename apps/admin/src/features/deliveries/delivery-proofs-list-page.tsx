@@ -2,14 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { FileCheck, ShieldCheck } from "lucide-react"
 import { useMemo } from "react"
 import {
+  AppToast,
   Badge,
   Button,
   Card,
   CardContent,
   CardHeader,
   EmptyState,
+  ProofPreview,
   ServerDataTable,
-  AppToast,
   type DataTableColumn,
 } from "@dropx/ui"
 import { PROOF_TYPES } from "@dropx/types"
@@ -102,6 +103,19 @@ export function DeliveryProofsListPage({ search }: { search: DeliveryProofsSearc
 
   const columns = useMemo<DataTableColumn<DeliveryProofRow>[]>(
     () => [
+      {
+        id: "artefact",
+        header: "Artefact",
+        cell: (proof) =>
+          proof.fileUrl ? (
+            <ProofPreview src={proof.fileUrl} alt={PROOF_TYPE_LABEL[proof.type]} />
+          ) : proof.value ? (
+            <span className="font-mono text-xs">{proof.value}</span>
+          ) : (
+            <span className="text-muted-foreground text-sm">—</span>
+          ),
+        value: (proof) => proof.fileUrl ?? proof.value ?? "",
+      },
       {
         id: "parcelTrackingNumber",
         header: "Parcel",

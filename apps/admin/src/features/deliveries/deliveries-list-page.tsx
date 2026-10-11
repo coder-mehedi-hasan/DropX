@@ -1,24 +1,42 @@
-import { useQuery } from "@tanstack/react-query"
-import { Bike, Plus, UserRoundCheck } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  Bike,
+  MoreHorizontal,
+  PackageCheck,
+  Plus,
+  RotateCcw,
+  UserRoundCheck,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react"
 import { useMemo, useState } from "react"
 import {
+  AppToast,
   Badge,
   Button,
   Card,
   CardContent,
   CardHeader,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   EmptyState,
+  LoadingButton,
   ServerDataTable,
+  useConfirmation,
   useFormSheetState,
   type DataTableColumn,
 } from "@dropx/ui"
-import { DELIVERY_STATUSES } from "@dropx/types"
+import { DELIVERY_STATUSES, DELIVERY_TRANSITIONS, type DeliveryStatus } from "@dropx/types"
 
 import { ListFilterSelect, ListSearchBar } from "@/components/list-search-bar"
 import { PageHeader } from "@/components/page-parts"
 import { ServerError } from "@/components/server-error"
 import { useAuth } from "@/lib/auth"
-import { listDeliveries } from "@/lib/endpoints"
+import { listDeliveries, updateDeliveryStatus } from "@/lib/endpoints"
 import { formatDateTime } from "@/lib/format"
 import type { DeliveryRow } from "@/lib/types"
 import { usePaginatedListWhere, useQueryParams } from "@/lib/list-params"
@@ -26,9 +44,68 @@ import type { DeliveriesSearch } from "@/routes/deliveries-search-params"
 
 import { DeliveryAssignSheet } from "./delivery-assign-sheet"
 import { DELIVERY_STATUS_BADGE, DELIVERY_STATUS_LABEL } from "./delivery-status"
-import { DeliveryStatusSheet } from "./delivery-status-sheet"
 
 const DELIVERY_SORT_COLUMNS = ["assignedAt", "deliveredAt", "status", "createdAt"] as const
+
+/**
+ * The one forward move worth surfacing as a button per row — the milestone the
+ * dispatcher is actually trying to reach. Built from the same shape as
+ * `DELIVERY_TRANSITIONS`: what turns into a button here is exactly what the API
+ * will accept from the current status.
+ */
+const FORWARD_ACTION: Partial<
+  Record<DeliveryStatus, { to: DeliveryStatus; label: string; icon: LucideIcon }>
+> = {
+  ASSIGNED: { to: "OUT_FOR_DELIVERY", label: "Start delivery", icon: Bike },
+  OUT_FOR_DELIVERY: { to: "DELIVERED", label: "Mark delivered", icon: PackageCheck },
+}
+
+/**
+ * What to say when confirming a given move. `FAILED` and `CANCELLED` lock the
+ * reason box — the API refuses those without one — while every other move keeps
+ * it optional, matching `deliveries.service.ts`.
+ */
+const STATUS_MOVE: Record<
+  DeliveryStatus,
+  { confirmLabel: string; description: string; placeholder?: string; requiresReason: boolean }
+> = {
+  ASSIGNED: {
+    confirmLabel: "Reassign",
+    description: "Only reached through reassignment, never the status dialog.",
+    requiresReason: false,
+  },
+  OUT_FOR_DELIVERY: {
+    confirmLabel: "Start delivery",
+    description:
+      "Marks the attempt as out for delivery — the rider has left the hub with the parcel.",
+    placeholder: "Route notes (optional)",
+    requiresReason: false,
+  },
+  DELIVERED: {
+    confirmLabel: "Mark delivered",
+    description: "Closes the attempt as delivered. Confirm the proof of handover is filed first.",
+    placeholder: "Delivery notes (optional)",
+    requiresReason: false,
+  },
+  FAILED: {
+    confirmLabel: "Mark failed",
+    description: "Records a failed attempt. The parcel returns to At hub and can be re-dispatched.",
+    placeholder: "Customer not home, address unreachable…",
+    requiresReason: true,
+  },
+  CANCELLED: {
+    confirmLabel: "Cancel delivery",
+    description: "Sends the parcel back to At hub at this hub so it can be dispatched again.",
+    placeholder: "Why is it not going?",
+    requiresReason: true,
+  },
+  RETURNED: {
+    confirmLabel: "Mark returned",
+    description: "Records that the parcel came back unsent.",
+    placeholder: "Return note (optional)",
+    requiresReason: false,
+  },
+}
 
 /**
  * The last-mile worklist.
@@ -46,8 +123,37 @@ export function DeliveriesListPage({ search }: { search: DeliveriesSearch }) {
 
   const createSheet = useFormSheetState()
   const assignSheet = useFormSheetState<string>()
-  const statusSheet = useFormSheetState<string>()
   const [active, setActive] = useState<DeliveryRow | null>(null)
+  const { confirmWithReason, confirmationDialog } = useConfirmation()
+  const queryClient = useQueryClient()
+  const [statusPendingId, setStatusPendingId] = useState<string | null>(null)
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: DeliveryStatus; reason: string }) =>
+      updateDeliveryStatus(id, {
+        status,
+        reason: reason.trim() ? reason.trim() : undefined,
+      }),
+    onMutate: ({ id }) => setStatusPendingId(id),
+    onSettled: () => setStatusPendingId(null),
+    onSuccess: () => {
+      AppToast.success("Delivery updated")
+      void queryClient.invalidateQueries({ queryKey: ["deliveries"] })
+    },
+  })
+
+  async function askStatusMove(delivery: DeliveryRow, to: DeliveryStatus) {
+    const move = STATUS_MOVE[to]
+    const result = await confirmWithReason({
+      title: `${move.confirmLabel} · ${delivery.parcelTrackingNumber}?`,
+      description: move.description,
+      confirmLabel: move.confirmLabel,
+      destructive: to === "CANCELLED",
+      reason: { placeholder: move.placeholder, required: move.requiresReason },
+    })
+    if (result.confirmed) {
+      updateStatus.mutate({ id: delivery.id, status: to, reason: result.reason })
+    }
+  }
 
   const where = usePaginatedListWhere(search)
   const params = useMemo(
@@ -101,11 +207,6 @@ export function DeliveriesListPage({ search }: { search: DeliveriesSearch }) {
   const openAssign = (delivery: DeliveryRow) => {
     setActive(delivery)
     assignSheet.openFor(delivery.id)
-  }
-
-  const openStatus = (delivery: DeliveryRow) => {
-    setActive(delivery)
-    statusSheet.openFor(delivery.id)
   }
 
   const columns = useMemo<DataTableColumn<DeliveryRow>[]>(
@@ -177,38 +278,77 @@ export function DeliveriesListPage({ search }: { search: DeliveriesSearch }) {
         id: "actions",
         header: "",
         align: "end",
-        cell: (delivery) => (
-          <div className="flex justify-end gap-1">
-            {canAssign && delivery.status === "ASSIGNED" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Reassign rider for delivery ${delivery.id}`}
-                onClick={() => openAssign(delivery)}
-              >
-                <UserRoundCheck />
-                Reassign
-              </Button>
-            ) : null}
-            {canManage &&
-            delivery.status !== "DELIVERED" &&
-            delivery.status !== "CANCELLED" &&
-            delivery.status !== "RETURNED" &&
-            delivery.status !== "FAILED" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Update status of delivery ${delivery.id}`}
-                onClick={() => openStatus(delivery)}
-              >
-                Status
-              </Button>
-            ) : null}
-          </div>
-        ),
+        cell: (delivery) => {
+          const forward = FORWARD_ACTION[delivery.status]
+          const busy = statusPendingId === delivery.id
+          const statusBusy = statusPendingId !== null
+          const extraMoves = canManage
+            ? DELIVERY_TRANSITIONS[delivery.status].filter((to) => to !== forward?.to)
+            : []
+          const showReassign = canAssign && delivery.status === "ASSIGNED"
+          const hasKebab = showReassign || extraMoves.length > 0
+
+          return (
+            <div className="flex items-center justify-end gap-1">
+              {canManage && forward ? (
+                <LoadingButton
+                  variant="outline"
+                  size="sm"
+                  loading={busy}
+                  disabled={statusBusy}
+                  aria-label={`${forward.label} ${delivery.parcelTrackingNumber}`}
+                  onClick={() => void askStatusMove(delivery, forward.to)}
+                >
+                  <forward.icon />
+                  {forward.label}
+                </LoadingButton>
+              ) : null}
+              {hasKebab ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label={`Actions for delivery ${delivery.id}`}
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel className="font-mono text-xs">
+                      {delivery.parcelTrackingNumber}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {showReassign ? (
+                      <DropdownMenuItem onSelect={() => openAssign(delivery)}>
+                        <UserRoundCheck />
+                        Reassign rider
+                      </DropdownMenuItem>
+                    ) : null}
+                    {extraMoves.map((to) => (
+                      <DropdownMenuItem
+                        key={to}
+                        className={to === "CANCELLED" ? "text-destructive" : undefined}
+                        disabled={statusBusy}
+                        onSelect={() => void askStatusMove(delivery, to)}
+                      >
+                        {to === "CANCELLED" ? <XCircle /> : <RotateCcw />}
+                        {STATUS_MOVE[to].confirmLabel}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </div>
+          )
+        },
       },
     ],
-    [canAssign, canManage, assignSheet.openFor, statusSheet.openFor],
+    // `askStatusMove` only sets state or fires a mutation — it is stable enough
+    // for a row render — but it is listed so a stale closure cannot outlive a
+    // change here.
+    [canAssign, canManage, assignSheet.openFor, confirmWithReason, updateStatus, statusPendingId],
   )
 
   const filtered = Boolean(search.search || search.status || search.riderId || search.hubId)
@@ -334,12 +474,7 @@ export function DeliveriesListPage({ search }: { search: DeliveriesSearch }) {
         delivery={active}
       />
 
-      <DeliveryStatusSheet
-        key={statusSheet.key}
-        open={statusSheet.open}
-        onOpenChange={statusSheet.onOpenChange}
-        delivery={active}
-      />
+      {confirmationDialog}
     </div>
   )
 }

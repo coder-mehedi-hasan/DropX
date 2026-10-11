@@ -27,8 +27,10 @@ import { Textarea } from "../components/ui/textarea"
  * `requireText` is for the irreversible ones — a name typed to confirm a delete
  * cannot be mis-clicked. It is opt-in because it is friction on purpose.
  *
- * `reason` turns the dialog into a prompt with an **optional** free-text box
- * beside the question. Use `confirmWithReason` when you want the value back,
+ * `reason` turns the dialog into a prompt with a free-text box
+ * beside the question. It is **optional** unless the caller sets
+ * `reason.required`, in which case the confirm button stays disabled until the
+ * box is non-empty. Use `confirmWithReason` when you want the value back,
  * because the reason is only ever returned alongside the boolean answer; plain
  * `confirm` keeps resolving a boolean so older call sites never see it.
  */
@@ -36,6 +38,8 @@ export type ConfirmReasonOptions = {
   /** Label above the reason box. Defaults to "Reason (optional)". */
   label?: string
   placeholder?: string
+  /** Lock the confirm button until a reason is provided. */
+  required?: boolean
 }
 
 export type ConfirmOptions = {
@@ -130,7 +134,7 @@ export function useConfirmation() {
         {reasonOptions && pending ? (
           <label className="space-y-2 text-sm">
             <span className="text-muted-foreground">
-              {reasonOptions.label ?? "Reason (optional)"}
+              {reasonOptions.label ?? (reasonOptions.required ? "Reason" : "Reason (optional)")}
             </span>
             <Textarea
               rows={2}
@@ -148,7 +152,10 @@ export function useConfirmation() {
           <Button
             type="button"
             variant={pending?.destructive === false ? "default" : "destructive"}
-            disabled={Boolean(pending?.requireText) && typed !== pending?.requireText}
+            disabled={
+              (Boolean(pending?.requireText) && typed !== pending?.requireText) ||
+              Boolean(reasonOptions?.required && !reason.trim())
+            }
             onClick={() => settle(true)}
           >
             {pending?.confirmLabel ?? "Confirm"}

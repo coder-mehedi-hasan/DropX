@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  ProofPreview,
 } from "@dropx/ui"
 
 import { RIDER_PERMISSIONS } from "../../lib/permissions"
@@ -85,15 +86,24 @@ export function DeliveryProofsCard({
           <ul className="divide-y">
             {rows.map((proof) => (
               <li key={proof.id} className="flex items-center justify-between gap-3 py-2">
-                <span className="text-sm">
-                  {TYPE_LABELS[proof.type] ?? proof.type}
-                  {proof.value ? (
-                    <span className="text-muted-foreground font-mono text-xs">
-                      {" "}
-                      · {proof.value}
-                    </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  {proof.fileUrl ? (
+                    <ProofPreview
+                      src={proof.fileUrl}
+                      alt={TYPE_LABELS[proof.type] ?? proof.type}
+                      className="size-9"
+                    />
                   ) : null}
-                </span>
+                  <span className="text-sm">
+                    {TYPE_LABELS[proof.type] ?? proof.type}
+                    {proof.value ? (
+                      <span className="text-muted-foreground font-mono text-xs">
+                        {" "}
+                        · {proof.value}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
                 <Badge variant={proof.verifiedAt ? "success" : "warning"}>
                   {proof.verifiedAt ? "Verified" : "Awaiting review"}
                 </Badge>
