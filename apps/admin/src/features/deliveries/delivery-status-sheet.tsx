@@ -80,7 +80,7 @@ export function DeliveryStatusSheet({
         const typed = values as z.infer<typeof updateDeliveryStatusSchema>
         await mutation.mutateAsync({
           status: typed.status,
-          reason: typed.reason?.trim() ? typed.reason.trim() : null,
+          reason: typed.reason?.trim() ? typed.reason.trim() : undefined,
         })
       }}
       error={null}

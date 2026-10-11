@@ -80,7 +80,7 @@ export function PickupStatusSheet({
         const typed = values as z.infer<typeof updatePickupStatusSchema>
         await mutation.mutateAsync({
           status: typed.status,
-          reason: typed.reason?.trim() ? typed.reason.trim() : null,
+          reason: typed.reason?.trim() ? typed.reason.trim() : undefined,
         })
       }}
       error={null}

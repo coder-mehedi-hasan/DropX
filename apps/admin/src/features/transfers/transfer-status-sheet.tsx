@@ -79,7 +79,7 @@ export function TransferStatusSheet({
         const typed = values as z.infer<typeof updateTransferStatusSchema>
         await mutation.mutateAsync({
           status: typed.status,
-          reason: typed.reason?.trim() ? typed.reason.trim() : null,
+          reason: typed.reason?.trim() ? typed.reason.trim() : undefined,
         })
       }}
       error={null}
