@@ -162,3 +162,23 @@ export async function submitJobProof(input: SubmitProofInput): Promise<JobProof>
     body: input,
   })
 }
+
+/** What `POST /uploads` returns for a `proof` purpose: a stored URL to attach. */
+export type ProofUploadResult = {
+  url: string
+  key: string
+  size: number
+  contentType: string
+}
+
+/** Mirrors the web portal's `uploadsApi.upload`: bytes here, only the URL is persisted. */
+export async function uploadProofFile(file: File): Promise<ProofUploadResult> {
+  const form = new FormData()
+  form.set("purpose", "proof")
+  form.set("file", file)
+  return apiRequest<ProofUploadResult>("/uploads", {
+    auth: true,
+    method: "POST",
+    body: form,
+  })
+}

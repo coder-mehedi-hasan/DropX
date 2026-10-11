@@ -1,12 +1,23 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Camera, CheckCircle2, ChevronLeft, IdCard, KeyRound, PenLine, XCircle } from "lucide-react"
-import { useState } from "react"
+import {
+  Camera,
+  CheckCircle2,
+  ChevronLeft,
+  IdCard,
+  ImagePlus,
+  KeyRound,
+  Loader2,
+  PenLine,
+  XCircle,
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import {
   Alert,
   AlertDescription,
   AlertTitle,
+  Badge,
   Button,
   Form,
   FormControl,
@@ -26,7 +37,7 @@ import {
 
 import { describeApiError } from "../../components/feedback"
 import { isApiError } from "../../lib/api-client"
-import { useSubmitProof } from "./job-queries"
+import { useSubmitProof, useUploadProof } from "./job-queries"
 import type { ProofType } from "./jobs.api"
 
 const PROOF_TYPES = ["SIGNATURE", "PHOTO", "OTP", "IDENTITY"] as const
@@ -36,6 +47,16 @@ const PROOF_TYPE_LABELS: Record<ProofType, string> = {
   PHOTO: "Photo of the handover",
   OTP: "Receiver OTP",
   IDENTITY: "ID check",
+}
+
+/** Mirrors the API's `proof` purpose rules so a wrong image fails before it leaves. */
+const ACCEPTED_PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"] as const
+const MAX_PROOF_BYTES = 5 * 1024 * 1024
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 /**
@@ -72,9 +93,29 @@ export function DeliveryProofSheet({
   const [step, setStep] = useState<Step>("choose")
   const [type, setType] = useState<ProofType | null>(null)
   const [failure, setFailure] = useState<unknown>(null)
+  const [selected, setSelected] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const mutation = useSubmitProof()
+  const upload = useUploadProof()
 
   const needsFile = type === "SIGNATURE" || type === "PHOTO"
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
+
+  const resetFile = () => {
+    if (preview) URL.revokeObjectURL(preview)
+    setPreview(null)
+    setSelected(null)
+    setUploadError(null)
+    upload.reset()
+  }
+
   const form = useForm<z.infer<ReturnType<typeof schemaFor>>>({
     resolver: zodResolver(schemaFor()),
     defaultValues: { value: "", fileUrl: "" },
@@ -85,6 +126,7 @@ export function DeliveryProofSheet({
       setStep("choose")
       setType(null)
       setFailure(null)
+      resetFile()
       form.reset()
     }
     onOpenChange(isOpen)
@@ -93,8 +135,34 @@ export function DeliveryProofSheet({
   const pick = (next: ProofType) => {
     setType(next)
     setFailure(null)
+    resetFile()
     form.reset()
     setStep("capture")
+  }
+
+  const chooseFile = (file: File) => {
+    if (!ACCEPTED_PROOF_TYPES.includes(file.type as (typeof ACCEPTED_PROOF_TYPES)[number])) {
+      setUploadError("Use a JPG, PNG, or WebP image.")
+      return
+    }
+    if (file.size > MAX_PROOF_BYTES) {
+      setUploadError("The image is larger than 5 MB.")
+      return
+    }
+    setSelected(file)
+    setUploadError(null)
+    setPreview((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return URL.createObjectURL(file)
+    })
+    form.setValue("fileUrl", "", { shouldValidate: false })
+    upload.mutate(file, {
+      onSuccess: (result) => form.setValue("fileUrl", result.url, { shouldValidate: false }),
+      onError: (error) =>
+        setUploadError(
+          isApiError(error) ? error.message : "We could not upload that image. Please try again.",
+        ),
+    })
   }
 
   const run = (values: z.infer<ReturnType<typeof schemaFor>>) => {
@@ -191,17 +259,82 @@ export function DeliveryProofSheet({
                 <FormField
                   control={form.control}
                   name="fileUrl"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
-                      <FormLabel className="text-base">File URL *</FormLabel>
+                      <FormLabel className="text-base">
+                        {type === "SIGNATURE" ? "Signature photo" : "Handover photo"} *
+                      </FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          className="text-base"
-                          placeholder="The uploaded image or signature file"
-                        />
+                        <div className="grid gap-2">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            capture="environment"
+                            className="sr-only"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0]
+                              event.target.value = ""
+                              if (file) chooseFile(file)
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            className="tap-target h-14 text-base"
+                            disabled={upload.isPending}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            {upload.isPending ? (
+                              <Loader2 className="size-5 animate-spin" />
+                            ) : selected ? (
+                              <ImagePlus className="size-5" />
+                            ) : (
+                              <Camera className="size-5" />
+                            )}
+                            {upload.isPending
+                              ? "Uploading…"
+                              : selected
+                                ? "Replace photo"
+                                : "Take or pick a photo"}
+                          </Button>
+
+                          {selected ? (
+                            <div className="flex items-center gap-3 rounded-lg border p-2">
+                              {preview ? (
+                                <img
+                                  src={preview}
+                                  alt=""
+                                  className="size-14 rounded-md object-cover"
+                                />
+                              ) : (
+                                <div className="bg-muted size-14 rounded-md" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm">{selected.name}</p>
+                                <p className="text-muted-foreground text-xs">
+                                  {formatBytes(selected.size)}
+                                </p>
+                              </div>
+                              {form.getValues("fileUrl") ? (
+                                <Badge variant="success">Attached</Badge>
+                              ) : upload.isPending ? (
+                                <Badge variant="outline">Uploading</Badge>
+                              ) : null}
+                            </div>
+                          ) : null}
+
+                          {uploadError ? (
+                            <p className="text-destructive text-sm">{uploadError}</p>
+                          ) : null}
+                        </div>
                       </FormControl>
-                      <FormDescription>Capture, upload, then paste the link here.</FormDescription>
+                      <FormDescription>
+                        {type === "SIGNATURE"
+                          ? "Photo of the signed handover, uploaded automatically."
+                          : "Opens your camera or photo library and attaches it automatically."}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -240,6 +373,7 @@ export function DeliveryProofSheet({
                   size="lg"
                   className="tap-target h-14 text-base"
                   loading={mutation.isPending}
+                  disabled={needsFile && (upload.isPending || !form.getValues("fileUrl"))}
                 >
                   <CheckCircle2 />
                   Save proof

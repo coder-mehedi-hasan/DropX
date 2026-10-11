@@ -11,6 +11,7 @@ import {
   submitJobProof,
   updatePickupJobStatus,
   updateJobStatus,
+  uploadProofFile,
   type JobStatusFilter,
   type JobStatusUpdate,
   type PickupJobStatusUpdate,
@@ -94,6 +95,16 @@ export function useSubmitProof() {
     onSuccess: (_data, input) => {
       void queryClient.invalidateQueries({ queryKey: jobKeys.proofs(input.parcelId) })
     },
+  })
+}
+
+/**
+ * Uploads a proof image. No `shouldRetry`: an interrupted upload of several
+ * megabytes is handed back to the rider to resend, not replayed silently.
+ */
+export function useUploadProof() {
+  return useMutation({
+    mutationFn: (file: File) => uploadProofFile(file),
   })
 }
 

@@ -13,6 +13,7 @@ import {
 
 import { RIDER_PERMISSIONS } from "../../lib/permissions"
 import { usePermission } from "../../lib/auth"
+import type { DeliveryStatus } from "../../lib/domain"
 import { useJobProofs } from "../jobs/job-queries"
 import { DeliveryProofSheet } from "../jobs/delivery-proof-sheet"
 
@@ -23,6 +24,9 @@ const TYPE_LABELS: Record<string, string> = {
   IDENTITY: "ID check",
 }
 
+/** An attempt that has left the hub or already landed accepts proof — an ASSIGNED one has not started. */
+const PROOF_FILABLE_STATUSES: readonly DeliveryStatus[] = ["OUT_FOR_DELIVERY", "DELIVERED"]
+
 /**
  * Proof of delivery, recorded. Listed from `GET /jobs/:id/proofs`; filed
  * through the sheet the rider gates on `rider.proof.submit`.
@@ -30,11 +34,14 @@ const TYPE_LABELS: Record<string, string> = {
 export function DeliveryProofsCard({
   parcelId,
   trackingNumber,
+  deliveryStatus,
 }: {
   parcelId: string
   trackingNumber: string
+  deliveryStatus: DeliveryStatus
 }) {
   const canSubmitProof = usePermission(RIDER_PERMISSIONS.PROOF_SUBMIT)
+  const canFileProof = PROOF_FILABLE_STATUSES.includes(deliveryStatus)
   const proofs = useJobProofs(parcelId)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -47,9 +54,20 @@ export function DeliveryProofsCard({
           <div>
             <CardTitle className="text-base">Proof of delivery</CardTitle>
             <CardDescription>Signature, photo, OTP, or ID recorded at the door.</CardDescription>
+            {canSubmitProof && !canFileProof ? (
+              <p className="text-muted-foreground mt-1 text-xs">
+                Start the delivery before filing proof.
+              </p>
+            ) : null}
           </div>
           {canSubmitProof ? (
-            <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canFileProof}
+              title={canFileProof ? undefined : "Start the delivery first"}
+              onClick={() => setSheetOpen(true)}
+            >
               <Plus />
               Add
             </Button>

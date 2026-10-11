@@ -60,6 +60,7 @@ export function JobDetailScreen({ jobId }: { jobId: string }) {
             <DeliveryProofsCard
               parcelId={job.data.parcel.id}
               trackingNumber={job.data.parcel.trackingNumber}
+              deliveryStatus={job.data.delivery.status}
             />
           </>
         ) : null}
