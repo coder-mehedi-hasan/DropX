@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/lib/auth"
 import { initialsOf } from "@/lib/format"
 import { useTheme } from "@/lib/theme"
+import { HelpDialog } from "@/features/help/help-dialog"
 
 export function Header() {
   const { displayName, user, logout } = useAuth()
@@ -44,6 +45,8 @@ export function Header() {
       </div>
 
       <Separator orientation="vertical" className="hidden h-6 sm:block" />
+
+      <HelpDialog />
 
       <Button
         variant="ghost"
