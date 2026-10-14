@@ -15,12 +15,12 @@
 
 ## Section 2: Peer Review and Contribution
 
-| Member Name | Student ID | Work Done (1 line) | Contribution % |
+| Member Name | Student ID | Work Done | Contribution % |
 |---|---|---|---:|
-| Md Mehedi Hasan | 2023100010168 | [ e.g. designed schema, wrote report queries ] | [ % ] |
-| Md Habibul Basar | 2023100010166 | [ ... ] | [ % ] |
-| Razu Miah | 2023100010169 | [ ... ] | [ % ] |
-| Md Nayeem Khan | 2023100010156 | [ ... ] | [ % ] |
+| Md Mehedi Hasan | 2023100010168 | Designed overall DB schema, core tables, relationships, and wrote key queries including joins, aggregates, procedures, and triggers. | 40% |
+| Md Habibul Basar | 2023100010166 | Contributed to table definitions, sample data insertion, and implemented SELECT/JOIN queries for parcels, pickups, and deliveries. | 20% |
+| Razu Miah | 2023100010169 | Worked on customer, payment, and settlement modules, sample data generation, and wrote subquery/View-based queries. | 20% |
+| Md Nayeem Khan | 2023100010156 | Assisted with schema refinement, constraint validation, testing queries, and documentation for the submission. | 20% |
 | **TOTAL** | | | **100%** |
 
 **Peer comment:**
