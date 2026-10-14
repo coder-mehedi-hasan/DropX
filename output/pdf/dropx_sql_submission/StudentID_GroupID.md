@@ -9,10 +9,10 @@
 
 | Field | Details |
 |---|---|
-| Student Name | [ your full name ] |
-| Student ID | [ your ID ] |
-| Section | [ section ] |
-| Group ID | [ group number, or `Individual` ] |
+| Student Name | Md Mehedi Hasan |
+| Student ID | 2023100010168 |
+| Section | 11 |
+| Group ID | 3 |
 | Project Title | DropX - Parcel Delivery & Logistics Management System |
 | DBMS Used | MySQL 8.0+ |
 
