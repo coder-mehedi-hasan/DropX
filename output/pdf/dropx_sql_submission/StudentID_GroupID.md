@@ -16,8 +16,6 @@
 
 ## Section 2: Peer Review and Contribution
 
-List every member of your group (including yourself) and the percentage of total project work each member contributed. The total must equal 100%. Every member submits this table independently, so answers are cross-checked.
-
 | Member Name | Student ID | Work Done (1 line) | Contribution % |
 |---|---|---|---:|
 | Md Mehedi Hasan | 2023100010168 | [ e.g. designed schema, wrote report queries ] | [ % ] |
@@ -26,7 +24,7 @@ List every member of your group (including yourself) and the percentage of total
 | Nayeem Khan | 2023100010156 | [ ... ] | [ % ] |
 | **TOTAL** | | | **100%** |
 
-**Peer comment (2-3 lines, honest feedback on the teamwork, including any issue you faced):**
+**Peer comment:**
 
 We worked well together and helped each other throughout the project.  
 At first, we had some difficulty deciding how pickup and delivery locations should be assigned to parcels.  
@@ -37,14 +35,15 @@ Finally, we changed the location structure and found a clearer solution that wor
 
 ## Section 3: Database Schema
 
-Paste the complete CREATE TABLE statements (with all constraints) and sample INSERT statements, so the queries below can be re-run exactly as written.
+#### Complete CREATE TABLE statements
 
-### Complete CREATE TABLE statements
-
+**Database connection and constraint settings**
 ```sql
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+```
 
+```sql
 CREATE TABLE IF NOT EXISTS roles (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -677,68 +676,6 @@ CREATE TABLE IF NOT EXISTS settlements (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE TABLE IF NOT EXISTS notifications (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    user_id BIGINT UNSIGNED NULL,
-    customer_id BIGINT UNSIGNED NULL,
-    parcel_id BIGINT UNSIGNED NULL,
-    channel ENUM('SMS','EMAIL','PUSH') NOT NULL,
-    event_type VARCHAR(100) NOT NULL,
-    recipient VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    status ENUM('PENDING','SENT','FAILED') NOT NULL DEFAULT 'PENDING',
-    sent_at DATETIME NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    CONSTRAINT fk_notifications_user
-        FOREIGN KEY (user_id) REFERENCES users(id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_notifications_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_notifications_parcel
-        FOREIGN KEY (parcel_id) REFERENCES parcels(id)
-        ON UPDATE CASCADE ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS support_tickets (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    customer_id BIGINT UNSIGNED NOT NULL,
-    parcel_id BIGINT UNSIGNED NULL,
-    assigned_to BIGINT UNSIGNED NULL,
-    subject VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    priority ENUM('LOW','MEDIUM','HIGH','URGENT') NOT NULL DEFAULT 'MEDIUM',
-    status ENUM('OPEN','IN_PROGRESS','RESOLVED','CLOSED') NOT NULL DEFAULT 'OPEN',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    CONSTRAINT fk_support_tickets_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_support_tickets_parcel
-        FOREIGN KEY (parcel_id) REFERENCES parcels(id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_support_tickets_assigned_to
-        FOREIGN KEY (assigned_to) REFERENCES users(id)
-        ON UPDATE CASCADE ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS audit_logs (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    user_id BIGINT UNSIGNED NULL,
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(100) NOT NULL,
-    entity_id BIGINT UNSIGNED NULL,
-    old_data JSON NULL,
-    new_data JSON NULL,
-    ip_address VARCHAR(45) NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    CONSTRAINT fk_audit_logs_user
-        FOREIGN KEY (user_id) REFERENCES users(id)
-        ON UPDATE CASCADE ON DELETE SET NULL
-);
 
 CREATE TABLE IF NOT EXISTS sequences (
     seq_name VARCHAR(50) NOT NULL,
@@ -904,11 +841,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 ```
 
 ## Section 4: Project Queries
-
-Use the exact block format below for every query. Queries are numbered continuously.
-
-*Category must be one of: DDL / INSERT / UPDATE / DELETE / SELECT-Filter / ORDER BY / LIKE / IN-BETWEEN / TOP-LIMIT / JOIN / Aggregate-GROUP BY / Subquery / Other.*
-
 ### Query 1
 
 | Field | Details |
@@ -922,7 +854,7 @@ Use the exact block format below for every query. Queries are numbered continuou
 SHOW CREATE TABLE pricing_slabs;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 1 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/1.png)
 
@@ -946,7 +878,7 @@ VALUES
      'Available for morning and evening shifts');
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 2 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/2.png)
 
@@ -967,7 +899,7 @@ WHERE id = 4
   AND status = 'TEMP';
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 3 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/3.png)
 
@@ -985,7 +917,7 @@ DELETE FROM parcel_drafts
 WHERE customer_id = 1;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 4 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/4.png)
 
@@ -1006,7 +938,7 @@ WHERE phone = '01900000001'
 LIMIT 1;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 5 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/5.png)
 
@@ -1027,7 +959,7 @@ WHERE ur.user_id IN (1, 2)
 ORDER BY r.name ASC;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 6 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/6.png)
 
@@ -1055,7 +987,7 @@ WHERE h.status = 'ACTIVE'
 ORDER BY h.id ASC;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 7 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/7.png)
 
@@ -1075,7 +1007,7 @@ WHERE c.name LIKE '%Rahman%'
 ORDER BY c.name ASC;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 8 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/8.png)
 
@@ -1098,7 +1030,7 @@ WHERE p.status IN ('CREATED', 'AT_HUB', 'OUT_FOR_DELIVERY')
 ORDER BY p.created_at DESC;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 9 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/9.png)
 
@@ -1127,7 +1059,7 @@ WHERE p.tracking_number = 'DX-20261001-001'
 LIMIT 1;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 10 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/10.png)
 
@@ -1150,7 +1082,7 @@ ORDER BY e.created_at DESC, e.id DESC
 LIMIT 100;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 11 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/11.png)
 
@@ -1172,7 +1104,7 @@ WHERE tp.transfer_id = 1
 ORDER BY p.tracking_number;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 12 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/12.png)
 
@@ -1192,7 +1124,7 @@ WHERE transfer_id IN (1)
 GROUP BY transfer_id;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 13 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/13.png)
 
@@ -1214,7 +1146,7 @@ GROUP BY parcel_id
 ORDER BY parcel_id;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 14 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/14.png)
 
@@ -1240,7 +1172,7 @@ INNER JOIN users AS u ON u.id = r.user_id
 ORDER BY d.created_at DESC, d.id DESC;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 15 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/15.png)
 
@@ -1262,7 +1194,7 @@ INNER JOIN parcels AS par ON par.id = pay.parcel_id
 ORDER BY pay.created_at DESC, pay.id DESC;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 16 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/16.png)
 
@@ -1285,7 +1217,7 @@ GROUP BY parcel_id, type
 ORDER BY parcel_id, type;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 17 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/17.png)
 
@@ -1318,7 +1250,7 @@ WHERE par.sender_customer_id = 3
 GROUP BY par.sender_customer_id;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 18 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/18.png)
 
@@ -1343,7 +1275,7 @@ WHERE r.user_id = 2
 LIMIT 1;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 19 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/19.png)
 
@@ -1364,7 +1296,7 @@ ORDER BY created_at DESC, id DESC
 LIMIT 5;
 ```
 
-**Output (paste a screenshot, or a text table for SELECT queries):**
+**Output:**
 
 ![Query 20 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/20.png)
 
