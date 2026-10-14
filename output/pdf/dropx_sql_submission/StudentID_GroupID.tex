@@ -60,15 +60,15 @@
 
 \newcommand{\queryoutput}[1]{%
   \textbf{Output (paste a screenshot, or a text table for SELECT queries):}\par
-  \IfFileExists{images/query-#1-output.png}{%
+  \IfFileExists{images/revised/query-#1-output.png}{%
     \begin{center}
-      \includegraphics[width=0.97\linewidth,height=7cm,keepaspectratio]{images/query-#1-output.png}
+      \includegraphics[width=0.97\linewidth,height=7cm,keepaspectratio]{images/revised/query-#1-output.png}
     \end{center}
   }{%
     \begin{center}
       \fcolorbox{rule}{white}{\parbox[c][5.2cm][c]{0.93\linewidth}{\centering
         \color{muted}\itshape Paste output screenshot here.\\[0.5em]
-        Expected file: \texttt{images/query-#1-output.png}}}
+        Expected file: \texttt{images/revised/query-#1-output.png}}}
     \end{center}
   }}
 
@@ -135,99 +135,83 @@ Use the exact block format below for every query. Queries are numbered continuou
 \textit{Category must be one of: DDL / INSERT / UPDATE / DELETE / SELECT-Filter / ORDER BY / LIKE / IN-BETWEEN / TOP-LIMIT / JOIN / Aggregate-GROUP BY / Subquery / Other.}
 
 \querytitle{1}
-\querymeta{DDL}{Create the pricing slab table with primary-key, unique, foreign-key, and CHECK constraints so invalid or overlapping weight boundaries are rejected at the database layer.}
+\querymeta{Other}{Display the real MySQL definition of the pricing slab table so its primary key, unique keys, foreign key, and CHECK constraint can be verified.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-CREATE TABLE IF NOT EXISTS pricing_slabs (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pricing_lane_id BIGINT UNSIGNED NOT NULL,
-    min_weight_grams INT UNSIGNED NOT NULL,
-    max_weight_grams INT UNSIGNED NOT NULL,
-    base_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-    extra_kg_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-    cod_percentage DECIMAL(5,2) NOT NULL DEFAULT 0,
-    cod_fixed_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_pricing_slabs_lane_min
-        (pricing_lane_id, min_weight_grams),
-    UNIQUE KEY uq_pricing_slabs_lane_max
-        (pricing_lane_id, max_weight_grams),
-    CONSTRAINT fk_pricing_slabs_lane
-        FOREIGN KEY (pricing_lane_id) REFERENCES pricing_lanes(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT chk_pricing_slabs_range
-        CHECK (max_weight_grams > min_weight_grams)
-);
+SHOW CREATE TABLE pricing_slabs;
 \end{lstlisting}
 \queryoutput{01}
 
 \clearpage
 \querytitle{2}
-\querymeta{INSERT}{Add a new active branch to extend DropX operations into Sylhet. The unique branch code prevents duplicate branch records.}
+\querymeta{INSERT}{Record a new rider application submitted through the DropX rider recruitment flow.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-INSERT INTO branches
-    (name, code, phone, address, city, district, status)
+INSERT INTO rider_applications
+    (name, phone, email, district, vehicle_type,
+     license_number, experience_years, availability, notes)
 VALUES
-    ('Sylhet Branch', 'SYL-01', '01700000003',
-     'Amberkhana, Sylhet', 'Sylhet', 'Sylhet', 'ACTIVE');
+    ('Imran Kabir', '01600000001',
+     'imran.rider@example.com', 'Dhaka', 'MOTORCYCLE',
+     'DL-DHK-20002', 2.5, 'Full-time',
+     'Available for morning and evening shifts');
 \end{lstlisting}
 \queryoutput{02}
 
 \clearpage
 \querytitle{3}
-\querymeta{UPDATE}{Move an open high-priority support ticket into progress after an operations employee starts investigating it.}
+\querymeta{UPDATE}{Activate a temporary customer after successful OTP verification and store the activation time.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-UPDATE support_tickets
-SET status = 'IN_PROGRESS',
-    assigned_to = 1
-WHERE id = 1
-  AND status = 'OPEN';
+UPDATE customers
+SET status = 'ACTIVE',
+    activated_at = CURRENT_TIMESTAMP
+WHERE id = 4
+  AND status = 'TEMP';
 \end{lstlisting}
 \queryoutput{03}
 
 \clearpage
 \querytitle{4}
-\querymeta{DELETE}{Remove failed test notifications older than 30 days so the notification queue does not retain obsolete test data.}
+\querymeta{DELETE}{Delete a customer's saved booking draft after the booking is completed or intentionally discarded.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-DELETE FROM notifications
-WHERE status = 'FAILED'
-  AND created_at < CURRENT_TIMESTAMP - INTERVAL 30 DAY;
+DELETE FROM parcel_drafts
+WHERE customer_id = 1;
 \end{lstlisting}
 \queryoutput{04}
 
 \clearpage
 \querytitle{5}
-\querymeta{SELECT-Filter}{Show COD parcels that are still active in the delivery lifecycle and therefore require operational attention.}
+\querymeta{SELECT-Filter}{Find the customer account matching the submitted phone number or email during OTP login.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT tracking_number, receiver_name, cod_amount, status
-FROM parcels
-WHERE payment_type = 'COD'
-  AND status NOT IN ('DELIVERED', 'CANCELLED', 'RETURNED');
+SELECT id, name, phone, email, status
+FROM customers
+WHERE phone = '01900000001'
+   OR email = 'ayesha@example.com'
+LIMIT 1;
 \end{lstlisting}
 \queryoutput{05}
 
 \clearpage
 \querytitle{6}
-\querymeta{ORDER BY}{List parcels from newest to oldest, with tracking number as a deterministic secondary ordering key.}
+\querymeta{ORDER BY}{Show a parcel's tracking history with the newest event first and its hub name when available.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT tracking_number, receiver_name, status, created_at
-FROM parcels
-ORDER BY created_at DESC, tracking_number ASC;
+SELECT e.event_type, e.description, e.created_at,
+       h.name AS hub_name
+FROM parcel_events AS e
+LEFT JOIN hubs AS h ON h.id = e.hub_id
+WHERE e.parcel_id = 1
+ORDER BY e.created_at DESC, e.id DESC
+LIMIT 100;
 \end{lstlisting}
 \queryoutput{06}
 
@@ -237,92 +221,93 @@ ORDER BY created_at DESC, tracking_number ASC;
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT code, name, phone, email, status
-FROM customers
-WHERE name LIKE '%Rahman%';
+SELECT c.code, c.name, c.phone, c.email, c.status
+FROM customers AS c
+WHERE c.name LIKE '%Rahman%'
+ORDER BY c.name ASC;
 \end{lstlisting}
 \queryoutput{07}
 
 \clearpage
 \querytitle{8}
-\querymeta{IN-BETWEEN}{Find parcels in selected active statuses whose delivery fees fall within a useful operational price range.}
+\querymeta{IN-BETWEEN}{Find parcels in selected active statuses that were created during the submission's sample date range.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT tracking_number, delivery_fee, status
-FROM parcels
-WHERE status IN ('CREATED', 'AT_HUB', 'OUT_FOR_DELIVERY')
-  AND delivery_fee BETWEEN 80.00 AND 180.00
-ORDER BY delivery_fee DESC;
+SELECT p.tracking_number, p.receiver_name, p.status,
+       p.delivery_fee, p.created_at
+FROM parcels AS p
+WHERE p.status IN ('CREATED', 'AT_HUB', 'OUT_FOR_DELIVERY')
+  AND p.created_at BETWEEN '2026-10-10 00:00:00'
+                       AND '2026-10-14 23:59:59'
+ORDER BY p.created_at DESC;
 \end{lstlisting}
 \queryoutput{08}
 
 \clearpage
 \querytitle{9}
-\querymeta{TOP-LIMIT}{Display the five most recently created parcels for a compact admin dashboard widget. MySQL uses LIMIT instead of TOP.}
+\querymeta{TOP-LIMIT}{Display the five newest rider applications for the admin review queue. MySQL uses LIMIT instead of TOP.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT tracking_number, receiver_name, status, created_at
-FROM parcels
-ORDER BY created_at DESC
+SELECT id, name, phone, district, vehicle_type,
+       status, created_at
+FROM rider_applications
+ORDER BY created_at DESC, id DESC
 LIMIT 5;
 \end{lstlisting}
 \queryoutput{09}
 
 \clearpage
 \querytitle{10}
-\querymeta{JOIN}{Combine parcel, sender, origin-hub, and destination-hub data into one operations report.}
+\querymeta{JOIN}{Combine a parcel with its origin, destination, and current hub to produce the public tracking summary.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT
-    p.tracking_number,
-    c.name AS sender_name,
-    oh.name AS origin_hub,
-    dh.name AS destination_hub,
-    p.status
+SELECT p.tracking_number, p.parcel_type,
+       p.payment_type, p.status, p.weight, p.cod_amount,
+       origin.name AS origin_hub,
+       destination.name AS destination_hub,
+       current_hub.name AS current_hub
 FROM parcels AS p
-INNER JOIN customers AS c
-    ON c.id = p.sender_customer_id
-INNER JOIN hubs AS oh
-    ON oh.id = p.origin_hub_id
-INNER JOIN hubs AS dh
-    ON dh.id = p.destination_hub_id
-ORDER BY p.created_at DESC;
+INNER JOIN hubs AS origin ON origin.id = p.origin_hub_id
+INNER JOIN hubs AS destination
+    ON destination.id = p.destination_hub_id
+LEFT JOIN hubs AS current_hub
+    ON current_hub.id = p.current_hub_id
+WHERE p.tracking_number = 'DX-20261001-001'
+LIMIT 1;
 \end{lstlisting}
 \queryoutput{10}
 
 \clearpage
 \querytitle{11}
-\querymeta{Aggregate-GROUP BY}{Summarize parcel count, total delivery fees, and total COD value for each parcel status.}
+\querymeta{Aggregate-GROUP BY}{Count how many parcels are assigned to each selected transfer for the transfer list.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT
-    status,
-    COUNT(*) AS parcel_count,
-    SUM(delivery_fee) AS total_delivery_fees,
-    SUM(cod_amount) AS total_cod_value
-FROM parcels
-GROUP BY status
-ORDER BY parcel_count DESC, status ASC;
+SELECT transfer_id, COUNT(*) AS parcel_count
+FROM transfer_parcels
+WHERE transfer_id IN (1)
+GROUP BY transfer_id;
 \end{lstlisting}
 \queryoutput{11}
 
 \clearpage
 \querytitle{12}
-\querymeta{Subquery}{Identify parcels whose delivery fee is higher than the average fee across all parcels.}
+\querymeta{Subquery}{Return each parcel with its latest successful delivery time calculated by a correlated subquery.}
 
 \textbf{SQL:}
 \begin{lstlisting}
-SELECT tracking_number, delivery_fee, status
-FROM parcels
-WHERE delivery_fee > (
-    SELECT AVG(delivery_fee)
-    FROM parcels
-)
-ORDER BY delivery_fee DESC;
+SELECT p.tracking_number, p.status,
+       (
+           SELECT MAX(d.delivered_at)
+           FROM deliveries AS d
+           WHERE d.parcel_id = p.id
+             AND d.status = 'DELIVERED'
+       ) AS delivered_at
+FROM parcels AS p
+ORDER BY p.tracking_number;
 \end{lstlisting}
 \queryoutput{12}
 

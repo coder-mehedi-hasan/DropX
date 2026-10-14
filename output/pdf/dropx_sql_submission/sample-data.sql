@@ -46,7 +46,9 @@ INSERT IGNORE INTO customers
   (2, 'CUS-0002', 'Tanvir Ahmed', '01900000002',
    'tanvir@example.com', 'BUSINESS', 'ACTIVE', NOW(), NOW()),
   (3, 'CUS-0003', 'Sadia Rahman', '01900000003',
-   'sadia@example.com', 'INDIVIDUAL', 'ACTIVE', NOW(), NOW());
+   'sadia@example.com', 'INDIVIDUAL', 'ACTIVE', NOW(), NOW()),
+  (4, 'CUS-0004', 'Nafisa Islam', '01900000004',
+   'nafisa@example.com', 'INDIVIDUAL', 'TEMP', NOW(), NULL);
 
 INSERT IGNORE INTO service_cities
   (id, name, code, service_type, status) VALUES
@@ -105,6 +107,39 @@ INSERT IGNORE INTO deliveries
    '2026-10-14 09:00:00', NULL, 'OUT_FOR_DELIVERY'),
   (2, 4, 1, 1, 1, 'Tejgaon, Dhaka', '2026-10-13 09:00:00',
    '2026-10-13 10:00:00', '2026-10-13 12:15:00', 'DELIVERED');
+
+INSERT IGNORE INTO parcel_events
+  (id, parcel_id, event_type, hub_id, user_id, rider_id,
+   description, created_at) VALUES
+  (1, 1, 'CREATED', 1, 1, NULL,
+   'Parcel booking confirmed.', '2026-10-10 09:15:00'),
+  (2, 1, 'PICKED_UP', 1, NULL, 1,
+   'Parcel collected from sender.', '2026-10-10 12:30:00'),
+  (3, 1, 'ARRIVED_HUB', 1, 1, NULL,
+   'Parcel received at Tejgaon Hub.', '2026-10-11 08:20:00'),
+  (4, 3, 'OUT_FOR_DELIVERY', 2, NULL, 1,
+   'Rider started the delivery attempt.', '2026-10-14 09:00:00'),
+  (5, 4, 'DELIVERED', 1, NULL, 1,
+   'Parcel delivered to the recipient.', '2026-10-13 12:15:00');
+
+INSERT IGNORE INTO transfers
+  (id, transfer_number, from_hub_id, to_hub_id, route_id,
+   vehicle_id, driver_id, status, departed_at) VALUES
+  (1, 'TRF-2026-0001', 1, 3, NULL, NULL, 1,
+   'IN_TRANSIT', '2026-10-11 09:00:00');
+
+INSERT IGNORE INTO transfer_parcels
+  (transfer_id, parcel_id, loaded_at, unloaded_at) VALUES
+  (1, 1, '2026-10-11 08:45:00', NULL),
+  (1, 2, '2026-10-11 08:50:00', NULL);
+
+INSERT IGNORE INTO parcel_drafts
+  (id, customer_id, payload) VALUES
+  (1, 1, JSON_OBJECT(
+      'receiverName', 'Draft Receiver',
+      'receiverPhone', '01900000999',
+      'weight', '1.00'
+  ));
 
 INSERT IGNORE INTO payments
   (id, parcel_id, type, amount, method, status, paid_at) VALUES

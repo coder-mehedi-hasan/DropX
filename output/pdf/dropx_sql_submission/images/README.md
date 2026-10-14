@@ -1,6 +1,8 @@
 # Query output screenshots
 
-Place the manually captured screenshots in this folder using these exact names:
+The existing Query 1-3 images in this folder belong to the earlier draft and are preserved unchanged.
+
+Place screenshots for the revised `queries.sql`-based submission in `images/revised/` using these exact names:
 
 - `query-01-output.png`
 - `query-02-output.png`
@@ -15,4 +17,4 @@ Place the manually captured screenshots in this folder using these exact names:
 - `query-11-output.png`
 - `query-12-output.png`
 
-Rebuilding `StudentID_GroupID.tex` automatically replaces each placeholder with its matching image.
+Rebuilding `StudentID_GroupID.tex` automatically replaces each placeholder with its matching revised image.
