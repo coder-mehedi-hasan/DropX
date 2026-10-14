@@ -1,0 +1,329 @@
+\documentclass[10pt,letterpaper]{article}
+\input{packages.tex}
+\def\pdfkind{brief}
+\input{palette.tex}
+\input{macros.tex}
+
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+\geometry{top=1.6cm,bottom=1.7cm,left=1.75cm,right=1.75cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.35em}
+\setlength{\LTpre}{0.2em}
+\setlength{\LTpost}{0.6em}
+\renewcommand{\arraystretch}{1.16}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\small Page \thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0pt}
+
+\lstdefinestyle{sqlstyle}{
+  language=SQL,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\bfseries\color{accent},
+  commentstyle=\itshape\color{muted},
+  stringstyle=\color{link},
+  backgroundcolor=\color{rule!26},
+  frame=single,
+  rulecolor=\color{rule},
+  framerule=0.5pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  aboveskip=0.35em,
+  belowskip=0.55em
+}
+\lstset{style=sqlstyle}
+
+\newcommand{\fieldtable}[1]{%
+  \begin{tabularx}{\linewidth}{>{\bfseries\columncolor{rule!52}}p{0.27\linewidth}|X}
+    \rowcolor{accent}\color{onaccent}Field & \color{onaccent}Details\\
+    #1
+  \end{tabularx}}
+
+\newcommand{\querymeta}[2]{%
+  \begin{tabularx}{\linewidth}{>{\bfseries\columncolor{rule!52}}p{0.22\linewidth}|X}
+    \rowcolor{accent}\color{onaccent}Field & \color{onaccent}Details\\
+    Category & #1\\
+    Purpose & #2\\
+  \end{tabularx}}
+
+\newcommand{\queryoutput}[1]{%
+  \textbf{Output (paste a screenshot, or a text table for SELECT queries):}\par
+  \IfFileExists{images/query-#1-output.png}{%
+    \begin{center}
+      \includegraphics[width=0.97\linewidth,height=7cm,keepaspectratio]{images/query-#1-output.png}
+    \end{center}
+  }{%
+    \begin{center}
+      \fcolorbox{rule}{white}{\parbox[c][5.2cm][c]{0.93\linewidth}{\centering
+        \color{muted}\itshape Paste output screenshot here.\\[0.5em]
+        Expected file: \texttt{images/query-#1-output.png}}}
+    \end{center}
+  }}
+
+\newcommand{\querytitle}[1]{\subsection*{Query #1}}
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries SOUTHEAST UNIVERSITY}\par
+  {\large\bfseries CSE384 -- Database Design Lab}\par
+  {\large\bfseries\color{accent} PROJECT SQL QUERIES SUBMISSION}\par
+\end{center}
+\colorrule
+
+\textit{Do not rename, remove or reorder the section headings below. Replace the bracketed placeholders only. Submission is evaluated automatically and then reviewed.}
+
+\section{Section 1: Student Information}
+
+\fieldtable{
+  Student Name & [ your full name ]\\
+  Student ID & [ your ID ]\\
+  Section & [ section ]\\
+  Group ID & [ group number, or `Individual' ]\\
+  Project Title & DropX -- Parcel Delivery \& Logistics Management System\\
+  DBMS Used & MySQL 8.0+\\
+}
+
+\section{Section 2: Peer Review and Contribution}
+
+List every member of your group (including yourself) and the percentage of total project work each member contributed. The total must equal 100\%. Every member submits this table independently, so answers are cross-checked.
+
+\begin{tabularx}{\linewidth}{|p{0.22\linewidth}|p{0.16\linewidth}|X|p{0.14\linewidth}|}
+  \hline
+  \rowcolor{accent}\color{onaccent}\bfseries Member Name & \color{onaccent}\bfseries Student ID & \color{onaccent}\bfseries Work Done (1 line) & \color{onaccent}\bfseries Contribution \%\\
+  \hline
+  [ name ] & [ ID ] & [ e.g. designed schema, wrote report queries ] & [ \% ]\\ \hline
+  [ name ] & [ ID ] & [ ... ] & [ \% ]\\ \hline
+  [ name ] & [ ID ] & [ ... ] & [ \% ]\\ \hline
+  [ name ] & [ ID ] & [ ... ] & [ \% ]\\ \hline
+  \textbf{TOTAL} & & & \textbf{100\%}\\ \hline
+\end{tabularx}
+
+\vspace{0.6em}
+\textbf{Peer comment (2--3 lines, honest feedback on the teamwork, including any issue you faced):}
+
+\fcolorbox{rule}{white}{\parbox[c][1.4cm][c]{0.96\linewidth}{\color{muted}\itshape [ write here ]}}
+
+\textbf{Self-declaration: I confirm the information above is accurate and the queries below are from our own project.}
+
+\section{Section 3: Database Schema}
+
+Paste the complete CREATE TABLE statements (with all constraints) and sample INSERT statements, so the queries below can be re-run exactly as written.
+
+\textbf{Complete CREATE TABLE statements}
+\lstinputlisting{schema-create-tables.sql}
+
+\textbf{Sample INSERT statements}
+\lstinputlisting{sample-data.sql}
+
+\section{Section 4: Project Queries}
+
+Use the exact block format below for every query. Queries are numbered continuously and use only the categories allowed by the supplied template.
+
+\textit{Category must be one of: DDL / INSERT / UPDATE / DELETE / SELECT-Filter / ORDER BY / LIKE / IN-BETWEEN / TOP-LIMIT / JOIN / Aggregate-GROUP BY / Subquery / Other.}
+
+\querytitle{1}
+\querymeta{DDL}{Create the pricing slab table with primary-key, unique, foreign-key, and CHECK constraints so invalid or overlapping weight boundaries are rejected at the database layer.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+CREATE TABLE IF NOT EXISTS pricing_slabs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    pricing_lane_id BIGINT UNSIGNED NOT NULL,
+    min_weight_grams INT UNSIGNED NOT NULL,
+    max_weight_grams INT UNSIGNED NOT NULL,
+    base_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    extra_kg_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cod_percentage DECIMAL(5,2) NOT NULL DEFAULT 0,
+    cod_fixed_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_pricing_slabs_lane_min
+        (pricing_lane_id, min_weight_grams),
+    UNIQUE KEY uq_pricing_slabs_lane_max
+        (pricing_lane_id, max_weight_grams),
+    CONSTRAINT fk_pricing_slabs_lane
+        FOREIGN KEY (pricing_lane_id) REFERENCES pricing_lanes(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_pricing_slabs_range
+        CHECK (max_weight_grams > min_weight_grams)
+);
+\end{lstlisting}
+\queryoutput{01}
+
+\clearpage
+\querytitle{2}
+\querymeta{INSERT}{Add a new active branch to extend DropX operations into Sylhet. The unique branch code prevents duplicate branch records.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+INSERT INTO branches
+    (name, code, phone, address, city, district, status)
+VALUES
+    ('Sylhet Branch', 'SYL-01', '01700000003',
+     'Amberkhana, Sylhet', 'Sylhet', 'Sylhet', 'ACTIVE');
+\end{lstlisting}
+\queryoutput{02}
+
+\clearpage
+\querytitle{3}
+\querymeta{UPDATE}{Move an open high-priority support ticket into progress after an operations employee starts investigating it.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+UPDATE support_tickets
+SET status = 'IN_PROGRESS',
+    assigned_to = 1
+WHERE id = 1
+  AND status = 'OPEN';
+\end{lstlisting}
+\queryoutput{03}
+
+\clearpage
+\querytitle{4}
+\querymeta{DELETE}{Remove failed test notifications older than 30 days so the notification queue does not retain obsolete test data.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+DELETE FROM notifications
+WHERE status = 'FAILED'
+  AND created_at < CURRENT_TIMESTAMP - INTERVAL 30 DAY;
+\end{lstlisting}
+\queryoutput{04}
+
+\clearpage
+\querytitle{5}
+\querymeta{SELECT-Filter}{Show COD parcels that are still active in the delivery lifecycle and therefore require operational attention.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT tracking_number, receiver_name, cod_amount, status
+FROM parcels
+WHERE payment_type = 'COD'
+  AND status NOT IN ('DELIVERED', 'CANCELLED', 'RETURNED');
+\end{lstlisting}
+\queryoutput{05}
+
+\clearpage
+\querytitle{6}
+\querymeta{ORDER BY}{List parcels from newest to oldest, with tracking number as a deterministic secondary ordering key.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT tracking_number, receiver_name, status, created_at
+FROM parcels
+ORDER BY created_at DESC, tracking_number ASC;
+\end{lstlisting}
+\queryoutput{06}
+
+\clearpage
+\querytitle{7}
+\querymeta{LIKE}{Find customers whose names contain ``Rahman'' when staff only know part of the customer name.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT code, name, phone, email, status
+FROM customers
+WHERE name LIKE '%Rahman%';
+\end{lstlisting}
+\queryoutput{07}
+
+\clearpage
+\querytitle{8}
+\querymeta{IN-BETWEEN}{Find parcels in selected active statuses whose delivery fees fall within a useful operational price range.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT tracking_number, delivery_fee, status
+FROM parcels
+WHERE status IN ('CREATED', 'AT_HUB', 'OUT_FOR_DELIVERY')
+  AND delivery_fee BETWEEN 80.00 AND 180.00
+ORDER BY delivery_fee DESC;
+\end{lstlisting}
+\queryoutput{08}
+
+\clearpage
+\querytitle{9}
+\querymeta{TOP-LIMIT}{Display the five most recently created parcels for a compact admin dashboard widget. MySQL uses LIMIT instead of TOP.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT tracking_number, receiver_name, status, created_at
+FROM parcels
+ORDER BY created_at DESC
+LIMIT 5;
+\end{lstlisting}
+\queryoutput{09}
+
+\clearpage
+\querytitle{10}
+\querymeta{JOIN}{Combine parcel, sender, origin-hub, and destination-hub data into one operations report.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT
+    p.tracking_number,
+    c.name AS sender_name,
+    oh.name AS origin_hub,
+    dh.name AS destination_hub,
+    p.status
+FROM parcels AS p
+INNER JOIN customers AS c
+    ON c.id = p.sender_customer_id
+INNER JOIN hubs AS oh
+    ON oh.id = p.origin_hub_id
+INNER JOIN hubs AS dh
+    ON dh.id = p.destination_hub_id
+ORDER BY p.created_at DESC;
+\end{lstlisting}
+\queryoutput{10}
+
+\clearpage
+\querytitle{11}
+\querymeta{Aggregate-GROUP BY}{Summarize parcel count, total delivery fees, and total COD value for each parcel status.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT
+    status,
+    COUNT(*) AS parcel_count,
+    SUM(delivery_fee) AS total_delivery_fees,
+    SUM(cod_amount) AS total_cod_value
+FROM parcels
+GROUP BY status
+ORDER BY parcel_count DESC, status ASC;
+\end{lstlisting}
+\queryoutput{11}
+
+\clearpage
+\querytitle{12}
+\querymeta{Subquery}{Identify parcels whose delivery fee is higher than the average fee across all parcels.}
+
+\textbf{SQL:}
+\begin{lstlisting}
+SELECT tracking_number, delivery_fee, status
+FROM parcels
+WHERE delivery_fee > (
+    SELECT AVG(delivery_fee)
+    FROM parcels
+)
+ORDER BY delivery_fee DESC;
+\end{lstlisting}
+\queryoutput{12}
+
+\end{document}

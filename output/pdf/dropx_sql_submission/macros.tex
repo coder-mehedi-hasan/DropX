@@ -1,0 +1,43 @@
+% Layout macros. Input after palette.tex so accent/onaccent/muted/link/rule exist.
+\hypersetup{colorlinks=true,urlcolor=link,linkcolor=link}
+\titleformat{\section}{\large\bfseries\color{accent}}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{}{0em}{}
+\captionsetup{font=small,skip=6pt}
+\setlist[itemize]{leftmargin=1.2em,itemsep=0.3em}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=0.15em,topsep=0.2em}
+
+\newcommand{\colorrule}{\par\noindent{\color{rule}\rule{\linewidth}{2pt}}\par}
+
+% Numbered item: \docitem{title}{meta line}
+\newcounter{docitem}
+\newcommand{\docitem}[2]{%
+  \par\bigskip\refstepcounter{docitem}%
+  \noindent{\large\bfseries\color{accent}\thedocitem.}\ {\large\bfseries #1}\par\nopagebreak
+  \noindent{\small\color{muted}#2}\par\nopagebreak\smallskip}
+
+% Phone or portrait figure beside the text: \withphone{file}{caption}{text}
+\newcommand{\withphone}[3]{%
+  \par\noindent
+  \begin{minipage}[t]{0.6\linewidth}\vspace{0pt}#3\end{minipage}\hfill
+  \begin{minipage}[t]{0.34\linewidth}\vspace{0pt}\centering
+    \includegraphics[width=\linewidth,height=8cm,keepaspectratio]{#1}
+    \captionof{figure}{#2}
+  \end{minipage}\par}
+
+% Still frame beside the text; frame and button open the video.
+% \withvideo{frame.png}{caption}{https://...}{text}
+\newcommand{\withvideo}[4]{%
+  \par\noindent
+  \begin{minipage}[t]{0.6\linewidth}\vspace{0pt}#4\end{minipage}\hfill
+  \begin{minipage}[t]{0.34\linewidth}\vspace{0pt}\centering
+    \href{#3}{\includegraphics[width=\linewidth,height=8cm,keepaspectratio]{#1}}\\[0.3em]
+    \href{#3}{\colorbox{accent}{\textcolor{onaccent}{\small\bfseries\ $\blacktriangleright$\ Watch the video\ }}}
+    \captionof{figure}{#2}
+  \end{minipage}\par}
+
+% Wide figure under the text (dashboards, tables-as-images).
+\newcommand{\wide}[2]{%
+  \begin{figure}[H]\centering
+    \includegraphics[width=\linewidth,keepaspectratio]{#1}
+    \caption{#2}
+  \end{figure}}

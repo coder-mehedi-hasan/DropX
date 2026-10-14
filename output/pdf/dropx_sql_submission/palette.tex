@@ -1,0 +1,27 @@
+% Color palette. Requires \pdfkind already defined.
+% Kinds: review, release, finance, update, plan, brief.
+% Names defined here: accent, onaccent, muted, link, rule.
+\makeatletter
+\newcommand{\PdfSetPalette}[5]{%
+  \definecolor{accent}{HTML}{#1}%
+  \definecolor{onaccent}{HTML}{#2}%
+  \definecolor{muted}{HTML}{#3}%
+  \definecolor{link}{HTML}{#4}%
+  \definecolor{rule}{HTML}{#5}%
+}
+\@namedef{pdfpalette@review}{\PdfSetPalette{F07A1F}{FFFFFF}{5C534C}{1F4E79}{F6D7BE}}
+\@namedef{pdfpalette@release}{\PdfSetPalette{C2410C}{FFFFFF}{57534E}{9A3412}{FED7AA}}
+\@namedef{pdfpalette@finance}{\PdfSetPalette{0F6E56}{FFFFFF}{3F4F4A}{0F6E56}{C6E4D8}}
+\@namedef{pdfpalette@update}{\PdfSetPalette{1D4E89}{FFFFFF}{4A5562}{1D4E89}{D3DDEA}}
+\@namedef{pdfpalette@plan}{\PdfSetPalette{3F3F46}{FFFFFF}{52525B}{1E3A5F}{E4E4E7}}
+\@namedef{pdfpalette@brief}{\PdfSetPalette{111827}{FFFFFF}{4B5563}{1D4ED8}{E5E7EB}}
+\newcommand{\PdfApplyKind}[1]{%
+  \@ifundefined{pdfpalette@#1}{%
+    \PackageWarning{palette}{Unknown pdfkind '#1', using brief}%
+    \@nameuse{pdfpalette@brief}%
+  }{%
+    \@nameuse{pdfpalette@#1}%
+  }%
+}
+\makeatother
+\expandafter\PdfApplyKind\expandafter{\pdfkind}
