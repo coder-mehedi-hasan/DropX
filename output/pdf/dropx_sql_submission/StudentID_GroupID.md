@@ -3,8 +3,6 @@
 **CSE384 - Database Design Lab**  
 **PROJECT SQL QUERIES SUBMISSION**
 
-*Do not rename, remove or reorder the section headings below. Replace the bracketed placeholders only. Submission is evaluated automatically and then reviewed.*
-
 ## Section 1: Student Information
 
 | Field | Details |
