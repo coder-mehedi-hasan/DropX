@@ -22,15 +22,18 @@ List every member of your group (including yourself) and the percentage of total
 
 | Member Name | Student ID | Work Done (1 line) | Contribution % |
 |---|---|---|---:|
-| [ name ] | [ ID ] | [ e.g. designed schema, wrote report queries ] | [ % ] |
-| [ name ] | [ ID ] | [ ... ] | [ % ] |
-| [ name ] | [ ID ] | [ ... ] | [ % ] |
-| [ name ] | [ ID ] | [ ... ] | [ % ] |
+| Md Mehedi Hasan | 2023100010168 | [ e.g. designed schema, wrote report queries ] | [ % ] |
+| Md Habibul Basar | 2023100010166 | [ ... ] | [ % ] |
+| Razu Miah | 2023100010169 | [ ... ] | [ % ] |
+| Nayeem Khan | 2023100010156 | [ ... ] | [ % ] |
 | **TOTAL** | | | **100%** |
 
 **Peer comment (2-3 lines, honest feedback on the teamwork, including any issue you faced):**
 
-[ write here ]
+We worked well together and helped each other throughout the project.  
+At first, we had some difficulty deciding how pickup and delivery locations should be assigned to parcels.  
+We discussed the problem as a team and shared different ideas.  
+Finally, we changed the location structure and found a clearer solution that worked for everyone.
 
 **Self-declaration: I confirm the information above is accurate and the queries below are from our own project.**
 
