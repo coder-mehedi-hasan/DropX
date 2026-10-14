@@ -923,7 +923,7 @@ SHOW CREATE TABLE pricing_slabs;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 1 output](images/revised/query-01-output.png)
+![Query 1 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/1.png)
 
 ### Query 2
 
@@ -947,7 +947,7 @@ VALUES
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 2 output](images/revised/query-02-output.png)
+![Query 2 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/2.png)
 
 ### Query 3
 
@@ -968,7 +968,7 @@ WHERE id = 4
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 3 output](images/revised/query-03-output.png)
+![Query 3 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/3.png)
 
 ### Query 4
 
@@ -986,7 +986,7 @@ WHERE customer_id = 1;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 4 output](images/revised/query-04-output.png)
+![Query 4 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/4.png)
 
 ### Query 5
 
@@ -1007,7 +1007,7 @@ LIMIT 1;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 5 output](images/revised/query-05-output.png)
+![Query 5 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/5.png)
 
 ### Query 6
 
@@ -1028,7 +1028,7 @@ ORDER BY r.name ASC;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 6 output](images/revised/query-06-output.png)
+![Query 6 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/6.png)
 
 ### Query 7
 
@@ -1056,7 +1056,7 @@ ORDER BY h.id ASC;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 7 output](images/revised/query-07-output.png)
+![Query 7 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/7.png)
 
 ### Query 8
 
@@ -1076,7 +1076,7 @@ ORDER BY c.name ASC;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 8 output](images/revised/query-08-output.png)
+![Query 8 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/8.png)
 
 ### Query 9
 
@@ -1099,7 +1099,7 @@ ORDER BY p.created_at DESC;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 9 output](images/revised/query-09-output.png)
+![Query 9 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/9.png)
 
 ### Query 10
 
@@ -1128,7 +1128,7 @@ LIMIT 1;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 10 output](images/revised/query-10-output.png)
+![Query 10 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/10.png)
 
 ### Query 11
 
@@ -1151,7 +1151,7 @@ LIMIT 100;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 11 output](images/revised/query-11-output.png)
+![Query 11 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/11.png)
 
 ### Query 12
 
@@ -1173,7 +1173,7 @@ ORDER BY p.tracking_number;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 12 output](images/revised/query-12-output.png)
+![Query 12 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/12.png)
 
 ### Query 13
 
@@ -1193,7 +1193,7 @@ GROUP BY transfer_id;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 13 output](images/revised/query-13-output.png)
+![Query 13 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/13.png)
 
 ### Query 14
 
@@ -1215,7 +1215,7 @@ ORDER BY parcel_id;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 14 output](images/revised/query-14-output.png)
+![Query 14 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/14.png)
 
 ### Query 15
 
@@ -1241,7 +1241,7 @@ ORDER BY d.created_at DESC, d.id DESC;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 15 output](images/revised/query-15-output.png)
+![Query 15 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/15.png)
 
 ### Query 16
 
@@ -1263,7 +1263,7 @@ ORDER BY pay.created_at DESC, pay.id DESC;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 16 output](images/revised/query-16-output.png)
+![Query 16 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/16.png)
 
 ### Query 17
 
@@ -1286,7 +1286,7 @@ ORDER BY parcel_id, type;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 17 output](images/revised/query-17-output.png)
+![Query 17 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/17.png)
 
 ### Query 18
 
@@ -1319,7 +1319,7 @@ GROUP BY par.sender_customer_id;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 18 output](images/revised/query-18-output.png)
+![Query 18 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/18.png)
 
 ### Query 19
 
@@ -1344,7 +1344,7 @@ LIMIT 1;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 19 output](images/revised/query-19-output.png)
+![Query 19 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/19.png)
 
 ### Query 20
 
@@ -1365,11 +1365,12 @@ LIMIT 5;
 
 **Output (paste a screenshot, or a text table for SELECT queries):**
 
-![Query 20 output](images/revised/query-20-output.png)
+![Query 20 output](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/20.png)
 
 ## Notes
 
 - This submission contains 20 complete, executable, non-duplicate queries selected from the real DropX repository patterns.
+- Complete raw project query inventory: [queries.sql](https://pub-0c56e47ddabf4c368118142daae7fb75.r2.dev/db-lab/queries.sql).
 - The source query inventory contains 247 semicolon-terminated DML blocks: 155 `SELECT`, 39 `INSERT`, 43 `UPDATE`, and 10 `DELETE` blocks.
 - The raw inventory spans these features: auth, tracking, customers, customer addresses, customer profile, roles, users, user profile, organization, locations, reference data, parcels, pickups, transfers, deliveries, routes, vehicles, pricing, payments, settlements, riders, rider applications, rider jobs, administration, and core authorization.
 - Many raw statements contain application-only placeholders such as `?`, `${where}`, `${orderBy}`, and `${assignments}`. Those fragments are not copied as application code; the submitted versions replace them with reproducible MySQL values.
