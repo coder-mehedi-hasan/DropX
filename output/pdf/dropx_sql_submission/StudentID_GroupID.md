@@ -1,7 +1,6 @@
-# SOUTHEAST UNIVERSITY
+# <h1 style="text-align: center;">SOUTHEAST UNIVERSITY </h1>
 
-**CSE384 - Database Design Lab**  
-**PROJECT SQL QUERIES SUBMISSION**
+**<h3 style="text-align: center;">CSE384 - Database Design Lab</h3>** **<h4 style="text-align: center;">PROJECT SQL QUERIES SUBMISSION</h4>** 
 
 ## Section 1: Student Information
 
@@ -21,7 +20,7 @@
 | Md Mehedi Hasan | 2023100010168 | [ e.g. designed schema, wrote report queries ] | [ % ] |
 | Md Habibul Basar | 2023100010166 | [ ... ] | [ % ] |
 | Razu Miah | 2023100010169 | [ ... ] | [ % ] |
-| Nayeem Khan | 2023100010156 | [ ... ] | [ % ] |
+| Md Nayeem Khan | 2023100010156 | [ ... ] | [ % ] |
 | **TOTAL** | | | **100%** |
 
 **Peer comment:**
